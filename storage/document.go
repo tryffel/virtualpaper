@@ -27,16 +27,25 @@ type DocumentStore struct {
 	db *sqlx.DB
 }
 
-func (s *DocumentStore) GetDocuments(userId int, limit int) (*[]models.Document, error) {
+// GetDocuments returns user's documents according to paging. In addition, return total count of documents available.
+func (s *DocumentStore) GetDocuments(userId int, paging Paging) (*[]models.Document, int, error) {
 	sql := `
 SELECT id, name, filename, created_at, updated_at 
 FROM documents
 WHERE user_id = $1
-LIMIT $2;
+OFFSET $2
+LIMIT $3;
 `
 
 	dest := &[]models.Document{}
-	err := s.db.Select(dest, sql, userId, limit)
+	err := s.db.Select(dest, sql, userId, paging.Offset, paging.Limit)
 
-	return dest, err
+	sql = `
+SELECT count(id) 
+FROM documents
+WHERE user_id = $1
+`
+	var count int
+	err = s.db.Get(&count, sql, userId)
+	return dest, count, err
 }

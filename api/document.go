@@ -25,7 +25,7 @@ import (
 )
 
 type documentResponse struct {
-	Id        int
+	Id        int `json:"id"`
 	Name      string
 	Filename  string
 	Content   string
@@ -53,7 +53,12 @@ func (a *Api) getDocuments(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	docs, err := a.db.DocumentStore.GetDocuments(user, 100)
+	paging, err := getPaging(req)
+	if err != nil {
+		respBadRequest(resp, err.Error(), nil)
+	}
+
+	docs, count, err := a.db.DocumentStore.GetDocuments(user, paging)
 	if err != nil {
 		logrus.Errorf("get documents: %v", err)
 		respInternalError(resp)
@@ -65,6 +70,5 @@ func (a *Api) getDocuments(resp http.ResponseWriter, req *http.Request) {
 		respDocs[i] = responseFromDocument(&v)
 	}
 
-	body := map[string]interface{}{"documents": respDocs}
-	respOk(resp, body)
+	respOk(resp, respDocs, count)
 }

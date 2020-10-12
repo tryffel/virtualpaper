@@ -40,3 +40,8 @@ func (d *Database) Close() error {
 func (d *Database) Engine() *sqlx.DB {
 	return d.conn
 }
+
+type Paging struct {
+	Offset int
+	Limit  int
+}
