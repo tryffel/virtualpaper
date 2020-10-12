@@ -65,8 +65,14 @@ func (a *Api) authorizeUser(next http.Handler) http.Handler {
 		}
 
 		if userId != "" && err == nil {
+			numId, err := strconv.Atoi(userId)
+			if err != nil {
+				logrus.Errorf("user id is not numerical: %v", err)
+				respInternalError(w)
+				return
+			}
 			ctx := r.Context()
-			userCtx := context.WithValue(ctx, "user_id", userId)
+			userCtx := context.WithValue(ctx, "user_id", numId)
 			ctxReq := r.WithContext(userCtx)
 			next.ServeHTTP(w, ctxReq)
 			return

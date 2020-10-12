@@ -51,6 +51,7 @@ func NewApi() (*Api, error) {
 	}
 
 	api.privateRouter = api.baseRouter.PathPrefix("/api/v1").Subrouter()
+	api.privateRouter.Use(api.authorizeUser)
 	api.addRoutes()
 
 	var err error
@@ -65,6 +66,8 @@ func NewApi() (*Api, error) {
 func (a *Api) addRoutes() {
 	a.baseRouter.HandleFunc("/api/v1/auth/login", a.login).Methods(http.MethodPost)
 	a.baseRouter.HandleFunc("/api/v1/version", a.getVersion).Methods(http.MethodGet)
+
+	a.privateRouter.HandleFunc("/documents", a.getDocuments).Methods(http.MethodGet)
 }
 
 func (a *Api) Serve() error {

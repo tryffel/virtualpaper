@@ -10,7 +10,8 @@ import (
 type Database struct {
 	conn *sqlx.DB
 
-	UserStore *UserStore
+	UserStore     *UserStore
+	DocumentStore *DocumentStore
 }
 
 func NewDatabase() (*Database, error) {
@@ -28,6 +29,7 @@ func NewDatabase() (*Database, error) {
 	}
 
 	db.UserStore = &UserStore{db: db.conn}
+	db.DocumentStore = &DocumentStore{db: db.conn}
 	return db, nil
 }
 

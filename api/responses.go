@@ -21,7 +21,15 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 )
+
+// PrettyTime prints time as default time string when marshaled as json
+type PrettyTime time.Time
+
+func (p PrettyTime) MarshalJSON() ([]byte, error) {
+	return []byte("\"" + time.Time(p).String() + "\""), nil
+}
 
 func respJson(resp http.ResponseWriter, body interface{}, statusCode int) error {
 	var err error
