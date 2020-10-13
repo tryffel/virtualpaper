@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/viper"
 	"math/rand"
 	"os"
+	"path"
 	"runtime"
 )
 
@@ -90,13 +91,19 @@ func InitConfig() error {
 	C.Processing.InputDir, inputChanged = setVar(C.Processing.InputDir, "input")
 
 	defaultTmpDir := os.TempDir()
+	defaultTmpDir = path.Join(defaultTmpDir, "virtualpaper")
 	C.Processing.TmpDir, inputChanged = setVar(C.Processing.TmpDir, defaultTmpDir)
 	C.Processing.DataDir, dataChanged = setVar(C.Processing.DataDir, "data")
+
+	viper.Set("processing.tmp_dir", C.Processing.TmpDir)
+	viper.Set("processing.data_dir", C.Processing.DataDir)
+	viper.Set("processing.input_dir", C.Processing.InputDir)
 
 	if C.Processing.MaxWorkers == 0 {
 		C.Processing.MaxWorkers = runtime.NumCPU()
 	}
 
+	viper.Set("processing.max_workers", C.Processing.MaxWorkers)
 	changed = changed || inputChanged || tmpChanged || dataChanged
 	if changed {
 		err := viper.WriteConfig()
@@ -121,7 +128,7 @@ func RandomString(size int) string {
 
 // setVar returns currentVal and false if currentVal is not "", else return newVal and true
 func setVar(currentVal, newVal string) (string, bool) {
-	if currentVal == "" {
+	if currentVal != "" {
 		return currentVal, false
 	}
 	return newVal, true
