@@ -34,40 +34,50 @@ type Api struct {
 	baseRouter *mux.Router
 	// privateRouter routes only authenticated endpoints
 	privateRouter *mux.Router
-	db            *storage.Database
+
+	cors http.Handler
+	db   *storage.Database
 }
 
 // NewApi initializes new api instance. It connects to database and opens http port.
-func NewApi() (*Api, error) {
+func NewApi(database *storage.Database) (*Api, error) {
 	api := &Api{
 		baseRouter: mux.NewRouter(),
+		db:         database,
 	}
 
+	c := cors.AllowAll()
+	api.cors = c.Handler(api.baseRouter)
+
 	api.server = &http.Server{
-		Handler:      api.baseRouter,
+		Handler:      api.cors,
 		Addr:         fmt.Sprintf("%s:%d", config.C.Api.Host, config.C.Api.Port),
 		WriteTimeout: time.Second * 30,
 		ReadTimeout:  time.Second * 30,
 	}
 
 	api.privateRouter = api.baseRouter.PathPrefix("/api/v1").Subrouter()
-	api.privateRouter.Use(api.authorizeUser)
+
 	api.addRoutes()
 
-	var err error
-	api.db, err = storage.NewDatabase()
-
-	if err != nil {
-		return api, fmt.Errorf("initialize database: %v", err)
-	}
 	return api, nil
 }
 
 func (a *Api) addRoutes() {
+	//a.baseRouter.Use(a.corsHeader)
+	a.baseRouter.Use(LoggingMiddleware)
 	a.baseRouter.HandleFunc("/api/v1/auth/login", a.login).Methods(http.MethodPost)
 	a.baseRouter.HandleFunc("/api/v1/version", a.getVersion).Methods(http.MethodGet)
 
+	a.privateRouter.Use(a.authorizeUser)
 	a.privateRouter.HandleFunc("/documents", a.getDocuments).Methods(http.MethodGet)
+	a.privateRouter.HandleFunc("/documents/{id}/show", a.getDocument).Methods(http.MethodGet)
+	a.privateRouter.HandleFunc("/documents/{id}", a.getDocument).Methods(http.MethodGet)
+	a.privateRouter.HandleFunc("/documents/{id}/jobs", a.getDocumentLogs).Methods(http.MethodGet)
+
+	a.baseRouter.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./frontend/build/static/"))))
+	a.baseRouter.Handle("/", http.FileServer(http.Dir("./frontend/build/")))
+
 }
 
 func (a *Api) Serve() error {
@@ -85,6 +95,49 @@ func (a *Api) getVersion(resp http.ResponseWriter, req *http.Request) {
 		Version: config.Version,
 	}
 	respOk(resp, v)
+}
+
+type LoggingWriter struct {
+	http.ResponseWriter
+	status int
+	length int
+}
+
+func (l *LoggingWriter) WriteHeader(status int) {
+	l.length = 0
+	l.status = status
+	l.ResponseWriter.WriteHeader(status)
+}
+
+func (l *LoggingWriter) Write(b []byte) (int, error) {
+	l.length = len(b)
+	if l.status == 0 {
+		l.status = 200
+	}
+	return l.ResponseWriter.Write(b)
+}
+
+// LogginMiddlware Provide logging for requests
+func LoggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		logger := &LoggingWriter{
+			ResponseWriter: w,
+		}
+		next.ServeHTTP(logger, r)
+
+		duration := time.Since(start).String()
+		verb := r.Method
+		url := r.RequestURI
+
+		fields := make(map[string]interface{})
+		fields["verb"] = verb
+		fields["request"] = url
+		fields["duration"] = duration
+		fields["status"] = logger.status
+		fields["length"] = logger.length
+		logrus.WithFields(fields).Infof("http")
+	})
 }
 
 func init() {

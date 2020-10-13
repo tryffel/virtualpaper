@@ -12,6 +12,7 @@ type Database struct {
 
 	UserStore     *UserStore
 	DocumentStore *DocumentStore
+	JobStore      *JobStore
 }
 
 func NewDatabase() (*Database, error) {
@@ -30,6 +31,7 @@ func NewDatabase() (*Database, error) {
 
 	db.UserStore = &UserStore{db: db.conn}
 	db.DocumentStore = &DocumentStore{db: db.conn}
+	db.JobStore = &JobStore{db: db.conn}
 	return db, nil
 }
 

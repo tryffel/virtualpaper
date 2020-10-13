@@ -25,6 +25,8 @@ CREATE TABLE users (
     name TEXT UNIQUE,
     email TEXT,
     password TEXT,
+	active BOOLEAN DEFAULT true,
+	admin BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ
 );
@@ -35,6 +37,7 @@ CREATE TABLE documents (
     name TEXT,
     content TEXT,
     filename TEXT UNIQUE,
+	hash TEXT,
 
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ,
@@ -42,4 +45,18 @@ CREATE TABLE documents (
     CONSTRAINT fk_user FOREIGN KEY(user_id)
         REFERENCES users(id)
 );
+
+CREATE TABLE jobs (
+	id SERIAL PRIMARY KEY,
+	document_id INT,
+	status INT,
+	message TEXT,
+
+	started_at TIMESTAMPTZ DEFAULT now(),
+    stopped_at TIMESTAMPTZ,
+
+	CONSTRAINT fk_document FOREIGN KEY(document_id)
+        REFERENCES documents(id)
+);
+
 `

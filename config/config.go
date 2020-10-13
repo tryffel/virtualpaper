@@ -5,6 +5,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"math/rand"
+	"os"
+	"runtime"
 )
 
 // Application config that is loaded upon starting program
@@ -14,8 +16,7 @@ type Config struct {
 	Api         Api
 	Database    Database
 	Preferences Preferences
-
-	BackgroundTasks BackgroundTasks
+	Processing  Processing
 }
 
 type Api struct {
@@ -35,9 +36,11 @@ type Database struct {
 type Preferences struct {
 }
 
-type BackgroundTasks struct {
-	UserCheckedIn     bool
-	USerCheckedInTime string
+type Processing struct {
+	InputDir   string
+	TmpDir     string
+	DataDir    string
+	MaxWorkers int
 }
 
 // ConfigFromViper initializes Config.C, reads all config values from viper and stores them to Config.C.
@@ -57,10 +60,11 @@ func ConfigFromViper() error {
 			Password: viper.GetString("database.password"),
 			Database: viper.GetString("database.database"),
 		},
-		Preferences: Preferences{},
-		BackgroundTasks: BackgroundTasks{
-			UserCheckedIn:     viper.GetBool("backgroundtasks.user_checked_in"),
-			USerCheckedInTime: viper.GetString("backgroundtasks.user_checked_in_time"),
+		Processing: Processing{
+			InputDir:   viper.GetString("processing.input_dir"),
+			TmpDir:     viper.GetString("processing.tmp_dir"),
+			DataDir:    viper.GetString("processing.data_dir"),
+			MaxWorkers: viper.GetInt("processing.max_workers"),
 		},
 	}
 
@@ -81,6 +85,19 @@ func InitConfig() error {
 		changed = true
 	}
 
+	var inputChanged, tmpChanged, dataChanged bool
+
+	C.Processing.InputDir, inputChanged = setVar(C.Processing.InputDir, "input")
+
+	defaultTmpDir := os.TempDir()
+	C.Processing.TmpDir, inputChanged = setVar(C.Processing.TmpDir, defaultTmpDir)
+	C.Processing.DataDir, dataChanged = setVar(C.Processing.DataDir, "data")
+
+	if C.Processing.MaxWorkers == 0 {
+		C.Processing.MaxWorkers = runtime.NumCPU()
+	}
+
+	changed = changed || inputChanged || tmpChanged || dataChanged
 	if changed {
 		err := viper.WriteConfig()
 		if err != nil {
@@ -100,4 +117,12 @@ func RandomString(size int) string {
 		bytes[k] = dict[v%byte(len(dict))]
 	}
 	return string(bytes)
+}
+
+// setVar returns currentVal and false if currentVal is not "", else return newVal and true
+func setVar(currentVal, newVal string) (string, bool) {
+	if currentVal == "" {
+		return currentVal, false
+	}
+	return newVal, true
 }

@@ -49,3 +49,51 @@ WHERE user_id = $1
 	err = s.db.Get(&count, sql, userId)
 	return dest, count, err
 }
+
+func (s *DocumentStore) GetDocument(userId int, id int) (*models.Document, error) {
+	sql := `
+SELECT id, name, filename, content, created_at, updated_at, hash
+FROM documents
+WHERE user_id = $1 
+AND id = $2;
+`
+
+	dest := &models.Document{}
+	err := s.db.Get(dest, sql, userId, id)
+	return dest, err
+}
+
+// UserOwnsDocumet returns true if user has ownership for document.
+func (s *DocumentStore) UserOwnsDocument(documentId, userId int) (bool, error) {
+
+	sql := `
+select case when exists
+    (
+        select id
+        from documents
+        where id = $1
+        and user_id = $2
+    )
+    then true
+    else false
+end;
+`
+
+	var ownership bool
+
+	err := s.db.Get(&ownership, sql, documentId, userId)
+	return ownership, err
+
+}
+
+func (s *DocumentStore) GetByHash(hash string) (*models.Document, error) {
+
+	sql := `
+	SELECT id, name, filename, content, created_at, updated_at, hash
+	FROM documents
+	WHERE hash = $1;
+`
+	object := &models.Document{}
+	err := s.db.Get(object, sql, hash)
+	return object, getDatabaseError(err)
+}

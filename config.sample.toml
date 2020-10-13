@@ -11,3 +11,8 @@ username = "virtualpaper"
 password = "very-secret-password"
 database = "virtualpaper"
 
+[processing]
+input_dir = "input"
+tmp_dir = "/tmp"
+output_dir = "media"
+max_workers = 4

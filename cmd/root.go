@@ -34,6 +34,9 @@ func init() {
 }
 
 func initConfig() {
+
+	logrus.SetLevel(logrus.DebugLevel)
+
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
 	} else {

@@ -25,4 +25,6 @@ type Document struct {
 	Name     string `db:"name"`
 	Content  string `db:"content"`
 	Filename string `db:"filename"`
+	Preview  string `db:"preview"`
+	Hash     string `db:"hash"`
 }
