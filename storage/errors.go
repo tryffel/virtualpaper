@@ -53,5 +53,5 @@ func getDatabaseError(e error) error {
 		return err
 	}
 
-	return fmt.Errorf("%v: %v", ErrInternalError, err)
+	return fmt.Errorf("%v: %v", ErrInternalError, e)
 }
