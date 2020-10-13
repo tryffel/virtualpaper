@@ -20,8 +20,12 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
+	"github.com/sirupsen/logrus"
 	"net/http"
+	"strconv"
 	"time"
+	"tryffel.net/go/virtualpaper/storage"
 )
 
 // PrettyTime prints time as default time string when marshaled as json
@@ -50,6 +54,12 @@ func respOk(resp http.ResponseWriter, body interface{}) error {
 	return respJson(resp, body, http.StatusOK)
 }
 
+func respResourceList(resp http.ResponseWriter, body interface{}, totalCount int) error {
+	resp.Header().Set("Access-Control-Expose-Headers", "content-range")
+	resp.Header().Set("Content-Range", strconv.Itoa(totalCount))
+	return respJson(resp, body, http.StatusOK)
+}
+
 func respBadRequest(resp http.ResponseWriter, reason string, body interface{}) error {
 	if reason != "" && body == nil {
 		body = map[string]string{
@@ -61,4 +71,34 @@ func respBadRequest(resp http.ResponseWriter, reason string, body interface{}) e
 
 func respInternalError(resp http.ResponseWriter) error {
 	return respJson(resp, nil, http.StatusInternalServerError)
+}
+
+func respError(resp http.ResponseWriter, err error) error {
+	var statuscode int
+	var reason string
+
+	if errors.Is(err, storage.ErrAlreadyExists) {
+		statuscode = http.StatusNotModified
+		reason = err.Error()
+	} else if errors.Is(err, storage.ErrRecordNotFound) {
+		statuscode = http.StatusNotFound
+		reason = err.Error()
+	} else if errors.Is(err, storage.ErrInternalError) {
+		statuscode = http.StatusInternalServerError
+		reason = "internal error"
+		logrus.Errorf("internal db error: %v", err)
+	} else if errors.Is(err, storage.ErrForbidden) {
+		statuscode = http.StatusForbidden
+		reason = err.Error()
+		logrus.Errorf("internal error: %v", err)
+	} else {
+		statuscode = http.StatusInternalServerError
+		reason = "internal error"
+		logrus.Errorf("internal error: %v", err)
+	}
+
+	body := map[string]string{
+		"Error": reason,
+	}
+	return respJson(resp, body, statuscode)
 }
