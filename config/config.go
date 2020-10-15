@@ -123,6 +123,11 @@ func InitConfig() error {
 		logrus.Errorf("create data directory: %v", err)
 	}
 
+	err = os.MkdirAll(C.Processing.TmpDir, os.ModePerm)
+	if err != nil {
+		logrus.Errorf("create tmp directory: %v", err)
+	}
+
 	err = os.Mkdir(C.Processing.PreviewsDir, os.ModePerm)
 	if err != nil {
 		logrus.Errorf("create previews directory: %v", err)

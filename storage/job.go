@@ -59,7 +59,9 @@ INSERT INTO jobs (document_id, status, message, started_at, stopped_at)
 VALUES ($1, $2, $3, $4, $5) RETURNING id;
 `
 
-	res, err := s.db.Query(sql, documentId, job.Status, job.Message, job.StartedAt, job.StoppedAt)
+	val, _ := job.Status.Value()
+
+	res, err := s.db.Query(sql, documentId, val, job.Message, job.StartedAt, job.StoppedAt)
 	if err != nil {
 		return getDatabaseError(err)
 	}
@@ -75,4 +77,17 @@ VALUES ($1, $2, $3, $4, $5) RETURNING id;
 	}
 
 	return nil
+}
+
+func (s *JobStore) Update(job *models.Job) error {
+
+	sql := `
+UPDATE jobs
+SET document_id=$2, status=$3, message=$4, started_at=$5, stopped_at=$6
+WHERE id = $1;
+`
+
+	val, _ := job.Status.Value()
+	_, err := s.db.Exec(sql, job.Id, job.DocumentId, val, job.Message, job.StartedAt, job.StoppedAt)
+	return getDatabaseError(err)
 }

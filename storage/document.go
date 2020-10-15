@@ -104,6 +104,9 @@ INSERT INTO documents (user_id, name, content, filename, hash)
 	VALUES ($1, $2, $3, $4, $5) RETURNING id;`
 
 	res, err := s.db.Query(sql, doc.UserId, doc.Name, doc.Content, doc.Filename, doc.Hash)
+	if err != nil {
+		return getDatabaseError(err)
+	}
 	defer res.Close()
 
 	if res.Next() {
@@ -116,5 +119,17 @@ INSERT INTO documents (user_id, name, content, filename, hash)
 		}
 	}
 
+	return getDatabaseError(err)
+}
+
+// SetDocumentContent sets content for given document id
+func (s *DocumentStore) SetDocumentContent(id int, content string) error {
+
+	sql := `
+UPDATE documents SET content=$2
+WHERE id=$1;
+`
+
+	_, err := s.db.Exec(sql, id, content)
 	return getDatabaseError(err)
 }

@@ -3,10 +3,12 @@ package process
 import (
 	"errors"
 	"fmt"
+	"github.com/otiai10/gosseract"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/gographics/imagick.v3/imagick"
 	"os"
 	"path"
+	"strings"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
@@ -82,6 +84,11 @@ func (fp *fileProcessor) processFile() {
 	if err != nil {
 		logrus.Error("generate thumbnail: %v", err)
 		return
+	}
+
+	err = fp.parseContent()
+	if err != nil {
+		logrus.Errorf("Parse document content: %v", err)
 	}
 
 }
@@ -164,7 +171,7 @@ func (fp *fileProcessor) generateThumbnail() error {
 		Message:    "Generate thumbnail (500x500)",
 		Status:     models.JobRunning,
 		StartedAt:  time.Now(),
-		StoppedAt:  time.Time{},
+		StoppedAt:  time.Now(),
 	}
 	defer fp.persistJob(job)
 
@@ -185,9 +192,84 @@ func (fp *fileProcessor) generateThumbnail() error {
 	return nil
 }
 
+func (fp *fileProcessor) parseContent() error {
+	// if pdf, generate image preview and pass it to tesseract
+	var imageFile string
+	var err error
+
+	if strings.HasSuffix(strings.ToLower(fp.file), "pdf") {
+		job := &models.Job{
+			DocumentId: fp.document.Id,
+			Message:    "Render image from pdf content",
+			Status:     models.JobAwaiting,
+			StartedAt:  time.Now(),
+			StoppedAt:  time.Now(),
+		}
+
+		err := fp.db.JobStore.Create(fp.document.Id, job)
+		if err != nil {
+			logrus.Warningf("create job record: %v", err)
+		}
+
+		imagick.Initialize()
+		defer imagick.Terminate()
+
+		imageFile = path.Join(config.C.Processing.TmpDir, fp.document.Hash+".png")
+		_, err = imagick.ConvertImageCommand([]string{
+			"convert", "-density", "300", fp.file, "-depth", "8", imageFile,
+		})
+		if err != nil {
+			job.Message += "; " + err.Error()
+			job.Status = models.JobFailure
+			fp.persistJob(job)
+			return err
+		}
+		fp.persistJob(job)
+	}
+
+	client := gosseract.NewClient()
+	defer client.Close()
+
+	job := &models.Job{
+		DocumentId: fp.document.Id,
+		Message:    "Parse content with tesseract",
+		Status:     models.JobAwaiting,
+		StartedAt:  time.Now(),
+		StoppedAt:  time.Now(),
+	}
+
+	err = fp.db.JobStore.Create(fp.document.Id, job)
+	if err != nil {
+		logrus.Warningf("create job record: %v", err)
+	}
+	defer fp.persistJob(job)
+
+	err = client.SetImage(imageFile)
+	if err != nil {
+		return fmt.Errorf("set ocr image source: %v", err)
+	}
+
+	text, err := client.Text()
+	if err != nil {
+		job.Message += "; " + err.Error()
+		job.Status = models.JobFailure
+		return fmt.Errorf("parse document text: %v", err)
+	} else {
+		fp.document.Content = text
+
+		err = fp.db.DocumentStore.SetDocumentContent(fp.document.Id, text)
+		if err != nil {
+			job.Message += "; " + "save document content: " + err.Error()
+			job.Status = models.JobFailure
+			return fmt.Errorf("save document content: %v", err)
+		}
+	}
+	return nil
+}
+
 func (fp *fileProcessor) persistJob(job *models.Job) {
 	job.StoppedAt = time.Now()
-	err := fp.db.JobStore.Create(job.DocumentId, job)
+	err := fp.db.JobStore.Update(job)
 	if err != nil {
 		logrus.Errorf("save job to database: %v", err)
 	}
