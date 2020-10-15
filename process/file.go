@@ -80,17 +80,18 @@ func (fp *fileProcessor) processFile() {
 		return
 	}
 
+	logrus.Info("generate thumbnail")
 	err = fp.generateThumbnail()
 	if err != nil {
 		logrus.Error("generate thumbnail: %v", err)
 		return
 	}
 
+	logrus.Info("parse content")
 	err = fp.parseContent()
 	if err != nil {
 		logrus.Errorf("Parse document content: %v", err)
 	}
-
 }
 
 func (fp *fileProcessor) cleanup() {
@@ -223,6 +224,9 @@ func (fp *fileProcessor) parseContent() error {
 			job.Status = models.JobFailure
 			fp.persistJob(job)
 			return err
+		} else {
+			job.Status = models.JobFinished
+
 		}
 		fp.persistJob(job)
 	}
@@ -262,6 +266,8 @@ func (fp *fileProcessor) parseContent() error {
 			job.Message += "; " + "save document content: " + err.Error()
 			job.Status = models.JobFailure
 			return fmt.Errorf("save document content: %v", err)
+		} else {
+			job.Status = models.JobFinished
 		}
 	}
 	return nil
