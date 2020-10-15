@@ -97,3 +97,24 @@ func (s *DocumentStore) GetByHash(hash string) (*models.Document, error) {
 	err := s.db.Get(object, sql, hash)
 	return object, getDatabaseError(err)
 }
+
+func (s *DocumentStore) Create(doc *models.Document) error {
+	sql := `
+INSERT INTO documents (user_id, name, content, filename, hash)
+	VALUES ($1, $2, $3, $4, $5) RETURNING id;`
+
+	res, err := s.db.Query(sql, doc.UserId, doc.Name, doc.Content, doc.Filename, doc.Hash)
+	defer res.Close()
+
+	if res.Next() {
+		var id int
+		err = res.Scan(&id)
+		if err != nil {
+			return getDatabaseError(err)
+		} else {
+			doc.Id = id
+		}
+	}
+
+	return getDatabaseError(err)
+}

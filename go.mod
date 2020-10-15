@@ -15,4 +15,5 @@ require (
 	github.com/spf13/viper v1.7.1
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
 	golang.org/x/sys v0.0.0-20201013081832-0aaa2718063a // indirect
+	gopkg.in/gographics/imagick.v3 v3.3.0
 )

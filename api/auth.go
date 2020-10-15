@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
@@ -38,6 +39,20 @@ func getUserId(req *http.Request) (int, bool) {
 	userId := ctx.Value("user_id")
 	id, ok := userId.(int)
 	return id, ok
+}
+
+func getParamId(req *http.Request) (int, error) {
+	idStr := mux.Vars(req)["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return -1, fmt.Errorf("id not integer")
+	}
+
+	if id < 0 {
+		return -1, fmt.Errorf("id must be >0")
+	}
+
+	return id, err
 }
 
 func (a *Api) authorizeUser(next http.Handler) http.Handler {

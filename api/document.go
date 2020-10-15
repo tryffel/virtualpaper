@@ -70,5 +70,59 @@ func (a *Api) getDocuments(resp http.ResponseWriter, req *http.Request) {
 		respDocs[i] = responseFromDocument(&v)
 	}
 
-	respOk(resp, respDocs, count)
+	respResourceList(resp, respDocs, count)
+}
+
+func (a *Api) getDocument(resp http.ResponseWriter, req *http.Request) {
+	user, ok := getUserId(req)
+	if !ok {
+		logrus.Errorf("no user in context")
+		respInternalError(resp)
+		return
+	}
+	idStr := mux.Vars(req)["id"]
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		respBadRequest(resp, "id not integer", nil)
+		return
+	}
+
+	doc, err := a.db.DocumentStore.GetDocument(user, id)
+
+	respOk(resp, responseFromDocument(doc))
+}
+
+func (a *Api) getDocumentLogs(resp http.ResponseWriter, req *http.Request) {
+	user, ok := getUserId(req)
+	if !ok {
+		logrus.Errorf("no user in context")
+		respInternalError(resp)
+		return
+	}
+	id, err := getParamId(req)
+	if err != nil {
+		respBadRequest(resp, err.Error(), nil)
+		return
+	}
+
+	owns, err := a.db.DocumentStore.UserOwnsDocument(id, user)
+	if err != nil {
+		logrus.Errorf("Get document ownserhip: %v", err)
+		respError(resp, err)
+		return
+	}
+
+	if !owns {
+		respUnauthorized(resp)
+		return
+	}
+
+	job, err := a.db.JobStore.GetByDocument(id)
+	if err != nil {
+		logrus.Errorf("get document jobs: %v", err)
+		respError(resp, err)
+		return
+	}
+	respOk(resp, job)
 }

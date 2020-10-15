@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/asaskevich/govalidator"
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
@@ -74,6 +75,7 @@ func (a *Api) addRoutes() {
 	a.privateRouter.HandleFunc("/documents/{id}/show", a.getDocument).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/documents/{id}", a.getDocument).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/documents/{id}/jobs", a.getDocumentLogs).Methods(http.MethodGet)
+	a.privateRouter.HandleFunc("/jobs", a.GetJob).Methods(http.MethodGet)
 
 	a.baseRouter.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./frontend/build/static/"))))
 	a.baseRouter.Handle("/", http.FileServer(http.Dir("./frontend/build/")))

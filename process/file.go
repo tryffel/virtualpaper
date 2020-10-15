@@ -1,34 +1,25 @@
 package process
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"errors"
+	"fmt"
 	"github.com/sirupsen/logrus"
-	"io"
+	"gopkg.in/gographics/imagick.v3/imagick"
 	"os"
+	"path"
 	"time"
+	"tryffel.net/go/virtualpaper/config"
+	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
-// get md5 hash for file
-func getHash(file *os.File) (string, error) {
-	hash := md5.New()
-
-	_, err := io.Copy(hash, file)
-	if err != nil {
-		return "", err
-	}
-
-	b := hash.Sum(nil)[:16]
-	return hex.EncodeToString(b), nil
-}
-
 type fileProcessor struct {
 	*Task
-	input   chan fileOp
-	file    string
-	rawFile *os.File
+	document *models.Document
+	input    chan fileOp
+	file     string
+	rawFile  *os.File
+	tempFile *os.File
 }
 
 func newFileProcessor(id int, db *storage.Database) *fileProcessor {
@@ -61,7 +52,7 @@ func (fp *fileProcessor) processFile() {
 	fp.lock.Unlock()
 	var err error
 
-	fp.rawFile, err = os.Open(fp.file)
+	fp.rawFile, err = os.OpenFile(fp.file, os.O_RDONLY, os.ModePerm)
 
 	defer fp.cleanup()
 
@@ -81,11 +72,36 @@ func (fp *fileProcessor) processFile() {
 		return
 	}
 
+	err = fp.createNewDocumentRecord()
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	err = fp.generateThumbnail()
+	if err != nil {
+		logrus.Error("generate thumbnail: %v", err)
+		return
+	}
+
 }
 
 func (fp *fileProcessor) cleanup() {
 	logrus.Infof("Stop processing file %s", fp.file)
-	fp.rawFile.Close()
+	fp.document = nil
+	if fp.rawFile != nil {
+		fp.rawFile.Close()
+		fp.rawFile = nil
+	}
+	if fp.tempFile != nil {
+		fp.tempFile.Close()
+
+		err := os.Remove(fp.tempFile.Name())
+		if err != nil {
+			logrus.Errorf("remove temp file %s: %v", fp.tempFile.Name(), err)
+		}
+		fp.tempFile = nil
+	}
 	fp.file = ""
 	fp.lock.Lock()
 	fp.idle = true
@@ -110,4 +126,69 @@ func (fp *fileProcessor) isDuplicate() (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func (fp *fileProcessor) createNewDocumentRecord() error {
+	_, fileName := path.Split(fp.file)
+
+	doc := &models.Document{
+		Id:       0,
+		UserId:   5,
+		Name:     fileName,
+		Content:  "",
+		Filename: fileName,
+		Preview:  "",
+	}
+
+	var err error
+	doc.Hash, err = getHash(fp.rawFile)
+	if err != nil {
+		return fmt.Errorf("get hash: %v", err)
+	}
+
+	err = fp.db.DocumentStore.Create(doc)
+	if err != nil {
+		return fmt.Errorf("store document: %v", err)
+	}
+
+	fp.document = doc
+	return nil
+}
+
+func (fp *fileProcessor) generateThumbnail() error {
+	imagick.Initialize()
+	defer imagick.Terminate()
+
+	job := &models.Job{
+		DocumentId: fp.document.Id,
+		Message:    "Generate thumbnail (500x500)",
+		Status:     models.JobRunning,
+		StartedAt:  time.Now(),
+		StoppedAt:  time.Time{},
+	}
+	defer fp.persistJob(job)
+
+	output := path.Join(config.C.Processing.PreviewsDir, fp.document.Hash+".png")
+
+	_, err := imagick.ConvertImageCommand([]string{
+		"convert", "-thumbnail", "x500", "-background", "white", "-alpha", "remove", fp.file + "[0]", output,
+	})
+
+	if err != nil {
+		job.Status = models.JobFailure
+		job.Message += "; " + err.Error()
+		return fmt.Errorf("call imagick: %v", err)
+	}
+
+	fp.document.Preview = fp.document.Hash + ".png"
+	job.Status = models.JobFinished
+	return nil
+}
+
+func (fp *fileProcessor) persistJob(job *models.Job) {
+	job.StoppedAt = time.Now()
+	err := fp.db.JobStore.Create(job.DocumentId, job)
+	if err != nil {
+		logrus.Errorf("save job to database: %v", err)
+	}
 }

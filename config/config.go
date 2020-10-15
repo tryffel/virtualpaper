@@ -42,6 +42,9 @@ type Processing struct {
 	TmpDir     string
 	DataDir    string
 	MaxWorkers int
+
+	PreviewsDir  string
+	DocumentsDir string
 }
 
 // ConfigFromViper initializes Config.C, reads all config values from viper and stores them to Config.C.
@@ -95,12 +98,39 @@ func InitConfig() error {
 	C.Processing.TmpDir, inputChanged = setVar(C.Processing.TmpDir, defaultTmpDir)
 	C.Processing.DataDir, dataChanged = setVar(C.Processing.DataDir, "data")
 
+	if !path.IsAbs(C.Processing.DataDir) {
+		curDir, err := os.Getwd()
+		if err != nil {
+			logrus.Error("cannot determine current directory. Please set processing.output_dir as absolute directory")
+		} else {
+			C.Processing.DataDir = path.Join(curDir, C.Processing.DataDir)
+		}
+	}
+
+	C.Processing.DocumentsDir = path.Join(C.Processing.DataDir, "documents")
+	C.Processing.PreviewsDir = path.Join(C.Processing.DataDir, "previews")
+
 	viper.Set("processing.tmp_dir", C.Processing.TmpDir)
 	viper.Set("processing.data_dir", C.Processing.DataDir)
 	viper.Set("processing.input_dir", C.Processing.InputDir)
 
 	if C.Processing.MaxWorkers == 0 {
 		C.Processing.MaxWorkers = runtime.NumCPU()
+	}
+
+	err := os.MkdirAll(C.Processing.DataDir, os.ModePerm)
+	if err != nil {
+		logrus.Errorf("create data directory: %v", err)
+	}
+
+	err = os.Mkdir(C.Processing.PreviewsDir, os.ModePerm)
+	if err != nil {
+		logrus.Errorf("create previews directory: %v", err)
+	}
+
+	err = os.Mkdir(C.Processing.DocumentsDir, 660)
+	if err != nil {
+		logrus.Errorf("create documents directory: %v", err)
 	}
 
 	viper.Set("processing.max_workers", C.Processing.MaxWorkers)

@@ -17,20 +17,22 @@
  */
 
 import * as React from "react";
-import { Admin, Resource } from 'react-admin';
-
-import { dataProvider } from "./dataProvider";
-import authProvider from './authProvider';
-import { DocumentList, DocumentShow, DocumentEdit } from './document';
-import { JobList} from "./job";
+import {Datagrid, List, TextField, ReferenceField } from "react-admin";
 
 
-const App = () => (
-    <Admin dataProvider={dataProvider} authProvider={authProvider}>
-        <Resource name="documents" list={DocumentList} show={DocumentShow} edit={DocumentEdit}/>
-        <Resource name="jobs" list={JobList} />
-    </Admin>
-    );
+export const JobList = (props) => (
+    <List {...props}>
+        <Datagrid rowClick="show" >
+            <TextField source="id" />
+            <ReferenceField label="Document" source="document_id" reference="documents" >
+                <TextField source="Name" />
+            </ReferenceField>
+            <TextField source="message" />
+            <TextField source="status" />
+            <TextField source="started_at" />
+            <TextField source="duration" />
+        </Datagrid>
+    </List>
+);
 
-export default App;
 
