@@ -98,7 +98,7 @@ func InitConfig() error {
 		changed = true
 	}
 
-	var inputChanged, tmpChanged, dataChanged, langChanged, indexChanged bool
+	var inputChanged, tmpChanged, dataChanged, indexChanged bool
 
 	C.Processing.InputDir, inputChanged = setVar(C.Processing.InputDir, "input")
 
