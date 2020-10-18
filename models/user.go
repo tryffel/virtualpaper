@@ -25,10 +25,13 @@ import (
 )
 
 type User struct {
-	*Timestamp
+	Timestamp
 	Id       int    `db:"id"`
 	Name     string `db:"name"`
 	Password string `db:"password"`
+	Email    string `db:"email"`
+	IsAdmin  bool   `db:"admin"`
+	IsActive bool   `db:"active"`
 }
 
 func (u *User) SetPassword(newPassw string) error {

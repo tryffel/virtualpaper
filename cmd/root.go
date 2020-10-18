@@ -31,6 +31,7 @@ func init() {
 	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(migrateCmd)
 	rootCmd.AddCommand(manageCmd)
+	rootCmd.AddCommand(indexCmd)
 }
 
 func initConfig() {

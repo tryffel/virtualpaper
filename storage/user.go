@@ -69,3 +69,15 @@ VALUES ($1, $2, $3, $4);
 	}
 	return nil
 }
+
+func (u *UserStore) GetUsers() (*[]models.User, error) {
+	sql := `
+	SELECT *
+	FROM users
+	LIMIT 1000;
+	`
+
+	users := &[]models.User{}
+	err := u.db.Select(users, sql)
+	return users, getDatabaseError(err)
+}

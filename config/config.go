@@ -16,8 +16,8 @@ var C *Config
 type Config struct {
 	Api         Api
 	Database    Database
-	Preferences Preferences
 	Processing  Processing
+	Meilisearch Meilisearch
 }
 
 type Api struct {
@@ -34,17 +34,21 @@ type Database struct {
 	Database string
 }
 
-type Preferences struct {
-}
-
 type Processing struct {
-	InputDir   string
-	TmpDir     string
-	DataDir    string
-	MaxWorkers int
+	InputDir        string
+	TmpDir          string
+	DataDir         string
+	MaxWorkers      int
+	DefaultLanguage string
 
 	PreviewsDir  string
 	DocumentsDir string
+}
+
+type Meilisearch struct {
+	Url    string
+	Index  string
+	ApiKey string
 }
 
 // ConfigFromViper initializes Config.C, reads all config values from viper and stores them to Config.C.
@@ -70,6 +74,11 @@ func ConfigFromViper() error {
 			DataDir:    viper.GetString("processing.data_dir"),
 			MaxWorkers: viper.GetInt("processing.max_workers"),
 		},
+		Meilisearch: Meilisearch{
+			Url:    viper.GetString("meilisearch.url"),
+			Index:  viper.GetString("meilisearch.index"),
+			ApiKey: viper.GetString("meilisearch.apikey"),
+		},
 	}
 
 	var err error
@@ -89,7 +98,7 @@ func InitConfig() error {
 		changed = true
 	}
 
-	var inputChanged, tmpChanged, dataChanged bool
+	var inputChanged, tmpChanged, dataChanged, langChanged, indexChanged bool
 
 	C.Processing.InputDir, inputChanged = setVar(C.Processing.InputDir, "input")
 
@@ -97,6 +106,7 @@ func InitConfig() error {
 	defaultTmpDir = path.Join(defaultTmpDir, "virtualpaper")
 	C.Processing.TmpDir, inputChanged = setVar(C.Processing.TmpDir, defaultTmpDir)
 	C.Processing.DataDir, dataChanged = setVar(C.Processing.DataDir, "data")
+	C.Meilisearch.Index, indexChanged = setVar(C.Meilisearch.Index, "virtualpaper")
 
 	if !path.IsAbs(C.Processing.DataDir) {
 		curDir, err := os.Getwd()
@@ -139,7 +149,7 @@ func InitConfig() error {
 	}
 
 	viper.Set("processing.max_workers", C.Processing.MaxWorkers)
-	changed = changed || inputChanged || tmpChanged || dataChanged
+	changed = changed || inputChanged || tmpChanged || dataChanged || indexChanged
 	if changed {
 		err := viper.WriteConfig()
 		if err != nil {

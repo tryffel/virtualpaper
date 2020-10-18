@@ -20,6 +20,7 @@ package storage
 
 import (
 	"github.com/jmoiron/sqlx"
+	"time"
 	"tryffel.net/go/virtualpaper/models"
 )
 
@@ -30,7 +31,7 @@ type DocumentStore struct {
 // GetDocuments returns user's documents according to paging. In addition, return total count of documents available.
 func (s *DocumentStore) GetDocuments(userId int, paging Paging) (*[]models.Document, int, error) {
 	sql := `
-SELECT id, name, filename, created_at, updated_at 
+SELECT *
 FROM documents
 WHERE user_id = $1
 OFFSET $2
@@ -52,7 +53,7 @@ WHERE user_id = $1
 
 func (s *DocumentStore) GetDocument(userId int, id int) (*models.Document, error) {
 	sql := `
-SELECT id, name, filename, content, created_at, updated_at, hash
+SELECT *
 FROM documents
 WHERE user_id = $1 
 AND id = $2;
@@ -132,4 +133,43 @@ WHERE id=$1;
 
 	_, err := s.db.Exec(sql, id, content)
 	return getDatabaseError(err)
+}
+
+// GetNeedsIndexing returns documents that need indexing ( awaits_indexing=true). If userId != 0, return
+// only documents for that user, else return any documents.
+func (s *DocumentStore) GetNeedsIndexing(userId int, paging Paging) (*[]models.Document, error) {
+
+	sql := `
+SELECT * 
+FROM documents
+WHERE awaits_indexing=True
+`
+
+	args := []interface{}{paging.Offset, paging.Limit}
+	if userId != 0 {
+		sql += " AND user_id = $3 "
+		args = append(args, userId)
+	}
+
+	sql += "OFFSET $1 LIMIT $2;"
+
+	docs := &[]models.Document{}
+
+	err := s.db.Select(docs, sql, args...)
+	return docs, getDatabaseError(err)
+}
+
+// BulkUpdateIndexingStatus sets indexing status for all documents that are defined in ids-array.
+func (s *DocumentStore) BulkUpdateIndexingStatus(indexed bool, at time.Time, ids []int) error {
+
+	sql := `
+UPDATE documents SET
+awaits_indexing = $1,
+indexed_at = $2,
+WHERE id IN ($3);
+`
+
+	_, err := s.db.Exec(sql, !indexed, at, ids)
+	return getDatabaseError(err)
+
 }

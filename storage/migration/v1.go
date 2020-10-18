@@ -37,7 +37,10 @@ CREATE TABLE documents (
     name TEXT,
     content TEXT,
     filename TEXT UNIQUE,
-	hash TEXT,
+	hash TEXT NOT NULL DEFAULT '',
+
+	indexed_at TIMESTAMPTZ NOT NULL DEFAULT TO_TIMESTAMP(0),
+	awaits_indexing BOOL NOT NULL DEFAULT TRUE,
 
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ,

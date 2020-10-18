@@ -9,6 +9,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/lib/pq v1.8.0
+	github.com/meilisearch/meilisearch-go v0.12.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/otiai10/gosseract v2.2.1+incompatible
 	github.com/sirupsen/logrus v1.7.0

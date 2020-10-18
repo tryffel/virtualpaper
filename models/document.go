@@ -18,13 +18,17 @@
 
 package models
 
+import "time"
+
 type Document struct {
 	*Timestamp
-	Id       int    `db:"id"`
-	UserId   int    `db:"user_id"`
-	Name     string `db:"name"`
-	Content  string `db:"content"`
-	Filename string `db:"filename"`
-	Preview  string `db:"preview"`
-	Hash     string `db:"hash"`
+	Id             int       `db:"id"`
+	UserId         int       `db:"user_id"`
+	Name           string    `db:"name"`
+	Content        string    `db:"content"`
+	Filename       string    `db:"filename"`
+	Preview        string    `db:"preview"`
+	Hash           string    `db:"hash"`
+	IndexedAt      time.Time `db:"indexed_at"`
+	AwaitsIndexing bool      `db:"awaits_indexing"`
 }
