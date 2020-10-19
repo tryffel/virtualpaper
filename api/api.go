@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/asaskevich/govalidator"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
@@ -74,7 +75,12 @@ func (a *Api) addRoutes() {
 	a.privateRouter.HandleFunc("/documents", a.getDocuments).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/documents/{id}/show", a.getDocument).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/documents/{id}", a.getDocument).Methods(http.MethodGet)
+	a.privateRouter.HandleFunc("/documents/{id}/preview", a.getDocumentPreview).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/documents/{id}/jobs", a.getDocumentLogs).Methods(http.MethodGet)
+	a.privateRouter.HandleFunc("/documents", a.uploadFile).Methods(http.MethodPost)
+	a.privateRouter.HandleFunc("/documents/create", a.uploadFile).Methods(http.MethodPost)
+	a.privateRouter.HandleFunc("/documents/create", a.getEmptyDocument).Methods(http.MethodGet)
+
 	a.privateRouter.HandleFunc("/jobs", a.GetJob).Methods(http.MethodGet)
 
 	a.baseRouter.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./frontend/build/static/"))))
@@ -97,6 +103,10 @@ func (a *Api) getVersion(resp http.ResponseWriter, req *http.Request) {
 		Version: config.Version,
 	}
 	respOk(resp, v)
+}
+
+func (a *Api) getEmptyResp(resp http.ResponseWriter, req *http.Request) {
+	respOk(resp, nil)
 }
 
 type LoggingWriter struct {

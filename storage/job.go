@@ -1,7 +1,11 @@
 package storage
 
 import (
+	"errors"
+	"fmt"
 	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
+	"time"
 	"tryffel.net/go/virtualpaper/models"
 )
 
@@ -89,5 +93,107 @@ WHERE id = $1;
 
 	val, _ := job.Status.Value()
 	_, err := s.db.Exec(sql, job.Id, job.DocumentId, val, job.Message, job.StartedAt, job.StoppedAt)
+	return getDatabaseError(err)
+}
+
+// GetPendingProcessing returns max 100 processQueue items ordered by created_at.
+// Also returns total number of pending process_queues.
+func (s *JobStore) GetPendingProcessing() (*[]models.ProcessItem, int, error) {
+
+	sql := `
+select d.document_id as document_id, min(d.step) as step, min(d.created_at) as created_at
+from (
+         select document_id,
+                step,
+                created_at
+         from process_queue
+         where running = false
+         order by created_at asc
+		 %s
+     ) as d
+group by d.document_id
+order by created_at
+limit 20;
+`
+
+	dto := &[]models.ProcessItem{}
+
+	err := s.db.Select(dto, sql)
+	if err != nil {
+		return dto, 0, getDatabaseError(err)
+	}
+
+	sql = `
+SELECT COUNT(DISTINCT(document_id, step)) AS count
+FROM process_queue;
+`
+	var n int
+
+	row := s.db.QueryRow(sql)
+	err = row.Scan(&n)
+	return dto, n, getDatabaseError(err)
+}
+
+// StartProcessItem attempts to mark processItem as running. If successful, create corresponding Job and
+// return it.
+func (s *JobStore) StartProcessItem(item *models.ProcessItem, msg string) (*models.Job, error) {
+	sql := `
+UPDATE process_queue
+SET running=TRUE 
+WHERE document_id = $1
+AND step = $2
+AND running=FALSE;
+`
+	res, err := s.db.Exec(sql, item.DocumentId, item.Step)
+	if err != nil {
+		return nil, getDatabaseError(err)
+	}
+
+	affected, err := res.RowsAffected()
+	if err != nil {
+		logrus.Errorf("get rows affected: %v", err)
+	} else if affected == 0 {
+		return nil, errors.New("process item does not exist")
+	}
+
+	job := &models.Job{
+		Id:         0,
+		DocumentId: item.DocumentId,
+		Message:    msg,
+		Status:     models.JobRunning,
+		Step:       item.Step,
+		StartedAt:  time.Now(),
+		StoppedAt:  time.Time{},
+	}
+
+	err = s.Create(item.DocumentId, job)
+	return job, getDatabaseError(err)
+}
+
+// AddDocument adds default processing steps for document. Document must be existing.
+func (s *JobStore) AddDocument(doc *models.Document) error {
+	sql := `
+INSERT INTO process_queue (document_id, step)
+VALUES 
+`
+
+	var err error
+	args := make([]interface{}, len(models.ProcessStepsAll)*2)
+	for i := 0; i < len(models.ProcessStepsAll); i++ {
+		if i > 0 {
+			sql += ", "
+		}
+		args[i*2] = doc.Id
+		args[i*2+1], err = models.ProcessStepsAll[i].Value()
+		if err != nil {
+			return fmt.Errorf("insert processStep %s: %v", models.ProcessStepsAll[i], err)
+		}
+
+		sql += fmt.Sprintf(" ($%d, $%d)", i*2+1, i*2+2)
+	}
+
+	sql += ";"
+
+	_, err = s.db.Exec(sql, args...)
 	return getDatabaseError(err)
 }

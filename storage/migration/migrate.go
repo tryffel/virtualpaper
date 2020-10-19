@@ -32,6 +32,11 @@ var Migrations = []Migrator{
 		Level:  1,
 		Schema: schemaV1,
 	},
+	&Migration{
+		Name:   "file processing queue",
+		Level:  2,
+		Schema: schemaV2,
+	},
 }
 
 type Schema struct {

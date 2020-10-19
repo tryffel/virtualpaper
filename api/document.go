@@ -19,8 +19,16 @@
 package api
 
 import (
+	"errors"
+	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	"io"
 	"net/http"
+	"os"
+	"path"
+	"strconv"
+	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
 )
 
@@ -31,6 +39,7 @@ type documentResponse struct {
 	Content   string
 	CreatedAt PrettyTime
 	UpdatedAt PrettyTime
+	Url       string
 }
 
 func responseFromDocument(doc *models.Document) *documentResponse {
@@ -41,6 +50,7 @@ func responseFromDocument(doc *models.Document) *documentResponse {
 		Content:   doc.Content,
 		CreatedAt: PrettyTime(doc.CreatedAt),
 		UpdatedAt: PrettyTime(doc.UpdatedAt),
+		Url:       fmt.Sprintf("/api/v1/documents/%d/preview", doc.Id),
 	}
 	return resp
 }
@@ -125,4 +135,114 @@ func (a *Api) getDocumentLogs(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 	respOk(resp, job)
+}
+
+func (a *Api) getDocumentPreview(resp http.ResponseWriter, req *http.Request) {
+	user, ok := getUserId(req)
+	if !ok {
+		logrus.Errorf("no user in context")
+		respInternalError(resp)
+		return
+	}
+	id, err := getParamId(req)
+	if err != nil {
+		respBadRequest(resp, err.Error(), nil)
+		return
+	}
+
+	doc, err := a.db.DocumentStore.GetDocument(user, id)
+	if err != nil {
+		respError(resp, err)
+		return
+	}
+
+	file, err := os.OpenFile(path.Join(config.C.Processing.PreviewsDir, doc.Hash+".png"), os.O_RDONLY, os.ModePerm)
+	if err != nil {
+		respError(resp, err)
+		return
+	}
+	stat, err := file.Stat()
+	if err != nil {
+		respError(resp, fmt.Errorf("get file preview stat: %v", err))
+		return
+	}
+
+	header := resp.Header()
+	header.Set("Content-Type", "image/png")
+	header.Set("Content-Length", strconv.Itoa(int(stat.Size())))
+	header.Set("Content-Disposition", "attachment; filename="+doc.Hash+".png")
+
+	defer file.Close()
+
+	_, err = io.Copy(resp, file)
+	if err != nil {
+		respError(resp, err)
+	} else {
+		respOk(resp, nil)
+	}
+
+}
+
+func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
+	userId, ok := getUserId(req)
+	if !ok {
+		respError(resp, errors.New("no userId found"))
+	}
+	var err error
+	err = req.ParseMultipartForm(1024 * 1024 * 500)
+	reader, header, err := req.FormFile("file")
+	if err != nil {
+		respError(resp, fmt.Errorf("parse multipart"))
+		return
+	}
+	defer reader.Close()
+
+	hash := config.RandomString(10)
+
+	document := &models.Document{
+		Id:       0,
+		UserId:   userId,
+		Name:     header.Filename,
+		Content:  "",
+		Filename: header.Filename,
+		Preview:  "",
+		Hash:     hash,
+	}
+
+	file, err := os.OpenFile(path.Join(config.C.Processing.DocumentsDir, hash), os.O_CREATE|os.O_WRONLY, os.ModePerm)
+	if err != nil {
+		respError(resp, fmt.Errorf("open new file for saving upload: %v", err))
+		return
+	}
+	defer file.Close()
+
+	n, err := file.ReadFrom(reader)
+	if err != nil {
+		respError(resp, fmt.Errorf("write uploaded file to disk: %v", err))
+		return
+	}
+
+	if n != header.Size {
+		logrus.Warningf("did not fully read file: %d, got: %d", header.Size, n)
+	}
+	defer file.Close()
+
+	err = a.db.DocumentStore.Create(document)
+	if err != nil {
+		respError(resp, fmt.Errorf("new document: %v", err))
+		return
+	}
+
+	err = a.db.JobStore.AddDocument(document)
+	if err != nil {
+		respError(resp, fmt.Errorf("add process steps for new document: %v", err))
+		return
+	}
+	respOk(resp, responseFromDocument(document))
+	return
+}
+
+func (a *Api) getEmptyDocument(resp http.ResponseWriter, req *http.Request) {
+	doc := &models.Document{}
+	respOk(resp, responseFromDocument(doc))
 }
