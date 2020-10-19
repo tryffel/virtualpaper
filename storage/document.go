@@ -51,16 +51,21 @@ WHERE user_id = $1
 	return dest, count, err
 }
 
+// GetDocument returns document by its id. If userId != 0, user must be owner of the document.
 func (s *DocumentStore) GetDocument(userId int, id int) (*models.Document, error) {
 	sql := `
 SELECT *
 FROM documents
-WHERE user_id = $1 
-AND id = $2;
+WHERE id = $1
 `
 
+	args := []interface{}{id}
+	if userId != 0 {
+		sql += " AND user_id = $2;"
+		args = append(args, userId)
+	}
 	dest := &models.Document{}
-	err := s.db.Get(dest, sql, userId, id)
+	err := s.db.Get(dest, sql, args...)
 	return dest, err
 }
 
@@ -90,7 +95,7 @@ end;
 func (s *DocumentStore) GetByHash(hash string) (*models.Document, error) {
 
 	sql := `
-	SELECT id, name, filename, content, created_at, updated_at, hash
+	SELECT id, name, filename, content, created_at, updated_at, hash, mimetype
 	FROM documents
 	WHERE hash = $1;
 `
@@ -101,10 +106,10 @@ func (s *DocumentStore) GetByHash(hash string) (*models.Document, error) {
 
 func (s *DocumentStore) Create(doc *models.Document) error {
 	sql := `
-INSERT INTO documents (user_id, name, content, filename, hash)
-	VALUES ($1, $2, $3, $4, $5) RETURNING id;`
+INSERT INTO documents (user_id, name, content, filename, hash, mimetype)
+	VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;`
 
-	res, err := s.db.Query(sql, doc.UserId, doc.Name, doc.Content, doc.Filename, doc.Hash)
+	res, err := s.db.Query(sql, doc.UserId, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype)
 	if err != nil {
 		return getDatabaseError(err)
 	}
@@ -171,5 +176,17 @@ WHERE id IN ($3);
 
 	_, err := s.db.Exec(sql, !indexed, at, ids)
 	return getDatabaseError(err)
+}
 
+func (s *DocumentStore) Update(doc *models.Document) error {
+	doc.UpdatedAt = time.Now()
+	sql := `
+UPDATE documents SET 
+name=$2, content=$3, filename=$4, hash=$5, mimetype=$6
+updated_at=$7,
+WHERE id=$1
+`
+
+	_, err := s.db.Exec(sql, doc.Id, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.UpdatedAt)
+	return getDatabaseError(err)
 }

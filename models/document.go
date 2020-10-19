@@ -18,17 +18,35 @@
 
 package models
 
-import "time"
+import "strings"
 
 type Document struct {
-	*Timestamp
-	Id             int       `db:"id"`
-	UserId         int       `db:"user_id"`
-	Name           string    `db:"name"`
-	Content        string    `db:"content"`
-	Filename       string    `db:"filename"`
-	Preview        string    `db:"preview"`
-	Hash           string    `db:"hash"`
-	IndexedAt      time.Time `db:"indexed_at"`
-	AwaitsIndexing bool      `db:"awaits_indexing"`
+	Timestamp
+	Id       int    `db:"id"`
+	UserId   int    `db:"user_id"`
+	Name     string `db:"name"`
+	Content  string `db:"content"`
+	Filename string `db:"filename"`
+	Hash     string `db:"hash"`
+	Mimetype string `db:"mimetype"`
+	Size     int64  `db:"size"`
+}
+
+// IsImage returns true if document file is image.
+func (d *Document) IsImage() bool {
+	return strings.Contains(d.Mimetype, "image/")
+}
+
+// IsPdf returns true id document file is pdf.
+func (d *Document) IsPdf() bool {
+	return strings.ToLower(d.Mimetype) == "application/pdf"
+}
+
+// GetThumbnail returns thumbnail file name
+func (d *Document) GetThumbnailName() string {
+	if d.Hash != "" {
+		return d.Hash + ".png"
+	} else {
+		return ""
+	}
 }

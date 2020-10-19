@@ -109,7 +109,6 @@ from (
          from process_queue
          where running = false
          order by created_at asc
-		 %s
      ) as d
 group by d.document_id
 order by created_at
@@ -132,6 +131,21 @@ FROM process_queue;
 	row := s.db.QueryRow(sql)
 	err = row.Scan(&n)
 	return dto, n, getDatabaseError(err)
+}
+
+// GetDocumentPendingSteps returns ProcessItems not yet started on given document in ascending order.
+func (s *JobStore) GetDocumentPendingSteps(documentId int) (*[]models.ProcessItem, error) {
+	sql := `
+SELECT document_id, step
+	FROM process_queue
+WHERE running=FALSE
+AND document_id = $1
+ORDER BY step ASC;
+`
+
+	dto := &[]models.ProcessItem{}
+	err := s.db.Select(dto, sql, documentId)
+	return dto, getDatabaseError(err)
 }
 
 // StartProcessItem attempts to mark processItem as running. If successful, create corresponding Job and
@@ -168,6 +182,29 @@ AND running=FALSE;
 
 	err = s.Create(item.DocumentId, job)
 	return job, getDatabaseError(err)
+}
+
+// MarkProcessinDone update given item. If ok, remove record, else mark it as not running
+func (s *JobStore) MarkProcessingDone(item *models.ProcessItem, ok bool) error {
+	var sql string
+	if ok {
+		sql = `
+			DELETE FROM process_queue
+			WHERE document_id = $1
+			AND step = $2
+			AND running =TRUE;
+			`
+	} else {
+		sql = `
+			UPDATE process_queue
+			SET running=FALSE
+			WHERE document_id = $1
+			AND step = $2
+			AND running=FALSE;
+			`
+	}
+	_, err := s.db.Exec(sql, item.DocumentId, item.Step)
+	return getDatabaseError(err)
 }
 
 // AddDocument adds default processing steps for document. Document must be existing.

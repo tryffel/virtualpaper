@@ -30,20 +30,161 @@ func newFileProcessor(id int, db *storage.Database) *fileProcessor {
 		input: make(chan fileOp, 5),
 	}
 	fp.idle = true
-	fp.runFunc = fp.waitFile
+	fp.runFunc = fp.waitEvent
 	return fp
 }
 
-func (fp *fileProcessor) waitFile() {
-	timer := time.NewTimer(time.Millisecond * 10)
+func (fp *fileProcessor) waitEvent() {
+	timer := time.NewTimer(time.Millisecond * 50)
 	select {
 	case <-timer.C:
 		// pass
 
 	case fileOp := <-fp.input:
-		fp.file = fileOp.file
-		fp.processFile()
+		fp.process(fileOp)
+		//fp.processFile()
+
+		//fp.processFile()
 	}
+}
+
+func (fp *fileProcessor) process(op fileOp) {
+	if op.document == nil && op.file != "" {
+		fp.processFile()
+	} else if op.document != nil {
+		fp.document = op.document
+		fp.processDocument()
+	} else {
+		logrus.Warningf("process task got empty fileop, skipping")
+	}
+}
+
+func (fp *fileProcessor) processDocument() {
+
+	pendingSteps, err := fp.db.JobStore.GetDocumentPendingSteps(fp.document.Id)
+	if err != nil {
+		logrus.Errorf("get pending processing steps for document %d: %v", fp.document.Id, err)
+		return
+	}
+
+	file, err := os.Open(path.Join(config.C.Processing.DocumentsDir, fp.document.Hash))
+	if err != nil {
+		logrus.Errorf("open document %d file: %v", fp.document.Id, err)
+		return
+	}
+
+	for _, step := range *pendingSteps {
+		switch step.Step {
+		case models.ProcessHash:
+			err := fp.updateHash(fp.document, file)
+			if err != nil {
+				logrus.Errorf("update hash: %v", err)
+				return
+			}
+		case models.ProcessThumbnail:
+			err := fp.generateThumbnail(file)
+			if err != nil {
+				logrus.Errorf("generate thumbnail: %v", err)
+				return
+			}
+		case models.ProcessParseContent:
+			err := fp.parseContent()
+			if err != nil {
+				logrus.Errorf("generate thumbnail: %v", err)
+				return
+			}
+		default:
+			logrus.Warningf("unhandle process step: %v, skipping", step.Step)
+		}
+	}
+
+	file.Close()
+}
+
+// re-calculate hash. If it differs from current document.Hash, update document record and rename file to new hash,
+// if different.
+func (fp *fileProcessor) updateHash(doc *models.Document, file *os.File) error {
+	process := &models.ProcessItem{
+		DocumentId: fp.document.Id,
+		Step:       models.ProcessHash,
+		CreatedAt:  time.Now(),
+	}
+
+	job, err := fp.db.JobStore.StartProcessItem(process, "calculate hash")
+	if err != nil {
+		return fmt.Errorf("persist process item: %v", err)
+	}
+
+	defer fp.persistProcess(process, job)
+	hash, err := getHash(file)
+	if err != nil {
+		job.Status = models.JobFailure
+		return err
+	}
+
+	if hash != doc.Hash {
+		logrus.Infof("rename file %s to %s", doc.Hash, hash)
+	} else {
+		logrus.Infof("file hash has not changed")
+		job.Status = models.JobFinished
+		job.Message = "hash: no change"
+		return nil
+	}
+
+	oldName := file.Name()
+	err = os.Rename(oldName, path.Join(config.C.Processing.DocumentsDir, hash))
+	if err != nil {
+		job.Status = models.JobFailure
+		return fmt.Errorf("rename file (doc %d) by old hash: %v", fp.document.Id, err)
+	}
+
+	fp.document.Hash = hash
+	err = fp.db.DocumentStore.Update(fp.document)
+	if err != nil {
+		job.Status = models.JobFailure
+		return fmt.Errorf("save updated document: %v", err)
+	}
+
+	job.Status = models.JobFinished
+	return nil
+}
+
+func (fp *fileProcessor) updateThumbnail(doc *models.Document, file *os.File) error {
+	imagick.Initialize()
+	defer imagick.Terminate()
+
+	process := &models.ProcessItem{
+		DocumentId: fp.document.Id,
+		Step:       models.ProcessThumbnail,
+		CreatedAt:  time.Now(),
+	}
+
+	job, err := fp.db.JobStore.StartProcessItem(process, "generate thumbnail")
+	if err != nil {
+		return fmt.Errorf("persist process item: %v", err)
+	}
+	job.Message = "Generate thumbnail"
+	defer fp.persistProcess(process, job)
+
+	output := path.Join(config.C.Processing.PreviewsDir, fp.document.Hash+".png")
+
+	logrus.Infof("generate thumbnail for document %d", fp.document.Id)
+	_, err = imagick.ConvertImageCommand([]string{
+		"convert", "-thumbnail", "x500", "-background", "white", "-alpha", "remove", file.Name() + "[0]", output,
+	})
+
+	err = fp.db.DocumentStore.Update(doc)
+	if err != nil {
+		logrus.Errorf("update document record: %v", err)
+	}
+
+	if err != nil {
+		job.Status = models.JobFailure
+		job.Message += "; " + err.Error()
+		return fmt.Errorf("call imagick: %v", err)
+	}
+	job.Status = models.JobFinished
+	return nil
 }
 
 func (fp *fileProcessor) processFile() {
@@ -81,7 +222,7 @@ func (fp *fileProcessor) processFile() {
 	}
 
 	logrus.Info("generate thumbnail")
-	err = fp.generateThumbnail()
+	err = fp.generateThumbnail(fp.rawFile)
 	if err != nil {
 		logrus.Error("generate thumbnail: %v", err)
 		return
@@ -145,7 +286,6 @@ func (fp *fileProcessor) createNewDocumentRecord() error {
 		Name:     fileName,
 		Content:  "",
 		Filename: fileName,
-		Preview:  "",
 	}
 
 	var err error
@@ -163,23 +303,26 @@ func (fp *fileProcessor) createNewDocumentRecord() error {
 	return nil
 }
 
-func (fp *fileProcessor) generateThumbnail() error {
+func (fp *fileProcessor) generateThumbnail(file *os.File) error {
 	imagick.Initialize()
 	defer imagick.Terminate()
 
-	job := &models.Job{
+	process := &models.ProcessItem{
 		DocumentId: fp.document.Id,
-		Message:    "Generate thumbnail (500x500)",
-		Status:     models.JobRunning,
-		StartedAt:  time.Now(),
-		StoppedAt:  time.Now(),
+		Step:       models.ProcessThumbnail,
+		CreatedAt:  time.Now(),
 	}
-	defer fp.persistJob(job)
+
+	job, err := fp.db.JobStore.StartProcessItem(process, "calculate hash")
+	if err != nil {
+		return fmt.Errorf("persist process item: %v", err)
+	}
+	defer fp.persistProcess(process, job)
 
 	output := path.Join(config.C.Processing.PreviewsDir, fp.document.Hash+".png")
 
-	_, err := imagick.ConvertImageCommand([]string{
-		"convert", "-thumbnail", "x500", "-background", "white", "-alpha", "remove", fp.file + "[0]", output,
+	_, err = imagick.ConvertImageCommand([]string{
+		"convert", "-thumbnail", "x500", "-background", "white", "-alpha", "remove", file.Name() + "[0]", output,
 	})
 
 	if err != nil {
@@ -188,7 +331,6 @@ func (fp *fileProcessor) generateThumbnail() error {
 		return fmt.Errorf("call imagick: %v", err)
 	}
 
-	fp.document.Preview = fp.document.Hash + ".png"
 	job.Status = models.JobFinished
 	return nil
 }
@@ -271,6 +413,19 @@ func (fp *fileProcessor) parseContent() error {
 		}
 	}
 	return nil
+}
+
+func (fp *fileProcessor) persistProcess(process *models.ProcessItem, job *models.Job) {
+	err := fp.db.JobStore.MarkProcessingDone(process, job.Status == models.JobFinished)
+	if err != nil {
+		logrus.Errorf("mark process complete: %v", err)
+	}
+	job.StoppedAt = time.Now()
+	err = fp.db.JobStore.Update(job)
+	if err != nil {
+		logrus.Errorf("save job to database: %v", err)
+	}
+
 }
 
 func (fp *fileProcessor) persistJob(job *models.Job) {

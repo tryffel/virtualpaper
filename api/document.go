@@ -40,6 +40,7 @@ type documentResponse struct {
 	CreatedAt PrettyTime
 	UpdatedAt PrettyTime
 	Url       string
+	Mimetype  string
 }
 
 func responseFromDocument(doc *models.Document) *documentResponse {
@@ -51,6 +52,7 @@ func responseFromDocument(doc *models.Document) *documentResponse {
 		CreatedAt: PrettyTime(doc.CreatedAt),
 		UpdatedAt: PrettyTime(doc.UpdatedAt),
 		Url:       fmt.Sprintf("/api/v1/documents/%d/preview", doc.Id),
+		Mimetype:  doc.Mimetype,
 	}
 	return resp
 }
@@ -205,7 +207,6 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 		Name:     header.Filename,
 		Content:  "",
 		Filename: header.Filename,
-		Preview:  "",
 		Hash:     hash,
 	}
 

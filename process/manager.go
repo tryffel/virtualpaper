@@ -6,14 +6,20 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
 	"math/rand"
+	"path"
 	"sync"
 	"time"
 	config "tryffel.net/go/virtualpaper/config"
+	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
+// processing file operation. Either fill file or document.
+// Fill file to mark file without document record.
+// File document to mark existing document.
 type fileOp struct {
-	file string
+	file     string
+	document *models.Document
 }
 
 // Manager manages multiple goroutines processing files.
@@ -70,6 +76,32 @@ func (m *Manager) Start() error {
 		m.lock.Unlock()
 		logrus.Debug("start background task manager")
 
+		time.Sleep(2)
+
+		docs := map[int]*models.Document{}
+		processes, _, err := m.db.JobStore.GetPendingProcessing()
+		if err != nil {
+			logrus.Errorf("get pending processing: %v", err)
+		} else {
+			for _, v := range *processes {
+				if docs[v.DocumentId] == nil {
+					doc, err := m.db.DocumentStore.GetDocument(0, v.DocumentId)
+					if err != nil {
+						logrus.Errorf("get document: %v", err)
+					} else {
+						docs[v.DocumentId] = doc
+					}
+				}
+			}
+
+			for _, v := range docs {
+				err = m.AddDocumentForProcessing(v)
+				if err != nil {
+					logrus.Errorf("add document for processing: %v", err)
+				}
+			}
+		}
+
 		for m.isRunning() {
 			m.runFunc()
 		}
@@ -96,6 +128,12 @@ func (m *Manager) Stop() error {
 	return nil
 }
 
+// AddDocumentForProcessing marks document as available for processing.
+func (m *Manager) AddDocumentForProcessing(doc *models.Document) error {
+	m.scheduleNewOp(path.Join(config.C.Processing.DocumentsDir, doc.Hash), doc)
+	return nil
+}
+
 func (m *Manager) isRunning() bool {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
@@ -117,7 +155,7 @@ func (m *Manager) runFunc() {
 
 		if event.Op == fsnotify.Write {
 			logrus.Infof("Schedule processing for file %s", event.Name)
-			m.scheduleNewOp(event.Name)
+			m.scheduleNewOp(event.Name, nil)
 		}
 
 		//pass
@@ -130,8 +168,8 @@ func (m *Manager) runFunc() {
 }
 
 // schedule file operation to any idle task. If none of the tasks are idle, queue it to random task.
-func (m *Manager) scheduleNewOp(file string) {
-	op := fileOp{file: file}
+func (m *Manager) scheduleNewOp(file string, doc *models.Document) {
+	op := fileOp{file: file, document: doc}
 	scheduled := false
 
 	for _, task := range m.tasks {

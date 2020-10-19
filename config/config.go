@@ -13,6 +13,7 @@ import (
 // Application config that is loaded upon starting program
 var C *Config
 
+// Config contains application config
 type Config struct {
 	Api         Api
 	Database    Database
@@ -20,12 +21,16 @@ type Config struct {
 	Meilisearch Meilisearch
 }
 
+// Api contains http server config
 type Api struct {
 	Host string
 	Port int
 	Key  string
+
+	PublicUrl string
 }
 
+// Database
 type Database struct {
 	Host     string
 	Port     int
@@ -34,6 +39,7 @@ type Database struct {
 	Database string
 }
 
+// Processing contains document-processing settings
 type Processing struct {
 	InputDir        string
 	TmpDir          string
@@ -41,6 +47,7 @@ type Processing struct {
 	MaxWorkers      int
 	DefaultLanguage string
 
+	// application directories. Stored by default in ./media/{previews, documents}.
 	PreviewsDir  string
 	DocumentsDir string
 }
@@ -56,9 +63,10 @@ func ConfigFromViper() error {
 
 	c := &Config{
 		Api: Api{
-			Host: viper.GetString("api.host"),
-			Port: viper.GetInt("api.port"),
-			Key:  viper.GetString("api.secret_key"),
+			Host:      viper.GetString("api.host"),
+			Port:      viper.GetInt("api.port"),
+			Key:       viper.GetString("api.secret_key"),
+			PublicUrl: viper.GetString("api.public_url"),
 		},
 
 		Database: Database{
@@ -143,7 +151,7 @@ func InitConfig() error {
 		logrus.Errorf("create previews directory: %v", err)
 	}
 
-	err = os.Mkdir(C.Processing.DocumentsDir, 660)
+	err = os.Mkdir(C.Processing.DocumentsDir, 777)
 	if err != nil {
 		logrus.Errorf("create documents directory: %v", err)
 	}
