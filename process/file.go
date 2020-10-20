@@ -8,7 +8,7 @@ import (
 	"gopkg.in/gographics/imagick.v3/imagick"
 	"os"
 	"path"
-	"strings"
+	"path/filepath"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
@@ -73,6 +73,8 @@ func (fp *fileProcessor) processDocument() {
 		return
 	}
 
+	defer fp.cleanup()
+
 	for _, step := range *pendingSteps {
 		switch step.Step {
 		case models.ProcessHash:
@@ -80,6 +82,13 @@ func (fp *fileProcessor) processDocument() {
 			if err != nil {
 				logrus.Errorf("update hash: %v", err)
 				return
+			} else {
+				file.Close()
+				file, err = os.Open(path.Join(config.C.Processing.DocumentsDir, fp.document.Hash))
+				if err != nil {
+					logrus.Errorf("open document %d file: %v", fp.document.Id, err)
+					return
+				}
 			}
 		case models.ProcessThumbnail:
 			err := fp.generateThumbnail(file)
@@ -88,7 +97,7 @@ func (fp *fileProcessor) processDocument() {
 				return
 			}
 		case models.ProcessParseContent:
-			err := fp.parseContent()
+			err := fp.parseContent(file)
 			if err != nil {
 				logrus.Errorf("generate thumbnail: %v", err)
 				return
@@ -229,7 +238,7 @@ func (fp *fileProcessor) processFile() {
 	}
 
 	logrus.Info("parse content")
-	err = fp.parseContent()
+	err = fp.parseContent(fp.rawFile)
 	if err != nil {
 		logrus.Errorf("Parse document content: %v", err)
 	}
@@ -237,7 +246,7 @@ func (fp *fileProcessor) processFile() {
 
 func (fp *fileProcessor) cleanup() {
 	logrus.Infof("Stop processing file %s", fp.file)
-	fp.document = nil
+
 	if fp.rawFile != nil {
 		fp.rawFile.Close()
 		fp.rawFile = nil
@@ -251,6 +260,19 @@ func (fp *fileProcessor) cleanup() {
 		}
 		fp.tempFile = nil
 	}
+
+	if fp.document != nil {
+		tmpDir := path.Join(config.C.Processing.TmpDir, fp.document.Hash)
+		err := os.RemoveAll(tmpDir)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+			} else {
+				logrus.Errorf("cannot remove tmp dir %s: %v", tmpDir, err)
+			}
+		}
+	}
+
+	fp.document = nil
 	fp.file = ""
 	fp.lock.Lock()
 	fp.idle = true
@@ -335,66 +357,126 @@ func (fp *fileProcessor) generateThumbnail(file *os.File) error {
 	return nil
 }
 
-func (fp *fileProcessor) parseContent() error {
+func (fp *fileProcessor) parseContent(file *os.File) error {
+
+	logrus.Infof("extract content for document %d", fp.document.Id)
+	if fp.document.IsPdf() {
+		return fp.extractPdf(file)
+	} else if fp.document.IsImage() {
+		return fp.extractImage(file)
+	} else {
+		return fmt.Errorf("cannot extract content from mimetype: %v", fp.document.Mimetype)
+	}
+}
+
+func (fp *fileProcessor) extractPdf(file *os.File) error {
 	// if pdf, generate image preview and pass it to tesseract
 	var imageFile string
 	var err error
 
-	if strings.HasSuffix(strings.ToLower(fp.file), "pdf") {
-		job := &models.Job{
-			DocumentId: fp.document.Id,
-			Message:    "Render image from pdf content",
-			Status:     models.JobAwaiting,
-			StartedAt:  time.Now(),
-			StoppedAt:  time.Now(),
-		}
+	process := &models.ProcessItem{
+		DocumentId: fp.document.Id,
+		Document:   nil,
+		Step:       models.ProcessParseContent,
+		CreatedAt:  time.Now(),
+	}
 
-		err := fp.db.JobStore.Create(fp.document.Id, job)
-		if err != nil {
-			logrus.Warningf("create job record: %v", err)
-		}
+	job, err := fp.db.JobStore.StartProcessItem(process, "extract pdf content")
+	if err != nil {
+		return fmt.Errorf("start process: %v", err)
+	}
 
-		imagick.Initialize()
-		defer imagick.Terminate()
+	defer fp.persistProcess(process, job)
 
-		imageFile = path.Join(config.C.Processing.TmpDir, fp.document.Hash+".png")
-		_, err = imagick.ConvertImageCommand([]string{
-			"convert", "-density", "300", fp.file, "-depth", "8", imageFile,
-		})
-		if err != nil {
-			job.Message += "; " + err.Error()
-			job.Status = models.JobFailure
-			fp.persistJob(job)
-			return err
-		} else {
-			job.Status = models.JobFinished
+	imagick.Initialize()
+	defer imagick.Terminate()
 
-		}
-		fp.persistJob(job)
+	dir := path.Join(config.C.Processing.TmpDir, fp.document.Hash)
+	err = os.Mkdir(dir, os.ModePerm|os.ModeDir)
+	if err != nil {
+		return fmt.Errorf("create tmp dir: %v", err)
+	}
+
+	imageFile = path.Join(dir, "preview.png")
+	_, err = imagick.ConvertImageCommand([]string{
+		"convert", "-density", "300", file.Name(), "-depth", "8", imageFile,
+	})
+	if err != nil {
+		job.Message += "; " + err.Error()
+		job.Status = models.JobFailure
+		return err
 	}
 
 	client := gosseract.NewClient()
 	defer client.Close()
+	pages := &[]string{}
 
-	job := &models.Job{
-		DocumentId: fp.document.Id,
-		Message:    "Parse content with tesseract",
-		Status:     models.JobAwaiting,
-		StartedAt:  time.Now(),
-		StoppedAt:  time.Now(),
+	walkFunc := func(fileName string, info os.FileInfo, err error) error {
+		if info.Name() == fp.document.Hash {
+			// root fileName
+			return nil
+		}
+		logrus.Debugf("OCR %s", fileName)
+		err = client.SetImage(fileName)
+		if err != nil {
+			return fmt.Errorf("set ocr image source: %v", err)
+		}
+		text, err := client.Text()
+		if err != nil {
+			return err
+		}
+		*pages = append(*pages, text)
+		return nil
 	}
 
-	err = fp.db.JobStore.Create(fp.document.Id, job)
+	err = filepath.Walk(dir, walkFunc)
 	if err != nil {
-		logrus.Warningf("create job record: %v", err)
+		job.Message += "; " + err.Error()
+		job.Status = models.JobFailure
+		return fmt.Errorf("parse document text: %v", err)
+	} else {
+		content := ""
+		for i, v := range *pages {
+			if i > 0 {
+				content += fmt.Sprintf("\n\n(Page %d)\n\n", i)
+			}
+			content += v
+		}
+		fp.document.Content = content
+		err = fp.db.DocumentStore.SetDocumentContent(fp.document.Id, content)
+		if err != nil {
+			job.Message += "; " + "save document content: " + err.Error()
+			job.Status = models.JobFailure
+			return fmt.Errorf("save document content: %v", err)
+		} else {
+			job.Status = models.JobFinished
+		}
 	}
-	defer fp.persistJob(job)
+	return nil
 
-	err = client.SetImage(imageFile)
+}
+
+func (fp *fileProcessor) extractImage(file *os.File) error {
+	var err error
+	process := &models.ProcessItem{
+		DocumentId: fp.document.Id,
+		Step:       models.ProcessParseContent,
+		CreatedAt:  time.Now(),
+	}
+
+	job, err := fp.db.JobStore.StartProcessItem(process, "extract content from image")
+	if err != nil {
+		return fmt.Errorf("start process: %v", err)
+	}
+
+	defer fp.persistProcess(process, job)
+	client := gosseract.NewClient()
+	defer client.Close()
+
+	err = client.SetImage(file.Name())
 	if err != nil {
 		return fmt.Errorf("set ocr image source: %v", err)
 	}
-
 	text, err := client.Text()
 	if err != nil {
 		job.Message += "; " + err.Error()
@@ -402,8 +484,7 @@ func (fp *fileProcessor) parseContent() error {
 		return fmt.Errorf("parse document text: %v", err)
 	} else {
 		fp.document.Content = text
-
-		err = fp.db.DocumentStore.SetDocumentContent(fp.document.Id, text)
+		err = fp.db.DocumentStore.SetDocumentContent(fp.document.Id, fp.document.Content)
 		if err != nil {
 			job.Message += "; " + "save document content: " + err.Error()
 			job.Status = models.JobFailure
@@ -421,11 +502,13 @@ func (fp *fileProcessor) persistProcess(process *models.ProcessItem, job *models
 		logrus.Errorf("mark process complete: %v", err)
 	}
 	job.StoppedAt = time.Now()
+	if job.Status == models.JobRunning {
+		job.Status = models.JobFailure
+	}
 	err = fp.db.JobStore.Update(job)
 	if err != nil {
 		logrus.Errorf("save job to database: %v", err)
 	}
-
 }
 
 func (fp *fileProcessor) persistJob(job *models.Job) {
