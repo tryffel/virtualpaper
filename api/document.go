@@ -197,6 +197,8 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 		respError(resp, fmt.Errorf("parse multipart"))
 		return
 	}
+
+	mimetype := header.Header.Get("Content-Type")
 	defer reader.Close()
 
 	hash := config.RandomString(10)
@@ -208,6 +210,7 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 		Content:  "",
 		Filename: header.Filename,
 		Hash:     hash,
+		Mimetype: mimetype,
 	}
 
 	file, err := os.OpenFile(path.Join(config.C.Processing.DocumentsDir, hash), os.O_CREATE|os.O_WRONLY, os.ModePerm)

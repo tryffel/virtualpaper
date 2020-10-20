@@ -182,8 +182,8 @@ func (s *DocumentStore) Update(doc *models.Document) error {
 	doc.UpdatedAt = time.Now()
 	sql := `
 UPDATE documents SET 
-name=$2, content=$3, filename=$4, hash=$5, mimetype=$6
-updated_at=$7,
+name=$2, content=$3, filename=$4, hash=$5, mimetype=$6,
+updated_at=$7
 WHERE id=$1
 `
 
