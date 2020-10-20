@@ -16,33 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package models
+package storage
 
-import "time"
-
-// Modeler is a basic interface for all models.
-type Modeler interface {
-	// Update marks model as updated.
-	Update()
-	// FilterAttributes returns list of attributes that can be used for filtering.
-	FilterAttributes() []string
-	// SortAttributes returns list of attributes that can be used for sorting.
-	SortAttributes() []string
-}
-
-type Timestamp struct {
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
-}
-
-func (t *Timestamp) Update() {
-	t.UpdatedAt = time.Now()
-}
-
-func (t *Timestamp) FilterAttributes() []string {
-	return []string{"created_at", "updated_at"}
-}
-
-func (t *Timestamp) SortAttributes() []string {
-	return t.FilterAttributes()
+// SortKey contains sortable key and order. Order 'false' = ASC, 'true' = DESC.
+type SortKey struct {
+	Key   string
+	Order bool
 }

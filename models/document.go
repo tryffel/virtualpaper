@@ -18,7 +18,9 @@
 
 package models
 
-import "strings"
+import (
+	"strings"
+)
 
 type Document struct {
 	Timestamp
@@ -49,4 +51,14 @@ func (d *Document) GetThumbnailName() string {
 	} else {
 		return ""
 	}
+}
+
+func (d *Document) FilterAttributes() []string {
+	ts := d.Timestamp.FilterAttributes()
+	doc := []string{"id", "name", "content", "filename", "hash", "mimetype", "size"}
+	return append(doc, ts...)
+}
+
+func (d *Document) SortAttributes() []string {
+	return d.FilterAttributes()
 }
