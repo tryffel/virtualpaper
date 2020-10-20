@@ -66,7 +66,10 @@ func NewApi(database *storage.Database) (*Api, error) {
 }
 
 func (a *Api) addRoutes() {
-	//a.baseRouter.Use(a.corsHeader)
+	if len(config.C.Api.CorsHosts) > 0 {
+		a.baseRouter.Use(a.corsHeader)
+	}
+
 	a.baseRouter.Use(LoggingMiddleware)
 	a.baseRouter.HandleFunc("/api/v1/auth/login", a.login).Methods(http.MethodPost)
 	a.baseRouter.HandleFunc("/api/v1/version", a.getVersion).Methods(http.MethodGet)

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"strings"
 )
 
 // Application config that is loaded upon starting program
@@ -28,6 +29,11 @@ type Api struct {
 	Key  string
 
 	PublicUrl string
+	CorsHosts []string
+}
+
+func (a *Api) CorsHostList() string {
+	return strings.Join(a.CorsHosts, ",")
 }
 
 // Database
@@ -67,6 +73,7 @@ func ConfigFromViper() error {
 			Port:      viper.GetInt("api.port"),
 			Key:       viper.GetString("api.secret_key"),
 			PublicUrl: viper.GetString("api.public_url"),
+			CorsHosts: viper.GetStringSlice("api.cors_hosts"),
 		},
 
 		Database: Database{

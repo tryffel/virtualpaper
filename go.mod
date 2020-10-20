@@ -12,6 +12,7 @@ require (
 	github.com/meilisearch/meilisearch-go v0.12.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/otiai10/gosseract v2.2.1+incompatible
+	github.com/rs/cors v1.7.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.7.1

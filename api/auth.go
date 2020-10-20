@@ -22,7 +22,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
@@ -72,6 +71,19 @@ func (a *Api) authorizeUser(next http.Handler) http.Handler {
 			return
 		}
 		respBadRequest(w, "invalid token", nil)
+	})
+}
+
+func (a *Api) corsHeader(next http.Handler) http.Handler {
+	hosts := config.C.Api.CorsHostList()
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		headers := w.Header()
+		headers.Set("Access-Control-Allow-Origin", hosts)
+		headers.Add("Vary", "Origin")
+		headers.Add("Vary", "Access-Control-Request-Method")
+		headers.Add("Vary", "Access-Control-Request-Headers")
+		next.ServeHTTP(w, r)
 	})
 }
 
