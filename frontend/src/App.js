@@ -21,13 +21,13 @@ import { Admin, Resource } from 'react-admin';
 
 import { dataProvider } from "./dataProvider";
 import authProvider from './authProvider';
-import { DocumentList, DocumentShow, DocumentEdit } from './document';
+import { DocumentList, DocumentShow, DocumentEdit, DocumentCreate } from './document';
 import { JobList} from "./job";
 
 
 const App = () => (
     <Admin dataProvider={dataProvider} authProvider={authProvider}>
-        <Resource name="documents" list={DocumentList} show={DocumentShow} edit={DocumentEdit}/>
+        <Resource name="documents" list={DocumentList} show={DocumentShow} edit={DocumentEdit} create={DocumentCreate}/>
         <Resource name="jobs" list={JobList} />
     </Admin>
     );
