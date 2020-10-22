@@ -29,17 +29,34 @@ type DocumentStore struct {
 }
 
 // GetDocuments returns user's documents according to paging. In addition, return total count of documents available.
-func (s *DocumentStore) GetDocuments(userId int, paging Paging) (*[]models.Document, int, error) {
+func (s *DocumentStore) GetDocuments(userId int, paging Paging, limitContent bool) (*[]models.Document, int, error) {
+	var contenSelect string
+	if limitContent {
+		contenSelect = "LEFT(content, 500) as content"
+	} else {
+		contenSelect = "content"
+	}
+
 	sql := `
-SELECT *
+SELECT id, name, ` + contenSelect + `, filename, created_at, updated_at
+hash, mimetype, size
 FROM documents
 WHERE user_id = $1
+ORDER BY id
 OFFSET $2
 LIMIT $3;
 `
 
 	dest := &[]models.Document{}
 	err := s.db.Select(dest, sql, userId, paging.Offset, paging.Limit)
+
+	if limitContent && len(*dest) > 0 {
+		for i, _ := range *dest {
+			if len((*dest)[i].Content) > 499 {
+				(*dest)[i].Content += "..."
+			}
+		}
+	}
 
 	sql = `
 SELECT count(id) 
@@ -138,6 +155,27 @@ WHERE id=$1;
 
 	_, err := s.db.Exec(sql, id, content)
 	return getDatabaseError(err)
+}
+
+// GetContent returns full content. If userId != 0, user must own the document of given id.
+func (s *DocumentStore) GetContent(userId int, id int) (*string, error) {
+	sql := `
+SELECT content
+FROM documents
+WHERE id=$1
+`
+	if userId != 0 {
+		sql += " AND user_id=$2"
+	}
+
+	content := ""
+	var err error
+	if userId != 0 {
+		err = s.db.Get(&content, sql, id, userId)
+	} else {
+		err = s.db.Get(&content, sql, id, userId)
+	}
+	return &content, getDatabaseError(err)
 }
 
 // GetNeedsIndexing returns documents that need indexing ( awaits_indexing=true). If userId != 0, return

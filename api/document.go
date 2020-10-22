@@ -30,29 +30,32 @@ import (
 	"strconv"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/storage"
 )
 
 type documentResponse struct {
-	Id        int `json:"id"`
-	Name      string
-	Filename  string
-	Content   string
-	CreatedAt PrettyTime
-	UpdatedAt PrettyTime
-	Url       string
-	Mimetype  string
+	Id          int `json:"id"`
+	Name        string
+	Filename    string
+	Content     string
+	CreatedAt   PrettyTime
+	UpdatedAt   PrettyTime
+	PreviewUrl  string
+	DownloadUrl string
+	Mimetype    string
 }
 
 func responseFromDocument(doc *models.Document) *documentResponse {
 	resp := &documentResponse{
-		Id:        doc.Id,
-		Name:      doc.Name,
-		Filename:  doc.Filename,
-		Content:   doc.Content,
-		CreatedAt: PrettyTime(doc.CreatedAt),
-		UpdatedAt: PrettyTime(doc.UpdatedAt),
-		Url:       fmt.Sprintf("/api/v1/documents/%d/preview", doc.Id),
-		Mimetype:  doc.Mimetype,
+		Id:          doc.Id,
+		Name:        doc.Name,
+		Filename:    doc.Filename,
+		Content:     doc.Content,
+		CreatedAt:   PrettyTime(doc.CreatedAt),
+		UpdatedAt:   PrettyTime(doc.UpdatedAt),
+		PreviewUrl:  fmt.Sprintf("%s/api/v1/documents/%d/preview", config.C.Api.PublicUrl, doc.Id),
+		DownloadUrl: fmt.Sprintf("%s/api/v1/documents/%d/download", config.C.Api.PublicUrl, doc.Id),
+		Mimetype:    doc.Mimetype,
 	}
 	return resp
 }
@@ -70,7 +73,7 @@ func (a *Api) getDocuments(resp http.ResponseWriter, req *http.Request) {
 		respBadRequest(resp, err.Error(), nil)
 	}
 
-	docs, count, err := a.db.DocumentStore.GetDocuments(user, paging)
+	docs, count, err := a.db.DocumentStore.GetDocuments(user, paging, true)
 	if err != nil {
 		logrus.Errorf("get documents: %v", err)
 		respInternalError(resp)
@@ -103,6 +106,26 @@ func (a *Api) getDocument(resp http.ResponseWriter, req *http.Request) {
 	doc, err := a.db.DocumentStore.GetDocument(user, id)
 
 	respOk(resp, responseFromDocument(doc))
+}
+
+func (a *Api) getDocumentContent(resp http.ResponseWriter, req *http.Request) {
+	user, ok := getUserId(req)
+	if !ok {
+		logrus.Errorf("no user in context")
+		respInternalError(resp)
+		return
+	}
+	idStr := mux.Vars(req)["id"]
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		respBadRequest(resp, "id not integer", nil)
+		return
+	}
+
+	content, err := a.db.DocumentStore.GetContent(user, id)
+	respOk(resp, &content)
+
 }
 
 func (a *Api) getDocumentLogs(resp http.ResponseWriter, req *http.Request) {
@@ -160,6 +183,12 @@ func (a *Api) getDocumentPreview(resp http.ResponseWriter, req *http.Request) {
 
 	file, err := os.OpenFile(path.Join(config.C.Processing.PreviewsDir, doc.Hash+".png"), os.O_RDONLY, os.ModePerm)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			// TODO: mark document missing thumbnail
+			logrus.Warningf("document %d does not have thumbnail", id)
+			respError(resp, storage.ErrRecordNotFound)
+			return
+		}
 		respError(resp, err)
 		return
 	}
@@ -249,4 +278,47 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 func (a *Api) getEmptyDocument(resp http.ResponseWriter, req *http.Request) {
 	doc := &models.Document{}
 	respOk(resp, responseFromDocument(doc))
+}
+
+func (a *Api) downloadDocument(resp http.ResponseWriter, req *http.Request) {
+	userId, ok := getUserId(req)
+	if !ok {
+		respError(resp, errors.New("no userId found"))
+	}
+	var err error
+
+	idStr := mux.Vars(req)["id"]
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		respBadRequest(resp, "id not integer", nil)
+		return
+	}
+
+	doc, err := a.db.DocumentStore.GetDocument(userId, id)
+	if err != nil {
+		respError(resp, err)
+		return
+	}
+
+	file, err := os.Open(path.Join(config.C.Processing.DocumentsDir, doc.Hash))
+	if err != nil {
+		respError(resp, err)
+		return
+	}
+
+	defer file.Close()
+
+	stat, err := file.Stat()
+	size := stat.Size()
+
+	resp.Header().Set("Content-Type", doc.Mimetype)
+	resp.Header().Set("Content-Length", strconv.Itoa(int(size)))
+
+	_, err = io.Copy(resp, file)
+	if err != nil {
+		respError(resp, err)
+		return
+	}
+
 }

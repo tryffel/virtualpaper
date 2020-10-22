@@ -38,9 +38,11 @@ SELECT
        jobs.document_id as document_id,
        jobs.message as message,
        jobs.status as status,
-       jobs.started_at as started_at,
-       jobs.stopped_at as stopped_at,
-       extract(epoch from  jobs.stopped_at - jobs.started_at)::numeric::integer as duration
+	   jobs.started_at as started_at,
+		CASE WHEN EXTRACT(epoch FROM jobs.stopped_at) = 0
+        	THEN now()
+        	ELSE stopped_at
+    	END AS stopped_at
 FROM jobs
 LEFT JOIN documents d ON jobs.document_id = d.id
 WHERE d.user_id = $1
@@ -53,6 +55,12 @@ LIMIT $3;
 	jobs := &[]models.JobComposite{}
 
 	err := s.db.Select(jobs, sql, userId, paging.Offset, paging.Limit)
+	if err == nil {
+		for i, v := range *jobs {
+			v.SetDuration()
+			(*jobs)[i].Duration = v.Duration
+		}
+	}
 	return jobs, getDatabaseError(err)
 }
 
