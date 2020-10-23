@@ -43,6 +43,7 @@ type documentResponse struct {
 	PreviewUrl  string
 	DownloadUrl string
 	Mimetype    string
+	Type        string
 }
 
 func responseFromDocument(doc *models.Document) *documentResponse {
@@ -56,6 +57,7 @@ func responseFromDocument(doc *models.Document) *documentResponse {
 		PreviewUrl:  fmt.Sprintf("%s/api/v1/documents/%d/preview", config.C.Api.PublicUrl, doc.Id),
 		DownloadUrl: fmt.Sprintf("%s/api/v1/documents/%d/download", config.C.Api.PublicUrl, doc.Id),
 		Mimetype:    doc.Mimetype,
+		Type:        doc.GetType(),
 	}
 	return resp
 }

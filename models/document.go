@@ -44,6 +44,17 @@ func (d *Document) IsPdf() bool {
 	return strings.ToLower(d.Mimetype) == "application/pdf"
 }
 
+// GetType returns either 'pdf' or 'image' depending on type of content.
+func (d *Document) GetType() string {
+	if d.IsPdf() {
+		return "pdf"
+	} else if d.IsImage() {
+		return "image"
+	} else {
+		return d.Mimetype
+	}
+}
+
 // GetThumbnail returns thumbnail file name
 func (d *Document) GetThumbnailName() string {
 	if d.Hash != "" {
