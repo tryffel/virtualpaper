@@ -34,7 +34,7 @@ const cardStyle = {
     verticalAlign: 'top'
 };
 
-function downloadImage(url) {
+function downloadFile(url) {
     const  token  = localStorage.getItem('auth');
     return fetch(url, {
         method: "GET",
@@ -47,7 +47,7 @@ function ThumbnailField ({ source, record })
 {
     const url = get(record, source);
     const [imgData, setImage] = useState(() => {
-        downloadImage(url)
+        downloadFile(url)
             .then(response => {
                 response.arrayBuffer().then(function (buffer) {
                     const data = window.URL.createObjectURL(new Blob([buffer]));
@@ -78,7 +78,7 @@ ThumbnailField.propTypes = {
 function ThumbnailSmall ({ url })
 {
     const [imgData, setImage] = useState(() => {
-        downloadImage(url)
+        downloadFile(url)
             .then(response => {
                 response.arrayBuffer().then(function (buffer) {
                     const data = window.URL.createObjectURL(new Blob([buffer]));
@@ -98,6 +98,39 @@ function ThumbnailSmall ({ url })
         </div>
     );
 }
+
+function EmbedFile({ source, record })
+{
+    const url = get(record, source);
+    console.log("Download file: ", url);
+    const [imgData, setImage] = useState(() => {
+        downloadFile(url)
+            .then(response => {
+                response.arrayBuffer().then(function (buffer) {
+                    const data = window.URL.createObjectURL(new Blob([buffer]));
+                    setImage(data);
+                });
+            })
+            .catch( response => {
+                    console.log(response);
+                }
+            );
+        return "";
+    });
+
+    return (
+        <div style={{display:'block', width:'100%'}}>
+            <iframe style={{width: '100%', display: 'fill', border: 'none', height:'40em'}} title="Preview" src={imgData}/>
+        </div>
+    );
+}
+
+EmbedFile.propTypes = {
+    label: PropTypes.string,
+    record: PropTypes.object,
+    source: PropTypes.string.isRequired,
+};
+
 
 const DocumentGrid = () => {
     const { ids, data, basePath } = useListContext();
@@ -144,6 +177,10 @@ export const DocumentShow = (props) => (
             <Tab label="content">
                 <RichTextField source="Content" />
             </Tab>
+            <Tab label="preview">
+                <EmbedFile source="DownloadUrl" />
+            </Tab>
+
         </TabbedShowLayout>
     </Show>
 );
