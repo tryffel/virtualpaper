@@ -44,6 +44,9 @@ type documentResponse struct {
 	DownloadUrl string     `json:"download_url"`
 	Mimetype    string     `json:"mimetype"`
 	Type        string     `json:"type"`
+	Size        int64      `json:"size"`
+	PrettySize  string     `json:"pretty_size"`
+	Status      string     `json:"status"`
 }
 
 func responseFromDocument(doc *models.Document) *documentResponse {
@@ -58,6 +61,8 @@ func responseFromDocument(doc *models.Document) *documentResponse {
 		DownloadUrl: fmt.Sprintf("%s/api/v1/documents/%d/download", config.C.Api.PublicUrl, doc.Id),
 		Mimetype:    doc.Mimetype,
 		Type:        doc.GetType(),
+		Size:        doc.Size,
+		PrettySize:  doc.GetSize(),
 	}
 	return resp
 }
@@ -106,8 +111,20 @@ func (a *Api) getDocument(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	doc, err := a.db.DocumentStore.GetDocument(user, id)
+	if err != nil {
+		respError(resp, err)
+		return
+	}
 
-	respOk(resp, responseFromDocument(doc))
+	status, err := a.db.JobStore.GetDocumentStatus(doc.Id)
+	if err != nil {
+		respError(resp, err)
+		return
+	}
+
+	respDoc := responseFromDocument(doc)
+	respDoc.Status = status
+	respOk(resp, respDoc)
 }
 
 func (a *Api) getDocumentContent(resp http.ResponseWriter, req *http.Request) {

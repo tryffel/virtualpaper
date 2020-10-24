@@ -156,6 +156,53 @@ ORDER BY step ASC;
 	return dto, getDatabaseError(err)
 }
 
+// GetDocumentStatus returns status for given document:
+// pending, indexing, ready
+func (s *JobStore) GetDocumentStatus(documentId int) (string, error) {
+	sql := `
+SELECT running
+FROM process_queue
+WHERE document_id=$1
+GROUP BY running;
+`
+
+	rows, err := s.db.Query(sql, documentId)
+	if err != nil {
+		dbERr := getDatabaseError(err)
+		if errors.Is(dbERr, ErrRecordNotFound) {
+			return "ready", nil
+		}
+
+		return "", getDatabaseError(err)
+	}
+
+	jobPending := false
+	jobRunning := false
+
+	for rows.Next() {
+		var val bool
+		err = rows.Scan(&val)
+		if err != nil {
+			logrus.Warningf("unexpected token while 'getDocumentStatus' query: %v", err)
+		} else {
+			if val {
+				jobRunning = true
+			} else {
+				jobPending = true
+			}
+		}
+	}
+
+	if jobRunning {
+		return "indexing", nil
+	}
+
+	if jobPending {
+		return "pending", nil
+	}
+	return "ready", nil
+}
+
 // StartProcessItem attempts to mark processItem as running. If successful, create corresponding Job and
 // return it.
 func (s *JobStore) StartProcessItem(item *models.ProcessItem, msg string) (*models.Job, error) {

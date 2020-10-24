@@ -19,6 +19,8 @@
 package models
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -53,6 +55,27 @@ func (d *Document) GetType() string {
 	} else {
 		return d.Mimetype
 	}
+}
+
+func (d *Document) GetSize() string {
+	if d.Size < 1024 {
+		return strconv.Itoa(int(d.Size))
+	}
+	size := float64(d.Size)
+	size /= 1024
+	if size < 1024 {
+		return fmt.Sprintf("%.2f KiB", size)
+	}
+	size /= 1024
+	if size < 1024 {
+		return fmt.Sprintf("%.2f MiB", size)
+	}
+	size /= 1024
+	if size < 1024 {
+		return fmt.Sprintf("%.2f GiB", size)
+	}
+	return fmt.Sprintf("%f B", size)
+
 }
 
 // GetThumbnail returns thumbnail file name

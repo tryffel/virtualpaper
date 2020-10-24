@@ -123,10 +123,10 @@ func (s *DocumentStore) GetByHash(hash string) (*models.Document, error) {
 
 func (s *DocumentStore) Create(doc *models.Document) error {
 	sql := `
-INSERT INTO documents (user_id, name, content, filename, hash, mimetype)
-	VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;`
+INSERT INTO documents (user_id, name, content, filename, hash, mimetype, size)
+	VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;`
 
-	res, err := s.db.Query(sql, doc.UserId, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype)
+	res, err := s.db.Query(sql, doc.UserId, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size)
 	if err != nil {
 		return getDatabaseError(err)
 	}

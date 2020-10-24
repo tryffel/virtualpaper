@@ -170,6 +170,8 @@ export const DocumentShow = (props) => (
                 <ThumbnailField source="preview_url" />
                 <TextField source="id" />
                 <TextField source="name" />
+                <TextField source="pretty_size" label="Size"/>
+                <TextField source="status" />
                 <TextField source="created_at" />
                 <TextField source="updated_at" />
                 <FileField source="download_url" label="Download document" title={"filename"} />
@@ -199,8 +201,11 @@ export const DocumentCreate = (props) => (
         <SimpleForm>
             <TextInput source="id" label="id"/>
             <TextInput source="name" label="name" />
-            <FileInput accept="application/pdf" multiple={false} label="doc" />
-        </SimpleForm>
+            <FileInput accept="application/pdf" multiple={false} label="File upload" >
+                <FileField source="file" title="title" />
+            </FileInput>
+
+    </SimpleForm>
     </Create>
 );
 
