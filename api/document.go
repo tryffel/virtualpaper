@@ -34,16 +34,16 @@ import (
 )
 
 type documentResponse struct {
-	Id          int `json:"id"`
-	Name        string
-	Filename    string
-	Content     string
-	CreatedAt   PrettyTime
-	UpdatedAt   PrettyTime
-	PreviewUrl  string
-	DownloadUrl string
-	Mimetype    string
-	Type        string
+	Id          int        `json:"id"`
+	Name        string     `json:"name"`
+	Filename    string     `json:"filename"`
+	Content     string     `json:"content"`
+	CreatedAt   PrettyTime `json:"created_at"`
+	UpdatedAt   PrettyTime `json:"updated_at"`
+	PreviewUrl  string     `json:"preview_url"`
+	DownloadUrl string     `json:"download_url"`
+	Mimetype    string     `json:"mimetype"`
+	Type        string     `json:"type"`
 }
 
 func responseFromDocument(doc *models.Document) *documentResponse {
@@ -242,6 +242,7 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 		Filename: header.Filename,
 		Hash:     hash,
 		Mimetype: mimetype,
+		Size:     header.Size,
 	}
 
 	file, err := os.OpenFile(path.Join(config.C.Processing.DocumentsDir, hash), os.O_CREATE|os.O_WRONLY, os.ModePerm)

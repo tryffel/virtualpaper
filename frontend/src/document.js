@@ -140,15 +140,15 @@ const DocumentGrid = () => {
             {ids.map(id =>
                 <Card key={id} style={cardStyle}>
                     <CardHeader
-                        title={<TextField record={data[id]} source="Name" />}
-                        subheader={<DateField record={data[id]} source="CreatedAt" />}
+                        title={<TextField record={data[id]} source="name" />}
+                        subheader={<DateField record={data[id]} source="created_at" />}
                     />
                     <CardContent>
-                        <ThumbnailSmall url={data[id].PreviewUrl} title="Img" />
+                        <ThumbnailSmall url={data[id].preview_url} title="Img" />
                     </CardContent>
                     <CardActions style={{ textAlign: 'right' }}>
-                        <ShowButton resource="posts" basePath={basePath} record={data[id]} />
-                        <EditButton resource="posts" basePath={basePath} record={data[id]} />
+                        <ShowButton resource="documents" basePath={basePath} record={data[id]} />
+                        <EditButton resource="documents" basePath={basePath} record={data[id]} />
                     </CardActions>
                 </Card>
             )}
@@ -167,18 +167,18 @@ export const DocumentShow = (props) => (
     <Show {...props}>
         <TabbedShowLayout>
             <Tab label="general">
-                <ThumbnailField source="PreviewUrl" />
+                <ThumbnailField source="preview_url" />
                 <TextField source="id" />
-                <TextField source="Name" />
-                <TextField source="CreatedAt" />
-                <TextField source="UpdatedAt" />
-                <FileField source="DownloadUrl" label="Download document" title={"Filename"} />
+                <TextField source="name" />
+                <TextField source="created_at" />
+                <TextField source="updated_at" />
+                <FileField source="download_url" label="Download document" title={"filename"} />
             </Tab>
             <Tab label="content">
-                <RichTextField source="Content" />
+                <RichTextField source="content" />
             </Tab>
             <Tab label="preview">
-                <EmbedFile source="DownloadUrl" />
+                <EmbedFile source="download_url" />
             </Tab>
 
         </TabbedShowLayout>
@@ -189,7 +189,7 @@ export const DocumentEdit = (props) => (
     <Edit {...props}>
         <SimpleForm>
             <TextInput disabled label="Id" source="id" />
-            <TextInput source="Name" />
+            <TextInput source="name" />
         </SimpleForm>
     </Edit>
 );
@@ -197,7 +197,7 @@ export const DocumentEdit = (props) => (
 export const DocumentCreate = (props) => (
     <Create{...props}>
         <SimpleForm>
-            <TextInput source="Id" label="id"/>
+            <TextInput source="id" label="id"/>
             <TextInput source="name" label="name" />
             <FileInput accept="application/pdf" multiple={false} label="doc" />
         </SimpleForm>
