@@ -64,9 +64,12 @@ func (m *Manager) Start() error {
 
 	logrus.Infof("Watch directory %s", config.C.Processing.InputDir)
 
-	err := m.inputWatch.Add(config.C.Processing.InputDir)
-	if err != nil {
-		return fmt.Errorf("add input directory watch: %v", err)
+	if config.C.Processing.InputDir != "" {
+		logrus.Infof("add directory wath for %s", config.C.Processing.InputDir)
+		err := m.inputWatch.Add(config.C.Processing.InputDir)
+		if err != nil {
+			return fmt.Errorf("add input directory watch: %v", err)
+		}
 	}
 
 	for _, task := range m.tasks {
@@ -79,7 +82,8 @@ func (m *Manager) Start() error {
 		m.lock.Unlock()
 		logrus.Debug("start background task manager")
 
-		time.Sleep(2)
+		err := m.db.JobStore.CancelRunningProcesses()
+		time.Sleep(time.Millisecond * 3000)
 
 		docs := map[int]*models.Document{}
 		processes, _, err := m.db.JobStore.GetPendingProcessing()

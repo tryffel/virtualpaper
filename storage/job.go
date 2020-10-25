@@ -239,6 +239,16 @@ AND running=FALSE;
 	return job, getDatabaseError(err)
 }
 
+// CreateProcessItem add single process item.
+func (s *JobStore) CreateProcessItem(item *models.ProcessItem) error {
+	sql := `
+INSERT INTO process_queue (document_id, step)
+VALUES ($1, $2);
+`
+	_, err := s.db.Exec(sql, item.DocumentId, item.Step)
+	return getDatabaseError(err)
+}
+
 // MarkProcessinDone update given item. If ok, remove record, else mark it as not running
 func (s *JobStore) MarkProcessingDone(item *models.ProcessItem, ok bool) error {
 	var sql string
@@ -287,5 +297,17 @@ VALUES
 	sql += ";"
 
 	_, err = s.db.Exec(sql, args...)
+	return getDatabaseError(err)
+}
+
+// CancelRunningProcesses marks all processes that are currently running as not running.
+func (s *JobStore) CancelRunningProcesses() error {
+	sql := `
+UPDATE process_queue
+SET running=FALSE
+WHERE running=TRUE
+`
+
+	_, err := s.db.Exec(sql)
 	return getDatabaseError(err)
 }
