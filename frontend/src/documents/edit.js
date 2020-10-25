@@ -17,19 +17,17 @@
  */
 
 import * as React from "react";
-import { Admin, Resource } from 'react-admin';
-
-import { dataProvider } from "./dataProvider";
-import authProvider from './authProvider';
-import { DocumentList, DocumentShow, DocumentEdit, DocumentCreate } from './document';
-import { JobList} from "./job";
+import {DateInput, DateTimeInput, Edit, SimpleForm, TextInput} from "react-admin";
 
 
-const App = () => (
-        <Resource name="documents" {...documents}/>
-        <Resource name="jobs" list={JobList} />
-    </Admin>
-    );
-
-export default App;
-
+export const DocumentEdit = (props) => (
+    <Edit {...props}>
+        <SimpleForm>
+            <TextInput disabled label="Id" source="id" />
+            <TextInput source="name" />
+            <DateInput source="date" />
+            <DateTimeInput source="created_at" disabled />
+            <DateTimeInput source="updated_at" disabled />
+        </SimpleForm>
+    </Edit>
+);

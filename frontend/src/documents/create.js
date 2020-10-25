@@ -16,20 +16,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+
 import * as React from "react";
-import { Admin, Resource } from 'react-admin';
-
-import { dataProvider } from "./dataProvider";
-import authProvider from './authProvider';
-import { DocumentList, DocumentShow, DocumentEdit, DocumentCreate } from './document';
-import { JobList} from "./job";
+import {Create, FileField, FileInput, SimpleForm, TextInput} from "react-admin";
 
 
-const App = () => (
-        <Resource name="documents" {...documents}/>
-        <Resource name="jobs" list={JobList} />
-    </Admin>
-    );
+export const DocumentCreate = (props) => (
+    <Create{...props}>
+        <SimpleForm>
+            <TextInput disabled source="id" label="id"/>
+            <TextInput source="name" label="name" />
+            <FileInput accept="application/pdf" multiple={false} label="File upload" >
+                <FileField source="file" title="title" />
+            </FileInput>
 
-export default App;
+        </SimpleForm>
+    </Create>
+);
 

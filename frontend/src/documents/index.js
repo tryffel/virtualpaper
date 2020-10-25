@@ -16,20 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import * as React from "react";
-import { Admin, Resource } from 'react-admin';
+import { DocumentShow} from "./show";
+import { DocumentEdit} from "./edit";
+import { DocumentList} from "./list";
+import { DocumentCreate} from "./create";
 
-import { dataProvider } from "./dataProvider";
-import authProvider from './authProvider';
-import { DocumentList, DocumentShow, DocumentEdit, DocumentCreate } from './document';
-import { JobList} from "./job";
+export default {
+    create: DocumentCreate,
+    edit: DocumentEdit,
+    list: DocumentList,
+    show: DocumentShow,
 
-
-const App = () => (
-        <Resource name="documents" {...documents}/>
-        <Resource name="jobs" list={JobList} />
-    </Admin>
-    );
-
-export default App;
-
+}
