@@ -37,6 +37,9 @@ func (p PrettyTime) MarshalJSON() ([]byte, error) {
 
 func respJson(resp http.ResponseWriter, body interface{}, statusCode int) error {
 	var err error
+	if statusCode == 200 && resp.Header().Get("Cache-Control") == "" {
+		resp.Header().Set("Cache-Control", "max-age=120")
+	}
 	resp.Header().Set("Content-Type", "application/json")
 	resp.WriteHeader(statusCode)
 	if body != nil {

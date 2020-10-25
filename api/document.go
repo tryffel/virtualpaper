@@ -239,6 +239,7 @@ func (a *Api) getDocumentPreview(resp http.ResponseWriter, req *http.Request) {
 	header.Set("Content-Type", "image/png")
 	header.Set("Content-Length", strconv.Itoa(int(stat.Size())))
 	header.Set("Content-Disposition", "attachment; filename="+doc.Hash+".png")
+	resp.Header().Set("Cache-Control", "max-age=600")
 
 	defer file.Close()
 
@@ -352,6 +353,7 @@ func (a *Api) downloadDocument(resp http.ResponseWriter, req *http.Request) {
 
 	resp.Header().Set("Content-Type", doc.Mimetype)
 	resp.Header().Set("Content-Length", strconv.Itoa(int(size)))
+	resp.Header().Set("Cache-Control", "max-age=600")
 
 	_, err = io.Copy(resp, file)
 	if err != nil {

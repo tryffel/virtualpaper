@@ -16,7 +16,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 const dev = {
     url: "http://localhost:8000/api/v1"
 }
@@ -26,6 +25,6 @@ const prod = {
 }
 
 // Default to dev if not set
-export const config = process.env.ENV === 'prod'
+export const config = process.env.REACT_APP_STAGE === 'prod'
     ? prod
     : dev;
