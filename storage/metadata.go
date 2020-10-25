@@ -56,3 +56,19 @@ ORDER BY key ASC;
 	err := s.db.Select(object, sql, args...)
 	return object, getDatabaseError(err)
 }
+
+func (s *MetadataStore) GetDocumentTags(userId int, documentId int) (*[]models.Tag, error) {
+	sql := `
+select tags.id as id, tags.key as key, tags.comment as comment
+from tags
+LEFT JOIN document_tags dt on tags.id = dt.tag_id
+LEFT JOIN documents d on dt.document_id = d.id
+WHERE dt.document_id= $1
+and d.user_id = $2
+order by key asc
+limit 100;
+`
+	object := &[]models.Tag{}
+	err := s.db.Select(object, sql, documentId, userId)
+	return object, getDatabaseError(err)
+}

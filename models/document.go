@@ -37,6 +37,7 @@ type Document struct {
 	Size     int64     `db:"size"`
 	Date     time.Time `db:"date"`
 	Metadata []Metadata
+	Tags     []Tag
 }
 
 // IsImage returns true if document file is image.

@@ -16,40 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package migration
+package models
 
-const schemaV3 = `
-CREATE TABLE metadata (
-	document_id INT,
-	
-	key TEXT NOT NULL,
-	key_lower TEXT NOT NULL,
+import "time"
 
-	value TEXT NOT NULL,
-	value_lower TEXT NOT NULL,
-
-	CONSTRAINT pk_metadata PRIMARY KEY (document_id, key_lower),
-	CONSTRAINT fk_document FOREIGN KEY(document_id) REFERENCES documents(id)
-);
-
-
-CREATE TABLE tags (
-	id SERIAL,
-	user_id INT,
-	key TEXT NOT NULL,
-	comment TEXT NOT NULL DEFAULT '',
-  	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  	updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-
-	CONSTRAINT tags_user_key_unique UNIQUE (user_id, key),
-	CONSTRAINT tags_pkey PRIMARY KEY (id)
-);
-
-
-CREATE TABLE document_tags (
-	document_id INT,
-	tag_id,
-
-	CONSTRAINT document_tags_pkey PRIMARY KEY (document_id, tag_id)
-);
-`
+type Tag struct {
+	Id        int       `db:"id" json:"id"`
+	Key       string    `db:"key" json:"key"`
+	Comment   string    `db:"comment" json:"comment"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
+}

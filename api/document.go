@@ -50,6 +50,7 @@ type documentResponse struct {
 	PrettySize  string            `json:"pretty_size"`
 	Status      string            `json:"status"`
 	Metadata    []models.Metadata `json:"metadata"`
+	Tags        []models.Tag      `json:"tags"`
 }
 
 func responseFromDocument(doc *models.Document) *documentResponse {
@@ -68,6 +69,7 @@ func responseFromDocument(doc *models.Document) *documentResponse {
 		Size:        doc.Size,
 		PrettySize:  doc.GetSize(),
 		Metadata:    doc.Metadata,
+		Tags:        doc.Tags,
 	}
 	return resp
 }
@@ -145,8 +147,15 @@ func (a *Api) getDocument(resp http.ResponseWriter, req *http.Request) {
 		respError(resp, err, handler)
 		return
 	}
-
 	doc.Metadata = *metadata
+
+	tags, err := a.db.MetadataStore.GetDocumentTags(user, id)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+	doc.Tags = *tags
+
 	respDoc := responseFromDocument(doc)
 	respDoc.Status = status
 	respOk(resp, respDoc)
