@@ -231,8 +231,28 @@ func (a *Api) getDocumentPreview(resp http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			// TODO: mark document missing thumbnail
-			logrus.Warningf("document %d does not have thumbnail", id)
-			respError(resp, storage.ErrRecordNotFound)
+			logrus.Warningf("document %d does not have thumbnail, scheduling", id)
+			process := &models.ProcessItem{
+				DocumentId: doc.Id,
+				Document:   nil,
+				Step:       models.ProcessThumbnail,
+				CreatedAt:  time.Now(),
+			}
+
+			err = a.db.JobStore.CreateProcessItem(process)
+			if err != nil {
+				logrus.Error("add process step for missing thumbnail (doc %c): %v", doc.Id, err)
+			}
+
+			err = a.process.AddDocumentForProcessing(doc)
+			if err != nil {
+				if errors.Is(err, storage.ErrAlreadyExists) {
+					// process exists already
+				} else {
+					logrus.Error("schedule document thumbnail (doc %c): %v", doc.Id, err)
+				}
+			}
+			respError(resp, storage.ErrInternalError, handler)
 			return
 		}
 		respError(resp, err, handler)
