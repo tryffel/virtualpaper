@@ -318,7 +318,10 @@ func (fp *fileProcessor) createNewDocumentRecord() error {
 		Name:     fileName,
 		Content:  "",
 		Filename: fileName,
+		Date:     time.Now(),
 	}
+	doc.UpdatedAt = time.Now()
+	doc.CreatedAt = time.Now()
 
 	var err error
 	doc.Hash, err = getHash(fp.rawFile)

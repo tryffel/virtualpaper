@@ -309,6 +309,7 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 		Hash:     hash,
 		Mimetype: mimetype,
 		Size:     header.Size,
+		Date:     time.Now(),
 	}
 
 	file, err := os.OpenFile(path.Join(config.C.Processing.DocumentsDir, hash), os.O_CREATE|os.O_WRONLY, os.ModePerm)
