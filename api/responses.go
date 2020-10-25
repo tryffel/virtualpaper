@@ -38,7 +38,7 @@ func (p PrettyTime) MarshalJSON() ([]byte, error) {
 func respJson(resp http.ResponseWriter, body interface{}, statusCode int) error {
 	var err error
 	if statusCode == 200 && resp.Header().Get("Cache-Control") == "" {
-		resp.Header().Set("Cache-Control", "max-age=120")
+		resp.Header().Set("Cache-Control", "max-age=10")
 	}
 	resp.Header().Set("Content-Type", "application/json")
 	resp.WriteHeader(statusCode)
@@ -53,30 +53,42 @@ func respUnauthorized(resp http.ResponseWriter) error {
 	return respJson(resp, map[string]string{"Error": "Unauthorized"}, http.StatusUnauthorized)
 }
 
-func respOk(resp http.ResponseWriter, body interface{}) error {
-	return respJson(resp, body, http.StatusOK)
+func respOk(resp http.ResponseWriter, body interface{}) {
+	err := respJson(resp, body, http.StatusOK)
+	if err != nil {
+		logrus.Error("write resp ok: %v", err)
+	}
 }
 
-func respResourceList(resp http.ResponseWriter, body interface{}, totalCount int) error {
+func respResourceList(resp http.ResponseWriter, body interface{}, totalCount int) {
 	resp.Header().Set("Access-Control-Expose-Headers", "content-range")
 	resp.Header().Set("Content-Range", strconv.Itoa(totalCount))
-	return respJson(resp, body, http.StatusOK)
+	err := respJson(resp, body, http.StatusOK)
+	if err != nil {
+		logrus.Error("send resource list resp: %v", err)
+	}
 }
 
-func respBadRequest(resp http.ResponseWriter, reason string, body interface{}) error {
+func respBadRequest(resp http.ResponseWriter, reason string, body interface{}) {
 	if reason != "" && body == nil {
 		body = map[string]string{
 			"Error": reason,
 		}
 	}
-	return respJson(resp, body, http.StatusBadRequest)
+	err := respJson(resp, body, http.StatusBadRequest)
+	if err != nil {
+		logrus.Errorf("send resp bad request: %v", err)
+	}
 }
 
-func respInternalError(resp http.ResponseWriter) error {
-	return respJson(resp, nil, http.StatusInternalServerError)
+func respInternalError(resp http.ResponseWriter) {
+	err := respJson(resp, nil, http.StatusInternalServerError)
+	if err != nil {
+		logrus.Error("write response: %v", err)
+	}
 }
 
-func respError(resp http.ResponseWriter, err error) error {
+func respError(resp http.ResponseWriter, err error, handler string) {
 	var statuscode int
 	var reason string
 
@@ -89,7 +101,7 @@ func respError(resp http.ResponseWriter, err error) error {
 	} else if errors.Is(err, storage.ErrInternalError) {
 		statuscode = http.StatusInternalServerError
 		reason = "internal error"
-		logrus.Errorf("internal db error: %v", err)
+		logrus.WithField("handler", handler).Errorf("internal error: %v", err)
 	} else if errors.Is(err, storage.ErrForbidden) {
 		statuscode = http.StatusForbidden
 		reason = err.Error()
@@ -99,12 +111,15 @@ func respError(resp http.ResponseWriter, err error) error {
 		reason = err.Error()
 	} else {
 		statuscode = http.StatusInternalServerError
-		reason = "internal error"
+		reason = "internal error, please try again shortly"
 		logrus.Errorf("internal error: %v", err)
 	}
 
 	body := map[string]string{
 		"Error": reason,
 	}
-	return respJson(resp, body, statuscode)
+	respErr := respJson(resp, body, statuscode)
+	if respErr != nil {
+		logrus.WithField("handler", handler).Errorf("write error response: %v", err)
+	}
 }

@@ -7,9 +7,10 @@ import (
 )
 
 func (a *Api) GetJob(w http.ResponseWriter, req *http.Request) {
+	handler := "api.GetJob"
 	userId, ok := getUserId(req)
 	if !ok {
-		respError(w, fmt.Errorf("user id not found: %v", storage.ErrInternalError))
+		respError(w, fmt.Errorf("user id not found: %v", storage.ErrInternalError), handler)
 		return
 	}
 
@@ -21,7 +22,7 @@ func (a *Api) GetJob(w http.ResponseWriter, req *http.Request) {
 
 	jobs, err := a.db.JobStore.GetByUser(userId, params)
 	if err != nil {
-		respError(w, err)
+		respError(w, err, handler)
 		return
 	}
 

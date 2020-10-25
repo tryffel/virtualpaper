@@ -113,6 +113,7 @@ func (a *Api) getDocuments(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) getDocument(resp http.ResponseWriter, req *http.Request) {
+	handler := "Api.getDocument"
 	user, ok := getUserId(req)
 	if !ok {
 		logrus.Errorf("no user in context")
@@ -129,19 +130,19 @@ func (a *Api) getDocument(resp http.ResponseWriter, req *http.Request) {
 
 	doc, err := a.db.DocumentStore.GetDocument(user, id)
 	if err != nil {
-		respError(resp, err)
+		respError(resp, err, handler)
 		return
 	}
 
 	status, err := a.db.JobStore.GetDocumentStatus(doc.Id)
 	if err != nil {
-		respError(resp, err)
+		respError(resp, err, handler)
 		return
 	}
 
 	metadata, err := a.db.MetadataStore.GetDocumentMetadata(user, id)
 	if err != nil {
-		respError(resp, err)
+		respError(resp, err, handler)
 		return
 	}
 
@@ -172,6 +173,7 @@ func (a *Api) getDocumentContent(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) getDocumentLogs(resp http.ResponseWriter, req *http.Request) {
+	handler := "Api.getDocumentLogs"
 	user, ok := getUserId(req)
 	if !ok {
 		logrus.Errorf("no user in context")
@@ -187,7 +189,7 @@ func (a *Api) getDocumentLogs(resp http.ResponseWriter, req *http.Request) {
 	owns, err := a.db.DocumentStore.UserOwnsDocument(id, user)
 	if err != nil {
 		logrus.Errorf("Get document ownserhip: %v", err)
-		respError(resp, err)
+		respError(resp, err, handler)
 		return
 	}
 
@@ -199,13 +201,14 @@ func (a *Api) getDocumentLogs(resp http.ResponseWriter, req *http.Request) {
 	job, err := a.db.JobStore.GetByDocument(id)
 	if err != nil {
 		logrus.Errorf("get document jobs: %v", err)
-		respError(resp, err)
+		respError(resp, err, handler)
 		return
 	}
 	respOk(resp, job)
 }
 
 func (a *Api) getDocumentPreview(resp http.ResponseWriter, req *http.Request) {
+	handler := "Api.getDocumentPreview"
 	user, ok := getUserId(req)
 	if !ok {
 		logrus.Errorf("no user in context")
@@ -220,7 +223,7 @@ func (a *Api) getDocumentPreview(resp http.ResponseWriter, req *http.Request) {
 
 	doc, err := a.db.DocumentStore.GetDocument(user, id)
 	if err != nil {
-		respError(resp, err)
+		respError(resp, err, handler)
 		return
 	}
 
@@ -232,12 +235,12 @@ func (a *Api) getDocumentPreview(resp http.ResponseWriter, req *http.Request) {
 			respError(resp, storage.ErrRecordNotFound)
 			return
 		}
-		respError(resp, err)
+		respError(resp, err, handler)
 		return
 	}
 	stat, err := file.Stat()
 	if err != nil {
-		respError(resp, fmt.Errorf("get file preview stat: %v", err))
+		respError(resp, fmt.Errorf("get file preview stat: %v", err), handler)
 		return
 	}
 
@@ -251,7 +254,7 @@ func (a *Api) getDocumentPreview(resp http.ResponseWriter, req *http.Request) {
 
 	_, err = io.Copy(resp, file)
 	if err != nil {
-		respError(resp, err)
+		respError(resp, err, handler)
 	} else {
 		respOk(resp, nil)
 	}
@@ -259,15 +262,16 @@ func (a *Api) getDocumentPreview(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
+	handler := "api.uploadFile"
 	userId, ok := getUserId(req)
 	if !ok {
-		respError(resp, errors.New("no userId found"))
+		respError(resp, errors.New("no userId found"), handler)
 	}
 	var err error
 	err = req.ParseMultipartForm(1024 * 1024 * 500)
 	reader, header, err := req.FormFile("file")
 	if err != nil {
-		respError(resp, fmt.Errorf("parse multipart"))
+		respError(resp, fmt.Errorf("parse multipart"), handler)
 		return
 	}
 
@@ -289,14 +293,14 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 
 	file, err := os.OpenFile(path.Join(config.C.Processing.DocumentsDir, hash), os.O_CREATE|os.O_WRONLY, os.ModePerm)
 	if err != nil {
-		respError(resp, fmt.Errorf("open new file for saving upload: %v", err))
+		respError(resp, fmt.Errorf("open new file for saving upload: %v", err), handler)
 		return
 	}
 	defer file.Close()
 
 	n, err := file.ReadFrom(reader)
 	if err != nil {
-		respError(resp, fmt.Errorf("write uploaded file to disk: %v", err))
+		respError(resp, fmt.Errorf("write uploaded file to disk: %v", err), handler)
 		return
 	}
 
@@ -307,18 +311,18 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 
 	err = a.db.DocumentStore.Create(document)
 	if err != nil {
-		respError(resp, err)
+		respError(resp, err, handler)
 		return
 	}
 
 	err = a.db.JobStore.AddDocument(document)
 	if err != nil {
-		respError(resp, fmt.Errorf("add process steps for new document: %v", err))
+		respError(resp, fmt.Errorf("add process steps for new document: %v", err), handler)
 		return
 	}
 	err = a.process.AddDocumentForProcessing(document)
 	if err != nil {
-		respError(resp, err)
+		respError(resp, err, handler)
 	} else {
 		respOk(resp, responseFromDocument(document))
 	}
@@ -331,9 +335,10 @@ func (a *Api) getEmptyDocument(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) downloadDocument(resp http.ResponseWriter, req *http.Request) {
+	handler := "download document"
 	userId, ok := getUserId(req)
 	if !ok {
-		respError(resp, errors.New("no userId found"))
+		respError(resp, errors.New("no userId found"), handler)
 	}
 	var err error
 
@@ -347,13 +352,13 @@ func (a *Api) downloadDocument(resp http.ResponseWriter, req *http.Request) {
 
 	doc, err := a.db.DocumentStore.GetDocument(userId, id)
 	if err != nil {
-		respError(resp, err)
+		respError(resp, err, handler)
 		return
 	}
 
 	file, err := os.Open(path.Join(config.C.Processing.DocumentsDir, doc.Hash))
 	if err != nil {
-		respError(resp, err)
+		respError(resp, err, handler)
 		return
 	}
 
@@ -368,13 +373,14 @@ func (a *Api) downloadDocument(resp http.ResponseWriter, req *http.Request) {
 
 	_, err = io.Copy(resp, file)
 	if err != nil {
-		respError(resp, err)
+		respError(resp, err, handler)
 		return
 	}
 
 }
 
 func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
+	handler := "Api.updateDocument"
 	user, ok := getUserId(req)
 	if !ok {
 		logrus.Errorf("no user in context")
@@ -392,13 +398,13 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 	dto := &documentUpdateRequest{}
 	err = unMarshalBody(req, dto)
 	if err != nil {
-		respError(resp, err)
+		respError(resp, err, handler)
 		return
 	}
 
 	doc, err := a.db.DocumentStore.GetDocument(user, id)
 	if err != nil {
-		respError(resp, err)
+		respError(resp, err, handler)
 		return
 	}
 
@@ -410,9 +416,8 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 
 	err = a.db.DocumentStore.Update(doc)
 	if err != nil {
-		respError(resp, err)
-	} else {
-		respResourceList(resp, responseFromDocument(doc), 1)
+		respError(resp, err, handler)
+		return
 	}
 
 	err = a.search.IndexDocuments(&[]models.Document{*doc}, user)
@@ -423,6 +428,7 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) searchDocuments(userId int, q string, resp http.ResponseWriter, req *http.Request) {
+	handler := "api.searchDocuments"
 
 	paging, err := getPaging(req)
 	if err != nil {
@@ -433,7 +439,7 @@ func (a *Api) searchDocuments(userId int, q string, resp http.ResponseWriter, re
 
 	res, n, err := a.search.SearchDocuments(userId, q, "", paging)
 	if err != nil {
-		respError(resp, err)
+		respError(resp, err, handler)
 		return
 	}
 

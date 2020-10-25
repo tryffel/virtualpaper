@@ -48,7 +48,7 @@ func (a *Api) authorizeUser(next http.Handler) http.Handler {
 
 		parts := strings.Split(key, " ")
 		if len(parts) != 2 {
-			err = respBadRequest(w, "Invalid token", nil)
+			respBadRequest(w, "Invalid token", nil)
 			return
 		}
 
@@ -138,10 +138,7 @@ func (a *Api) login(resp http.ResponseWriter, req *http.Request) {
 	headers := req.Header
 	token := headers.Get("Authorization")
 	if len(token) > 0 {
-		err := respBadRequest(resp, "already logged in", nil)
-		if err != nil {
-			logrus.Error(err)
-		}
+		respBadRequest(resp, "already logged in", nil)
 		return
 	}
 
