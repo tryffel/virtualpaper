@@ -1,9 +1,18 @@
+# Virtualpaper configuration file
 
+# http api
 [api]
+# host & port to bind
 host = "127.0.0.1"
 port = 8000
+# secret key, a new one is created if key is empty. Don't expose it.
 secret_key = ""
+# If you need to define cors hosts, put all hosts here.
+cors_hosts = []
+# Public facing url, for creating urls for clients
+public_url = "localhost:8000"
 
+# Database, only postgres is supported.
 [database]
 host = "localhost"
 port = 5432
@@ -11,8 +20,16 @@ username = "virtualpaper"
 password = "very-secret-password"
 database = "virtualpaper"
 
+# Meilisearch search-engine. A new meilisearch-index is created for each user-id.
+[meilisearch]
+apikey = ""
+url = "http://localhost:7700"
+
+# Processing / application data.
 [processing]
 input_dir = "input"
 tmp_dir = "/tmp"
+# output directory is where all documents / data is persisted.
 output_dir = "media"
+# Max background workers allowed. If empty, set to number of cpus available.
 max_workers = 4
