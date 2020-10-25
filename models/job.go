@@ -73,8 +73,12 @@ type Job struct {
 
 // JobComposite contains additional information. Actual underlying model is still Job.
 type JobComposite struct {
-	*Job
+	Job
 	Duration time.Duration `db:"duration" json:"duration"`
+}
+
+func (jc *JobComposite) SetDuration() {
+	jc.Duration = jc.StoppedAt.Sub(jc.StartedAt)
 }
 
 // ProcessStep describes next step for document.
