@@ -24,7 +24,7 @@ CREATE TABLE process_queue (
 	document_id INT,
 	step INT,
 	running BOOL NOT NULL default FALSE,
-	created_at TIMESTAMPTZ default now()
+	created_at TIMESTAMPTZ default now(),
 
 	CONSTRAINT pk_queue PRIMARY KEY(document_id, step),
 	CONSTRAINT fk_document FOREIGN KEY(document_id) REFERENCES documents(id)

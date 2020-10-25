@@ -39,7 +39,7 @@ CREATE TABLE documents (
     filename TEXT UNIQUE,
 	hash TEXT NOT NULL DEFAULT '',
 
-	mimetype TEXT NOT NULL DEFAULT "",
+	mimetype TEXT NOT NULL DEFAULT '',
 	size BIGINT NOT NULL DEFAULT 0,
 
 	date DATE NOT NULL DEFAULT now(),
