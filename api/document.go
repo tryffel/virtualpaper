@@ -414,6 +414,12 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 	} else {
 		respResourceList(resp, responseFromDocument(doc), 1)
 	}
+
+	err = a.search.IndexDocuments(&[]models.Document{*doc}, user)
+	if err != nil {
+		respError(resp, err, handler)
+	}
+	respResourceList(resp, responseFromDocument(doc), 1)
 }
 
 func (a *Api) searchDocuments(userId int, q string, resp http.ResponseWriter, req *http.Request) {
