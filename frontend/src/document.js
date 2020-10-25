@@ -20,18 +20,18 @@ import * as React from "react";
 import { useState } from 'react';
 import { List, TextField, Show, TextInput, Edit, SimpleForm,
     useListContext, DateField, EditButton, ShowButton, FileInput, Create, RichTextField, TabbedShowLayout,
-    Tab, FileField, DateInput, DateTimeInput} from "react-admin";
-import { Card, CardActions, CardContent, CardHeader } from '@material-ui/core';
+    Tab, FileField, DateInput, DateTimeInput, ArrayField, Datagrid} from "react-admin";
+import { Card, CardActions, CardContent, CardHeader, CardMedia, CardActionArea } from '@material-ui/core';
 import PropTypes from 'prop-types';
 import get from 'lodash/get';
 
 
 const cardStyle = {
-    width: 400,
+    width: 280,
     minHeight: 400,
     margin: '0.5em',
     display: 'inline-block',
-    verticalAlign: 'top'
+    verticalAlign: 'top',
 };
 
 function downloadFile(url) {
@@ -93,9 +93,9 @@ function ThumbnailSmall ({ url })
     });
 
     return (
-        <div>
-            <img src={imgData}/>
-        </div>
+        <div style={{'overflow':'hidden', 'max-height': '200px'}}>
+            <img src={imgData} style={{'max-width': '250px'}}/>
+            </div>
     );
 }
 
@@ -139,13 +139,16 @@ const DocumentGrid = () => {
         <div style={{ margin: '1em' }}>
             {ids.map(id =>
                 <Card key={id} style={cardStyle}>
+                <CardActionArea>
                     <CardHeader
                         title={<TextField record={data[id]} source="name" />}
                         subheader={<DateField record={data[id]} source="created_at" />}
                     />
-                    <CardContent>
-                        <ThumbnailSmall url={data[id].preview_url} title="Img" />
-                    </CardContent>
+                        <CardContent>
+
+                        <ThumbnailSmall component="img" url={data[id].preview_url} title="Img" />
+                            </CardContent>
+                </CardActionArea>
                     <CardActions style={{ textAlign: 'right' }}>
                         <ShowButton resource="documents" basePath={basePath} record={data[id]} />
                         <EditButton resource="documents" basePath={basePath} record={data[id]} />
@@ -176,6 +179,13 @@ export const DocumentShow = (props) => (
                 <DateField source="created_at" showTime={true} />
                 <DateField source="updated_at" showTime={true}/>
                 <FileField source="download_url" label="Download document" title={"filename"} />
+
+                <ArrayField source="metadata">
+                    <Datagrid>
+                        <TextField source="key" />
+                        <TextField source="value" />
+                    </Datagrid>
+                </ArrayField>
             </Tab>
             <Tab label="content">
                 <RichTextField source="content" />
@@ -203,7 +213,7 @@ export const DocumentEdit = (props) => (
 export const DocumentCreate = (props) => (
     <Create{...props}>
         <SimpleForm>
-            <TextInput source="id" label="id"/>
+            <TextInput disabled source="id" label="id"/>
             <TextInput source="name" label="name" />
             <FileInput accept="application/pdf" multiple={false} label="File upload" >
                 <FileField source="file" title="title" />

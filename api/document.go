@@ -35,20 +35,21 @@ import (
 )
 
 type documentResponse struct {
-	Id          int    `json:"id"`
-	Name        string `json:"name"`
-	Filename    string `json:"filename"`
-	Content     string `json:"content"`
-	CreatedAt   int64  `json:"created_at"`
-	UpdatedAt   int64  `json:"updated_at"`
-	Date        int64  `json:"date"`
-	PreviewUrl  string `json:"preview_url"`
-	DownloadUrl string `json:"download_url"`
-	Mimetype    string `json:"mimetype"`
-	Type        string `json:"type"`
-	Size        int64  `json:"size"`
-	PrettySize  string `json:"pretty_size"`
-	Status      string `json:"status"`
+	Id          int               `json:"id"`
+	Name        string            `json:"name"`
+	Filename    string            `json:"filename"`
+	Content     string            `json:"content"`
+	CreatedAt   int64             `json:"created_at"`
+	UpdatedAt   int64             `json:"updated_at"`
+	Date        int64             `json:"date"`
+	PreviewUrl  string            `json:"preview_url"`
+	DownloadUrl string            `json:"download_url"`
+	Mimetype    string            `json:"mimetype"`
+	Type        string            `json:"type"`
+	Size        int64             `json:"size"`
+	PrettySize  string            `json:"pretty_size"`
+	Status      string            `json:"status"`
+	Metadata    []models.Metadata `json:"metadata"`
 }
 
 func responseFromDocument(doc *models.Document) *documentResponse {
@@ -66,6 +67,7 @@ func responseFromDocument(doc *models.Document) *documentResponse {
 		Type:        doc.GetType(),
 		Size:        doc.Size,
 		PrettySize:  doc.GetSize(),
+		Metadata:    doc.Metadata,
 	}
 	return resp
 }
@@ -131,6 +133,13 @@ func (a *Api) getDocument(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	metadata, err := a.db.MetadataStore.GetDocumentMetadata(user, id)
+	if err != nil {
+		respError(resp, err)
+		return
+	}
+
+	doc.Metadata = *metadata
 	respDoc := responseFromDocument(doc)
 	respDoc.Status = status
 	respOk(resp, respDoc)

@@ -36,6 +36,7 @@ type Document struct {
 	Mimetype string    `db:"mimetype"`
 	Size     int64     `db:"size"`
 	Date     time.Time `db:"date"`
+	Metadata []Metadata
 }
 
 // IsImage returns true if document file is image.
@@ -97,4 +98,9 @@ func (d *Document) FilterAttributes() []string {
 
 func (d *Document) SortAttributes() []string {
 	return d.FilterAttributes()
+}
+
+type Metadata struct {
+	Key   string `db:"key" json:"key"`
+	Value string `db:"value" json:"value"`
 }

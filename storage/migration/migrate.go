@@ -37,6 +37,11 @@ var Migrations = []Migrator{
 		Level:  2,
 		Schema: schemaV2,
 	},
+	&Migration{
+		Name:   "document metadata",
+		Level:  3,
+		Schema: schemaV3,
+	},
 }
 
 type Schema struct {

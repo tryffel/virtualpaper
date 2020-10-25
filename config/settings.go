@@ -1,5 +1,5 @@
 package config
 
 const (
-	SchemaVersion = 1
+	SchemaVersion = 3
 )
