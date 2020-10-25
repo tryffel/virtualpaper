@@ -22,7 +22,9 @@ var serveCmd = &cobra.Command{
 			return
 		}
 
-		server.Serve()
-
+		err = server.Serve()
+		if err != nil {
+			logrus.Error("start server: %v", err)
+		}
 	},
 }

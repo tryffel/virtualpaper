@@ -109,7 +109,10 @@ func (a *Api) addRoutes() {
 }
 
 func (a *Api) Serve() error {
-	a.process.Start()
+	err := a.process.Start()
+	if err != nil {
+		return err
+	}
 	return a.server.ListenAndServe()
 }
 
