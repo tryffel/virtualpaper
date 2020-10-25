@@ -27,6 +27,8 @@ import (
 	"net/http"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
+	"tryffel.net/go/virtualpaper/process"
+	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
@@ -37,8 +39,10 @@ type Api struct {
 	// privateRouter routes only authenticated endpoints
 	privateRouter *mux.Router
 
-	cors http.Handler
-	db   *storage.Database
+	cors    http.Handler
+	db      *storage.Database
+	search  *search.Engine
+	process *process.Manager
 }
 
 // NewApi initializes new api instance. It connects to database and opens http port.
@@ -58,11 +62,20 @@ func NewApi(database *storage.Database) (*Api, error) {
 		ReadTimeout:  time.Second * 30,
 	}
 
+	var err error
+	api.search, err = search.NewEngine(database)
+	if err != nil {
+		return api, err
+	}
+
+	api.process, err = process.NewManager(database, api.search)
+	if err != nil {
+		return api, err
+	}
+
 	api.privateRouter = api.baseRouter.PathPrefix("/api/v1").Subrouter()
-
 	api.addRoutes()
-
-	return api, nil
+	return api, err
 }
 
 func (a *Api) addRoutes() {
@@ -96,6 +109,7 @@ func (a *Api) addRoutes() {
 }
 
 func (a *Api) Serve() error {
+	a.process.Start()
 	return a.server.ListenAndServe()
 }
 

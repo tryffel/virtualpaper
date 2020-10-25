@@ -12,6 +12,7 @@ import (
 	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
@@ -24,9 +25,9 @@ type fileProcessor struct {
 	tempFile *os.File
 }
 
-func newFileProcessor(id int, db *storage.Database) *fileProcessor {
+func newFileProcessor(id int, db *storage.Database, search *search.Engine) *fileProcessor {
 	fp := &fileProcessor{
-		Task:  newTask(id, db),
+		Task:  newTask(id, db, search),
 		input: make(chan fileOp, 5),
 	}
 	fp.idle = true
@@ -67,6 +68,8 @@ func (fp *fileProcessor) processDocument() {
 		return
 	}
 
+	logrus.Debugf("Task %d process file %d", fp.id, fp.document.Id)
+
 	file, err := os.Open(path.Join(config.C.Processing.DocumentsDir, fp.document.Hash))
 	if err != nil {
 		logrus.Errorf("open document %d file: %v", fp.document.Id, err)
@@ -102,6 +105,13 @@ func (fp *fileProcessor) processDocument() {
 				logrus.Errorf("generate thumbnail: %v", err)
 				return
 			}
+		case models.ProcessFts:
+			err := fp.indexSearchContent()
+			if err != nil {
+				logrus.Errorf("index search content: %v", err)
+				return
+			}
+
 		default:
 			logrus.Warningf("unhandle process step: %v, skipping", step.Step)
 		}
@@ -493,6 +503,38 @@ func (fp *fileProcessor) extractImage(file *os.File) error {
 			job.Status = models.JobFinished
 		}
 	}
+	return nil
+}
+
+func (fp *fileProcessor) indexSearchContent() error {
+	if fp.document == nil {
+		return errors.New("no document")
+	}
+
+	if fp.search == nil {
+		return errors.New("no search engine available")
+	}
+
+	process := &models.ProcessItem{
+		DocumentId: fp.document.Id,
+		Step:       models.ProcessFts,
+		CreatedAt:  time.Now(),
+	}
+
+	job, err := fp.db.JobStore.StartProcessItem(process, "index for search engine")
+	if err != nil {
+		return fmt.Errorf("start process: %v", err)
+	}
+
+	defer fp.persistProcess(process, job)
+	err = fp.search.IndexDocuments(&[]models.Document{*fp.document}, fp.document.UserId)
+	if err != nil {
+		job.Message += "; " + err.Error()
+		job.Status = models.JobFailure
+	} else {
+		job.Status = models.JobFinished
+	}
+
 	return nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/sirupsen/logrus"
 	"sync"
+	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
@@ -28,16 +29,18 @@ type Task struct {
 	idle    bool
 	id      int
 	db      *storage.Database
+	search  *search.Engine
 	report  *chan TaskReport
 
 	runFunc func()
 }
 
-func newTask(id int, db *storage.Database) *Task {
+func newTask(id int, db *storage.Database, search *search.Engine) *Task {
 	task := &Task{
-		id:   id,
-		lock: &sync.RWMutex{},
-		db:   db,
+		id:     id,
+		lock:   &sync.RWMutex{},
+		db:     db,
+		search: search,
 	}
 	return task
 }

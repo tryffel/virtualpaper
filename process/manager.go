@@ -11,6 +11,7 @@ import (
 	"time"
 	config "tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
@@ -28,6 +29,7 @@ type Manager struct {
 	running    bool
 	reportChan chan TaskReport
 	db         *storage.Database
+	search     *search.Engine
 
 	tasks    []*fileProcessor
 	numtasks int
@@ -35,11 +37,12 @@ type Manager struct {
 	inputWatch *fsnotify.Watcher
 }
 
-func NewManager(database *storage.Database) (*Manager, error) {
+func NewManager(database *storage.Database, search *search.Engine) (*Manager, error) {
 	manager := &Manager{
 		lock:       &sync.RWMutex{},
 		reportChan: make(chan TaskReport, 10),
 		db:         database,
+		search:     search,
 	}
 
 	count := config.C.Processing.MaxWorkers
@@ -47,7 +50,7 @@ func NewManager(database *storage.Database) (*Manager, error) {
 	manager.tasks = make([]*fileProcessor, count)
 
 	for i := 0; i < count; i++ {
-		manager.tasks[i] = newFileProcessor(i, database)
+		manager.tasks[i] = newFileProcessor(i, database, search)
 	}
 	var err error
 	manager.inputWatch, err = fsnotify.NewWatcher()
@@ -169,6 +172,12 @@ func (m *Manager) runFunc() {
 
 // schedule file operation to any idle task. If none of the tasks are idle, queue it to random task.
 func (m *Manager) scheduleNewOp(file string, doc *models.Document) {
+	if doc != nil {
+		logrus.Debugf("schedule new file process for document %d", doc.Id)
+	} else {
+		logrus.Debugf("schedule new file process for file %s", file)
+
+	}
 	op := fileOp{file: file, document: doc}
 	scheduled := false
 

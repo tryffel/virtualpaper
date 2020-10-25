@@ -301,7 +301,7 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 
 	err = a.db.DocumentStore.Create(document)
 	if err != nil {
-		respError(resp, fmt.Errorf("new document: %v", err))
+		respError(resp, err)
 		return
 	}
 
@@ -310,7 +310,12 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 		respError(resp, fmt.Errorf("add process steps for new document: %v", err))
 		return
 	}
-	respOk(resp, responseFromDocument(document))
+	err = a.process.AddDocumentForProcessing(document)
+	if err != nil {
+		respError(resp, err)
+	} else {
+		respOk(resp, responseFromDocument(document))
+	}
 	return
 }
 

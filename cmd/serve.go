@@ -4,7 +4,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"tryffel.net/go/virtualpaper/api"
-	"tryffel.net/go/virtualpaper/process"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
@@ -22,13 +21,6 @@ var serveCmd = &cobra.Command{
 			logrus.Errorf("init server: %v", err)
 			return
 		}
-
-		taskManager, err := process.NewManager(db)
-		if err != nil {
-			logrus.Errorf("initialize background tasks: %v", err)
-		}
-
-		taskManager.Start()
 
 		server.Serve()
 
