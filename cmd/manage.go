@@ -21,6 +21,7 @@ package cmd
 import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"strings"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/storage"
 )
@@ -36,8 +37,11 @@ var manageCmd = &cobra.Command{
 		defer db.Close()
 
 		user := &models.User{}
-		user.Name = args[0]
-		user.SetPassword(args[1])
+		user.Name = strings.ToLower(args[0])
+		err = user.SetPassword(args[1])
+		if err != nil {
+			logrus.Errorf("set password: %v", err)
+		}
 
 		err = db.UserStore.AddUser(user)
 		if err != nil {

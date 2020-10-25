@@ -152,6 +152,7 @@ func (a *Api) login(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	dto.Username = strings.ToLower(dto.Username)
 	userId, err := a.db.UserStore.TryLogin(dto.Username, dto.Password)
 	if userId == -1 || err != nil {
 		respUnauthorized(resp)
