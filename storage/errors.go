@@ -1,17 +1,22 @@
 package storage
 
 import (
-	"errors"
 	"fmt"
 	"github.com/lib/pq"
 	"strings"
 )
 
-var ErrRecordNotFound = errors.New("not found")
-var ErrForbidden = errors.New("forbidden")
-var ErrAlreadyExists = errors.New("already exists")
-var ErrInternalError = errors.New("internal error")
-var ErrInvalid = errors.New("invalid request")
+type Error string
+
+func (e Error) Error() string {
+	return string(e)
+}
+
+var ErrRecordNotFound = Error("not found")
+var ErrForbidden = Error("forbidden")
+var ErrAlreadyExists = Error("already exists")
+var ErrInternalError = Error("internal error")
+var ErrInvalid = Error("invalid request")
 
 func getPostgresError(err error) (bool, error) {
 	pError, ok := err.(*pq.Error)

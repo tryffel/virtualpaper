@@ -22,9 +22,11 @@ import * as React from "react";
 
 import { Card, CardActions, CardContent, CardHeader, CardActionArea } from '@material-ui/core';
 
-import { List, TextField, useListContext, DateField, EditButton, ShowButton} from "react-admin";
+import { List, TextField, useListContext, DateField, EditButton, ShowButton, Filter, TextInput, RichTextField} from "react-admin";
 
 import {ThumbnailSmall} from "./file";
+
+import '../App.css';
 
 
 const cardStyle = {
@@ -35,6 +37,11 @@ const cardStyle = {
     verticalAlign: 'top',
 };
 
+const DocumentFilter = (props) => (
+    <Filter {...props}>
+        <TextInput label="Search" source="q" alwaysOn />
+    </Filter>
+);
 
 
 const DocumentGrid = () => {
@@ -46,7 +53,7 @@ const DocumentGrid = () => {
                 <Card key={id} style={cardStyle}>
                     <CardActionArea>
                         <CardHeader
-                            title={<TextField record={data[id]} source="name" />}
+                            title={<RichTextField record={data[id]} source="name"  style={{'.em': {'background-color':'#FFFF00'}}} />}
                             subheader={<DateField record={data[id]} source="created_at" />}
                         />
                         <CardContent>
@@ -65,7 +72,7 @@ const DocumentGrid = () => {
 };
 
 export const DocumentList = (props) => (
-    <List title="All documents" {...props}>
+    <List title="All documents" filters={<DocumentFilter />} {...props}>
         <DocumentGrid />
     </List>
 );

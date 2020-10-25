@@ -86,6 +86,12 @@ func (a *Api) getDocuments(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	search := getSearchQuery(req)
+	if search != "" {
+		a.searchDocuments(user, search, resp, req)
+		return
+	}
+
 	paging, err := getPaging(req)
 	if err != nil {
 		respBadRequest(resp, err.Error(), nil)
@@ -408,4 +414,22 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 	} else {
 		respResourceList(resp, responseFromDocument(doc), 1)
 	}
+}
+
+func (a *Api) searchDocuments(userId int, q string, resp http.ResponseWriter, req *http.Request) {
+
+	paging, err := getPaging(req)
+	if err != nil {
+		logrus.Warningf("invalid paging: %v", err)
+		paging.Limit = 100
+		paging.Offset = 0
+	}
+
+	res, n, err := a.search.SearchDocuments(userId, q, "", paging)
+	if err != nil {
+		respError(resp, err)
+		return
+	}
+
+	respResourceList(resp, res, n)
 }
