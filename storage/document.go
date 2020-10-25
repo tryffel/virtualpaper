@@ -39,7 +39,7 @@ func (s *DocumentStore) GetDocuments(userId int, paging Paging, limitContent boo
 
 	sql := `
 SELECT id, name, ` + contenSelect + `, filename, created_at, updated_at
-hash, mimetype, size
+hash, mimetype, size, date
 FROM documents
 WHERE user_id = $1
 ORDER BY id
@@ -220,11 +220,12 @@ func (s *DocumentStore) Update(doc *models.Document) error {
 	doc.UpdatedAt = time.Now()
 	sql := `
 UPDATE documents SET 
-name=$2, content=$3, filename=$4, hash=$5, mimetype=$6,
-updated_at=$7
+name=$2, content=$3, filename=$4, hash=$5, mimetype=$6, size=$7, date=$8,
+updated_at=$9
 WHERE id=$1
 `
 
-	_, err := s.db.Exec(sql, doc.Id, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.UpdatedAt)
+	_, err := s.db.Exec(sql, doc.Id, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
+		doc.Date, doc.UpdatedAt)
 	return getDatabaseError(err)
 }

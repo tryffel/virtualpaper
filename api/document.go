@@ -28,25 +28,27 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
 type documentResponse struct {
-	Id          int        `json:"id"`
-	Name        string     `json:"name"`
-	Filename    string     `json:"filename"`
-	Content     string     `json:"content"`
-	CreatedAt   PrettyTime `json:"created_at"`
-	UpdatedAt   PrettyTime `json:"updated_at"`
-	PreviewUrl  string     `json:"preview_url"`
-	DownloadUrl string     `json:"download_url"`
-	Mimetype    string     `json:"mimetype"`
-	Type        string     `json:"type"`
-	Size        int64      `json:"size"`
-	PrettySize  string     `json:"pretty_size"`
-	Status      string     `json:"status"`
+	Id          int    `json:"id"`
+	Name        string `json:"name"`
+	Filename    string `json:"filename"`
+	Content     string `json:"content"`
+	CreatedAt   int64  `json:"created_at"`
+	UpdatedAt   int64  `json:"updated_at"`
+	Date        int64  `json:"date"`
+	PreviewUrl  string `json:"preview_url"`
+	DownloadUrl string `json:"download_url"`
+	Mimetype    string `json:"mimetype"`
+	Type        string `json:"type"`
+	Size        int64  `json:"size"`
+	PrettySize  string `json:"pretty_size"`
+	Status      string `json:"status"`
 }
 
 func responseFromDocument(doc *models.Document) *documentResponse {
@@ -55,8 +57,9 @@ func responseFromDocument(doc *models.Document) *documentResponse {
 		Name:        doc.Name,
 		Filename:    doc.Filename,
 		Content:     doc.Content,
-		CreatedAt:   PrettyTime(doc.CreatedAt),
-		UpdatedAt:   PrettyTime(doc.UpdatedAt),
+		CreatedAt:   doc.CreatedAt.Unix() * 1000,
+		UpdatedAt:   doc.UpdatedAt.Unix() * 1000,
+		Date:        doc.Date.Unix() * 1000,
 		PreviewUrl:  fmt.Sprintf("%s/api/v1/documents/%d/preview", config.C.Api.PublicUrl, doc.Id),
 		DownloadUrl: fmt.Sprintf("%s/api/v1/documents/%d/download", config.C.Api.PublicUrl, doc.Id),
 		Mimetype:    doc.Mimetype,
@@ -65,6 +68,12 @@ func responseFromDocument(doc *models.Document) *documentResponse {
 		PrettySize:  doc.GetSize(),
 	}
 	return resp
+}
+
+type documentUpdateRequest struct {
+	Name     string `json:"name" valid:"required"`
+	Filename string `json:"filename" valid:"ascii,required"`
+	Date     int64  `json:"date" valid:"required"`
 }
 
 func (a *Api) getDocuments(resp http.ResponseWriter, req *http.Request) {
@@ -341,4 +350,46 @@ func (a *Api) downloadDocument(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+}
+
+func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
+	user, ok := getUserId(req)
+	if !ok {
+		logrus.Errorf("no user in context")
+		respInternalError(resp)
+		return
+	}
+	idStr := mux.Vars(req)["id"]
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		respBadRequest(resp, "id not integer", nil)
+		return
+	}
+
+	dto := &documentUpdateRequest{}
+	err = unMarshalBody(req, dto)
+	if err != nil {
+		respError(resp, err)
+		return
+	}
+
+	doc, err := a.db.DocumentStore.GetDocument(user, id)
+	if err != nil {
+		respError(resp, err)
+		return
+	}
+
+	doc.Name = dto.Name
+	doc.Filename = dto.Filename
+	doc.Date = time.Unix(dto.Date/1000, 0)
+
+	doc.Update()
+
+	err = a.db.DocumentStore.Update(doc)
+	if err != nil {
+		respError(resp, err)
+	} else {
+		respResourceList(resp, responseFromDocument(doc), 1)
+	}
 }

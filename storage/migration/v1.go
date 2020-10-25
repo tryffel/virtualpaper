@@ -42,8 +42,7 @@ CREATE TABLE documents (
 	mimetype TEXT NOT NULL DEFAULT "",
 	size BIGINT NOT NULL DEFAULT 0,
 
-	indexed_at TIMESTAMPTZ NOT NULL DEFAULT TO_TIMESTAMP(0),
-	awaits_indexing BOOL NOT NULL DEFAULT TRUE,
+	date DATE NOT NULL DEFAULT now(),
 
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ,

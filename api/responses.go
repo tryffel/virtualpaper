@@ -91,6 +91,9 @@ func respError(resp http.ResponseWriter, err error) error {
 		statuscode = http.StatusForbidden
 		reason = err.Error()
 		logrus.Errorf("internal error: %v", err)
+	} else if errors.Is(err, storage.ErrInvalid) {
+		statuscode = http.StatusBadRequest
+		reason = err.Error()
 	} else {
 		statuscode = http.StatusInternalServerError
 		reason = "internal error"

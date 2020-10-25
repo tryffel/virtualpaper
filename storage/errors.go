@@ -11,6 +11,7 @@ var ErrRecordNotFound = errors.New("not found")
 var ErrForbidden = errors.New("forbidden")
 var ErrAlreadyExists = errors.New("already exists")
 var ErrInternalError = errors.New("internal error")
+var ErrInvalid = errors.New("invalid request")
 
 func getPostgresError(err error) (bool, error) {
 	pError, ok := err.(*pq.Error)

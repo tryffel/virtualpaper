@@ -76,8 +76,10 @@ func (a *Api) addRoutes() {
 
 	a.privateRouter.Use(a.authorizeUser)
 	a.privateRouter.HandleFunc("/documents", a.getDocuments).Methods(http.MethodGet)
+	a.privateRouter.HandleFunc("/documents/undefined", a.getEmptyDocument).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/documents/{id}/show", a.getDocument).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/documents/{id}", a.getDocument).Methods(http.MethodGet)
+	a.privateRouter.HandleFunc("/documents/{id}", a.updateDocument).Methods(http.MethodPut)
 	a.privateRouter.HandleFunc("/documents/{id}/preview", a.getDocumentPreview).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/documents/{id}/jobs", a.getDocumentLogs).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/documents", a.uploadFile).Methods(http.MethodPost)

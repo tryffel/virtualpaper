@@ -20,7 +20,7 @@ import * as React from "react";
 import { useState } from 'react';
 import { List, TextField, Show, TextInput, Edit, SimpleForm,
     useListContext, DateField, EditButton, ShowButton, FileInput, Create, RichTextField, TabbedShowLayout,
-    Tab, FileField} from "react-admin";
+    Tab, FileField, DateInput, DateTimeInput} from "react-admin";
 import { Card, CardActions, CardContent, CardHeader } from '@material-ui/core';
 import PropTypes from 'prop-types';
 import get from 'lodash/get';
@@ -172,8 +172,9 @@ export const DocumentShow = (props) => (
                 <TextField source="name" />
                 <TextField source="pretty_size" label="Size"/>
                 <TextField source="status" />
-                <TextField source="created_at" />
-                <TextField source="updated_at" />
+                <DateField source="date" showTime={false} />
+                <DateField source="created_at" showTime={true} />
+                <DateField source="updated_at" showTime={true}/>
                 <FileField source="download_url" label="Download document" title={"filename"} />
             </Tab>
             <Tab label="content">
@@ -192,6 +193,9 @@ export const DocumentEdit = (props) => (
         <SimpleForm>
             <TextInput disabled label="Id" source="id" />
             <TextInput source="name" />
+            <DateInput source="date" />
+            <DateTimeInput source="created_at" disabled />
+            <DateTimeInput source="updated_at" disabled />
         </SimpleForm>
     </Edit>
 );

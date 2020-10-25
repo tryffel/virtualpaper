@@ -22,18 +22,20 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Document struct {
 	Timestamp
-	Id       int    `db:"id"`
-	UserId   int    `db:"user_id"`
-	Name     string `db:"name"`
-	Content  string `db:"content"`
-	Filename string `db:"filename"`
-	Hash     string `db:"hash"`
-	Mimetype string `db:"mimetype"`
-	Size     int64  `db:"size"`
+	Id       int       `db:"id"`
+	UserId   int       `db:"user_id"`
+	Name     string    `db:"name"`
+	Content  string    `db:"content"`
+	Filename string    `db:"filename"`
+	Hash     string    `db:"hash"`
+	Mimetype string    `db:"mimetype"`
+	Size     int64     `db:"size"`
+	Date     time.Time `db:"date"`
 }
 
 // IsImage returns true if document file is image.

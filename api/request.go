@@ -20,15 +20,17 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/asaskevich/govalidator"
+	"github.com/sirupsen/logrus"
 	"net/http"
+	"tryffel.net/go/virtualpaper/storage"
 )
 
 func unMarshalBody(r *http.Request, body interface{}) error {
 	err := json.NewDecoder(r.Body).Decode(body)
 	if err != nil {
-		return fmt.Errorf("parse json: %v", err)
+		logrus.Debugf("invalid json: %v", err)
+		return storage.ErrInvalid
 	}
 
 	ok, err := govalidator.ValidateStruct(body)
@@ -36,7 +38,7 @@ func unMarshalBody(r *http.Request, body interface{}) error {
 		return err
 	}
 	if !ok {
-		return fmt.Errorf("invalid request")
+		return storage.ErrInvalid
 	}
 	return nil
 }
