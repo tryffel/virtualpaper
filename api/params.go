@@ -23,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
+	"time"
 	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
@@ -98,11 +99,30 @@ func getSearchQuery(req *http.Request) string {
 }
 
 func getDocumentFilter(req *http.Request) (*search.DocumentFilter, error) {
-	filter := &search.DocumentFilter{}
+	type documentFilter struct {
+		Query  string `json:"q"`
+		Tag    string `json:"tag"`
+		After  int64  `json:"after"`
+		Before int64  `json:"before"`
+	}
+
+	body := &documentFilter{}
+
 	query := req.FormValue("filter")
 	if query == "" || query == "{}" {
 		return nil, nil
 	}
-	err := json.Unmarshal([]byte(query), filter)
+	err := json.Unmarshal([]byte(query), body)
+
+	filter := &search.DocumentFilter{}
+	filter.Query = body.Query
+	filter.Tag = body.Tag
+	if body.After != 0 {
+		filter.After = time.Unix(body.After/1000, 0)
+	}
+	if body.Before != 0 {
+		filter.Before = time.Unix(body.Before/1000, 0)
+	}
+
 	return filter, err
 }
