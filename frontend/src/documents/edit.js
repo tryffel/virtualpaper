@@ -32,6 +32,7 @@ export const DocumentEdit = (props) => {
         <SimpleForm>
             <TextField disabled label="Id" source="id" />
             <TextInput source="name" />
+            <TextInput source="description" />
             <DateInput source="date" />
             <DateField source="created_at" />
             <DateField source="updated_at" />

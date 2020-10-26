@@ -34,8 +34,9 @@ CREATE TABLE users (
 CREATE TABLE documents (
     id SERIAL PRIMARY KEY,
     user_id INT,
-    name TEXT,
-    content TEXT,
+    name TEXT NOT NULL DEFAULT '',
+    content TEXT NOT NULL DEFAULT '',
+	description TEXT NOT NULL DEFAULT '',
     filename TEXT UNIQUE,
 	hash TEXT NOT NULL DEFAULT '',
 

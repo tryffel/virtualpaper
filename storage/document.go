@@ -39,7 +39,7 @@ func (s *DocumentStore) GetDocuments(userId int, paging Paging, limitContent boo
 
 	sql := `
 SELECT id, name, ` + contenSelect + `, filename, created_at, updated_at
-hash, mimetype, size, date
+hash, mimetype, size, date, description
 FROM documents
 WHERE user_id = $1
 ORDER BY id
@@ -112,7 +112,7 @@ end;
 func (s *DocumentStore) GetByHash(hash string) (*models.Document, error) {
 
 	sql := `
-	SELECT id, name, filename, content, created_at, updated_at, hash, mimetype
+	SELECT id, name, filename, content, created_at, updated_at, hash, mimetype, description
 	FROM documents
 	WHERE hash = $1;
 `
@@ -123,10 +123,11 @@ func (s *DocumentStore) GetByHash(hash string) (*models.Document, error) {
 
 func (s *DocumentStore) Create(doc *models.Document) error {
 	sql := `
-INSERT INTO documents (user_id, name, content, filename, hash, mimetype, size)
-	VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;`
+INSERT INTO documents (user_id, name, content, filename, hash, mimetype, size, description)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;`
 
-	res, err := s.db.Query(sql, doc.UserId, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size)
+	res, err := s.db.Query(sql, doc.UserId, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
+		doc.Description)
 	if err != nil {
 		return getDatabaseError(err)
 	}
@@ -221,11 +222,11 @@ func (s *DocumentStore) Update(doc *models.Document) error {
 	sql := `
 UPDATE documents SET 
 name=$2, content=$3, filename=$4, hash=$5, mimetype=$6, size=$7, date=$8,
-updated_at=$9
+updated_at=$9, description=$10
 WHERE id=$1
 `
 
 	_, err := s.db.Exec(sql, doc.Id, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
-		doc.Date, doc.UpdatedAt)
+		doc.Date, doc.UpdatedAt, doc.Description)
 	return getDatabaseError(err)
 }

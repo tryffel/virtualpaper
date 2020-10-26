@@ -43,7 +43,7 @@ func (e *Engine) SearchDocuments(userId int, query *DocumentFilter, paging stora
 		Query:                 query.Query,
 		Offset:                int64(paging.Offset),
 		Limit:                 int64(paging.Limit),
-		AttributesToRetrieve:  []string{"document_id", "name", "content"},
+		AttributesToRetrieve:  []string{"document_id", "name", "content", "description"},
 		AttributesToCrop:      []string{"content"},
 		CropLength:            1000,
 		AttributesToHighlight: []string{"content", "name"},
@@ -98,6 +98,7 @@ func (e *Engine) SearchDocuments(userId int, query *DocumentFilter, paging stora
 			doc.Id = getInt("document_id", isMap)
 			doc.Name = getString("name", isMap)
 			doc.Content = getString("content", isMap)
+			doc.Description = getString("description", isMap)
 			docs[i] = doc
 
 			formatted := isMap["_formatted"]

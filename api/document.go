@@ -40,6 +40,7 @@ type documentResponse struct {
 	Name        string            `json:"name"`
 	Filename    string            `json:"filename"`
 	Content     string            `json:"content"`
+	Description string            `json:"description"`
 	CreatedAt   int64             `json:"created_at"`
 	UpdatedAt   int64             `json:"updated_at"`
 	Date        int64             `json:"date"`
@@ -60,6 +61,7 @@ func responseFromDocument(doc *models.Document) *documentResponse {
 		Name:        doc.Name,
 		Filename:    doc.Filename,
 		Content:     doc.Content,
+		Description: doc.Description,
 		CreatedAt:   doc.CreatedAt.Unix() * 1000,
 		UpdatedAt:   doc.UpdatedAt.Unix() * 1000,
 		Date:        doc.Date.Unix() * 1000,
@@ -76,9 +78,10 @@ func responseFromDocument(doc *models.Document) *documentResponse {
 }
 
 type documentUpdateRequest struct {
-	Name     string `json:"name" valid:"required"`
-	Filename string `json:"filename" valid:"ascii,required"`
-	Date     int64  `json:"date" valid:"required"`
+	Name        string `json:"name" valid:"-"`
+	Description string `json:"description" valid:"-"`
+	Filename    string `json:"filename" valid:"ascii"`
+	Date        int64  `json:"date" valid:"-"`
 }
 
 func (a *Api) getDocuments(resp http.ResponseWriter, req *http.Request) {
@@ -448,9 +451,13 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if dto.Date != 0 {
+		doc.Date = time.Unix(dto.Date/1000, 0)
+	}
+
 	doc.Name = dto.Name
+	doc.Description = dto.Description
 	doc.Filename = dto.Filename
-	doc.Date = time.Unix(dto.Date/1000, 0)
 
 	doc.Update()
 

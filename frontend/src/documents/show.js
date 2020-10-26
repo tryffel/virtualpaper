@@ -30,6 +30,7 @@ export const DocumentShow = (props) => (
                 <ThumbnailField source="preview_url" />
                 <TextField source="id" />
                 <TextField source="name" />
+                <RichTextField source="description" />
                 <DateField source="date" showTime={false} />
                 <TextField source="pretty_size" label="Size"/>
                 <TextField source="status" />

@@ -145,6 +145,7 @@ func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 			"tags":        tags,
 			"metadata":    v.Metadata,
 			"date":        v.Date.Unix(),
+			"description": v.Description,
 		}
 	}
 

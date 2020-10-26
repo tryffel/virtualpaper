@@ -27,17 +27,18 @@ import (
 
 type Document struct {
 	Timestamp
-	Id       int       `db:"id"`
-	UserId   int       `db:"user_id"`
-	Name     string    `db:"name"`
-	Content  string    `db:"content"`
-	Filename string    `db:"filename"`
-	Hash     string    `db:"hash"`
-	Mimetype string    `db:"mimetype"`
-	Size     int64     `db:"size"`
-	Date     time.Time `db:"date"`
-	Metadata []Metadata
-	Tags     []Tag
+	Id          int       `db:"id"`
+	UserId      int       `db:"user_id"`
+	Name        string    `db:"name"`
+	Description string    `db:"description"`
+	Content     string    `db:"content"`
+	Filename    string    `db:"filename"`
+	Hash        string    `db:"hash"`
+	Mimetype    string    `db:"mimetype"`
+	Size        int64     `db:"size"`
+	Date        time.Time `db:"date"`
+	Metadata    []Metadata
+	Tags        []Tag
 }
 
 // IsImage returns true if document file is image.
