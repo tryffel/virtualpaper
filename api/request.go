@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"github.com/asaskevich/govalidator"
 	"github.com/sirupsen/logrus"
+	"io"
 	"net/http"
 	"tryffel.net/go/virtualpaper/storage"
 )
@@ -29,7 +30,11 @@ import (
 func unMarshalBody(r *http.Request, body interface{}) error {
 	err := json.NewDecoder(r.Body).Decode(body)
 	if err != nil {
-		logrus.Debugf("invalid json: %v", err)
+		if err == io.EOF {
+			return storage.ErrInvalid
+		} else {
+			logrus.Debugf("invalid json: %v", err)
+		}
 		return storage.ErrInvalid
 	}
 

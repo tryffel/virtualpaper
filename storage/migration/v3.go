@@ -41,6 +41,7 @@ CREATE TABLE tags (
   	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   	updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
+	CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id),
 	CONSTRAINT tags_user_key_unique UNIQUE (user_id, key),
 	CONSTRAINT tags_pkey PRIMARY KEY (id)
 );

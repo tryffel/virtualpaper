@@ -40,6 +40,7 @@ const cardStyle = {
 const DocumentFilter = (props) => (
     <Filter {...props}>
         <TextInput label="Search" source="q" alwaysOn />
+        <TextInput label="Tag" source="tag" alwaysOn />
     </Filter>
 );
 

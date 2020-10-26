@@ -20,6 +20,7 @@ package storage
 
 import (
 	"github.com/jmoiron/sqlx"
+	"time"
 	"tryffel.net/go/virtualpaper/models"
 )
 
@@ -71,4 +72,84 @@ limit 100;
 	object := &[]models.Tag{}
 	err := s.db.Select(object, sql, documentId, userId)
 	return object, getDatabaseError(err)
+}
+
+func (s *MetadataStore) GetTags(userid int, paging Paging) (*[]models.TagComposite, int, error) {
+
+	sql := `
+SELECT
+       tags.id AS id, COUNT(tags.id) AS document_count,
+       tags.key AS key, tags.comment AS comment,
+       tags.created_at AS created_at, tags.updated_at AS updated_at
+FROM tags
+LEFT JOIN document_tags dt on tags.id = dt.tag_id
+WHERE tags.user_id = $1
+GROUP BY (tags.id)
+ORDER BY tags.key asc
+OFFSET $2
+LIMIT $3;
+`
+
+	object := &[]models.TagComposite{}
+
+	err := s.db.Select(object, sql, userid, paging.Offset, paging.Limit)
+	if err != nil {
+		return object, len(*object), getDatabaseError(err)
+	}
+
+	sql = `SELECT
+	COUNT(tags.id) AS count
+	FROM tags
+	WHERE tags.user_id = $1;
+	`
+
+	n := 0
+	row := s.db.QueryRow(sql, userid)
+	err = row.Scan(&n)
+	if err != nil {
+		return object, len(*object), getDatabaseError(err)
+	}
+	return object, n, getDatabaseError(err)
+}
+
+func (s *MetadataStore) GetTag(userId, tagId int) (*models.TagComposite, error) {
+	sql := `
+SELECT 
+	tags.id AS id, 
+	tags.key AS key, 
+	tags.comment AS comment, 
+	COUNT(d.id) as document_count, 
+	tags.created_at AS created_at, 
+	tags.updated_at AS updated_at
+FROM tags
+LEFT JOIN document_tags dt ON tags.id = dt.tag_id
+LEFT JOIN documents d ON dt.document_id = d.id
+WHERE tags.id = $1
+AND tags.user_id = $2
+GROUP BY (tags.id);
+`
+
+	object := &models.TagComposite{}
+	err := s.db.Get(object, sql, tagId, userId)
+	return object, getDatabaseError(err)
+}
+
+func (s *MetadataStore) CreateTag(userId int, tag *models.Tag) error {
+	sql := `
+INSERT INTO tags (user_id, key, comment, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5) RETURNING id;
+`
+
+	tag.CreatedAt = time.Now()
+	tag.UpdatedAt = time.Now()
+
+	id := 0
+	row := s.db.QueryRow(sql, userId, tag.Key, tag.Comment, tag.CreatedAt, tag.UpdatedAt)
+	err := row.Scan(&id)
+	if err != nil {
+		return getDatabaseError(err)
+	}
+
+	tag.Id = id
+	return nil
 }

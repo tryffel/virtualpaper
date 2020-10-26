@@ -31,6 +31,7 @@ import (
 	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
@@ -81,6 +82,7 @@ type documentUpdateRequest struct {
 }
 
 func (a *Api) getDocuments(resp http.ResponseWriter, req *http.Request) {
+	handler := "Api.getDocuments"
 	user, ok := getUserId(req)
 	if !ok {
 		logrus.Errorf("no user in context")
@@ -88,9 +90,14 @@ func (a *Api) getDocuments(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	search := getSearchQuery(req)
-	if search != "" {
-		a.searchDocuments(user, search, resp, req)
+	query, err := getDocumentFilter(req)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	if query != nil {
+		a.searchDocuments(user, query, resp, req)
 		return
 	}
 
@@ -457,7 +464,7 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 	respResourceList(resp, responseFromDocument(doc), 1)
 }
 
-func (a *Api) searchDocuments(userId int, q string, resp http.ResponseWriter, req *http.Request) {
+func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, resp http.ResponseWriter, req *http.Request) {
 	handler := "api.searchDocuments"
 
 	paging, err := getPaging(req)
@@ -467,11 +474,15 @@ func (a *Api) searchDocuments(userId int, q string, resp http.ResponseWriter, re
 		paging.Offset = 0
 	}
 
-	res, n, err := a.search.SearchDocuments(userId, q, "", paging)
+	res, n, err := a.search.SearchDocuments(userId, filter, paging)
 	if err != nil {
 		respError(resp, err, handler)
 		return
 	}
 
-	respResourceList(resp, res, n)
+	docs := make([]*documentResponse, len(res))
+	for i, v := range res {
+		docs[i] = responseFromDocument(v)
+	}
+	respResourceList(resp, docs, n)
 }

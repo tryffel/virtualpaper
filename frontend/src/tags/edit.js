@@ -16,20 +16,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package models
+import * as React from "react";
+import {DateTimeInput, Edit, SimpleForm, TextInput, DateField, TextField } from "react-admin";
 
-import "time"
 
-// Tag is a per-user label to add to documents. It has many-to-many relationship with documents.
-type Tag struct {
-	Id        int       `db:"id" json:"id"`
-	Key       string    `db:"key" json:"key"`
-	Comment   string    `db:"comment" json:"comment"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
-}
-
-type TagComposite struct {
-	Tag
-	DocumentCount int `db:"document_count" json:"document_count"`
-}
+export const TagEdit = (props) => (
+    <Edit {...props}>
+        <SimpleForm>
+            <TextField disabled source="id" />
+            <TextInput source="key" label={"Name"} />
+            <TextInput source="comment" />
+            <TextField disabled source="document_count" label={"Documents"}/>
+            <DateField disabled source="created_at" />
+            <DateField disabled source="updated_at" />
+        </SimpleForm>
+    </Edit>
+);

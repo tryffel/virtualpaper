@@ -23,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
+	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
@@ -94,4 +95,14 @@ func getSearchQuery(req *http.Request) string {
 		return str
 	}
 	return ""
+}
+
+func getDocumentFilter(req *http.Request) (*search.DocumentFilter, error) {
+	filter := &search.DocumentFilter{}
+	query := req.FormValue("filter")
+	if query == "" || query == "{}" {
+		return nil, nil
+	}
+	err := json.Unmarshal([]byte(query), filter)
+	return filter, err
 }

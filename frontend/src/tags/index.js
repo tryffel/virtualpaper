@@ -16,20 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package models
+import { TagList } from "./list";
+import { TagEdit } from "./edit";
+import { TagCreate } from "./create";
 
-import "time"
-
-// Tag is a per-user label to add to documents. It has many-to-many relationship with documents.
-type Tag struct {
-	Id        int       `db:"id" json:"id"`
-	Key       string    `db:"key" json:"key"`
-	Comment   string    `db:"comment" json:"comment"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
-}
-
-type TagComposite struct {
-	Tag
-	DocumentCount int `db:"document_count" json:"document_count"`
+export default {
+    edit: TagEdit,
+    list: TagList,
+    create: TagCreate,
 }

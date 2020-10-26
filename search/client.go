@@ -92,6 +92,16 @@ func (e *Engine) ensureIndexExists() error {
 				UID:        indices[i],
 				PrimaryKey: "document_id",
 			})
+
+			_, err = e.client.Settings(indices[i]).UpdateAttributesForFaceting([]string{
+				"tags",
+				"metadata_key",
+				"metadata_value",
+			})
+			if err != nil {
+				logrus.Errorf("meilisearch set faceted search attributes: %v", err)
+
+			}
 		}
 		if err != nil {
 			return fmt.Errorf("create index: %v", err)
@@ -117,6 +127,12 @@ func (e *Engine) ping() error {
 func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 	data := make([]map[string]interface{}, len(*docs))
 	for i, v := range *docs {
+
+		tags := make([]string, len(v.Tags))
+		for tagI, tag := range v.Tags {
+			tags[tagI] = tag.Key
+		}
+
 		data[i] = map[string]interface{}{
 			"document_id": v.Id,
 			"user_id":     v.UserId,
@@ -124,7 +140,10 @@ func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 			"file_name":   v.Filename,
 			"content":     v.Content,
 			"hash":        v.Hash,
-			"created_at":  v.CreatedAt.String(),
+			"created_at":  v.CreatedAt.Unix(),
+			"updated_at":  v.UpdatedAt.Unix(),
+			"tags":        tags,
+			"metadata":    v.Metadata,
 		}
 	}
 

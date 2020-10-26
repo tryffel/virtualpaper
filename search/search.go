@@ -19,22 +19,28 @@
 package search
 
 import (
+	"fmt"
 	"github.com/meilisearch/meilisearch-go"
+	"github.com/sirupsen/logrus"
+	"time"
+	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
-type DocumentResult struct {
-	Id      int    `json:"id"`
-	Name    string `json:"name"`
-	Content string `json:"content"`
+// DocumentFilter defines filter for searching/filtering documents
+type DocumentFilter struct {
+	Query  string    `json:"q"`
+	Tag    string    `json:"tag"`
+	After  time.Time `json:"after"`
+	Before time.Time `json:"before"`
 }
 
 // SearchDocument searches documents for given user. Query can be anything. If field="", search in any field,
 // else search only specified field
-func (e *Engine) SearchDocuments(userId int, query string, field string, paging storage.Paging) ([]*DocumentResult, int, error) {
+func (e *Engine) SearchDocuments(userId int, query *DocumentFilter, paging storage.Paging) ([]*models.Document, int, error) {
 
 	request := meilisearch.SearchRequest{
-		Query:                 query,
+		Query:                 query.Query,
 		Offset:                int64(paging.Offset),
 		Limit:                 int64(paging.Limit),
 		AttributesToRetrieve:  []string{"document_id", "name", "content"},
@@ -48,7 +54,32 @@ func (e *Engine) SearchDocuments(userId int, query string, field string, paging 
 		PlaceholderSearch:     false,
 	}
 
-	docs := make([]*DocumentResult, 0)
+	if query.Query == "" {
+		request.PlaceholderSearch = true
+	}
+
+	facets := []interface{}{}
+
+	if query.Tag != "" {
+		facets = append(facets, fmt.Sprintf(`tags:%s`, query.Tag))
+	}
+	if !query.After.IsZero() {
+		request.Filters += fmt.Sprintf("date > %d", query.After.Add(-time.Hour*24).Unix())
+	}
+	if !query.Before.IsZero() {
+		if request.Filters != "" {
+			request.Filters += " AND "
+		}
+		request.Filters += fmt.Sprintf("date < %d", query.Before.Add(time.Hour*24).Unix())
+	}
+
+	if len(facets) != 0 {
+		request.FacetFilters = facets
+	}
+
+	logrus.Debugf("Meilisearch query: %v", request)
+
+	docs := make([]*models.Document, 0)
 
 	res, err := e.client.Search(indexName(userId)).Search(request)
 	if err != nil {
@@ -58,12 +89,12 @@ func (e *Engine) SearchDocuments(userId int, query string, field string, paging 
 		return docs, 0, nil
 	}
 
-	docs = make([]*DocumentResult, len(res.Hits))
+	docs = make([]*models.Document, len(res.Hits))
 
 	for i, v := range res.Hits {
 		isMap, ok := v.(map[string]interface{})
 		if ok {
-			doc := &DocumentResult{}
+			doc := &models.Document{}
 			doc.Id = getInt("document_id", isMap)
 			doc.Name = getString("name", isMap)
 			doc.Content = getString("content", isMap)

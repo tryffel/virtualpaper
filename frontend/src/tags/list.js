@@ -16,20 +16,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package models
+import * as React from "react";
 
-import "time"
+import { List, TextField, Datagrid, Filter, TextInput, RichTextField, ChipField} from "react-admin";
 
-// Tag is a per-user label to add to documents. It has many-to-many relationship with documents.
-type Tag struct {
-	Id        int       `db:"id" json:"id"`
-	Key       string    `db:"key" json:"key"`
-	Comment   string    `db:"comment" json:"comment"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
-}
 
-type TagComposite struct {
-	Tag
-	DocumentCount int `db:"document_count" json:"document_count"`
-}
+const TagFilter = (props) => (
+    <Filter {...props}>
+        <TextInput label="Search" source="q" alwaysOn />
+    </Filter>
+);
+
+
+
+export const TagList = (props) => (
+    <List title="All tags" filters={<TagFilter/>} {...props}>
+        <Datagrid rowClick="edit">
+            <ChipField source="key" label={"Name"}/>
+            <RichTextField source="comment" />
+            <TextField source="document_count" label={"Documents"} />
+
+        </Datagrid>
+    </List>
+);
+

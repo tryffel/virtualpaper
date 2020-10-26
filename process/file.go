@@ -514,10 +514,6 @@ func (fp *fileProcessor) indexSearchContent() error {
 		return errors.New("no document")
 	}
 
-	if fp.search == nil {
-		return errors.New("no search engine available")
-	}
-
 	process := &models.ProcessItem{
 		DocumentId: fp.document.Id,
 		Step:       models.ProcessFts,
@@ -530,6 +526,34 @@ func (fp *fileProcessor) indexSearchContent() error {
 	}
 
 	defer fp.persistProcess(process, job)
+
+	if len(fp.document.Tags) == 0 {
+		tags, err := fp.db.MetadataStore.GetDocumentTags(fp.document.UserId, fp.document.Id)
+		if err != nil {
+			if errors.Is(err, storage.ErrRecordNotFound) {
+			} else {
+				logrus.Errorf("get document tags: %v", err)
+			}
+		} else {
+			fp.document.Tags = *tags
+		}
+	}
+	if len(fp.document.Metadata) == 0 {
+		metadata, err := fp.db.MetadataStore.GetDocumentMetadata(fp.document.Id, fp.document.Id)
+		if err != nil {
+			if errors.Is(err, storage.ErrRecordNotFound) {
+			} else {
+				logrus.Errorf("get document metadata: %v", err)
+			}
+		} else {
+			fp.document.Metadata = *metadata
+		}
+	}
+
+	if fp.search == nil {
+		return errors.New("no search engine available")
+	}
+
 	err = fp.search.IndexDocuments(&[]models.Document{*fp.document}, fp.document.UserId)
 	if err != nil {
 		job.Message += "; " + err.Error()

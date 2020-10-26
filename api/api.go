@@ -103,6 +103,11 @@ func (a *Api) addRoutes() {
 
 	a.privateRouter.HandleFunc("/jobs", a.GetJob).Methods(http.MethodGet)
 
+	a.privateRouter.HandleFunc("/tags", a.getTags).Methods(http.MethodGet)
+	a.privateRouter.HandleFunc("/tags/{id}", a.getTag).Methods(http.MethodGet)
+	a.privateRouter.HandleFunc("/tags", a.createTag).Methods(http.MethodPost)
+	a.privateRouter.HandleFunc("/tags/create", a.createTag).Methods(http.MethodPost)
+
 	a.baseRouter.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./frontend/build/static/"))))
 	a.baseRouter.Handle("/", http.FileServer(http.Dir("./frontend/build/")))
 
