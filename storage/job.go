@@ -141,6 +141,28 @@ FROM process_queue;
 	return dto, n, getDatabaseError(err)
 }
 
+// GetPendingProcessing returns max 100 documents ordered by process_queue created_at.
+// Also returns total number of pending process_queues.
+func (s *JobStore) GetDocumentsPendingProcessing() (*[]models.Document, error) {
+
+	sql := `
+SELECT d.id AS id, d.user_id AS user_id, d.filename AS filename, d.hash AS hash, d.size AS SIZE, d.date AS DATE
+FROM documents d
+LEFT JOIN process_queue pq ON d.id = pq.document_id
+WHERE pq.step IS NOT NULL
+AND pq.running = FALSE
+ORDER by pq.created_at ASC
+LIMIT 40;
+`
+	dto := &[]models.Document{}
+
+	err := s.db.Select(dto, sql)
+	if err != nil {
+		return dto, getDatabaseError(err)
+	}
+	return dto, getDatabaseError(err)
+}
+
 // GetDocumentPendingSteps returns ProcessItems not yet started on given document in ascending order.
 func (s *JobStore) GetDocumentPendingSteps(documentId int) (*[]models.ProcessItem, error) {
 	sql := `
@@ -274,18 +296,23 @@ func (s *JobStore) MarkProcessingDone(item *models.ProcessItem, ok bool) error {
 
 // AddDocument adds default processing steps for document. Document must be existing.
 func (s *JobStore) AddDocument(doc *models.Document) error {
+	return s.addDocument(doc.Id, models.ProcessHash)
+}
+
+func (s *JobStore) addDocument(documentId int, fromStep models.ProcessStep) error {
 	sql := `
 INSERT INTO process_queue (document_id, step)
 VALUES 
 `
 
+	logrus.Debugf("add document %d for processing starting from step %s", fromStep)
 	var err error
 	args := make([]interface{}, len(models.ProcessStepsAll)*2)
 	for i := 0; i < len(models.ProcessStepsAll); i++ {
 		if i > 0 {
 			sql += ", "
 		}
-		args[i*2] = doc.Id
+		args[i*2] = documentId
 		args[i*2+1], err = models.ProcessStepsAll[i].Value()
 		if err != nil {
 			return fmt.Errorf("insert processStep %s: %v", models.ProcessStepsAll[i], err)
@@ -298,6 +325,7 @@ VALUES
 
 	_, err = s.db.Exec(sql, args...)
 	return getDatabaseError(err)
+
 }
 
 // CancelRunningProcesses marks all processes that are currently running as not running.
@@ -309,5 +337,39 @@ WHERE running=TRUE
 `
 
 	_, err := s.db.Exec(sql)
+	return getDatabaseError(err)
+}
+
+// ForceProcessing adds documents to process queue. If documentID != 0, mark only given document. If
+// userId != 0, mark all documents for user. Else mark all documents for re-processing. FromStep
+// is the first step and successive steps are expected to re-run as well.
+func (s *JobStore) ForceProcessing(userId, documentId int, fromStep models.ProcessStep) error {
+	var args []interface{}
+	steps := models.ProcessStepsAll[fromStep-1:]
+	stepsSql := ""
+	for i, v := range steps {
+		if i != 0 {
+			stepsSql += ", "
+		}
+		val, _ := v.Value()
+		stepsSql += fmt.Sprintf("(%d)", val)
+	}
+
+	sql := `
+INSERT INTO process_queue (document_id, step)
+SELECT documents.id AS document_id, steps.step
+FROM documents
+JOIN (SELECT DISTINCT * FROM (VALUES %s) AS v) AS steps(step) ON TRUE
+`
+	sql = fmt.Sprintf(sql, stepsSql)
+	if documentId != 0 {
+		sql += fmt.Sprintf(" WHERE documents.id = $%d", len(args)+1)
+		args = append(args, documentId)
+	} else if userId != 0 {
+		sql += fmt.Sprintf(" WHERE documents.user_id = $%d", len(args)+1)
+		args = append(args, userId)
+	}
+
+	_, err := s.db.Exec(sql, args...)
 	return getDatabaseError(err)
 }

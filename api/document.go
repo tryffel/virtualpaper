@@ -257,7 +257,10 @@ func (a *Api) getDocumentPreview(resp http.ResponseWriter, req *http.Request) {
 
 			err = a.db.JobStore.CreateProcessItem(process)
 			if err != nil {
-				logrus.Error("add process step for missing thumbnail (doc %c): %v", doc.Id, err)
+				if errors.Is(err, storage.ErrAlreadyExists) {
+				} else {
+					logrus.Error("add process step for missing thumbnail (doc %c): %v", doc.Id, err)
+				}
 			}
 
 			err = a.process.AddDocumentForProcessing(doc)

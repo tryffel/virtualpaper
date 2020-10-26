@@ -144,6 +144,7 @@ func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 			"updated_at":  v.UpdatedAt.Unix(),
 			"tags":        tags,
 			"metadata":    v.Metadata,
+			"date":        v.Date.Unix(),
 		}
 	}
 

@@ -81,3 +81,15 @@ func (u *UserStore) GetUsers() (*[]models.User, error) {
 	err := u.db.Select(users, sql)
 	return users, getDatabaseError(err)
 }
+
+func (u *UserStore) GetUser(userid int) (*models.User, error) {
+	sql := `
+	SELECT *
+	FROM users
+	WHERE id = $1;
+	`
+
+	user := &models.User{}
+	err := u.db.Get(user, sql, userid)
+	return user, getDatabaseError(err)
+}

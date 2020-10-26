@@ -108,6 +108,8 @@ func (a *Api) addRoutes() {
 	a.privateRouter.HandleFunc("/tags", a.createTag).Methods(http.MethodPost)
 	a.privateRouter.HandleFunc("/tags/create", a.createTag).Methods(http.MethodPost)
 
+	a.privateRouter.HandleFunc("/admin/documents/process", a.forceDocumentProcessing).Methods(http.MethodPost)
+
 	a.baseRouter.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./frontend/build/static/"))))
 	a.baseRouter.Handle("/", http.FileServer(http.Dir("./frontend/build/")))
 
