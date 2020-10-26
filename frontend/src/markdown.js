@@ -16,28 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import * as React from "react";
-import {DateInput, Edit, SimpleForm, TextInput, DateField, TextField} from "react-admin";
-import MarkDownInputWithField from "ra-input-markdown";
+import React from 'react'
+import ReactMarkdown from 'react-markdown'
+import PropTypes from 'prop-types';
 
 
-export const DocumentEdit = (props) => {
+export const MarkdownField = ({ source, record = {} }) =>
+    <ReactMarkdown >{record[source]}</ReactMarkdown>;
 
-    const transform = data => ({
-        ...data,
-        date: Date.parse(`${data.date}`),
-    });
 
-    return (
-    <Edit {...props} transform={transform}>
-        <SimpleForm>
-            <TextField disabled label="Id" source="id" />
-            <TextInput source="name" />
-            <MarkDownInputWithField source="description" />
-            <DateInput source="date" />
-            <DateField source="created_at" />
-            <DateField source="updated_at" />
-        </SimpleForm>
-    </Edit>
-    );
-}
+MarkdownField.propTypes = {
+    label: PropTypes.string,
+    record: PropTypes.object,
+    source: PropTypes.string.isRequired,
+};

@@ -21,6 +21,7 @@ import {ArrayField, Datagrid, DateField, FileField, RichTextField, Show, Tab, Ta
 } from "react-admin";
 
 import { ThumbnailField, EmbedFile} from "./file";
+import { MarkdownField } from '../markdown'
 
 
 export const DocumentShow = (props) => (
@@ -30,7 +31,7 @@ export const DocumentShow = (props) => (
                 <ThumbnailField source="preview_url" />
                 <TextField source="id" />
                 <TextField source="name" />
-                <RichTextField source="description" />
+                <MarkdownField source="description" />
                 <DateField source="date" showTime={false} />
                 <TextField source="pretty_size" label="Size"/>
                 <TextField source="status" />
