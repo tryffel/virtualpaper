@@ -17,17 +17,17 @@
  */
 
 import * as React from "react";
-import {DateInput, DateTimeInput, Edit, SimpleForm, TextInput} from "react-admin";
+import {DateInput, Edit, SimpleForm, TextInput, DateField, TextField} from "react-admin";
 
 
 export const DocumentEdit = (props) => (
     <Edit {...props}>
         <SimpleForm>
-            <TextInput disabled label="Id" source="id" />
+            <TextField disabled label="Id" source="id" />
             <TextInput source="name" />
             <DateInput source="date" />
-            <DateTimeInput source="created_at" disabled />
-            <DateTimeInput source="updated_at" disabled />
+            <DateField source="created_at" />
+            <DateField source="updated_at" />
         </SimpleForm>
     </Edit>
 );
