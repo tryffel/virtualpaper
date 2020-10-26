@@ -20,8 +20,15 @@ import * as React from "react";
 import {DateInput, Edit, SimpleForm, TextInput, DateField, TextField} from "react-admin";
 
 
-export const DocumentEdit = (props) => (
-    <Edit {...props}>
+export const DocumentEdit = (props) => {
+
+    const transform = data => ({
+        ...data,
+        date: Date.parse(`${data.date}`),
+    });
+
+    return (
+    <Edit {...props} transform={transform}>
         <SimpleForm>
             <TextField disabled label="Id" source="id" />
             <TextInput source="name" />
@@ -30,4 +37,5 @@ export const DocumentEdit = (props) => (
             <DateField source="updated_at" />
         </SimpleForm>
     </Edit>
-);
+    );
+}
