@@ -313,7 +313,10 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 	err = req.ParseMultipartForm(1024 * 1024 * 500)
 	reader, header, err := req.FormFile("file")
 	if err != nil {
-		respError(resp, fmt.Errorf("parse multipart"), handler)
+		userError := storage.ErrInvalid
+		userError.ErrMsg = err.Error()
+		userError.Err = err
+		respError(resp, userError, handler)
 		return
 	}
 

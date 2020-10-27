@@ -20,7 +20,6 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
@@ -92,27 +91,35 @@ func respError(resp http.ResponseWriter, err error, handler string) {
 	var statuscode int
 	var reason string
 
-	if errors.Is(err, storage.ErrAlreadyExists) {
-		statuscode = http.StatusNotModified
-		reason = err.Error()
-	} else if errors.Is(err, storage.ErrRecordNotFound) {
-		statuscode = http.StatusNotFound
-		reason = err.Error()
-	} else if errors.Is(err, storage.ErrInternalError) {
-		statuscode = http.StatusInternalServerError
-		reason = "internal error"
-		logrus.WithField("handler", handler).Errorf("internal error: %v", err)
-	} else if errors.Is(err, storage.ErrForbidden) {
-		statuscode = http.StatusForbidden
-		reason = err.Error()
-		logrus.Errorf("internal error: %v", err)
-	} else if errors.Is(err, storage.ErrInvalid) {
-		statuscode = http.StatusBadRequest
-		reason = err.Error()
+	appError, ok := err.(storage.Error)
+	if ok {
+
+		if appError.ErrType == storage.ErrAlreadyExists.ErrType {
+			statuscode = http.StatusNotModified
+			reason = appError.ErrMsg
+		} else if appError.ErrType == storage.ErrRecordNotFound.ErrType {
+			statuscode = http.StatusNotFound
+			reason = appError.ErrMsg
+		} else if appError.ErrType == storage.ErrInternalError.ErrType {
+			statuscode = http.StatusInternalServerError
+			reason = "internal error"
+			logrus.WithField("handler", handler).Errorf("internal error: %v", appError.ErrMsg)
+		} else if appError.ErrType == storage.ErrForbidden.ErrType {
+			statuscode = http.StatusForbidden
+			reason = appError.ErrMsg
+			logrus.Errorf("internal error: %v", err)
+		} else if appError.ErrType == storage.ErrInvalid.ErrType {
+			statuscode = http.StatusBadRequest
+			reason = appError.ErrMsg
+		} else {
+			statuscode = http.StatusInternalServerError
+			reason = "internal error, please try again shortly"
+			logrus.Errorf("internal error: %v", err)
+		}
 	} else {
 		statuscode = http.StatusInternalServerError
-		reason = "internal error, please try again shortly"
-		logrus.Errorf("internal error: %v", err)
+		reason = "internal error"
+		logrus.WithField("handler", handler).Errorf("internal error (not storage.Error): %v", err.Error())
 	}
 
 	body := map[string]string{

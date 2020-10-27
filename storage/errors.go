@@ -6,17 +6,31 @@ import (
 	"strings"
 )
 
-type Error string
-
-func (e Error) Error() string {
-	return string(e)
+type Error struct {
+	ErrType string
+	ErrMsg  string
+	Err     error
 }
 
-var ErrRecordNotFound = Error("not found")
-var ErrForbidden = Error("forbidden")
-var ErrAlreadyExists = Error("already exists")
-var ErrInternalError = Error("internal error")
-var ErrInvalid = Error("invalid request")
+func newError(errType string) Error {
+	return Error{
+		ErrType: errType,
+		ErrMsg:  errType,
+	}
+}
+
+func (e Error) Error() string {
+	if e.Err != nil {
+		return fmt.Sprintf("%s - %s: %v", e.ErrType, e.ErrMsg, e.Err)
+	}
+	return fmt.Sprintf("%s - %s", e.ErrType, e.ErrMsg)
+}
+
+var ErrRecordNotFound = newError("not found")
+var ErrForbidden = newError("forbidden")
+var ErrAlreadyExists = newError("already exists")
+var ErrInternalError = newError("internal error")
+var ErrInvalid = newError("invalid request")
 
 func getPostgresError(err error) (bool, error) {
 	pError, ok := err.(*pq.Error)
