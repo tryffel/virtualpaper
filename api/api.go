@@ -97,6 +97,7 @@ func (a *Api) addRoutes() {
 	a.privateRouter.HandleFunc("/documents/{id}/jobs", a.getDocumentLogs).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/documents", a.uploadFile).Methods(http.MethodPost)
 	a.privateRouter.HandleFunc("/documents/create", a.uploadFile).Methods(http.MethodPost)
+	a.privateRouter.HandleFunc("/documents/undefined", a.uploadFile).Methods(http.MethodPost)
 	a.privateRouter.HandleFunc("/documents/create", a.getEmptyDocument).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/documents/{id}/content", a.getDocumentContent).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/documents/{id}/download", a.downloadDocument).Methods(http.MethodGet)

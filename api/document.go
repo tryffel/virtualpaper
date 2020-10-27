@@ -377,7 +377,7 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 
 func (a *Api) getEmptyDocument(resp http.ResponseWriter, req *http.Request) {
 	doc := &models.Document{}
-	respOk(resp, responseFromDocument(doc))
+	respResourceList(resp, responseFromDocument(doc), 1)
 }
 
 func (a *Api) downloadDocument(resp http.ResponseWriter, req *http.Request) {
