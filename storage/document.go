@@ -65,6 +65,7 @@ WHERE user_id = $1
 `
 	var count int
 	err = s.db.Get(&count, sql, userId)
+	err = getDatabaseError(err, "documents", "get documents")
 	return dest, count, err
 }
 
@@ -83,7 +84,7 @@ WHERE id = $1
 	}
 	dest := &models.Document{}
 	err := s.db.Get(dest, sql, args...)
-	return dest, err
+	return dest, getDatabaseError(err, "documents", "get document")
 }
 
 // UserOwnsDocumet returns true if user has ownership for document.
@@ -105,8 +106,7 @@ end;
 	var ownership bool
 
 	err := s.db.Get(&ownership, sql, documentId, userId)
-	return ownership, err
-
+	return ownership, getDatabaseError(err, "documents", "check ownership")
 }
 
 func (s *DocumentStore) GetByHash(hash string) (*models.Document, error) {
@@ -118,7 +118,7 @@ func (s *DocumentStore) GetByHash(hash string) (*models.Document, error) {
 `
 	object := &models.Document{}
 	err := s.db.Get(object, sql, hash)
-	return object, getDatabaseError(err)
+	return object, getDatabaseError(err, "documents", "get by hash")
 }
 
 func (s *DocumentStore) Create(doc *models.Document) error {
@@ -129,7 +129,7 @@ INSERT INTO documents (user_id, name, content, filename, hash, mimetype, size, d
 	res, err := s.db.Query(sql, doc.UserId, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
 		doc.Description)
 	if err != nil {
-		return getDatabaseError(err)
+		return getDatabaseError(err, "documents", "create")
 	}
 	defer res.Close()
 
@@ -137,13 +137,13 @@ INSERT INTO documents (user_id, name, content, filename, hash, mimetype, size, d
 		var id int
 		err = res.Scan(&id)
 		if err != nil {
-			return getDatabaseError(err)
+			return getDatabaseError(err, "documents", "scan creation index")
 		} else {
 			doc.Id = id
 		}
 	}
 
-	return getDatabaseError(err)
+	return getDatabaseError(err, "documents", "created")
 }
 
 // SetDocumentContent sets content for given document id
@@ -155,7 +155,7 @@ WHERE id=$1;
 `
 
 	_, err := s.db.Exec(sql, id, content)
-	return getDatabaseError(err)
+	return getDatabaseError(err, "documents", "set content")
 }
 
 // GetContent returns full content. If userId != 0, user must own the document of given id.
@@ -176,7 +176,7 @@ WHERE id=$1
 	} else {
 		err = s.db.Get(&content, sql, id, userId)
 	}
-	return &content, getDatabaseError(err)
+	return &content, getDatabaseError(err, "documents", "get content")
 }
 
 // GetNeedsIndexing returns documents that need indexing ( awaits_indexing=true). If userId != 0, return
@@ -200,7 +200,7 @@ WHERE awaits_indexing=True
 	docs := &[]models.Document{}
 
 	err := s.db.Select(docs, sql, args...)
-	return docs, getDatabaseError(err)
+	return docs, getDatabaseError(err, "documents", "get needs indexing")
 }
 
 // BulkUpdateIndexingStatus sets indexing status for all documents that are defined in ids-array.
@@ -214,7 +214,7 @@ WHERE id IN ($3);
 `
 
 	_, err := s.db.Exec(sql, !indexed, at, ids)
-	return getDatabaseError(err)
+	return getDatabaseError(err, "documents", "bulk update indexing")
 }
 
 func (s *DocumentStore) Update(doc *models.Document) error {
@@ -228,5 +228,5 @@ WHERE id=$1
 
 	_, err := s.db.Exec(sql, doc.Id, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
 		doc.Date, doc.UpdatedAt, doc.Description)
-	return getDatabaseError(err)
+	return getDatabaseError(err, "documents", "update")
 }

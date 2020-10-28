@@ -19,8 +19,12 @@
 package storage
 
 import (
+	"fmt"
 	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
+	"strings"
 	"time"
+	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
 )
 
@@ -55,7 +59,7 @@ ORDER BY key ASC;
 
 	object := &[]models.Metadata{}
 	err := s.db.Select(object, sql, args...)
-	return object, getDatabaseError(err)
+	return object, getDatabaseError(err, "metadata", "get document metadata")
 }
 
 func (s *MetadataStore) GetDocumentTags(userId int, documentId int) (*[]models.Tag, error) {
@@ -71,7 +75,7 @@ limit 100;
 `
 	object := &[]models.Tag{}
 	err := s.db.Select(object, sql, documentId, userId)
-	return object, getDatabaseError(err)
+	return object, getDatabaseError(err, "metadata", "get document tags")
 }
 
 func (s *MetadataStore) GetTags(userid int, paging Paging) (*[]models.TagComposite, int, error) {
@@ -94,7 +98,7 @@ LIMIT $3;
 
 	err := s.db.Select(object, sql, userid, paging.Offset, paging.Limit)
 	if err != nil {
-		return object, len(*object), getDatabaseError(err)
+		return object, len(*object), getDatabaseError(err, "metadata", "get tags")
 	}
 
 	sql = `SELECT
@@ -107,9 +111,9 @@ LIMIT $3;
 	row := s.db.QueryRow(sql, userid)
 	err = row.Scan(&n)
 	if err != nil {
-		return object, len(*object), getDatabaseError(err)
+		return object, len(*object), getDatabaseError(err, "metadata", "scan tags count")
 	}
-	return object, n, getDatabaseError(err)
+	return object, n, getDatabaseError(err, "metadata", "get tags count")
 }
 
 func (s *MetadataStore) GetTag(userId, tagId int) (*models.TagComposite, error) {
@@ -131,7 +135,7 @@ GROUP BY (tags.id);
 
 	object := &models.TagComposite{}
 	err := s.db.Get(object, sql, tagId, userId)
-	return object, getDatabaseError(err)
+	return object, getDatabaseError(err, "metadata", "get tag")
 }
 
 func (s *MetadataStore) CreateTag(userId int, tag *models.Tag) error {
@@ -147,7 +151,7 @@ VALUES ($1, $2, $3, $4, $5) RETURNING id;
 	row := s.db.QueryRow(sql, userId, tag.Key, tag.Comment, tag.CreatedAt, tag.UpdatedAt)
 	err := row.Scan(&id)
 	if err != nil {
-		return getDatabaseError(err)
+		return getDatabaseError(err, "metadata", "create tag")
 	}
 
 	tag.Id = id

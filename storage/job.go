@@ -26,7 +26,7 @@ WHERE jobs.document_id = $1;
 	jobs := &[]models.Job{}
 
 	err := s.db.Select(jobs, sql, documentId)
-	return jobs, getDatabaseError(err)
+	return jobs, getDatabaseError(err, "jobs", "get by document")
 }
 
 // GetByDocument returns all jobs related to document
@@ -61,7 +61,7 @@ LIMIT $3;
 			(*jobs)[i].Duration = v.Duration
 		}
 	}
-	return jobs, getDatabaseError(err)
+	return jobs, getDatabaseError(err, "jobs", "get by user")
 }
 
 func (s *JobStore) Create(documentId int, job *models.Job) error {
@@ -75,7 +75,7 @@ VALUES ($1, $2, $3, $4, $5) RETURNING id;
 
 	res, err := s.db.Query(sql, documentId, val, job.Message, job.StartedAt, job.StoppedAt)
 	if err != nil {
-		return getDatabaseError(err)
+		return getDatabaseError(err, "jobs", "create")
 	}
 	defer res.Close()
 
@@ -83,7 +83,7 @@ VALUES ($1, $2, $3, $4, $5) RETURNING id;
 		var id int
 		err := res.Scan(&id)
 		if err != nil {
-			return getDatabaseError(err)
+			return getDatabaseError(err, "jobs", "create, scan results")
 		}
 		job.Id = id
 	}
@@ -101,7 +101,7 @@ WHERE id = $1;
 
 	val, _ := job.Status.Value()
 	_, err := s.db.Exec(sql, job.Id, job.DocumentId, val, job.Message, job.StartedAt, job.StoppedAt)
-	return getDatabaseError(err)
+	return getDatabaseError(err, "jobs", "update")
 }
 
 // GetPendingProcessing returns max 100 processQueue items ordered by created_at.
@@ -127,7 +127,7 @@ limit 20;
 
 	err := s.db.Select(dto, sql)
 	if err != nil {
-		return dto, 0, getDatabaseError(err)
+		return dto, 0, getDatabaseError(err, "processItem", "get pending")
 	}
 
 	sql = `
@@ -138,7 +138,7 @@ FROM process_queue;
 
 	row := s.db.QueryRow(sql)
 	err = row.Scan(&n)
-	return dto, n, getDatabaseError(err)
+	return dto, n, getDatabaseError(err, "processItem", "get pending, scan")
 }
 
 // GetPendingProcessing returns max 100 documents ordered by process_queue created_at.
@@ -158,9 +158,9 @@ LIMIT 40;
 
 	err := s.db.Select(dto, sql)
 	if err != nil {
-		return dto, getDatabaseError(err)
+		return dto, getDatabaseError(err, "jobs", "get documents pending")
 	}
-	return dto, getDatabaseError(err)
+	return dto, getDatabaseError(err, "jobs", "scan documents pending")
 }
 
 // GetDocumentPendingSteps returns ProcessItems not yet started on given document in ascending order.
@@ -175,7 +175,7 @@ ORDER BY step ASC;
 
 	dto := &[]models.ProcessItem{}
 	err := s.db.Select(dto, sql, documentId)
-	return dto, getDatabaseError(err)
+	return dto, getDatabaseError(err, "processSteps", "get pending")
 }
 
 // GetDocumentStatus returns status for given document:
@@ -190,12 +190,12 @@ GROUP BY running;
 
 	rows, err := s.db.Query(sql, documentId)
 	if err != nil {
-		dbERr := getDatabaseError(err)
+		dbERr := getDatabaseError(err, "processSteps", "get document status")
 		if errors.Is(dbERr, ErrRecordNotFound) {
 			return "ready", nil
 		}
 
-		return "", getDatabaseError(err)
+		return "", getDatabaseError(err, "processSteps", "get document status")
 	}
 
 	jobPending := false
@@ -237,7 +237,7 @@ AND running=FALSE;
 `
 	res, err := s.db.Exec(sql, item.DocumentId, item.Step)
 	if err != nil {
-		return nil, getDatabaseError(err)
+		return nil, getDatabaseError(err, "processSteps", "start")
 	}
 
 	affected, err := res.RowsAffected()
@@ -258,7 +258,7 @@ AND running=FALSE;
 	}
 
 	err = s.Create(item.DocumentId, job)
-	return job, getDatabaseError(err)
+	return job, getDatabaseError(err, "processStep", "mark started")
 }
 
 // CreateProcessItem add single process item.
@@ -268,7 +268,7 @@ INSERT INTO process_queue (document_id, step)
 VALUES ($1, $2);
 `
 	_, err := s.db.Exec(sql, item.DocumentId, item.Step)
-	return getDatabaseError(err)
+	return getDatabaseError(err, "processSteps", "create")
 }
 
 // MarkProcessinDone update given item. If ok, remove record, else mark it as not running
@@ -291,7 +291,7 @@ func (s *JobStore) MarkProcessingDone(item *models.ProcessItem, ok bool) error {
 			`
 	}
 	_, err := s.db.Exec(sql, item.DocumentId, item.Step)
-	return getDatabaseError(err)
+	return getDatabaseError(err, "processSetps", "mark done")
 }
 
 // AddDocument adds default processing steps for document. Document must be existing.
@@ -324,7 +324,7 @@ VALUES
 	sql += ";"
 
 	_, err = s.db.Exec(sql, args...)
-	return getDatabaseError(err)
+	return getDatabaseError(err, "processSteps", "add document")
 
 }
 
@@ -337,7 +337,7 @@ WHERE running=TRUE
 `
 
 	_, err := s.db.Exec(sql)
-	return getDatabaseError(err)
+	return getDatabaseError(err, "processItem", "cancel running")
 }
 
 // ForceProcessing adds documents to process queue. If documentID != 0, mark only given document. If
@@ -371,5 +371,5 @@ JOIN (SELECT DISTINCT * FROM (VALUES %s) AS v) AS steps(step) ON TRUE
 	}
 
 	_, err := s.db.Exec(sql, args...)
-	return getDatabaseError(err)
+	return getDatabaseError(err, "processSteps", "force processing")
 }

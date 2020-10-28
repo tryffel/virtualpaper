@@ -79,7 +79,7 @@ func (u *UserStore) GetUsers() (*[]models.User, error) {
 
 	users := &[]models.User{}
 	err := u.db.Select(users, sql)
-	return users, getDatabaseError(err)
+	return users, getDatabaseError(err, "users", "get many")
 }
 
 func (u *UserStore) GetUser(userid int) (*models.User, error) {
@@ -91,5 +91,5 @@ func (u *UserStore) GetUser(userid int) (*models.User, error) {
 
 	user := &models.User{}
 	err := u.db.Get(user, sql, userid)
-	return user, getDatabaseError(err)
+	return user, getDatabaseError(err, "users", "get single")
 }

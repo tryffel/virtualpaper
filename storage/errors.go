@@ -32,7 +32,7 @@ var ErrAlreadyExists = newError("already exists")
 var ErrInternalError = newError("internal error")
 var ErrInvalid = newError("invalid request")
 
-func getPostgresError(err error) (bool, error) {
+func getPostgresError(err error, resource string, action string) (bool, error) {
 	pError, ok := err.(*pq.Error)
 	if !ok {
 		return false, nil
@@ -40,11 +40,15 @@ func getPostgresError(err error) (bool, error) {
 
 	// Unique violation
 	if pError.Code == "23505" {
-		return true, ErrAlreadyExists
+		e := ErrAlreadyExists
+		e.ErrMsg = resource + " already exists"
+		return true, e
 	}
 
 	if pError.Code == "23503" {
-		return true, ErrRecordNotFound
+		e := ErrRecordNotFound
+		e.ErrMsg = resource + " not found"
+		return true, e
 	}
 	return false, err
 }
@@ -60,11 +64,11 @@ func getSqlError(err error) (bool, error) {
 	return false, nil
 }
 
-func getDatabaseError(e error) error {
+func getDatabaseError(e error, resource string, action string) error {
 	if e == nil {
 		return nil
 	}
-	p, err := getPostgresError(e)
+	p, err := getPostgresError(e, resource, action)
 	if p {
 		return err
 	}
@@ -72,6 +76,7 @@ func getDatabaseError(e error) error {
 	if sql {
 		return err
 	}
-
-	return fmt.Errorf("%v: %v", ErrInternalError, e)
+	Err := ErrInternalError
+	Err.ErrMsg = fmt.Sprintf("%s - %s", resource, action)
+	return Err
 }
