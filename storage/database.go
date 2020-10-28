@@ -49,3 +49,7 @@ type Paging struct {
 	Offset int
 	Limit  int
 }
+
+func (p *Paging) Validate() {
+	p.Limit = config.MaxRecords(p.Limit)
+}
