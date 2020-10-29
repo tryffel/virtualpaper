@@ -17,8 +17,28 @@
  */
 
 import * as React from "react";
-import {DateInput, Edit, SimpleForm, TextInput, DateField, TextField} from "react-admin";
+import {
+    DateInput,
+    Edit,
+    SimpleForm,
+    TextInput,
+    DateField,
+    TextField,
+    ReferenceArrayInput,
+    ReferenceInput,
+    SelectArrayInput,
+    useQueryWithStore,
+    Loading,
+    Error,
+    SelectInput,
+    ArrayInput,
+    SimpleFormIterator,
+    FormDataConsumer
+} from "react-admin";
+
 import MarkDownInputWithField from "ra-input-markdown";
+
+import get from 'lodash/get';
 
 
 export const DocumentEdit = (props) => {
@@ -35,9 +55,57 @@ export const DocumentEdit = (props) => {
             <TextInput source="name" />
             <MarkDownInputWithField source="description" />
             <DateInput source="date" />
+            <ReferenceArrayInput source="tags" reference="tags" allowEmpty label={"Tags"}>
+                <SelectArrayInput optionText="key" />
+            </ReferenceArrayInput>
+                <ArrayInput source="metadata" label={"Metadata"}>
+                    <SimpleFormIterator margin="dense" defaultValue={ [{key_id: 0, key:"", value_id: 0, value:""}]}>
+                        <ReferenceInput label="Key" source="key_id" reference="metadata/keys">
+                            <SelectInput optionText="key"/>
+                        </ReferenceInput>
+                        <FormDataConsumer>
+                            {({getSource, scopedFormData}) =>
+                                scopedFormData && scopedFormData.key_id ? (
+                                    <MetadataValueInput
+                                        source={getSource('value_id')}
+                                        record={scopedFormData}
+                                        label={"Value"}
+                                    />
+                                ) : null
+                            }
+
+                        </FormDataConsumer>
+                    </SimpleFormIterator>
+                </ArrayInput>
             <DateField source="created_at" />
             <DateField source="updated_at" />
         </SimpleForm>
     </Edit>
     );
 }
+
+const MetadataValueInput = props => {
+    let keyId = 0;
+    if (props.record) {
+        keyId = get(props.record, "key_id");
+    }
+
+    const {data, loading, error } = useQueryWithStore({
+        type: 'getList',
+        resource: 'metadata/values',
+        payload: { target:"metadata/values", id: keyId!==0 ? keyId : -1,
+            pagination: {page:1}, perPage: 200,
+            sort:"id", order:"asc"}
+    });
+
+    if (loading) return <Loading />;
+    if (error) return <Error error={error}/>;
+    if (data) {
+        return (
+            <SelectInput {...props} choices={data} optionText="value" />
+
+        )} else {
+        return <Loading />;
+
+    }
+};

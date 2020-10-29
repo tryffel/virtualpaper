@@ -47,7 +47,15 @@ export const dataProvider = {
             page_size: perPage,
             filter: JSON.stringify(params.filter),
         };
-        const url = `${apiUrl}/${resource}?${stringify(query)}`;
+        let url = `${apiUrl}/${resource}?${stringify(query)}`;
+
+        if (resource === 'metadata/values') {
+            if (!params.id) {
+                params.id = 1;
+            }
+            url = `${apiUrl}/metadata/keys/${params.id}/values?${stringify(query)}`;
+        }
+
         const options =
             countHeader === 'Content-Range'
                 ? {
@@ -86,7 +94,12 @@ export const dataProvider = {
         const query = {
             filter: JSON.stringify({ id: params.ids }),
         };
-        const url = `${apiUrl}/${resource}?${stringify(query)}`;
+        let url = `${apiUrl}/${resource}?${stringify(query)}`;
+
+        if (resource === 'metadata/values' && params.ids && params.ids.length === 0) {
+            url = `${apiUrl}/metadata/keys/${params.ids[0]}/values?${stringify(query)}`;
+        }
+
         return httpClient(url).then(({ json }) => ({ data: json }));
     },
 
@@ -105,7 +118,10 @@ export const dataProvider = {
                 [params.target]: params.id,
             }),
         };
-        const url = `${apiUrl}/${resource}?${stringify(query)}`;
+        let url = `${apiUrl}/${resource}?${stringify(query)}`;
+        if (resource !== 'metadata/values' || params.id) {
+            url = `${apiUrl}/metadata/keys/${params.id}/values?${stringify(query)}`;
+        }
         const options =
             countHeader === 'Content-Range'
                 ? {
@@ -114,7 +130,7 @@ export const dataProvider = {
                         Range: `${resource}=${rangeStart}-${rangeEnd}`,
                     }),
                 }
-                : {};
+        : {};
 
         return httpClient(url, options).then(({ headers, json }) => {
             if (!headers.has(countHeader)) {

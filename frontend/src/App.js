@@ -19,17 +19,31 @@
 import * as React from "react";
 import { Admin, Resource } from 'react-admin';
 
+import MessageOutLinedIcon from '@material-ui/icons/Message';
+import DescriptionOutLinedIcon from '@material-ui/icons/Description';
+import LabelOutlinedIcon from '@material-ui/icons/LabelOutlined';
+
 import { dataProvider } from "./dataProvider";
 import authProvider from './authProvider';
 import documents from './documents';
 import tags from './tags';
+import metadata_keys from './metadata_keys';
 import { JobList} from "./job";
 
 
+
 const App = () => (
-        <Resource name="documents" {...documents}/>
-        <Resource name="tags" {...tags} />
+    <Admin
+        dataProvider={dataProvider}
+        authProvider={authProvider}
+    >
+
+        <Resource name="documents" {...documents} icon={ DescriptionOutLinedIcon }/>
+        <Resource name="tags" {...tags} icon={ LabelOutlinedIcon } />
+        <Resource name="metadata/keys" options={{label: "Metadata"}} {...metadata_keys} icon={ MessageOutLinedIcon } />
+        <Resource name="metadata/values"  label={"metadata values"} />
         <Resource name="jobs" list={JobList} />
+        <Resource name="user"  />
     </Admin>
     );
 

@@ -17,7 +17,7 @@
  */
 
 import * as React from "react";
-import {ArrayField, Datagrid, DateField, FileField, RichTextField, Show, Tab, TabbedShowLayout, TextField, ChipField, SingleFieldList
+import {ArrayField, Datagrid, DateField, FileField, RichTextField, Show, Tab, TabbedShowLayout, TextField, ChipField, SingleFieldList, Labeled
 } from "react-admin";
 
 import { ThumbnailField, EmbedFile} from "./file";
@@ -31,13 +31,15 @@ export const DocumentShow = (props) => (
                 <ThumbnailField source="preview_url" />
                 <TextField source="id" />
                 <TextField source="name" />
-                <MarkdownField source="description" />
+
+                <Labeled label="Description"  >
+                    <MarkdownField source="description" />
+                </Labeled>
                 <DateField source="date" showTime={false} />
                 <TextField source="pretty_size" label="Size"/>
                 <TextField source="status" />
-                <DateField source="created_at" showTime={true} />
-                <DateField source="updated_at" showTime={true}/>
-                <FileField source="download_url" label="Download document" title={"filename"} />
+
+
 
                 <ArrayField source="tags">
                     <SingleFieldList>
@@ -51,8 +53,11 @@ export const DocumentShow = (props) => (
                         <TextField source="value" />
                     </Datagrid>
                 </ArrayField>
+                <FileField source="download_url" label="Download document" title={"filename"} />
+                <DateField source="created_at" showTime={true} />
+                <DateField source="updated_at" showTime={true}/>
             </Tab>
-            <Tab label="content">
+            <Tab label="Plain text">
                 <RichTextField source="content" />
             </Tab>
             <Tab label="preview">
