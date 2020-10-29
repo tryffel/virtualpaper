@@ -77,6 +77,7 @@ func getDatabaseError(e error, resource string, action string) error {
 		return err
 	}
 	Err := ErrInternalError
+	Err.Err = err
 	Err.ErrMsg = fmt.Sprintf("%s - %s", resource, action)
 	return Err
 }

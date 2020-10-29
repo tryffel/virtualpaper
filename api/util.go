@@ -19,7 +19,6 @@
 package api
 
 import (
-	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
@@ -39,11 +38,15 @@ func getParamId(req *http.Request) (int, error) {
 	idStr := mux.Vars(req)["id"]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return -1, fmt.Errorf("id not integer")
+		e := storage.ErrInvalid
+		e.ErrMsg = "id not integer"
+		return -1, e
 	}
 
 	if id < 0 {
-		return -1, fmt.Errorf("id must be >0")
+		e := storage.ErrInvalid
+		e.ErrMsg = "id must be >0"
+		return -1, e
 	}
 
 	return id, err

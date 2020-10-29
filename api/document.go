@@ -82,6 +82,8 @@ type documentUpdateRequest struct {
 	Description string `json:"description" valid:"-"`
 	Filename    string `json:"filename" valid:"ascii"`
 	Date        int64  `json:"date" valid:"-"`
+	//Metadata []models.Metadata `json:"metadata" valid:""`
+	Metadata []metadataRequest `json:"metadata" valid:""`
 }
 
 func (a *Api) getDocuments(resp http.ResponseWriter, req *http.Request) {
@@ -461,6 +463,14 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 	doc.Name = dto.Name
 	doc.Description = dto.Description
 	doc.Filename = dto.Filename
+	metadata := make([]*models.Metadata, len(dto.Metadata))
+
+	for i, v := range dto.Metadata {
+		metadata[i] = &models.Metadata{
+			KeyId:   v.KeyId,
+			ValueId: v.ValueId,
+		}
+	}
 
 	doc.Update()
 
@@ -468,6 +478,11 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		respError(resp, err, handler)
 		return
+	}
+
+	err = a.db.MetadataStore.UpdateDocumentKeyValues(user, doc.Id, metadata)
+	if err != nil {
+		respError(resp, err, handler)
 	}
 
 	err = a.search.IndexDocuments(&[]models.Document{*doc}, user)

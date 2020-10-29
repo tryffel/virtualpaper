@@ -19,19 +19,6 @@
 package migration
 
 const schemaV3 = `
-CREATE TABLE metadata (
-	document_id INT,
-	
-	key TEXT NOT NULL,
-	key_lower TEXT NOT NULL,
-
-	value TEXT NOT NULL,
-	value_lower TEXT NOT NULL,
-
-	CONSTRAINT pk_metadata PRIMARY KEY (document_id, key_lower),
-	CONSTRAINT fk_document FOREIGN KEY(document_id) REFERENCES documents(id)
-);
-
 
 CREATE TABLE tags (
 	id SERIAL,
@@ -53,4 +40,45 @@ CREATE TABLE document_tags (
 
 	CONSTRAINT document_tags_pkey PRIMARY KEY (document_id, tag_id)
 );
+
+
+CREATE TABLE metadata_keys (
+	id SERIAL,
+	user_id INT,
+	key TEXT NOT NULL DEFAULT '',
+	comment TEXT NOT NULL DEFAULT '',
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+	CONSTRAINT pk_metadata_keys PRIMARY KEY(id),
+	CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES users(id),
+	CONSTRAINT unique_user_key UNIQUE (user_id, key)
+);
+
+
+CREATE TABLE metadata_values (
+	id SERIAL,
+	user_id INT,
+	key_id INT,
+	value TEXT NOT NULL DEFAULT '',
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+	CONSTRAINT pk_metadata_values PRIMARY KEY(id),
+	CONSTRAINT pk_metadata_values_key FOREIGN KEY (key_id) REFERENCES metadata_keys(id),
+	CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES users(id),
+	CONSTRAINT unique_user_value UNIQUE (user_id, value)
+);
+
+
+CREATE TABLE document_metadata (
+	document_id INT,
+	key_id INT,
+	value_id INT,
+
+	CONSTRAINT pk_document_metaadata PRIMARY KEY(document_id, key_id, value_id),
+	CONSTRAINT fk_document_metadata_doc_id FOREIGN KEY(document_id) REFERENCES documents(id),
+	CONSTRAINT fk_keys FOREIGN KEY(key_id) REFERENCES metadata_keys(id),
+	CONSTRAINT fk_values FOREIGN KEY(value_id) REFERENCES metadata_values(id)
+);
+
+
 `

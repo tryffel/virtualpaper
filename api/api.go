@@ -101,6 +101,7 @@ func (a *Api) addRoutes() {
 	a.privateRouter.HandleFunc("/documents/create", a.getEmptyDocument).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/documents/{id}/content", a.getDocumentContent).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/documents/{id}/download", a.downloadDocument).Methods(http.MethodGet)
+	a.privateRouter.HandleFunc("/documents/{id}/metadata", a.updateDocumentMetadata).Methods(http.MethodPost)
 
 	a.privateRouter.HandleFunc("/jobs", a.GetJob).Methods(http.MethodGet)
 
@@ -108,6 +109,9 @@ func (a *Api) addRoutes() {
 	a.privateRouter.HandleFunc("/tags/{id}", a.getTag).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/tags", a.createTag).Methods(http.MethodPost)
 	a.privateRouter.HandleFunc("/tags/create", a.createTag).Methods(http.MethodPost)
+
+	a.privateRouter.HandleFunc("/metadata/keys", a.getMetadataKeys).Methods(http.MethodGet)
+	a.privateRouter.HandleFunc("/metadata/keys/{id}/values", a.getMetadataKeyValues).Methods(http.MethodGet)
 
 	a.privateRouter.HandleFunc("/admin/documents/process", a.forceDocumentProcessing).Methods(http.MethodPost)
 

@@ -103,6 +103,26 @@ func (d *Document) SortAttributes() []string {
 }
 
 type Metadata struct {
-	Key   string `db:"key" json:"key"`
-	Value string `db:"value" json:"value"`
+	KeyId   int    `db:"key_id" json:"key_id"`
+	Key     string `db:"key" json:"key"`
+	ValueId int    `db:"value_id" json:"value_id"`
+	Value   string `db:"value" json:"value"`
+}
+
+type MetadataKey struct {
+	Id        int       `db:"id" json:"id"`
+	UserId    string    `db:"user_id" json:"-"`
+	Key       string    `db:"key" json:"key"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	Comment   string    `db:"comment" json:"comment"`
+}
+
+type MetadataValue struct {
+	Id        int       `db:"id" json:"id"`
+	UserId    string    `db:"user_id" json:"-"`
+	Key       string    `db:"key" json:"key"`
+	KeyId     int       `db:"key_id" json:"-"`
+	Value     string    `db:"value" json:"value"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	Comment   string    `db:"comment" json:"comment"`
 }

@@ -32,26 +32,41 @@ type MetadataStore struct {
 	db *sqlx.DB
 }
 
+// GetDocumentMetadata returns key-value metadata for given document. If userId != 0, user must own document.
 func (s *MetadataStore) GetDocumentMetadata(userId int, documentId int) (*[]models.Metadata, error) {
 	var sql string
 	var args []interface{}
 
 	if userId != 0 {
 		sql = `
-SELECT key, value
-FROM metadata
-LEFT JOIN documents d ON metadata.document_id = d.id
-WHERE document_id = $1
+
+SELECT
+	mk.id AS key_id,
+	mk.key AS key,
+	mv.id AS value_id,
+	mv.value AS value
+FROM documents d
+LEFT JOIN document_metadata dm ON d.id = dm.document_id
+LEFT JOIN metadata_keys mk ON dm.key_id = mk.id
+LEFT JOIN metadata_values mv ON dm.value_id = mv.id
+WHERE d.id = $1
 AND d.user_id = $2
-ORDER by key ASC;
+ORDER BY key ASC;
 `
 		args = []interface{}{documentId, userId}
 
 	} else {
 		sql = `
-SELECT key, value
-FROM metadata
-WHERE document_id = $1
+SELECT
+	mk.id AS key_id,
+	mk.key AS key,
+	mv.id AS value_id,
+	mv.value AS value
+FROM documents d
+LEFT JOIN document_metadata dm ON d.id = dm.document_id
+LEFT JOIN metadata_keys mk ON dm.key_id = mk.id
+LEFT JOIN metadata_values mv ON dm.value_id = mv.id
+WHERE d.id = $1
 ORDER BY key ASC;
 `
 		args = []interface{}{documentId}
@@ -59,7 +74,118 @@ ORDER BY key ASC;
 
 	object := &[]models.Metadata{}
 	err := s.db.Select(object, sql, args...)
+	if err != nil {
+		if strings.Contains(err.Error(), "converting NULL to int") {
+			logrus.Debugf("got empty row from metadata query: doc %d, %v", documentId, err)
+			return object, nil
+			// no rows returned
+		}
+	}
 	return object, getDatabaseError(err, "metadata", "get document metadata")
+}
+
+// GetKeys returns all possible metadata-keys for user.
+func (s *MetadataStore) GetKeys(userId int) (*[]models.MetadataKey, error) {
+	limit := config.MaxRows
+	sql := `
+SELECT *
+FROM metadata_keys
+WHERE user_id = $1
+ORDER BY key ASC
+LIMIT $2;
+`
+
+	keys := &[]models.MetadataKey{}
+	err := s.db.Select(keys, sql, userId, limit)
+	return keys, getDatabaseError(err, "metadata", "get keys")
+}
+
+// GetValues returns all values to given key.
+func (s *MetadataStore) GetValues(userId int, keyId int) (*[]models.MetadataValue, error) {
+	limit := config.MaxRows
+
+	sql := `
+SELECT *
+FROM metadata_values mv
+WHERE  mv.user_id = $1
+AND key_id = $2
+ORDER BY value ASC
+LIMIT $3;
+`
+
+	values := &[]models.MetadataValue{}
+	err := s.db.Select(values, sql, userId, keyId, limit)
+	return values, getDatabaseError(err, "metadata", "get key values")
+}
+
+// UpdateDocumentKeyValues updates key-values for document.
+func (s *MetadataStore) UpdateDocumentKeyValues(userId, documentId int, metadata []*models.Metadata) error {
+	var sql string
+	var err error
+
+	if userId != 0 {
+		sql = `
+SELECT CASE WHEN EXISTS
+    (
+        SELECT id
+        FROM documents
+        WHERE id = $1
+        AND user_id = $2
+    )
+    THEN TRUE
+    ELSE FALSE
+END;
+`
+
+		var ownership bool
+		err = s.db.Get(&ownership, sql, documentId, userId)
+		if err != nil {
+			return getDatabaseError(err, "metadata", "update key-values, check ownership")
+		}
+		if !ownership {
+			return ErrRecordNotFound
+		}
+	}
+
+	tx, err := s.db.Beginx()
+	if err != nil {
+		return getDatabaseError(err, "metadata", "update document, start tx")
+	}
+
+	sql = `
+	DELETE
+	FROM document_metadata m
+	WHERE m.document_id = $1;
+	`
+
+	_, err = tx.Exec(sql, documentId)
+	if err != nil {
+		logrus.Warningf("error deleting old metadata: %v", err)
+		return getDatabaseError(tx.Rollback(), "metadata", "rollback tx")
+	}
+
+	sql = `	
+	INSERT INTO document_metadata (document_id, key_id, value_id)
+	VALUES `
+
+	var args []interface{}
+	args = append(args, documentId)
+	for i, v := range metadata {
+		if i > 0 {
+			sql += ", "
+		}
+		value := fmt.Sprintf("($1, $%d, $%d)", i*2+2, i*2+3)
+		sql += value
+		args = append(args, v.KeyId, v.ValueId)
+	}
+
+	_, err = tx.Exec(sql, args...)
+	if err != nil {
+		err = tx.Rollback()
+	} else {
+		err = tx.Commit()
+	}
+	return getDatabaseError(err, "metadata", "update document key-values")
 }
 
 func (s *MetadataStore) GetDocumentTags(userId int, documentId int) (*[]models.Tag, error) {
