@@ -74,6 +74,8 @@ func getPaging(req *http.Request) (storage.Paging, error) {
 	if paging.Offset < 0 {
 		paging.Offset = 0
 	}
+
+	paging.Validate()
 	return paging, nil
 }
 
