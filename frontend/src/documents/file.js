@@ -31,8 +31,10 @@ export function downloadFile(url) {
     })
 }
 
-export function ThumbnailField ({ source, record }) {
+export function ThumbnailField ({ source, label, record }) {
     const url = get(record, source);
+    const altText = get(record, label) ? get(record, label): "Thumbnail";
+
     const [imgData, setImage] = useState(() => {
         downloadFile(url)
             .then(response => {
@@ -50,7 +52,7 @@ export function ThumbnailField ({ source, record }) {
 
     return (
         <div>
-            <img src={imgData}/>
+            <img src={imgData} alt={altText}/>
         </div>
     );
 }
@@ -62,7 +64,7 @@ ThumbnailField.propTypes = {
 };
 
 
-export function ThumbnailSmall ({ url })
+export function ThumbnailSmall ({ url, label })
 {
     const [imgData, setImage] = useState(() => {
         downloadFile(url)
@@ -72,7 +74,7 @@ export function ThumbnailSmall ({ url })
                     setImage(data);
                 });
             })
-            .catch( response => {
+            .catch(response => {
                     console.log(response);
                 }
             );
@@ -80,8 +82,8 @@ export function ThumbnailSmall ({ url })
     });
 
     return (
-        <div style={{'overflow':'hidden', 'max-height': '200px'}}>
-            <img src={imgData} style={{'max-width': '250px'}}/>
+        <div style={{'overflow': 'hidden', 'max-height': '200px'}}>
+            <img src={imgData} style={{'max-width': '250px'}} alt={label}/>
         </div>
     );
 }
