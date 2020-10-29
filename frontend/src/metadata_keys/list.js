@@ -24,7 +24,7 @@ import { List, Datagrid, ChipField, TextField, DateField } from "react-admin";
 
 export const MetadataKeyList = (props) => (
     <List title="All metadata keys" {...props}>
-        <Datagrid>
+        <Datagrid rowClick="edit">
             <ChipField source="key" label={"Name"}/>
             <TextField source="comment" label={"Description"}/>
             <DateField source="created_at" label={"Created at"}/>

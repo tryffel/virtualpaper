@@ -100,6 +100,21 @@ LIMIT $2;
 	return keys, getDatabaseError(err, "metadata", "get keys")
 }
 
+// GetKeys returns all possible metadata-keys for user.
+func (s *MetadataStore) GetKey(userId int, keyId int) (*models.MetadataKey, error) {
+	sql := `
+SELECT *
+FROM metadata_keys
+WHERE user_id = $1
+AND id = $2;
+`
+
+	key := &models.MetadataKey{}
+
+	err := s.db.Get(key, sql, userId, keyId)
+	return key, getDatabaseError(err, "metadata", "get key")
+}
+
 // GetValues returns all values to given key.
 func (s *MetadataStore) GetValues(userId int, keyId int) (*[]models.MetadataValue, error) {
 	limit := config.MaxRows
@@ -186,6 +201,55 @@ END;
 		err = tx.Commit()
 	}
 	return getDatabaseError(err, "metadata", "update document key-values")
+}
+
+func (s *MetadataStore) CreateKey(userId int, key *models.MetadataKey) error {
+
+	sql := `
+INSERT INTO metadata_keys
+(user_id, key, comment)
+VALUES ($1, $2, $3)
+RETURNING id;
+`
+
+	res, err := s.db.Query(sql, userId, key.Key, key.Comment)
+	if err != nil {
+		return getDatabaseError(err, "metadata keys", "create")
+	}
+
+	if res.Next() {
+		var id int
+		err = res.Scan(&id)
+		if err != nil {
+			return getDatabaseError(err, "metadata keys", "create, scan id")
+		}
+		key.Id = id
+	}
+	return nil
+}
+
+func (s *MetadataStore) CreateValue(userId int, value *models.MetadataValue) error {
+	sql := `
+INSERT INTO metadata_values
+(user_id, key_id, value)
+VALUES ($1, $2, $3)
+RETURNING id;
+`
+
+	res, err := s.db.Query(sql, userId, value.KeyId, value.Value)
+	if err != nil {
+		return getDatabaseError(err, "metadata values", "create")
+	}
+
+	if res.Next() {
+		var id int
+		err = res.Scan(&id)
+		if err != nil {
+			return getDatabaseError(err, "metadata values", "create, scan id")
+		}
+		value.Id = id
+	}
+	return nil
 }
 
 func (s *MetadataStore) GetDocumentTags(userId int, documentId int) (*[]models.Tag, error) {

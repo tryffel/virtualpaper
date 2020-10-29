@@ -21,7 +21,7 @@ func newError(errType string) Error {
 
 func (e Error) Error() string {
 	if e.Err != nil {
-		return fmt.Sprintf("%s - %s: %v", e.ErrType, e.ErrMsg, e.Err)
+		return fmt.Sprintf("%s - %s: %s", e.ErrType, e.ErrMsg, e.Err.Error())
 	}
 	return fmt.Sprintf("%s - %s", e.ErrType, e.ErrMsg)
 }

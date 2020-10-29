@@ -111,7 +111,7 @@ type Metadata struct {
 
 type MetadataKey struct {
 	Id        int       `db:"id" json:"id"`
-	UserId    string    `db:"user_id" json:"-"`
+	UserId    int       `db:"user_id" json:"-"`
 	Key       string    `db:"key" json:"key"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	Comment   string    `db:"comment" json:"comment"`
@@ -119,7 +119,7 @@ type MetadataKey struct {
 
 type MetadataValue struct {
 	Id        int       `db:"id" json:"id"`
-	UserId    string    `db:"user_id" json:"-"`
+	UserId    int       `db:"user_id" json:"-"`
 	Key       string    `db:"key" json:"key"`
 	KeyId     int       `db:"key_id" json:"-"`
 	Value     string    `db:"value" json:"value"`

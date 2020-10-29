@@ -34,16 +34,23 @@ func unMarshalBody(r *http.Request, body interface{}) error {
 			return storage.ErrInvalid
 		} else {
 			logrus.Debugf("invalid json: %v", err)
+			e := storage.ErrInvalid
+			e.ErrMsg = "invalid json"
+			return e
 		}
 		return storage.ErrInvalid
 	}
 
 	ok, err := govalidator.ValidateStruct(body)
 	if err != nil {
-		return err
+		e := storage.ErrInvalid
+		e.ErrMsg = err.Error()
+		return e
 	}
 	if !ok {
-		return storage.ErrInvalid
+		e := storage.ErrInvalid
+		e.ErrMsg = "invalid request"
+		return e
 	}
 	return nil
 }

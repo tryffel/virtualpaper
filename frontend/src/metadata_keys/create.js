@@ -16,13 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { MetadataKeyList } from "./list";
-import { MetadataKeyEdit } from "./edit";
-import { MetadataKeyCreate } from "./create";
 
-export default {
-    list: MetadataKeyList,
-    edit: MetadataKeyEdit,
-    create: MetadataKeyCreate,
+import * as React from "react";
+import {Create, FileField, FileInput, SimpleForm, TextInput} from "react-admin";
 
-}
+
+export const MetadataKeyCreate = (props) => (
+    <Create{...props}>
+        <SimpleForm>
+            <TextInput source="key" label="Name" />
+            <TextInput source="description" label="Description" />
+        </SimpleForm>
+    </Create>
+);
+
