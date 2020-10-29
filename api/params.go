@@ -20,7 +20,6 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 	"time"
@@ -77,27 +76,6 @@ func getPaging(req *http.Request) (storage.Paging, error) {
 
 	paging.Validate()
 	return paging, nil
-}
-
-func getSearchQuery(req *http.Request) string {
-
-	filter := req.FormValue("filter")
-	if filter == "" {
-		return ""
-	}
-
-	object := &map[string]interface{}{}
-	err := json.Unmarshal([]byte(filter), object)
-	if err != nil {
-		logrus.Warningf("invalid filter: %v", err)
-		return ""
-	}
-
-	val := (*object)["q"]
-	if str, ok := val.(string); ok {
-		return str
-	}
-	return ""
 }
 
 func getDocumentFilter(req *http.Request) (*search.DocumentFilter, error) {

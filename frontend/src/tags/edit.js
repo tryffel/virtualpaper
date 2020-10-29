@@ -17,7 +17,7 @@
  */
 
 import * as React from "react";
-import {DateTimeInput, Edit, SimpleForm, TextInput, DateField, TextField } from "react-admin";
+import { Edit, SimpleForm, TextInput, DateField, TextField } from "react-admin";
 
 
 export const TagEdit = (props) => (
