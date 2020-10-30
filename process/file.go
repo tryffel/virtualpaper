@@ -422,6 +422,10 @@ func (fp *fileProcessor) extractPdf(file *os.File) error {
 
 	client := gosseract.NewClient()
 	defer client.Close()
+	err = client.SetLanguage(config.C.Processing.OcrLanguages...)
+	if err != nil {
+		logrus.Errorf("set tesseract languages: %v. continue with default language.", err)
+	}
 	pages := &[]string{}
 
 	walkFunc := func(fileName string, info os.FileInfo, err error) error {

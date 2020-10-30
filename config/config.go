@@ -47,11 +47,11 @@ type Database struct {
 
 // Processing contains document-processing settings
 type Processing struct {
-	InputDir        string
-	TmpDir          string
-	DataDir         string
-	MaxWorkers      int
-	DefaultLanguage string
+	InputDir     string
+	TmpDir       string
+	DataDir      string
+	MaxWorkers   int
+	OcrLanguages []string
 
 	// application directories. Stored by default in ./media/{previews, documents}.
 	PreviewsDir  string
@@ -84,10 +84,11 @@ func ConfigFromViper() error {
 			Database: viper.GetString("database.database"),
 		},
 		Processing: Processing{
-			InputDir:   viper.GetString("processing.input_dir"),
-			TmpDir:     viper.GetString("processing.tmp_dir"),
-			DataDir:    viper.GetString("processing.data_dir"),
-			MaxWorkers: viper.GetInt("processing.max_workers"),
+			InputDir:     viper.GetString("processing.input_dir"),
+			TmpDir:       viper.GetString("processing.tmp_dir"),
+			DataDir:      viper.GetString("processing.data_dir"),
+			MaxWorkers:   viper.GetInt("processing.max_workers"),
+			OcrLanguages: viper.GetStringSlice("processing.ocr_languages"),
 		},
 		Meilisearch: Meilisearch{
 			Url:    viper.GetString("meilisearch.url"),
@@ -122,6 +123,11 @@ func InitConfig() error {
 	C.Processing.TmpDir, inputChanged = setVar(C.Processing.TmpDir, defaultTmpDir)
 	C.Processing.DataDir, dataChanged = setVar(C.Processing.DataDir, "data")
 	C.Meilisearch.Index, indexChanged = setVar(C.Meilisearch.Index, "virtualpaper")
+	if len(C.Processing.OcrLanguages) == 0 {
+		C.Processing.OcrLanguages = []string{"eng"}
+		viper.Set("processing.ocr_languages", C.Processing.OcrLanguages)
+		changed = true
+	}
 
 	if !path.IsAbs(C.Processing.DataDir) {
 		curDir, err := os.Getwd()
