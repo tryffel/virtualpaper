@@ -68,7 +68,8 @@ func (a *Api) forceDocumentProcessing(resp http.ResponseWriter, req *http.Reques
 	case "fts":
 		step = models.ProcessFts
 	default:
-		step = -1
+		respBadRequest(resp, "no such step", nil)
+		return
 	}
 
 	err = a.db.JobStore.ForceProcessing(body.UserId, body.DocumentId, step)
