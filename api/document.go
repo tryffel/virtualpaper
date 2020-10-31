@@ -450,6 +450,7 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	dto.Filename = govalidator.SafeFileName(dto.Filename)
 	doc, err := a.db.DocumentStore.GetDocument(user, id)
 	if err != nil {
 		respError(resp, err, handler)

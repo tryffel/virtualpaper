@@ -102,7 +102,7 @@ func (fp *fileProcessor) processDocument() {
 		case models.ProcessParseContent:
 			err := fp.parseContent(file)
 			if err != nil {
-				logrus.Errorf("generate thumbnail: %v", err)
+				logrus.Errorf("parse content: %v", err)
 				return
 			}
 		case models.ProcessFts:
@@ -339,16 +339,13 @@ func (fp *fileProcessor) createNewDocumentRecord() error {
 }
 
 func (fp *fileProcessor) generateThumbnail(file *os.File) error {
-	imagick.Initialize()
-	defer imagick.Terminate()
-
 	process := &models.ProcessItem{
 		DocumentId: fp.document.Id,
 		Step:       models.ProcessThumbnail,
 		CreatedAt:  time.Now(),
 	}
 
-	job, err := fp.db.JobStore.StartProcessItem(process, "calculate hash")
+	job, err := fp.db.JobStore.StartProcessItem(process, "generate thumbnail")
 	if err != nil {
 		return fmt.Errorf("persist process item: %v", err)
 	}
@@ -356,10 +353,8 @@ func (fp *fileProcessor) generateThumbnail(file *os.File) error {
 
 	output := path.Join(config.C.Processing.PreviewsDir, fp.document.Hash+".png")
 
-	_, err = imagick.ConvertImageCommand([]string{
-		"convert", "-thumbnail", "x500", "-background", "white", "-alpha", "remove", file.Name() + "[0]", output,
-	})
-
+	name := file.Name()
+	err = generateThumbnail(name, output, 0, 500)
 	if err != nil {
 		job.Status = models.JobFailure
 		job.Message += "; " + err.Error()
@@ -543,7 +538,7 @@ func (fp *fileProcessor) indexSearchContent() error {
 		}
 	}
 	if len(fp.document.Metadata) == 0 {
-		metadata, err := fp.db.MetadataStore.GetDocumentMetadata(fp.document.Id, fp.document.Id)
+		metadata, err := fp.db.MetadataStore.GetDocumentMetadata(fp.document.UserId, fp.document.Id)
 		if err != nil {
 			if errors.Is(err, storage.ErrRecordNotFound) {
 			} else {
