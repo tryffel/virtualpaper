@@ -42,7 +42,7 @@ func (d *DocumentFilter) buildRequest(paging storage.Paging) *meilisearch.Search
 		Query:                 d.Query,
 		Offset:                int64(paging.Offset),
 		Limit:                 int64(paging.Limit),
-		AttributesToRetrieve:  []string{"document_id", "name", "content", "description"},
+		AttributesToRetrieve:  []string{"document_id", "name", "content", "description", "date"},
 		AttributesToCrop:      []string{"content"},
 		CropLength:            1000,
 		AttributesToHighlight: []string{"content", "name", "description"},
@@ -113,6 +113,7 @@ func (e *Engine) SearchDocuments(userId int, query *DocumentFilter, paging stora
 			doc.Name = getString("name", isMap)
 			doc.Content = getString("content", isMap)
 			doc.Description = getString("description", isMap)
+			doc.Date = time.Unix(int64(getInt("date", isMap)), 0)
 			docs[i] = doc
 
 			formatted := isMap["_formatted"]
