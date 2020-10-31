@@ -16,54 +16,64 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import * as React from "react";
-import {ArrayField, Datagrid, DateField, FileField, RichTextField, Show, Tab, TabbedShowLayout, TextField, ChipField, SingleFieldList, Labeled
+import React, { useState } from "react";
+import {ArrayField, Datagrid, DateField, FileField, RichTextField, Show, Tab, TabbedShowLayout, TextField, ChipField, SingleFieldList, Labeled, Button
 } from "react-admin";
+
+import get from 'lodash/get';
 
 import { ThumbnailField, EmbedFile} from "./file";
 import { MarkdownField } from '../markdown'
 
 
-export const DocumentShow = (props) => (
-    <Show {...props}>
-        <TabbedShowLayout>
-            <Tab label="general">
-                <ThumbnailField source="preview_url" />
-                <TextField source="id" />
-                <TextField source="name" />
+export const DocumentShow = (props) => {
+    const [enableFormatting ,setState]=useState(true);
 
-                <Labeled label="Description"  >
-                    <MarkdownField source="description" />
-                </Labeled>
-                <DateField source="date" showTime={false} />
-                <TextField source="pretty_size" label="Size"/>
-                <TextField source="status" />
+    const toggleFormatting = () => {
+        if (enableFormatting) {
+            setState(false);
+        } else {
+            setState(true);
+        }
+    }
 
+    return (
 
+        <Show {...props} title="Document" >
+            <TabbedShowLayout>
+                <Tab label="general">
+                    <TextField source="name" label="" style={{fontSize:'2em'}}  />
+                    <DateField source="date" showTime={false} label=""/>
+                    <ThumbnailField source="preview_url"/>
+                    <Labeled label="Description">
+                        <MarkdownField source="description"/>
+                    </Labeled>
+                    <ArrayField source="tags">
+                        <SingleFieldList>
+                            <ChipField source="key"/>
+                        </SingleFieldList>
+                    </ArrayField>
 
-                <ArrayField source="tags">
-                    <SingleFieldList>
-                        <ChipField source="key" />
-                    </SingleFieldList>
-                </ArrayField>
+                    <ArrayField source="metadata">
+                        <Datagrid>
+                            <TextField source="key"/>
+                            <TextField source="value"/>
+                        </Datagrid>
+                    </ArrayField>
+                    <TextField source="status"/>
+                    <DateField source="created_at" label="Uploaded" showTime={false}/>
+                    <DateField source="updated_at" label="Last updated" showTime={true}/>
+                </Tab>
+                <Tab label="Content">
+                    <Button label={enableFormatting?"Enable formatting":"Disable formatting"} onClick={toggleFormatting}/>
+                    {enableFormatting?<TextField source="content" label="Raw parsed text content"/>:
+                    <MarkdownField source="content" label="Raw parsed text content"/>}
+                </Tab>
+                <Tab label="preview">
+                    <EmbedFile source="download_url"/>
+                </Tab>
 
-                <ArrayField source="metadata">
-                    <Datagrid>
-                        <TextField source="key" />
-                        <TextField source="value" />
-                    </Datagrid>
-                </ArrayField>
-                <FileField source="download_url" label="Download document" title={"filename"} />
-                <DateField source="created_at" showTime={true} />
-                <DateField source="updated_at" showTime={true}/>
-            </Tab>
-            <Tab label="Plain text">
-                <RichTextField source="content" />
-            </Tab>
-            <Tab label="preview">
-                <EmbedFile source="download_url" />
-            </Tab>
-
-        </TabbedShowLayout>
-    </Show>
-);
+            </TabbedShowLayout>
+        </Show>
+    );
+}
