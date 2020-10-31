@@ -20,6 +20,7 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/asaskevich/govalidator"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
@@ -32,6 +33,26 @@ type PrettyTime time.Time
 
 func (p PrettyTime) MarshalJSON() ([]byte, error) {
 	return []byte("\"" + time.Time(p).String() + "\""), nil
+}
+
+// formatValidatorError returns user-friendly presentation of govalidator.Error.
+// if error is not govalidator.Error, return original error
+func formatValidatorError(err error) string {
+	if validatorErr, ok := err.(govalidator.Errors); ok {
+		invalidFields := "invalid attribute: "
+		multipleInvalid := false
+		for _, v := range validatorErr.Errors() {
+			if e, ok := v.(govalidator.Error); ok {
+				if multipleInvalid {
+					invalidFields += ", "
+				}
+				multipleInvalid = true
+				invalidFields += e.Name
+			}
+		}
+		return invalidFields
+	}
+	return err.Error()
 }
 
 func respJson(resp http.ResponseWriter, body interface{}, statusCode int) error {

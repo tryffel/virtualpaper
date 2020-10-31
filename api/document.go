@@ -21,6 +21,7 @@ package api
 import (
 	"errors"
 	"fmt"
+	"github.com/asaskevich/govalidator"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -78,12 +79,11 @@ func responseFromDocument(doc *models.Document) *documentResponse {
 }
 
 type documentUpdateRequest struct {
-	Name        string `json:"name" valid:"-"`
-	Description string `json:"description" valid:"-"`
-	Filename    string `json:"filename" valid:"ascii"`
-	Date        int64  `json:"date" valid:"-"`
-	//Metadata []models.Metadata `json:"metadata" valid:""`
-	Metadata []metadataRequest `json:"metadata" valid:""`
+	Name        string            `json:"name" valid:"-"`
+	Description string            `json:"description" valid:"-"`
+	Filename    string            `json:"filename" valid:"-"`
+	Date        int64             `json:"date" valid:"-"`
+	Metadata    []metadataRequest `json:"metadata" valid:"-"`
 }
 
 func (a *Api) getDocuments(resp http.ResponseWriter, req *http.Request) {

@@ -133,6 +133,12 @@ func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 			tags[tagI] = tag.Key
 		}
 
+		metadata := make([]string, len(v.Metadata))
+		for metadataI, v := range v.Metadata {
+			value := strings.Replace(v.Value, " ", "_", -1)
+			metadata[metadataI] = v.Key + "." + value
+		}
+
 		data[i] = map[string]interface{}{
 			"document_id": v.Id,
 			"user_id":     v.UserId,
@@ -143,7 +149,7 @@ func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 			"created_at":  v.CreatedAt.Unix(),
 			"updated_at":  v.UpdatedAt.Unix(),
 			"tags":        tags,
-			"metadata":    v.Metadata,
+			"metadata":    metadata,
 			"date":        v.Date.Unix(),
 			"description": v.Description,
 		}

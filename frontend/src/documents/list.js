@@ -37,10 +37,18 @@ const cardStyle = {
     verticalAlign: 'top',
 };
 
-const DocumentFilter = (props) => (
-    <Filter {...props}>
-        <TextInput label="Search" source="q" alwaysOn />
-        <TextInput label="Tag" source="tag" alwaysOn />
+const DocumentPagination = props => <Pagination rowsPerPageOptions={[10, 25, 50, 100]} {...props} />;
+
+
+const DocumentFilter = (props) => {
+
+    return (
+    <Filter {...props} >
+        <TextInput label="Search" source="q" alwaysOn/>
+        <ReferenceArrayInput source="tag" reference="tags" allowEmpty label={"Tags"} alwaysOn>
+            <SelectInput optionText="key" optionValue="key" />
+        </ReferenceArrayInput>
+        <TextInput label="Metadata (k.v)" source="metadata" alwaysOn />
     </Filter>
 );
 
@@ -73,7 +81,7 @@ const DocumentGrid = () => {
 };
 
 export const DocumentList = (props) => (
-    <List title="All documents" filters={<DocumentFilter />} {...props}>
+    <List title="All documents" filters={<DocumentFilter />} pagination={<DocumentPagination />} {...props}>
         <DocumentGrid />
     </List>
 );

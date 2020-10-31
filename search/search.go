@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/meilisearch/meilisearch-go"
 	"github.com/sirupsen/logrus"
+	"strings"
 	"time"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/storage"
@@ -29,24 +30,22 @@ import (
 
 // DocumentFilter defines filter for searching/filtering documents
 type DocumentFilter struct {
-	Query  string    `json:"q"`
-	Tag    string    `json:"tag"`
-	After  time.Time `json:"after"`
-	Before time.Time `json:"before"`
+	Query    string    `json:"q"`
+	Tag      string    `json:"tag"`
+	After    time.Time `json:"after"`
+	Before   time.Time `json:"before"`
+	Metadata string    `json:"metadata"`
 }
 
-// SearchDocument searches documents for given user. Query can be anything. If field="", search in any field,
-// else search only specified field
-func (e *Engine) SearchDocuments(userId int, query *DocumentFilter, paging storage.Paging) ([]*models.Document, int, error) {
-
-	request := meilisearch.SearchRequest{
-		Query:                 query.Query,
+func (d *DocumentFilter) buildRequest(paging storage.Paging) *meilisearch.SearchRequest {
+	request := &meilisearch.SearchRequest{
+		Query:                 d.Query,
 		Offset:                int64(paging.Offset),
 		Limit:                 int64(paging.Limit),
 		AttributesToRetrieve:  []string{"document_id", "name", "content", "description"},
 		AttributesToCrop:      []string{"content"},
 		CropLength:            1000,
-		AttributesToHighlight: []string{"content", "name"},
+		AttributesToHighlight: []string{"content", "name", "description"},
 		Filters:               "",
 		Matches:               false,
 		FacetsDistribution:    nil,
@@ -54,34 +53,49 @@ func (e *Engine) SearchDocuments(userId int, query *DocumentFilter, paging stora
 		PlaceholderSearch:     false,
 	}
 
-	if query.Query == "" {
+	if d.Query == "" {
 		request.PlaceholderSearch = true
 	}
 
-	facets := []interface{}{}
-
-	if query.Tag != "" {
-		facets = append(facets, fmt.Sprintf(`tags:%s`, query.Tag))
+	facets := make([]interface{}, 0)
+	if d.Tag != "" {
+		facets = append(facets, fmt.Sprintf(`tags:%s`, d.Tag))
 	}
-	if !query.After.IsZero() {
-		request.Filters += fmt.Sprintf("date > %d", query.After.Add(-time.Hour*24).Unix())
+	if !d.After.IsZero() {
+		request.Filters += fmt.Sprintf("date > %d", d.After.Add(-time.Hour*24).Unix())
 	}
-	if !query.Before.IsZero() {
+	if !d.Before.IsZero() {
 		if request.Filters != "" {
 			request.Filters += " AND "
 		}
-		request.Filters += fmt.Sprintf("date < %d", query.Before.Add(time.Hour*24).Unix())
+		request.Filters += fmt.Sprintf("date < %d", d.Before.Add(time.Hour*24).Unix())
 	}
 
 	if len(facets) != 0 {
 		request.FacetFilters = facets
 	}
 
+	if d.Metadata != "" {
+		metadata := strings.Replace(d.Metadata, " ", "_", -1)
+
+		if request.Filters != "" {
+			request.Filters += " AND "
+		}
+		request.Filters += fmt.Sprintf("metadata=%s", metadata)
+	}
+	return request
+}
+
+// SearchDocument searches documents for given user. Query can be anything. If field="", search in any field,
+// else search only specified field
+func (e *Engine) SearchDocuments(userId int, query *DocumentFilter, paging storage.Paging) ([]*models.Document, int, error) {
+
+	request := query.buildRequest(paging)
 	logrus.Debugf("Meilisearch query: %v", request)
 
 	docs := make([]*models.Document, 0)
 
-	res, err := e.client.Search(indexName(userId)).Search(request)
+	res, err := e.client.Search(indexName(userId)).Search(*request)
 	if err != nil {
 		return docs, 0, err
 	}

@@ -20,7 +20,9 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/asaskevich/govalidator"
 	"net/http"
+	"regexp"
 	"strconv"
 	"time"
 	"tryffel.net/go/virtualpaper/search"
@@ -80,10 +82,11 @@ func getPaging(req *http.Request) (storage.Paging, error) {
 
 func getDocumentFilter(req *http.Request) (*search.DocumentFilter, error) {
 	type documentFilter struct {
-		Query  string `json:"q"`
-		Tag    string `json:"tag"`
-		After  int64  `json:"after"`
-		Before int64  `json:"before"`
+		Query    string `json:"q" valid:"-"`
+		Tag      string `json:"tag" valid:"-"`
+		After    int64  `json:"after" valid:"-"`
+		Before   int64  `json:"before" valid:"-"`
+		Metadata string `json:"metadata" valid:"optional,matches(^([^.]+).([^.]+)$)"`
 	}
 
 	body := &documentFilter{}
@@ -93,6 +96,21 @@ func getDocumentFilter(req *http.Request) (*search.DocumentFilter, error) {
 		return nil, nil
 	}
 	err := json.Unmarshal([]byte(query), body)
+	if err != nil {
+		e := storage.ErrInvalid
+		e.ErrMsg = "invalid json in search params"
+		return nil, e
+	}
+
+	ok, err := govalidator.ValidateStruct(body)
+	if err != nil {
+		e := storage.ErrInvalid
+		e.ErrMsg = formatValidatorError(err)
+		return nil, e
+	}
+	if !ok {
+		return nil, storage.ErrInvalid
+	}
 
 	filter := &search.DocumentFilter{}
 	filter.Query = body.Query
@@ -103,6 +121,12 @@ func getDocumentFilter(req *http.Request) (*search.DocumentFilter, error) {
 	if body.Before != 0 {
 		filter.Before = time.Unix(body.Before/1000, 0)
 	}
+	filter.Metadata = body.Metadata
 
 	return filter, err
+}
+
+func init() {
+	govalidator.ParamTagRegexMap["metadata_kv"] = regexp.MustCompile("^([^:]+):([^:]+)$")
+
 }
