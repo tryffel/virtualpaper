@@ -22,7 +22,8 @@ import * as React from "react";
 
 import { Card, CardActions, CardContent, CardHeader, CardActionArea } from '@material-ui/core';
 
-import { List, TextField, useListContext, DateField, EditButton, ShowButton, Filter, TextInput, RichTextField} from "react-admin";
+import { List, useListContext, DateField, EditButton, ShowButton, Filter, TextInput, RichTextField,
+    Pagination, ReferenceArrayInput, SelectInput} from "react-admin";
 
 import {ThumbnailSmall} from "./file";
 
@@ -43,14 +44,15 @@ const DocumentPagination = props => <Pagination rowsPerPageOptions={[10, 25, 50,
 const DocumentFilter = (props) => {
 
     return (
-    <Filter {...props} >
-        <TextInput label="Search" source="q" alwaysOn/>
-        <ReferenceArrayInput source="tag" reference="tags" allowEmpty label={"Tags"} alwaysOn>
-            <SelectInput optionText="key" optionValue="key" />
-        </ReferenceArrayInput>
-        <TextInput label="Metadata (k.v)" source="metadata" alwaysOn />
-    </Filter>
-);
+        <Filter {...props} >
+            <TextInput label="Search" source="q" alwaysOn/>
+            <ReferenceArrayInput source="tag" reference="tags" allowEmpty label={"Tags"} alwaysOn>
+                <SelectInput optionText="key" optionValue="key"/>
+            </ReferenceArrayInput>
+            <TextInput label="Metadata (k.v)" source="metadata" alwaysOn/>
+        </Filter>
+    );
+}
 
 
 const DocumentGrid = () => {
