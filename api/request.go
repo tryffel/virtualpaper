@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
+	"regexp"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
@@ -53,4 +54,19 @@ func unMarshalBody(r *http.Request, body interface{}) error {
 		return e
 	}
 	return nil
+}
+
+var ipRegex = regexp.MustCompile("\\[?([\\d.:]+)\\]?:(\\d+)")
+
+func getRemoteAddr(r *http.Request) string {
+	forwarded := r.Header.Get("X-Forwarded-For")
+	if forwarded != "" {
+		return forwarded
+	}
+
+	match := ipRegex.FindStringSubmatch(r.RemoteAddr)
+	if len(match) == 3 {
+		return match[1]
+	}
+	return r.RemoteAddr
 }

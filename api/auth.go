@@ -152,6 +152,8 @@ func (a *Api) login(resp http.ResponseWriter, req *http.Request) {
 	dto.Username = strings.ToLower(dto.Username)
 	userId, err := a.db.UserStore.TryLogin(dto.Username, dto.Password)
 	if userId == -1 || err != nil {
+		remoteAddr := getRemoteAddr(req)
+		logrus.Infof("Failed login attempt for user %s from remote %s", dto.Username, remoteAddr)
 		respUnauthorized(resp)
 		return
 	}
