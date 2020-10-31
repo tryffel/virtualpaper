@@ -20,12 +20,13 @@ import * as React from "react";
 
 
 
-import { Card, CardActions, CardContent, CardHeader, CardActionArea } from '@material-ui/core';
+import { Card, CardActions, CardContent, CardHeader, CardActionArea, Box, useMediaQuery } from '@material-ui/core';
 
 import { List, useListContext, DateField, EditButton, ShowButton, Filter, TextInput, RichTextField,
-    Pagination, ReferenceArrayInput, SelectInput} from "react-admin";
+    Pagination, ReferenceArrayInput, SelectInput } from "react-admin";
 
-import {ThumbnailSmall} from "./file";
+import { ThumbnailSmall } from "./file";
+import { FilterSidebar } from './filter';
 
 import '../App.css';
 
@@ -51,6 +52,21 @@ const DocumentFilter = (props) => {
             </ReferenceArrayInput>
             <TextInput label="Metadata (k.v)" source="metadata" alwaysOn/>
         </Filter>
+
+    );
+}
+
+
+const DocumentSearchFilter = (props) => {
+    return (
+        <Filter {...props} >
+                <TextInput label="Search" source="q" alwaysOn/>
+                <ReferenceArrayInput source="tag" reference="tags" allowEmpty label={"Tags"}>
+                    <SelectInput optionText="key" optionValue="key"/>
+                </ReferenceArrayInput>
+            <TextInput label="Metadata (k.v)" source="metadata"/>
+        </Filter>
+
     );
 }
 
@@ -59,13 +75,14 @@ const DocumentGrid = () => {
     const { ids, data, basePath } = useListContext();
 
     return (
-        <div style={{ margin: '1em' }}>
+        ids ?
+        <Box style={{ margin: '1em' }}>
             {ids.map(id =>
                 <Card key={id} style={cardStyle}>
                     <CardActionArea>
                         <CardHeader
                             title={<RichTextField record={data[id]} source="name"  style={{'.em': {'background-color':'#FFFF00'}}} />}
-                            subheader={<DateField record={data[id]} source="created_at" />}
+                            subheader={<DateField record={data[id]} source="date" />}
                         />
                         <CardContent>
 
@@ -78,12 +95,42 @@ const DocumentGrid = () => {
                     </CardActions>
                 </Card>
             )}
-        </div>
+        </Box>
+            : null
     );
 };
 
-export const DocumentList = (props) => (
-    <List title="All documents" filters={<DocumentFilter />} pagination={<DocumentPagination />} {...props}>
-        <DocumentGrid />
+export const DocumentList = (props) => {
+    const isSmall = useMediaQuery(theme => theme.breakpoints.down('sm'));
+
+         if (isSmall) return <SmallDocumentList {...props}/>
+         else return <LargeDocumentList {...props}/>;
+}
+
+const SmallDocumentList = (props) => {
+    return (
+        <List
+            title="All documents"
+            pagination={<DocumentPagination/>}
+            filters={<DocumentSearchFilter/>}
+            {...props}
+        ><DocumentGrid/>
     </List>
-);
+    )
+}
+
+
+const LargeDocumentList = (props) => {
+    return (
+        <List
+            title="All documents"
+            pagination={<DocumentPagination/>}
+            aside={<FilterSidebar/>}
+            filters={<DocumentFilter/>}
+            {...props}
+        ><DocumentGrid/>
+        </List>
+    )
+}
+
+
