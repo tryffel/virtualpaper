@@ -8,13 +8,20 @@ import (
 	"gopkg.in/gographics/imagick.v3/imagick"
 	"os"
 	"path"
-	"path/filepath"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
+
+type fpConfig struct {
+	id           int
+	db           *storage.Database
+	search       *search.Engine
+	usePdfToText bool
+	useOcr       bool
+}
 
 type fileProcessor struct {
 	*Task
@@ -23,12 +30,18 @@ type fileProcessor struct {
 	file     string
 	rawFile  *os.File
 	tempFile *os.File
+
+	usePdfToText bool
+	useOcr       bool
 }
 
-func newFileProcessor(id int, db *storage.Database, search *search.Engine) *fileProcessor {
+func newFileProcessor(conf *fpConfig) *fileProcessor {
 	fp := &fileProcessor{
-		Task:  newTask(id, db, search),
+		Task:  newTask(conf.id, conf.db, conf.search),
 		input: make(chan fileOp, 5),
+
+		usePdfToText: conf.usePdfToText,
+		useOcr:       conf.useOcr,
 	}
 	fp.idle = true
 	fp.runFunc = fp.waitEvent
@@ -169,9 +182,6 @@ func (fp *fileProcessor) updateHash(doc *models.Document, file *os.File) error {
 }
 
 func (fp *fileProcessor) updateThumbnail(doc *models.Document, file *os.File) error {
-	imagick.Initialize()
-	defer imagick.Terminate()
-
 	process := &models.ProcessItem{
 		DocumentId: fp.document.Id,
 		Step:       models.ProcessThumbnail,
@@ -379,7 +389,6 @@ func (fp *fileProcessor) parseContent(file *os.File) error {
 
 func (fp *fileProcessor) extractPdf(file *os.File) error {
 	// if pdf, generate image preview and pass it to tesseract
-	var imageFile string
 	var err error
 
 	process := &models.ProcessItem{
@@ -396,76 +405,49 @@ func (fp *fileProcessor) extractPdf(file *os.File) error {
 
 	defer fp.persistProcess(process, job)
 
-	imagick.Initialize()
-	defer imagick.Terminate()
+	var text string
+	useOcr := false
 
-	dir := path.Join(config.C.Processing.TmpDir, fp.document.Hash)
-	err = os.Mkdir(dir, os.ModePerm|os.ModeDir)
-	if err != nil {
-		return fmt.Errorf("create tmp dir: %v", err)
-	}
-
-	imageFile = path.Join(dir, "preview.png")
-	_, err = imagick.ConvertImageCommand([]string{
-		"convert", "-density", "300", file.Name(), "-depth", "8", imageFile,
-	})
-	if err != nil {
-		job.Message += "; " + err.Error()
-		job.Status = models.JobFailure
-		return err
-	}
-
-	client := gosseract.NewClient()
-	defer client.Close()
-	err = client.SetLanguage(config.C.Processing.OcrLanguages...)
-	if err != nil {
-		logrus.Errorf("set tesseract languages: %v. continue with default language.", err)
-	}
-	pages := &[]string{}
-
-	walkFunc := func(fileName string, info os.FileInfo, err error) error {
-		if info.Name() == fp.document.Hash {
-			// root fileName
-			return nil
-		}
-		logrus.Debugf("OCR %s", fileName)
-		err = client.SetImage(fileName)
+	if fp.usePdfToText {
+		logrus.Infof("Attempt to parse document %d content with pdftotext", fp.document.Id)
+		text, err = getPdfToText(file, fp.document.Hash)
 		if err != nil {
-			return fmt.Errorf("set ocr image source: %v", err)
-		}
-		text, err := client.Text()
-		if err != nil {
-			return err
-		}
-		*pages = append(*pages, text)
-		return nil
-	}
-
-	err = filepath.Walk(dir, walkFunc)
-	if err != nil {
-		job.Message += "; " + err.Error()
-		job.Status = models.JobFailure
-		return fmt.Errorf("parse document text: %v", err)
-	} else {
-		content := ""
-		for i, v := range *pages {
-			if i > 0 {
-				content += fmt.Sprintf("\n\n(Page %d)\n\n", i)
+			if err.Error() == "empty" {
+				logrus.Infof("document %d has no plain text, try ocr", fp.document.Id)
+				useOcr = true
+			} else {
+				logrus.Debugf("failed to get content with pdftotext: %v", err)
 			}
-			content += v
-		}
-		fp.document.Content = content
-		err = fp.db.DocumentStore.SetDocumentContent(fp.document.Id, content)
-		if err != nil {
-			job.Message += "; " + "save document content: " + err.Error()
-			job.Status = models.JobFailure
-			return fmt.Errorf("save document content: %v", err)
 		} else {
-			job.Status = models.JobFinished
+			useOcr = false
 		}
+	} else {
+		useOcr = true
+	}
+
+	if useOcr {
+		text, err = runOcr(file.Name(), fp.document.Hash)
+		if err != nil {
+			job.Message += "; " + err.Error()
+			job.Status = models.JobFailure
+			return fmt.Errorf("parse document content: %v", err)
+		}
+	}
+
+	if text == "" {
+		logrus.Warningf("document %d content seems to be empty", fp.document.Id)
+	}
+
+	fp.document.Content = text
+	err = fp.db.DocumentStore.SetDocumentContent(fp.document.Id, text)
+	if err != nil {
+		job.Message += "; " + "save document content: " + err.Error()
+		job.Status = models.JobFailure
+		return fmt.Errorf("save document content: %v", err)
+	} else {
+		job.Status = models.JobFinished
 	}
 	return nil
-
 }
 
 func (fp *fileProcessor) extractImage(file *os.File) error {

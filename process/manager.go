@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/gographics/imagick.v3/imagick"
 	"math/rand"
 	"path"
 	"sync"
@@ -45,14 +46,28 @@ func NewManager(database *storage.Database, search *search.Engine) (*Manager, er
 		search:     search,
 	}
 
+	useOcr := true
+	usePdfToText := true
+
+	err := testPdfToText()
+	if err != nil {
+		usePdfToText = false
+	}
+
 	count := config.C.Processing.MaxWorkers
 	manager.numtasks = count
 	manager.tasks = make([]*fileProcessor, count)
 
 	for i := 0; i < count; i++ {
-		manager.tasks[i] = newFileProcessor(i, database, search)
+		conf := &fpConfig{
+			id:           i,
+			db:           database,
+			search:       search,
+			usePdfToText: usePdfToText,
+			useOcr:       useOcr,
+		}
+		manager.tasks[i] = newFileProcessor(conf)
 	}
-	var err error
 	manager.inputWatch, err = fsnotify.NewWatcher()
 	return manager, err
 }
@@ -197,4 +212,14 @@ func (m *Manager) scheduleNewOp(file string, doc *models.Document) {
 		id := rand.Intn(m.numtasks)
 		m.tasks[id].input <- op
 	}
+}
+
+func Init() {
+	logrus.Debugf("Initialize imagick instance")
+	imagick.Initialize()
+}
+
+func Deinit() {
+	logrus.Debugf("Release imagick instance")
+	imagick.Terminate()
 }

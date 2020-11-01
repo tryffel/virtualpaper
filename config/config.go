@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -52,6 +53,7 @@ type Processing struct {
 	DataDir      string
 	MaxWorkers   int
 	OcrLanguages []string
+	PdfToTextBin string
 
 	// application directories. Stored by default in ./media/{previews, documents}.
 	PreviewsDir  string
@@ -89,6 +91,7 @@ func ConfigFromViper() error {
 			DataDir:      viper.GetString("processing.data_dir"),
 			MaxWorkers:   viper.GetInt("processing.max_workers"),
 			OcrLanguages: viper.GetStringSlice("processing.ocr_languages"),
+			PdfToTextBin: viper.GetString("processing.pdftotext_bin"),
 		},
 		Meilisearch: Meilisearch{
 			Url:    viper.GetString("meilisearch.url"),
