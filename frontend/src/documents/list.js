@@ -20,7 +20,8 @@ import * as React from "react";
 
 
 
-import { Card, CardActions, CardContent, CardHeader, CardActionArea, Box, useMediaQuery } from '@material-ui/core';
+import { Card, CardActions, CardContent, CardHeader, CardActionArea, Box, useMediaQuery, Typography } from '@material-ui/core';
+import CircularProgress from '@material-ui/core/CircularProgress';
 
 import { List, useListContext, DateField, EditButton, ShowButton, Filter, TextInput, RichTextField,
     Pagination, ReferenceArrayInput, SelectInput } from "react-admin";
@@ -29,6 +30,7 @@ import { ThumbnailSmall } from "./file";
 import { FilterSidebar } from './filter';
 
 import '../App.css';
+import {useState} from "react";
 
 
 const cardStyle = {
@@ -85,7 +87,6 @@ const DocumentGrid = () => {
                             subheader={<DateField record={data[id]} source="date" />}
                         />
                         <CardContent>
-
                             <ThumbnailSmall component="img" url={data[id].preview_url} title="Img" />
                         </CardContent>
                     </CardActionArea>
@@ -102,9 +103,8 @@ const DocumentGrid = () => {
 
 export const DocumentList = (props) => {
     const isSmall = useMediaQuery(theme => theme.breakpoints.down('sm'));
-
-         if (isSmall) return <SmallDocumentList {...props}/>
-         else return <LargeDocumentList {...props}/>;
+    if (isSmall) return <SmallDocumentList {...props}/>
+    else return <LargeDocumentList {...props}/>;
 }
 
 const SmallDocumentList = (props) => {
@@ -133,4 +133,33 @@ const LargeDocumentList = (props) => {
     )
 }
 
+
+export const IndexingStatusField = (props) => {
+
+    const [value, setValue] = useState('ready')
+    const [label, setLabel] = useState('Ready')
+    if (props.record && props.source) {
+        const status = props.record[props.source]
+        if (status === 'indexing' && value !== status) {
+            setValue(status);
+            setLabel('Indexing document')
+
+        } else if (status === 'pending' && value !== status) {
+            setValue(status);
+            setLabel('Indexing pending')
+        } else if (status === 'ready' && value !== status) {
+            setValue(status);
+            setLabel("Ready")
+        }
+    }
+
+    return (
+        (value === 'ready') ?
+            null :
+            <Box>
+                <CircularProgress variant="indeterminate" size={25} {...props} />
+                <Typography variant="caption" component="div" color="textSecondary">{label}</Typography>
+            </Box>
+    );
+}
 

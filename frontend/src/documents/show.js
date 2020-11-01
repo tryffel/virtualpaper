@@ -24,6 +24,7 @@ import get from 'lodash/get';
 
 import { ThumbnailField, EmbedFile} from "./file";
 import { MarkdownField } from '../markdown'
+import { IndexingStatusField } from "./list";
 
 
 export const DocumentShow = (props) => {
@@ -44,6 +45,7 @@ export const DocumentShow = (props) => {
                 <Tab label="general">
                     <TextField source="name" label="" style={{fontSize:'2em'}}  />
                     <DateField source="date" showTime={false} label=""/>
+                    <IndexingStatusField source="status" label=""/>
                     <ThumbnailField source="preview_url"/>
                     <Labeled label="Description">
                         <MarkdownField source="description"/>
@@ -60,7 +62,6 @@ export const DocumentShow = (props) => {
                             <TextField source="value"/>
                         </Datagrid>
                     </ArrayField>
-                    <TextField source="status"/>
                     <DateField source="created_at" label="Uploaded" showTime={false}/>
                     <DateField source="updated_at" label="Last updated" showTime={true}/>
                 </Tab>
