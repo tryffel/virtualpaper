@@ -149,7 +149,11 @@ func InitConfig() error {
 	viper.Set("processing.input_dir", C.Processing.InputDir)
 
 	if C.Processing.MaxWorkers == 0 {
-		C.Processing.MaxWorkers = runtime.NumCPU()
+		// use only half of available cpus
+		C.Processing.MaxWorkers = runtime.NumCPU() / 2
+		if C.Processing.MaxWorkers == 0 {
+			C.Processing.MaxWorkers = 1
+		}
 	}
 
 	err := os.MkdirAll(C.Processing.DataDir, os.ModePerm)
