@@ -161,12 +161,16 @@ func InitConfig() error {
 
 	err = os.Mkdir(C.Processing.PreviewsDir, os.ModePerm)
 	if err != nil {
-		logrus.Errorf("create previews directory: %v", err)
+		if !errors.Is(err, os.ErrExist) {
+			logrus.Errorf("create previews directory: %v", err)
+		}
 	}
 
 	err = os.Mkdir(C.Processing.DocumentsDir, 777)
 	if err != nil {
-		logrus.Errorf("create documents directory: %v", err)
+		if !errors.Is(err, os.ErrExist) {
+			logrus.Errorf("create documents directory: %v", err)
+		}
 	}
 
 	viper.Set("processing.max_workers", C.Processing.MaxWorkers)
