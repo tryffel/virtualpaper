@@ -49,6 +49,9 @@ LIMIT $3;
 
 	dest := &[]models.Document{}
 	err := s.db.Select(dest, sql, userId, paging.Offset, paging.Limit)
+	if err != nil {
+		return dest, 0, getDatabaseError(err, "documents", "get")
+	}
 
 	if limitContent && len(*dest) > 0 {
 		for i, _ := range *dest {
