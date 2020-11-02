@@ -58,7 +58,7 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
-		logrus.Fatalf("read log file: %v", err)
+		logrus.Fatalf("Read config file: %v", err)
 	}
 	err := config.ConfigFromViper()
 	if err != nil {

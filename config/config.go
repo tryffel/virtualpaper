@@ -32,6 +32,8 @@ type Api struct {
 
 	PublicUrl string
 	CorsHosts []string
+
+	StaticContentPath string
 }
 
 func (a *Api) CorsHostList() string {
@@ -88,11 +90,12 @@ func ConfigFromViper() error {
 
 	c := &Config{
 		Api: Api{
-			Host:      viper.GetString("api.host"),
-			Port:      viper.GetInt("api.port"),
-			Key:       viper.GetString("api.secret_key"),
-			PublicUrl: viper.GetString("api.public_url"),
-			CorsHosts: viper.GetStringSlice("api.cors_hosts"),
+			Host:              viper.GetString("api.host"),
+			Port:              viper.GetInt("api.port"),
+			Key:               viper.GetString("api.secret_key"),
+			PublicUrl:         viper.GetString("api.public_url"),
+			CorsHosts:         viper.GetStringSlice("api.cors_hosts"),
+			StaticContentPath: viper.GetString("api.static_content_path"),
 		},
 
 		Database: Database{

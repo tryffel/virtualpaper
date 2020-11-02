@@ -25,6 +25,7 @@ import (
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"path"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/process"
@@ -118,8 +119,13 @@ func (a *Api) addRoutes() {
 
 	a.privateRouter.HandleFunc("/admin/documents/process", a.forceDocumentProcessing).Methods(http.MethodPost)
 
-	a.baseRouter.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./frontend/build/static/"))))
-	a.baseRouter.Handle("/", http.FileServer(http.Dir("./frontend/build/")))
+	if config.C.Api.StaticContentPath != "" {
+		logrus.Debugf("Serve static files")
+		a.baseRouter.Handle("/", http.FileServer(http.Dir(config.C.Api.StaticContentPath)))
+		a.baseRouter.PathPrefix("/static").
+			Handler(http.StripPrefix("/static/",
+				http.FileServer(http.Dir(path.Join(config.C.Api.StaticContentPath, "static")))))
+	}
 
 }
 

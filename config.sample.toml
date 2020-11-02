@@ -12,7 +12,8 @@ secret_key = ""
 cors_hosts = []
 # Public facing url, for creating urls for clients
 public_url = "http://localhost:8000"
-
+# serve web page from this directory. Leave empty to serve only api and not web page.
+static_content_path= "static"
 
 
 # Database, only postgres is supported.
