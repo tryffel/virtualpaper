@@ -52,7 +52,7 @@ export const DocumentEdit = (props) => {
     <Edit {...props} transform={transform}>
         <SimpleForm>
             <TextField disabled label="Id" source="id" />
-            <TextInput source="name" />
+            <TextInput source="name" fullWidth />
             <MarkDownInputWithField source="description" />
             <DateInput source="date" />
             <ReferenceArrayInput source="tags" reference="tags" allowEmpty label={"Tags"}>
@@ -60,8 +60,8 @@ export const DocumentEdit = (props) => {
             </ReferenceArrayInput>
                 <ArrayInput source="metadata" label={"Metadata"}>
                     <SimpleFormIterator margin="dense" defaultValue={ [{key_id: 0, key:"", value_id: 0, value:""}]}>
-                        <ReferenceInput label="Key" source="key_id" reference="metadata/keys">
-                            <SelectInput optionText="key"/>
+                        <ReferenceInput label="Key" source="key_id" reference="metadata/keys" fullWidth>
+                            <SelectInput optionText="key" fullWidth/>
                         </ReferenceInput>
                         <FormDataConsumer>
                             {({getSource, scopedFormData}) =>
@@ -70,6 +70,7 @@ export const DocumentEdit = (props) => {
                                         source={getSource('value_id')}
                                         record={scopedFormData}
                                         label={"Value"}
+                                        fullWidth
                                     />
                                 ) : null
                             }
