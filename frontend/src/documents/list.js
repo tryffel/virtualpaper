@@ -24,7 +24,7 @@ import { Card, CardActions, CardContent, CardHeader, CardActionArea, Box, useMed
 import CircularProgress from '@material-ui/core/CircularProgress';
 
 import { List, useListContext, DateField, EditButton, ShowButton, Filter, TextInput, RichTextField,
-    Pagination, ReferenceArrayInput, SelectInput } from "react-admin";
+    Pagination, ReferenceArrayInput, SelectInput, TopToolbar, SortButton, CreateButton, ExportButton, FilterButton } from "react-admin";
 
 import { ThumbnailSmall } from "./file";
 import { FilterSidebar } from './filter';
@@ -127,6 +127,7 @@ const LargeDocumentList = (props) => {
             pagination={<DocumentPagination/>}
             aside={<FilterSidebar/>}
             filters={<DocumentFilter/>}
+            actions={<DocumentListActions />}
             sort={{field: 'date', order: 'DESC'}}
             {...props}
         ><DocumentGrid/>
@@ -164,3 +165,11 @@ export const IndexingStatusField = (props) => {
     );
 }
 
+
+const DocumentListActions = () => (
+    <TopToolbar>
+        <SortButton label="Sort" fields={['date', 'name', 'description']} />
+        <CreateButton basePath="/documents" />
+        <ExportButton />
+    </TopToolbar>
+);
