@@ -8,6 +8,7 @@ import (
 	"gopkg.in/gographics/imagick.v3/imagick"
 	"os"
 	"path"
+	"strings"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
@@ -438,6 +439,8 @@ func (fp *fileProcessor) extractPdf(file *os.File) error {
 		logrus.Warningf("document %d content seems to be empty", fp.document.Id)
 	}
 
+	text = strings.ToValidUTF8(text, "")
+
 	fp.document.Content = text
 	err = fp.db.DocumentStore.SetDocumentContent(fp.document.Id, text)
 	if err != nil {
@@ -477,6 +480,7 @@ func (fp *fileProcessor) extractImage(file *os.File) error {
 		job.Status = models.JobFailure
 		return fmt.Errorf("parse document text: %v", err)
 	} else {
+		text = strings.ToValidUTF8(text, "")
 		fp.document.Content = text
 		err = fp.db.DocumentStore.SetDocumentContent(fp.document.Id, fp.document.Content)
 		if err != nil {
