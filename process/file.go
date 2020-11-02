@@ -253,7 +253,7 @@ func (fp *fileProcessor) processFile() {
 	logrus.Info("generate thumbnail")
 	err = fp.generateThumbnail(fp.rawFile)
 	if err != nil {
-		logrus.Error("generate thumbnail: %v", err)
+		logrus.Errorf("generate thumbnail: %v", err)
 		return
 	}
 

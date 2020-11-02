@@ -112,7 +112,7 @@ func (ps *ProcessStep) Value() (driver.Value, error) {
 	case ProcessFts:
 		return 4, nil
 	default:
-		return 0, fmt.Errorf("unknown step: %s", *ps)
+		return 0, fmt.Errorf("unknown step: %d", *ps)
 	}
 }
 
@@ -142,6 +142,23 @@ func (ps *ProcessStep) Scan(src interface{}) error {
 		return fmt.Errorf("unknown step: %d", val)
 	}
 	return nil
+}
+
+func (ps ProcessStep) String() string {
+	switch ps {
+	case 0:
+		return "all"
+	case 1:
+		return "hash"
+	case 2:
+		return "thumbnail"
+	case 3:
+		return "parsecontent"
+	case 4:
+		return "fts"
+	default:
+		return fmt.Sprintf("unknkown step: %d", ps)
+	}
 }
 
 // ProcessItem contains document that awaits further processing.

@@ -305,7 +305,7 @@ INSERT INTO process_queue (document_id, step)
 VALUES 
 `
 
-	logrus.Debugf("add document %d for processing starting from step %s", fromStep)
+	logrus.Debugf("add document %d for processing starting from step %s", documentId, fromStep)
 	var err error
 	args := make([]interface{}, len(models.ProcessStepsAll)*2)
 	for i := 0; i < len(models.ProcessStepsAll); i++ {

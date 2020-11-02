@@ -76,7 +76,7 @@ func respUnauthorized(resp http.ResponseWriter) error {
 func respOk(resp http.ResponseWriter, body interface{}) {
 	err := respJson(resp, body, http.StatusOK)
 	if err != nil {
-		logrus.Error("write resp ok: %v", err)
+		logrus.Errorf("write resp ok: %v", err)
 	}
 }
 
@@ -85,7 +85,7 @@ func respResourceList(resp http.ResponseWriter, body interface{}, totalCount int
 	resp.Header().Set("Content-Range", strconv.Itoa(totalCount))
 	err := respJson(resp, body, http.StatusOK)
 	if err != nil {
-		logrus.Error("send resource list resp: %v", err)
+		logrus.Errorf("send resource list resp: %v", err)
 	}
 }
 
@@ -104,7 +104,7 @@ func respBadRequest(resp http.ResponseWriter, reason string, body interface{}) {
 func respInternalError(resp http.ResponseWriter) {
 	err := respJson(resp, nil, http.StatusInternalServerError)
 	if err != nil {
-		logrus.Error("write response: %v", err)
+		logrus.Errorf("write response: %v", err)
 	}
 }
 
