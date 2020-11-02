@@ -127,6 +127,7 @@ const LargeDocumentList = (props) => {
             pagination={<DocumentPagination/>}
             aside={<FilterSidebar/>}
             filters={<DocumentFilter/>}
+            sort={{field: 'date', order: 'DESC'}}
             {...props}
         ><DocumentGrid/>
         </List>

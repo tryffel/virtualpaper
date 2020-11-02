@@ -68,22 +68,37 @@ func getSortParams(req *http.Request, model models.Modeler) ([]storage.SortKey, 
 
 	vars := req.Form
 
+	sortVar := vars.Get("sort")
+	sortOrder := vars.Get("order")
+
+	if strings.HasPrefix(sortVar, "[") && strings.HasSuffix(sortVar, "]") {
+		sortVar, sortOrder = parseSortParamArray(sortVar)
+	}
+
 	for _, v := range model.SortAttributes() {
-		order := vars.Get(v)
-		switch strings.ToUpper(order) {
-		case "ASC":
-			sort := storage.SortKey{
-				Key:   v,
-				Order: false,
+		if sortVar == v {
+			switch strings.ToUpper(sortOrder) {
+			case "ASC":
+				sort := storage.NewSortKey(v, "id", false)
+				sortKeys = append(sortKeys, sort)
+			case "DESC":
+				sort := storage.NewSortKey(v, "id", false)
+				sortKeys = append(sortKeys, sort)
+			default:
+				sort := storage.NewSortKey(v, "id", false)
+				sortKeys = append(sortKeys, sort)
 			}
-			sortKeys = append(sortKeys, sort)
-		case "DESC":
-			sort := storage.SortKey{
-				Key:   v,
-				Order: true,
-			}
-			sortKeys = append(sortKeys, sort)
 		}
 	}
 	return sortKeys, nil
+}
+
+func parseSortParamArray(s string) (string, string) {
+	s = strings.Trim(s, "[]\"")
+	s = strings.Replace(s, "\"", "", 2)
+	parts := strings.Split(s, ",")
+	if len(parts) != 2 {
+		return s, ""
+	}
+	return parts[0], parts[1]
 }

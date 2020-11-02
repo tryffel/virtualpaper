@@ -50,7 +50,11 @@ func getPostgresError(err error, resource string, action string) (bool, error) {
 		e.ErrMsg = resource + " not found"
 		return true, e
 	}
-	return false, err
+
+	e := ErrInternalError
+	e.ErrMsg = pError.Message
+	e.Err = err
+	return true, e
 }
 
 // Catch SQL error, always resulting in internal error

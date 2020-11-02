@@ -94,7 +94,7 @@ func (d *Document) GetThumbnailName() string {
 
 func (d *Document) FilterAttributes() []string {
 	ts := d.Timestamp.FilterAttributes()
-	doc := []string{"id", "name", "content", "filename", "hash", "mimetype", "size"}
+	doc := []string{"id", "name", "content", "description", "filename", "hash", "mimetype", "size", "date"}
 	return append(doc, ts...)
 }
 

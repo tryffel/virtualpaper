@@ -111,7 +111,17 @@ func (a *Api) getDocuments(resp http.ResponseWriter, req *http.Request) {
 		respBadRequest(resp, err.Error(), nil)
 	}
 
-	docs, count, err := a.db.DocumentStore.GetDocuments(user, paging, true)
+	sort, err := getSortParams(req, &models.Document{})
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	if len(sort) == 0 {
+		sort = append(sort, storage.SortKey{})
+	}
+
+	docs, count, err := a.db.DocumentStore.GetDocuments(user, paging, sort[0], true)
 	if err != nil {
 		logrus.Errorf("get documents: %v", err)
 		respInternalError(resp)

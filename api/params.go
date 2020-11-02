@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"github.com/asaskevich/govalidator"
 	"net/http"
-	"regexp"
 	"strconv"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
@@ -126,9 +125,4 @@ func getDocumentFilter(req *http.Request) (*search.DocumentFilter, error) {
 	filter.Metadata = body.Metadata
 
 	return filter, err
-}
-
-func init() {
-	govalidator.ParamTagRegexMap["metadata_kv"] = regexp.MustCompile("^([^:]+):([^:]+)$")
-
 }

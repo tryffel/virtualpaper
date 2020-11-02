@@ -29,7 +29,9 @@ type DocumentStore struct {
 }
 
 // GetDocuments returns user's documents according to paging. In addition, return total count of documents available.
-func (s *DocumentStore) GetDocuments(userId int, paging Paging, limitContent bool) (*[]models.Document, int, error) {
+func (s *DocumentStore) GetDocuments(userId int, paging Paging, sort SortKey, limitContent bool) (*[]models.Document, int, error) {
+	sort.SetDefaults("date", false)
+
 	var contenSelect string
 	if limitContent {
 		contenSelect = "LEFT(content, 500) as content"
@@ -42,7 +44,7 @@ SELECT id, name, ` + contenSelect + `, filename, created_at, updated_at
 hash, mimetype, size, date, description
 FROM documents
 WHERE user_id = $1
-ORDER BY id
+ORDER BY ` + sort.Key + " " + sort.SortOrder() + `
 OFFSET $2
 LIMIT $3;
 `

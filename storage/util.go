@@ -18,8 +18,50 @@
 
 package storage
 
+import (
+	"github.com/sirupsen/logrus"
+	"regexp"
+)
+
 // SortKey contains sortable key and order. Order 'false' = ASC, 'true' = DESC.
 type SortKey struct {
 	Key   string
 	Order bool
+}
+
+func NewSortKey(key string, defaultKey string, order bool) SortKey {
+	sort := SortKey{
+		Key:   key,
+		Order: order,
+	}
+
+	sort.Validate(defaultKey)
+	return sort
+}
+
+func (s *SortKey) SetDefaults(key string, order bool) {
+	if s.Key == "" {
+		s.Key = key
+		s.Order = order
+	}
+}
+
+func (s SortKey) SortOrder() string {
+	if s.Order {
+		return "DESC"
+	}
+	return "ASC"
+}
+
+var legalSortKey = regexp.MustCompile("([a-z_.]{0,100})")
+
+// Validate validates sort keys and enforces the key to be legal.
+func (s *SortKey) Validate(defaultKey string) {
+
+	if legalSortKey.Match([]byte(s.Key)) {
+		return
+	}
+
+	logrus.Infof("illegal sort parameter %s", s.Key)
+	s.Key = defaultKey
 }
