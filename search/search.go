@@ -130,7 +130,13 @@ func (e *Engine) SearchDocuments(userId int, query *DocumentFilter, paging stora
 
 		}
 	}
-	return docs, int(res.NbHits), nil
+	// If there are only filters and no query, meilisearch returns larger nbHits, probably count of all documents,
+	// which is incorrect for given filter.
+	nHits := int(res.NbHits)
+	if len(res.Hits) < paging.Limit {
+		nHits = len(res.Hits)
+	}
+	return docs, nHits, nil
 }
 
 func getString(key string, container map[string]interface{}) string {
