@@ -26,7 +26,7 @@ export const DocumentCreate = (props) => (
         <SimpleForm>
             <TextInput disabled source="id" label="id"/>
             <TextInput source="name" label="name" />
-            <FileInput accept="application/pdf" multiple={false} label="File upload" source="file">
+            <FileInput accept="application/pdf, image/*" multiple={false} label="File upload" source="file">
                 <FileField source="src" title="title" />
             </FileInput>
 
