@@ -4,6 +4,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"tryffel.net/go/virtualpaper/api"
+	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/process"
 	"tryffel.net/go/virtualpaper/storage"
 )
@@ -12,14 +13,22 @@ var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Run server",
 	Run: func(cmd *cobra.Command, args []string) {
+
+		err := config.InitLogging()
+		if err != nil {
+			logrus.Fatalf("init log: %v", err)
+			return
+		}
+		defer config.DeinitLogging()
+
 		db, err := storage.NewDatabase()
 		if err != nil {
-			logrus.Errorf("connect to database: %v", err)
+			logrus.Fatalf("connect to database: %v", err)
 			return
 		}
 		server, err := api.NewApi(db)
 		if err != nil {
-			logrus.Errorf("init server: %v", err)
+			logrus.Fatalf("init server: %v", err)
 			return
 		}
 
@@ -28,7 +37,7 @@ var serveCmd = &cobra.Command{
 
 		err = server.Serve()
 		if err != nil {
-			logrus.Errorf("start server: %v", err)
+			logrus.Fatalf("start server: %v", err)
 		}
 	},
 }

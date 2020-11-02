@@ -21,6 +21,7 @@ type Config struct {
 	Database    Database
 	Processing  Processing
 	Meilisearch Meilisearch
+	Logging     Logging
 }
 
 // Api contains http server config
@@ -60,10 +61,26 @@ type Processing struct {
 	DocumentsDir string
 }
 
+// Meilisearch contains search-engine configuration
 type Meilisearch struct {
 	Url    string
 	Index  string
 	ApiKey string
+}
+
+// Logging configuration
+type Logging struct {
+	Loglevel     string
+	LogDirectory string
+	LogHttp      bool
+	HttpLogFile  string
+	LogFile      string
+	LogStdout    bool
+
+	httpLog *os.File
+	log     *os.File
+
+	HttpLog *logrus.Logger
 }
 
 // ConfigFromViper initializes Config.C, reads all config values from viper and stores them to Config.C.
@@ -80,7 +97,7 @@ func ConfigFromViper() error {
 
 		Database: Database{
 			Host:     viper.GetString("database.host"),
-			Port:     viper.GetInt("database.Port"),
+			Port:     viper.GetInt("database.port"),
 			Username: viper.GetString("database.username"),
 			Password: viper.GetString("database.password"),
 			Database: viper.GetString("database.database"),
@@ -97,6 +114,14 @@ func ConfigFromViper() error {
 			Url:    viper.GetString("meilisearch.url"),
 			Index:  viper.GetString("meilisearch.index"),
 			ApiKey: viper.GetString("meilisearch.apikey"),
+		},
+		Logging: Logging{
+			Loglevel:     viper.GetString("logging.log_level"),
+			LogDirectory: viper.GetString("logging.directory"),
+			LogHttp:      viper.GetBool("logging.log_http"),
+			HttpLogFile:  viper.GetString("logging.http_log_file"),
+			LogFile:      viper.GetString("logging.log_file"),
+			LogStdout:    viper.GetBool("logging.log_stdout"),
 		},
 	}
 
@@ -126,6 +151,7 @@ func InitConfig() error {
 	C.Processing.TmpDir, inputChanged = setVar(C.Processing.TmpDir, defaultTmpDir)
 	C.Processing.DataDir, dataChanged = setVar(C.Processing.DataDir, "data")
 	C.Meilisearch.Index, indexChanged = setVar(C.Meilisearch.Index, "virtualpaper")
+
 	if len(C.Processing.OcrLanguages) == 0 {
 		C.Processing.OcrLanguages = []string{"eng"}
 		viper.Set("processing.ocr_languages", C.Processing.OcrLanguages)
@@ -147,6 +173,12 @@ func InitConfig() error {
 	viper.Set("processing.tmp_dir", C.Processing.TmpDir)
 	viper.Set("processing.data_dir", C.Processing.DataDir)
 	viper.Set("processing.input_dir", C.Processing.InputDir)
+
+	viper.Set("logging.log_level", C.Logging.Loglevel)
+	viper.Set("logging.directory", C.Logging.LogDirectory)
+	viper.Set("logging.log_http", C.Logging.LogHttp)
+	viper.Set("logging.http_log_file", C.Logging.HttpLogFile)
+	viper.Set("logging.log_file", C.Logging.LogFile)
 
 	if C.Processing.MaxWorkers == 0 {
 		// use only half of available cpus

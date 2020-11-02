@@ -1,5 +1,6 @@
 # Virtualpaper configuration file
 
+
 # http api
 [api]
 # host & port to bind
@@ -10,7 +11,9 @@ secret_key = ""
 # If you need to define cors hosts, put all hosts here.
 cors_hosts = []
 # Public facing url, for creating urls for clients
-public_url = "localhost:8000"
+public_url = "http://localhost:8000"
+
+
 
 # Database, only postgres is supported.
 [database]
@@ -20,10 +23,17 @@ username = "virtualpaper"
 password = "very-secret-password"
 database = "virtualpaper"
 
+
+
 # Meilisearch search-engine. A new meilisearch-index is created for each user-id.
 [meilisearch]
 apikey = ""
 url = "http://localhost:7700"
+# index. Virtualpaper will create one index for each user, this will be suffix for all indices. Indices are
+# named as virtualpaper-<user_id>
+index = "virtualpaper"
+
+
 
 # Processing / application data.
 [processing]
@@ -33,3 +43,28 @@ tmp_dir = "/tmp"
 output_dir = "media"
 # Max background workers allowed. If empty, set to number of cpus available.
 max_workers = 4
+
+# array of tesseract languages. Each language requires separate tesseract-data package to be installed.
+ocr_languages = ["eng"]
+
+# to use pdftotext binary for faster and more reliable pdf parsing, set binary path.
+pdftotext_bin = ""
+
+
+
+# Logging configuration
+[logging]
+# Loglevel, valid levels: trace,debug,info,warning,error,fatal,panic
+log_level = "INFO"
+# Directory for log files
+directory = "log"
+# Log http requests to separate file
+log_http = true
+# Http log file
+http_log_file = "http.log"
+# Application log file
+log_file = "virtualpaper.log"
+# Log all logs to stdout in, helpful for interactive mode / development
+log_stdout = true
+
+

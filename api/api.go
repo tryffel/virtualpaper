@@ -191,7 +191,12 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		fields["duration"] = duration
 		fields["status"] = logger.status
 		fields["length"] = logger.length
-		logrus.WithFields(fields).Infof("http")
+
+		if config.C.Logging.HttpLog != nil {
+			config.C.Logging.HttpLog.WithFields(fields).Infof("http")
+		} else {
+			logrus.WithFields(fields).Infof("http")
+		}
 	})
 }
 
