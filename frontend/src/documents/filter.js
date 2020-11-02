@@ -42,14 +42,13 @@ const Card = withStyles(theme => ({
 export const FilterSidebar = () => (
     <Card style={{width: '20em', minWidth: '15em'}}>
         <CardContent>
-            <FilterLiveSearch source="q" />
             <LastVisitedFilter/>
         </CardContent>
     </Card>
 );
 
 const LastVisitedFilter = () => (
-    <FilterList label="Last visited" icon={<AccessTimeIcon />} >
+    <FilterList label="Document date" icon={<AccessTimeIcon />} >
         <FilterListItem
             label="Today"
             value={{
