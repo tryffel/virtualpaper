@@ -25,6 +25,7 @@ import (
 	"regexp"
 	"strconv"
 	"time"
+	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
@@ -37,36 +38,37 @@ type pageParams struct {
 func getPaging(req *http.Request) (storage.Paging, error) {
 	params := &pageParams{}
 
-	pageStr := req.FormValue("page")
+	var pageStr string
+	var sizeStr string
+	page := 1
+	pageSize := 10
+
+	pageStr = req.FormValue("page")
 	if pageStr == "" {
-		pageStr = "1"
+		page = 1
+	} else {
+		gotPage, err := strconv.Atoi(pageStr)
+		if err == nil && gotPage > 0 {
+			page = gotPage
+		}
 	}
-	sizeStr := req.FormValue("page_size")
+
+	sizeStr = req.FormValue("page_size")
 	if sizeStr == "" {
-		sizeStr = "10"
-	}
-
-	page, err := strconv.Atoi(pageStr)
-	if err != nil {
-		page = 1
-	}
-	if page < 1 {
-		page = 1
-	}
-
-	size, err := strconv.Atoi(sizeStr)
-	if err != nil {
-		size = 10
-	}
-
-	if size < 1 {
-		size = 5
-	} else if size > 1000 {
-		size = 1000
+		pageSize = 10
+	} else {
+		size, err := strconv.Atoi(sizeStr)
+		if err == nil && size > 0 {
+			if size > config.MaxRows {
+				pageSize = config.MaxRows
+			} else {
+				pageSize = size
+			}
+		}
 	}
 
 	params.Page = page
-	params.PageSize = size
+	params.PageSize = pageSize
 	paging := storage.Paging{
 		Offset: (params.Page - 1) * params.PageSize,
 		Limit:  params.PageSize,
