@@ -300,11 +300,8 @@ func (a *Api) getDocumentPreview(resp http.ResponseWriter, req *http.Request) {
 
 	_, err = io.Copy(resp, file)
 	if err != nil {
-		respError(resp, err, handler)
-	} else {
-		respOk(resp, nil)
+		logrus.Errorf("send file over http: %v", err)
 	}
-
 }
 
 func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
@@ -423,10 +420,8 @@ func (a *Api) downloadDocument(resp http.ResponseWriter, req *http.Request) {
 
 	_, err = io.Copy(resp, file)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		logrus.Errorf("send file over http: %v", err)
 	}
-
 }
 
 func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
