@@ -149,7 +149,7 @@ func (a *Api) getEmptyResp(resp http.ResponseWriter, req *http.Request) {
 }
 
 type LoggingWriter struct {
-	http.ResponseWriter
+	resp   http.ResponseWriter
 	status int
 	length int
 }
@@ -157,7 +157,7 @@ type LoggingWriter struct {
 func (l *LoggingWriter) WriteHeader(status int) {
 	l.length = 0
 	l.status = status
-	l.ResponseWriter.WriteHeader(status)
+	l.resp.WriteHeader(status)
 }
 
 func (l *LoggingWriter) Write(b []byte) (int, error) {
@@ -165,7 +165,11 @@ func (l *LoggingWriter) Write(b []byte) (int, error) {
 	if l.status == 0 {
 		l.status = 200
 	}
-	return l.ResponseWriter.Write(b)
+	return l.resp.Write(b)
+}
+
+func (l *LoggingWriter) Header() http.Header {
+	return l.resp.Header()
 }
 
 // LogginMiddlware Provide logging for requests
@@ -173,7 +177,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		logger := &LoggingWriter{
-			ResponseWriter: w,
+			resp: w,
 		}
 		next.ServeHTTP(logger, r)
 
