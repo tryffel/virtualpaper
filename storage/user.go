@@ -19,6 +19,7 @@
 package storage
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"time"
@@ -60,16 +61,28 @@ func (u *UserStore) AddUser(user *models.User) error {
 
 	sql := `
 INSERT INTO users (name, email, updated_at, password)
-VALUES ($1, $2, $3, $4);
+VALUES ($1, $2, $3, $4) RETURNING id;
 
 `
-	_, err := u.db.Exec(sql, user.Name, "", time.Now(), user.Password)
+	rows, err := u.db.Query(sql, user.Name, "", time.Now(), user.Password)
 	if err != nil {
-		return err
+		return getDatabaseError(err, "user", "add")
+	}
+
+	if rows.Next() {
+		id := 0
+		err := rows.Scan(&id)
+		if err != nil {
+			return getDatabaseError(err, "user", "add user, scan id")
+		}
+		user.Id = id
+	} else {
+		return errors.New("no id returned")
 	}
 	return nil
 }
 
+// GetUsers returns all users.
 func (u *UserStore) GetUsers() (*[]models.User, error) {
 	sql := `
 	SELECT *
@@ -82,6 +95,7 @@ func (u *UserStore) GetUsers() (*[]models.User, error) {
 	return users, getDatabaseError(err, "users", "get many")
 }
 
+// GetUser returns single user with id.
 func (u *UserStore) GetUser(userid int) (*models.User, error) {
 	sql := `
 	SELECT *
@@ -91,5 +105,38 @@ func (u *UserStore) GetUser(userid int) (*models.User, error) {
 
 	user := &models.User{}
 	err := u.db.Get(user, sql, userid)
-	return user, getDatabaseError(err, "users", "get single")
+	return user, getDatabaseError(err, "users", "get by id")
+}
+
+// GetUserByName returns user matching username
+func (u *UserStore) GetUserByName(username string) (*models.User, error) {
+	sql := `
+	SELECT *
+	FROM users
+	WHERE name = $1;
+	`
+
+	user := &models.User{}
+	err := u.db.Get(user, sql, username)
+	return user, getDatabaseError(err, "users", "get by name")
+}
+
+// Update existing user. Username cannot be changed,
+func (u *UserStore) Update(user *models.User) error {
+	if user.Id < 1 {
+		e := ErrInvalid
+		e.ErrMsg = fmt.Sprintf("user (%d) does not exist", user.Id)
+		return e
+
+	}
+	user.Update()
+
+	sql := `
+UPDATE users SET
+email=$2, updated_at=$3, password=$4, active=$5, admin=$6
+where id = $1
+`
+
+	_, err := u.db.Exec(sql, user.Id, user.Email, user.UpdatedAt, user.Password, user.IsActive, user.IsAdmin)
+	return getDatabaseError(err, "user", "update")
 }

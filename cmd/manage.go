@@ -19,35 +19,13 @@
 package cmd
 
 import (
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"strings"
-	"tryffel.net/go/virtualpaper/models"
-	"tryffel.net/go/virtualpaper/storage"
 )
 
 var manageCmd = &cobra.Command{
 	Use:   "manage",
-	Short: "Add users",
+	Short: "Manage server and users",
 	Run: func(cmd *cobra.Command, args []string) {
-		db, err := storage.NewDatabase()
-		if err != nil {
-			logrus.Fatalf("Connect to database: %v", err)
-		}
-		defer db.Close()
-
-		user := &models.User{}
-		user.Name = strings.ToLower(args[0])
-		err = user.SetPassword(args[1])
-		if err != nil {
-			logrus.Errorf("set password: %v", err)
-		}
-
-		err = db.UserStore.AddUser(user)
-		if err != nil {
-			logrus.Error(err)
-		} else {
-			logrus.Infof("created user %s", user.Name)
-		}
+		_ = cmd.Help()
 	},
 }
