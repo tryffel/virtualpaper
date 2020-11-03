@@ -222,6 +222,7 @@ WHERE id IN ($3);
 	return getDatabaseError(err, "documents", "bulk update indexing")
 }
 
+// Update sets complete document record, not just changed attributes. Thus document must be read before updating.
 func (s *DocumentStore) Update(doc *models.Document) error {
 	doc.UpdatedAt = time.Now()
 	sql := `

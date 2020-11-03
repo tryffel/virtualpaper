@@ -493,9 +493,15 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 		respError(resp, err, handler)
 	}
 
-	err = a.search.IndexDocuments(&[]models.Document{*doc}, user)
+	logrus.Debugf("document updated, force fts update")
+	err = a.db.JobStore.ForceProcessing(user, doc.Id, models.ProcessFts)
 	if err != nil {
-		respError(resp, err, handler)
+		logrus.Warningf("error marking document for processing (doc %d): %v", doc.Id, err)
+	} else {
+		err = a.process.AddDocumentForProcessing(doc)
+		if err != nil {
+			logrus.Warningf("error adding updated document for processing (doc: %d): %v", doc.Id, err)
+		}
 	}
 	respResourceList(resp, responseFromDocument(doc), 1)
 }
