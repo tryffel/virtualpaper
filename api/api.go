@@ -118,6 +118,7 @@ func (a *Api) addRoutes() {
 	a.privateRouter.HandleFunc("/metadata/keys/{id}/values", a.addMetadataValue).Methods(http.MethodPost)
 
 	a.privateRouter.HandleFunc("/admin/documents/process", a.forceDocumentProcessing).Methods(http.MethodPost)
+	a.privateRouter.HandleFunc("/admin/documents/process", a.getDocumentProcessQueue).Methods(http.MethodGet)
 
 	if config.C.Api.StaticContentPath != "" {
 		logrus.Debugf("Serve static files")

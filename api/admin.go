@@ -80,3 +80,43 @@ func (a *Api) forceDocumentProcessing(resp http.ResponseWriter, req *http.Reques
 
 	respError(resp, err, handler)
 }
+
+type documentProcessStep struct {
+	DocumentId int    `json:"document_id"`
+	Step       string `json:"step"`
+}
+
+func (a *Api) getDocumentProcessQueue(resp http.ResponseWriter, req *http.Request) {
+
+	handler := "Api.adminGetProcessQueue"
+	userId, ok := getUserId(req)
+	if !ok {
+		logrus.Errorf("no user in context")
+		respInternalError(resp)
+		return
+	}
+
+	user, err := a.db.UserStore.GetUser(userId)
+	if err != nil {
+		respError(resp, err, handler)
+	}
+
+	if !user.IsAdmin {
+		respUnauthorized(resp)
+		return
+	}
+
+	queue, n, err := a.db.JobStore.GetPendingProcessing()
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	processes := make([]documentProcessStep, len(*queue))
+	for i, v := range *queue {
+		processes[i].DocumentId = v.DocumentId
+		processes[i].Step = v.Step.String()
+	}
+
+	respResourceList(resp, processes, n)
+}
