@@ -18,7 +18,7 @@
 
 
 import * as React from "react";
-import {Create, FileField, FileInput, SimpleForm, TextInput} from "react-admin";
+import {Create, SimpleForm, TextInput} from "react-admin";
 
 
 export const MetadataKeyCreate = (props) => (

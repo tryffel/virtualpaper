@@ -18,7 +18,7 @@
 
 
 import {Card as MuiCard, CardContent, withStyles} from "@material-ui/core";
-import {FilterList, FilterListItem, FilterLiveSearch} from "react-admin";
+import {FilterList, FilterListItem} from "react-admin";
 import AccessTimeIcon from "@material-ui/icons/AccessTime";
 import {endOfYesterday, startOfMonth, startOfWeek, startOfYear, subYears} from "date-fns";
 import * as React from "react";

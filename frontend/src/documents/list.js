@@ -24,7 +24,7 @@ import { Card, CardActions, CardContent, CardHeader, CardActionArea, Box, useMed
 import CircularProgress from '@material-ui/core/CircularProgress';
 
 import { List, useListContext, DateField, EditButton, ShowButton, Filter, TextInput, RichTextField,
-    Pagination, ReferenceArrayInput, SelectInput, TopToolbar, SortButton, CreateButton, ExportButton, FilterButton } from "react-admin";
+    Pagination, ReferenceArrayInput, SelectInput, TopToolbar, SortButton, CreateButton, ExportButton } from "react-admin";
 
 import { ThumbnailSmall } from "./file";
 import { FilterSidebar } from './filter';

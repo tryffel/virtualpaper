@@ -17,10 +17,8 @@
  */
 
 import React, { useState } from "react";
-import {ArrayField, Datagrid, DateField, FileField, RichTextField, Show, Tab, TabbedShowLayout, TextField, ChipField, SingleFieldList, Labeled, Button
+import {ArrayField, Datagrid, DateField, Show, Tab, TabbedShowLayout, TextField, ChipField, SingleFieldList, Labeled, Button
 } from "react-admin";
-
-import get from 'lodash/get';
 
 import { ThumbnailField, EmbedFile} from "./file";
 import { MarkdownField } from '../markdown'
