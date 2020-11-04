@@ -36,7 +36,7 @@ CREATE TABLE tags (
 
 CREATE TABLE document_tags (
 	document_id INT,
-	tag_id,
+	tag_id INT,
 
 	CONSTRAINT document_tags_pkey PRIMARY KEY (document_id, tag_id)
 );
@@ -65,7 +65,7 @@ CREATE TABLE metadata_values (
 	CONSTRAINT pk_metadata_values PRIMARY KEY(id),
 	CONSTRAINT pk_metadata_values_key FOREIGN KEY (key_id) REFERENCES metadata_keys(id),
 	CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES users(id),
-	CONSTRAINT unique_user_value UNIQUE (user_id, value)
+	CONSTRAINT unique_key_value UNIQUE (key_id, value)
 );
 
 
