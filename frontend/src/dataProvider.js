@@ -168,16 +168,10 @@ export const dataProvider = {
             )
         ).then(responses => ({ data: responses.map(({ json }) => json.id) })),
 
-    create: (resource, params) => {
-        if (resource !== 'documents' || !params.data.file) {
-            httpClient(`${apiUrl}/${resource}`, {
-                method: 'POST',
-                body: JSON.stringify(params.data),
-            }).then(({json}) => ({
-                data: {...params.data, id: json.id},
-            }))
-        } else {
+    create: (resource, params ) => {
+        if (resource === 'documents' && params.data.file) {
             const file = params.data.file;
+
             let data = new FormData();
             data.append("name", file.name)
             data.append("file", file.rawFile);
@@ -190,6 +184,21 @@ export const dataProvider = {
                 method: 'POST',
                 body: data,
                 headers: headers
+            }).then(({json}) => ({
+                data: {...params.data, id: json.id},
+            }))
+
+        } if (resource === 'metadata/values' && params.key_id) {
+            return httpClient(`${apiUrl}/metadata/keys/${params.key_id}/values`, {
+                method: 'POST',
+                body: JSON.stringify(params.data),
+            }).then(({ json }) => ({
+                data: json,
+            }))
+        } else {
+            httpClient(`${apiUrl}/${resource}`, {
+                method: 'POST',
+                body: JSON.stringify(params.data),
             }).then(({json}) => ({
                 data: {...params.data, id: json.id},
             }))

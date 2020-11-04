@@ -25,20 +25,18 @@ import {
     Labeled,
     SimpleForm,
     Edit,
-    Button,
+    SimpleList
 } from "react-admin";
 
 import { MarkdownField } from '../markdown'
 
+import MetadataValueCreateButton from './valueCreate'
+
 
 export const MetadataKeyEdit = (props) => {
 
-    const onAddNewValue = event => {
-        console.log(event);
-    }
-
     return (
-    <Edit {...props}>
+    <Edit {...props} title={props.record ? props.record.key: 'Metadata key'}>
         <SimpleForm>
             <TextField source="key"/>
             <Labeled label="Description">
@@ -46,13 +44,14 @@ export const MetadataKeyEdit = (props) => {
             </Labeled>
 
             <ReferenceManyField  label="Values" reference={"metadata/values"} target={"key_id"}>
-                <Datagrid >
-                    <TextField label="" source="value" />
-                </Datagrid>
+                <SimpleList
+                    primaryText={record => record.value}
+                    linkType=""
+                />
 
             </ReferenceManyField>
 
-            <Button label={"Add new"} onClick={onAddNewValue}/>
+            <MetadataValueCreateButton />
 
             <DateField source="created_at" showTime={false}/>
         </SimpleForm>
