@@ -22,12 +22,56 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jmoiron/sqlx"
+	"github.com/patrickmn/go-cache"
 	"time"
 	"tryffel.net/go/virtualpaper/models"
 )
 
 type UserStore struct {
-	db *sqlx.DB
+	db    *sqlx.DB
+	cache *cache.Cache
+}
+
+func newUserStore(db *sqlx.DB) *UserStore {
+	store := &UserStore{
+		db:    db,
+		cache: cache.New(time.Minute, time.Minute),
+	}
+	return store
+}
+
+func (u *UserStore) getUserIdCache(id int) *models.User {
+	cacheRecord, found := u.cache.Get(fmt.Sprintf("userid-%d", id))
+	if found {
+		user, ok := cacheRecord.(*models.User)
+		if ok {
+			return user
+		} else {
+			u.cache.Delete(fmt.Sprintf("userid-%d", id))
+		}
+	}
+	return nil
+}
+
+func (u *UserStore) getUserNameCache(username string) *models.User {
+	cacheRecord, found := u.cache.Get(fmt.Sprintf("username-%s", username))
+	if found {
+		user, ok := cacheRecord.(*models.User)
+		if ok {
+			return user
+		} else {
+			u.cache.Delete(fmt.Sprintf("username-%s", username))
+		}
+	}
+	return nil
+}
+
+func (u *UserStore) setUserCache(user *models.User) {
+	if user == nil || user.Id == 0 {
+		return
+	}
+	u.cache.Set(fmt.Sprintf("userid-%d", user.Id), user, cache.DefaultExpiration)
+	u.cache.Set(fmt.Sprintf("username-%s", user.Name), user, cache.DefaultExpiration)
 }
 
 // TryLogin tries to log user in by password. Return userId = -1 and error if login fails.
@@ -97,15 +141,25 @@ func (u *UserStore) GetUsers() (*[]models.User, error) {
 
 // GetUser returns single user with id.
 func (u *UserStore) GetUser(userid int) (*models.User, error) {
+	user := u.getUserIdCache(userid)
+	if user != nil {
+		return user, nil
+	}
+
 	sql := `
 	SELECT *
 	FROM users
 	WHERE id = $1;
 	`
 
-	user := &models.User{}
+	user = &models.User{}
 	err := u.db.Get(user, sql, userid)
-	return user, getDatabaseError(err, "users", "get by id")
+	if err != nil {
+		return user, getDatabaseError(err, "users", "get by id")
+	}
+
+	u.setUserCache(user)
+	return user, nil
 }
 
 // GetUserByName returns user matching username

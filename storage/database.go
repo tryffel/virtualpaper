@@ -30,7 +30,7 @@ func NewDatabase() (*Database, error) {
 		return db, err
 	}
 
-	db.UserStore = &UserStore{db: db.conn}
+	db.UserStore = newUserStore(db.conn)
 	db.DocumentStore = &DocumentStore{db: db.conn}
 	db.JobStore = &JobStore{db: db.conn}
 	db.MetadataStore = &MetadataStore{db: db.conn}
