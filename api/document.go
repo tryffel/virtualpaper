@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/asaskevich/govalidator"
-	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
@@ -37,7 +36,7 @@ import (
 )
 
 type documentResponse struct {
-	Id          int               `json:"id"`
+	Id          string            `json:"id"`
 	Name        string            `json:"name"`
 	Filename    string            `json:"filename"`
 	Content     string            `json:"content"`
@@ -66,8 +65,8 @@ func responseFromDocument(doc *models.Document) *documentResponse {
 		CreatedAt:   doc.CreatedAt.Unix() * 1000,
 		UpdatedAt:   doc.UpdatedAt.Unix() * 1000,
 		Date:        doc.Date.Unix() * 1000,
-		PreviewUrl:  fmt.Sprintf("%s/api/v1/documents/%d/preview", config.C.Api.PublicUrl, doc.Id),
-		DownloadUrl: fmt.Sprintf("%s/api/v1/documents/%d/download", config.C.Api.PublicUrl, doc.Id),
+		PreviewUrl:  fmt.Sprintf("%s/api/v1/documents/%s/preview", config.C.Api.PublicUrl, doc.Id),
+		DownloadUrl: fmt.Sprintf("%s/api/v1/documents/%s/download", config.C.Api.PublicUrl, doc.Id),
 		Mimetype:    doc.Mimetype,
 		Type:        doc.GetType(),
 		Size:        doc.Size,
@@ -144,14 +143,7 @@ func (a *Api) getDocument(resp http.ResponseWriter, req *http.Request) {
 		respInternalError(resp)
 		return
 	}
-	idStr := mux.Vars(req)["id"]
-
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		respBadRequest(resp, "id not integer", nil)
-		return
-	}
-
+	id := getParamId(req)
 	doc, err := a.db.DocumentStore.GetDocument(user, id)
 	if err != nil {
 		respError(resp, err, handler)
@@ -190,17 +182,14 @@ func (a *Api) getDocumentContent(resp http.ResponseWriter, req *http.Request) {
 		respInternalError(resp)
 		return
 	}
-	idStr := mux.Vars(req)["id"]
-
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		respBadRequest(resp, "id not integer", nil)
-		return
-	}
+	id := getParamId(req)
 
 	content, err := a.db.DocumentStore.GetContent(user, id)
+	if err != nil {
+		respError(resp, err, "api.getDocumentContent")
+		return
+	}
 	respOk(resp, &content)
-
 }
 
 func (a *Api) getDocumentLogs(resp http.ResponseWriter, req *http.Request) {
@@ -211,12 +200,7 @@ func (a *Api) getDocumentLogs(resp http.ResponseWriter, req *http.Request) {
 		respInternalError(resp)
 		return
 	}
-	id, err := getParamId(req)
-	if err != nil {
-		respBadRequest(resp, err.Error(), nil)
-		return
-	}
-
+	id := getParamId(req)
 	owns, err := a.db.DocumentStore.UserOwnsDocument(id, user)
 	if err != nil {
 		logrus.Errorf("Get document ownserhip: %v", err)
@@ -246,12 +230,7 @@ func (a *Api) getDocumentPreview(resp http.ResponseWriter, req *http.Request) {
 		respInternalError(resp)
 		return
 	}
-	id, err := getParamId(req)
-	if err != nil {
-		respBadRequest(resp, err.Error(), nil)
-		return
-	}
-
+	id := getParamId(req)
 	doc, err := a.db.DocumentStore.GetDocument(user, id)
 	if err != nil {
 		respError(resp, err, handler)
@@ -337,7 +316,7 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 	hash := config.RandomString(10)
 
 	document := &models.Document{
-		Id:       0,
+		Id:       "",
 		UserId:   userId,
 		Name:     header.Filename,
 		Content:  "",
@@ -399,14 +378,7 @@ func (a *Api) downloadDocument(resp http.ResponseWriter, req *http.Request) {
 	}
 	var err error
 
-	idStr := mux.Vars(req)["id"]
-
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		respBadRequest(resp, "id not integer", nil)
-		return
-	}
-
+	id := getParamId(req)
 	doc, err := a.db.DocumentStore.GetDocument(userId, id)
 	if err != nil {
 		respError(resp, err, handler)
@@ -442,16 +414,10 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 		respInternalError(resp)
 		return
 	}
-	idStr := mux.Vars(req)["id"]
 
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		respBadRequest(resp, "id not integer", nil)
-		return
-	}
-
+	id := getParamId(req)
 	dto := &documentUpdateRequest{}
-	err = unMarshalBody(req, dto)
+	err := unMarshalBody(req, dto)
 	if err != nil {
 		respError(resp, err, handler)
 		return

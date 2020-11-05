@@ -32,7 +32,7 @@ CREATE TABLE users (
 );
 
 CREATE TABLE documents (
-    id SERIAL PRIMARY KEY,
+    id TEXT PRIMARY KEY,
     user_id INT,
     name TEXT NOT NULL DEFAULT '',
     content TEXT NOT NULL DEFAULT '',
@@ -54,7 +54,7 @@ CREATE TABLE documents (
 
 CREATE TABLE jobs (
 	id SERIAL PRIMARY KEY,
-	document_id INT,
+	document_id TEXT,
 	status INT,
 	message TEXT,
 

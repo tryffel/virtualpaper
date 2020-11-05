@@ -324,7 +324,6 @@ func (fp *fileProcessor) createNewDocumentRecord() error {
 	_, fileName := path.Split(fp.file)
 
 	doc := &models.Document{
-		Id:       0,
 		UserId:   5,
 		Name:     fileName,
 		Content:  "",

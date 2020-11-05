@@ -62,7 +62,7 @@ const (
 // Job is only used for logging purposes.
 type Job struct {
 	Id         int         `db:"id" json:"id"`
-	DocumentId int         `db:"document_id" json:"document_id"`
+	DocumentId string      `db:"document_id" json:"document_id"`
 	Message    string      `db:"message" json:"message"`
 	Status     JobStatus   `json:"status"`
 	Step       ProcessStep `db:"process_step"`
@@ -163,7 +163,7 @@ func (ps ProcessStep) String() string {
 
 // ProcessItem contains document that awaits further processing.
 type ProcessItem struct {
-	DocumentId int `db:"document_id"`
+	DocumentId string `db:"document_id"`
 	Document   *Document
 	Step       ProcessStep `db:"step"`
 	CreatedAt  time.Time   `db:"created_at"`

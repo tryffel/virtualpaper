@@ -75,7 +75,7 @@ WHERE user_id = $1
 }
 
 // GetDocument returns document by its id. If userId != 0, user must be owner of the document.
-func (s *DocumentStore) GetDocument(userId int, id int) (*models.Document, error) {
+func (s *DocumentStore) GetDocument(userId int, id string) (*models.Document, error) {
 	sql := `
 SELECT *
 FROM documents
@@ -93,7 +93,7 @@ WHERE id = $1
 }
 
 // UserOwnsDocumet returns true if user has ownership for document.
-func (s *DocumentStore) UserOwnsDocument(documentId, userId int) (bool, error) {
+func (s *DocumentStore) UserOwnsDocument(documentId string, userId int) (bool, error) {
 
 	sql := `
 select case when exists
@@ -129,30 +129,17 @@ func (s *DocumentStore) GetByHash(hash string) (*models.Document, error) {
 func (s *DocumentStore) Create(doc *models.Document) error {
 	sql := `
 INSERT INTO documents (user_id, name, content, filename, hash, mimetype, size, description)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;`
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`
 
-	res, err := s.db.Query(sql, doc.UserId, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
+	doc.Init()
+
+	_, err := s.db.Exec(sql, doc.UserId, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
 		doc.Description)
-	if err != nil {
-		return getDatabaseError(err, "documents", "create")
-	}
-	defer res.Close()
-
-	if res.Next() {
-		var id int
-		err = res.Scan(&id)
-		if err != nil {
-			return getDatabaseError(err, "documents", "scan creation index")
-		} else {
-			doc.Id = id
-		}
-	}
-
 	return getDatabaseError(err, "documents", "created")
 }
 
 // SetDocumentContent sets content for given document id
-func (s *DocumentStore) SetDocumentContent(id int, content string) error {
+func (s *DocumentStore) SetDocumentContent(id string, content string) error {
 
 	sql := `
 UPDATE documents SET content=$2
@@ -164,7 +151,7 @@ WHERE id=$1;
 }
 
 // GetContent returns full content. If userId != 0, user must own the document of given id.
-func (s *DocumentStore) GetContent(userId int, id int) (*string, error) {
+func (s *DocumentStore) GetContent(userId int, id string) (*string, error) {
 	sql := `
 SELECT content
 FROM documents
@@ -209,7 +196,7 @@ WHERE awaits_indexing=True
 }
 
 // BulkUpdateIndexingStatus sets indexing status for all documents that are defined in ids-array.
-func (s *DocumentStore) BulkUpdateIndexingStatus(indexed bool, at time.Time, ids []int) error {
+func (s *DocumentStore) BulkUpdateIndexingStatus(indexed bool, at time.Time, ids []string) error {
 
 	sql := `
 UPDATE documents SET

@@ -14,7 +14,7 @@ type JobStore struct {
 }
 
 // GetByDocument returns all jobs related to document
-func (s *JobStore) GetByDocument(documentId int) (*[]models.Job, error) {
+func (s *JobStore) GetByDocument(documentId string) (*[]models.Job, error) {
 
 	sql := `
 SELECT
@@ -64,7 +64,7 @@ LIMIT $3;
 	return jobs, getDatabaseError(err, "jobs", "get by user")
 }
 
-func (s *JobStore) Create(documentId int, job *models.Job) error {
+func (s *JobStore) Create(documentId string, job *models.Job) error {
 
 	sql := `
 INSERT INTO jobs (document_id, status, message, started_at, stopped_at)
@@ -164,7 +164,7 @@ LIMIT 40;
 }
 
 // GetDocumentPendingSteps returns ProcessItems not yet started on given document in ascending order.
-func (s *JobStore) GetDocumentPendingSteps(documentId int) (*[]models.ProcessItem, error) {
+func (s *JobStore) GetDocumentPendingSteps(documentId string) (*[]models.ProcessItem, error) {
 	sql := `
 SELECT document_id, step
 	FROM process_queue
@@ -180,7 +180,7 @@ ORDER BY step ASC;
 
 // GetDocumentStatus returns status for given document:
 // pending, indexing, ready
-func (s *JobStore) GetDocumentStatus(documentId int) (string, error) {
+func (s *JobStore) GetDocumentStatus(documentId string) (string, error) {
 	sql := `
 SELECT running
 FROM process_queue
@@ -299,7 +299,7 @@ func (s *JobStore) AddDocument(doc *models.Document) error {
 	return s.addDocument(doc.Id, models.ProcessHash)
 }
 
-func (s *JobStore) addDocument(documentId int, fromStep models.ProcessStep) error {
+func (s *JobStore) addDocument(documentId string, fromStep models.ProcessStep) error {
 	sql := `
 INSERT INTO process_queue (document_id, step)
 VALUES 
@@ -343,7 +343,7 @@ WHERE running=TRUE
 // ForceProcessing adds documents to process queue. If documentID != 0, mark only given document. If
 // userId != 0, mark all documents for user. Else mark all documents for re-processing. FromStep
 // is the first step and successive steps are expected to re-run as well.
-func (s *JobStore) ForceProcessing(userId, documentId int, fromStep models.ProcessStep) error {
+func (s *JobStore) ForceProcessing(userId int, documentId string, fromStep models.ProcessStep) error {
 	var args []interface{}
 	steps := models.ProcessStepsAll[fromStep-1:]
 	stepsSql := ""
@@ -362,7 +362,7 @@ FROM documents
 JOIN (SELECT DISTINCT * FROM (VALUES %s) AS v) AS steps(step) ON TRUE
 `
 	sql = fmt.Sprintf(sql, stepsSql)
-	if documentId != 0 {
+	if documentId != "" {
 		sql += fmt.Sprintf(" WHERE documents.id = $%d", len(args)+1)
 		args = append(args, documentId)
 	} else if userId != 0 {

@@ -109,7 +109,7 @@ func (e *Engine) SearchDocuments(userId int, query *DocumentFilter, paging stora
 		isMap, ok := v.(map[string]interface{})
 		if ok {
 			doc := &models.Document{}
-			doc.Id = getInt("document_id", isMap)
+			doc.Id = getString("document_id", isMap)
 			doc.Name = getString("name", isMap)
 			doc.Content = getString("content", isMap)
 			doc.Description = getString("description", isMap)

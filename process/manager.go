@@ -100,7 +100,7 @@ func (m *Manager) Start() error {
 		err := m.db.JobStore.CancelRunningProcesses()
 		time.Sleep(time.Millisecond * 3000)
 
-		docs := map[int]*models.Document{}
+		docs := map[string]*models.Document{}
 		processes, _, err := m.db.JobStore.GetPendingProcessing()
 		if err != nil {
 			logrus.Errorf("get pending processing: %v", err)

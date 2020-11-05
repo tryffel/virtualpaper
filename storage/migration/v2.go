@@ -21,7 +21,7 @@ package migration
 const schemaV2 = `
 
 CREATE TABLE process_queue (
-	document_id INT,
+	document_id TEXT,
 	step INT,
 	running BOOL NOT NULL default FALSE,
 	created_at TIMESTAMPTZ default now(),

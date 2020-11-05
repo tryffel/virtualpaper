@@ -50,7 +50,7 @@ func (a *Api) authorizeAdmin(next http.Handler) http.Handler {
 // ForceDocumentsProcessingRequest describes request to force processing of documents.
 type ForceDocumentProcessingRequest struct {
 	UserId     int    `json:"user_id" valid:"-"`
-	DocumentId int    `json:"document_id" valid:"-"`
+	DocumentId string `json:"document_id" valid:"-"`
 	FromStep   string `json:"from_step" valid:"-"`
 }
 
@@ -88,7 +88,7 @@ func (a *Api) forceDocumentProcessing(resp http.ResponseWriter, req *http.Reques
 }
 
 type documentProcessStep struct {
-	DocumentId int    `json:"document_id"`
+	DocumentId string `json:"document_id"`
 	Step       string `json:"step"`
 }
 

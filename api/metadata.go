@@ -85,7 +85,7 @@ func (a *Api) getMetadataKey(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	id, err := getParamId(req)
+	id, err := getParamIntId(req)
 	if err != nil {
 		respError(resp, err, handler)
 		return
@@ -108,7 +108,7 @@ func (a *Api) getMetadataKeyValues(resp http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	key, err := getParamId(req)
+	key, err := getParamIntId(req)
 	if err != nil {
 		respError(resp, err, handler)
 		return
@@ -131,14 +131,10 @@ func (a *Api) updateDocumentMetadata(resp http.ResponseWriter, req *http.Request
 		return
 	}
 
-	documentId, err := getParamId(req)
-	if err != nil {
-		respError(resp, err, handler)
-		return
-	}
+	documentId := getParamId(req)
 
 	dto := &metadataUpdateRequest{}
-	err = unMarshalBody(req, dto)
+	err := unMarshalBody(req, dto)
 	if err != nil {
 		respError(resp, err, handler)
 		return
@@ -193,7 +189,7 @@ func (a *Api) addMetadataValue(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	keyId, err := getParamId(req)
+	keyId, err := getParamIntId(req)
 	if err != nil {
 		respError(resp, err, handler)
 		return

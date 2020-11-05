@@ -20,14 +20,17 @@ package models
 
 import (
 	"fmt"
+	"github.com/hashicorp/go-uuid"
+	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 	"time"
+	"tryffel.net/go/virtualpaper/config"
 )
 
 type Document struct {
 	Timestamp
-	Id          int       `db:"id"`
+	Id          string    `db:"id"`
 	UserId      int       `db:"user_id"`
 	Name        string    `db:"name"`
 	Description string    `db:"description"`
@@ -39,6 +42,23 @@ type Document struct {
 	Date        time.Time `db:"date"`
 	Metadata    []Metadata
 	Tags        []Tag
+}
+
+func (d *Document) Init() {
+	if d.Id == "" {
+		var err error
+		d.Id, err = uuid.GenerateUUID()
+		if err == nil {
+			return
+		}
+		logrus.Warningf("failed to generate uuid: %v, retrying", err)
+		d.Id, err = uuid.GenerateUUID()
+		if err == nil {
+			return
+		}
+		logrus.Errorf("generate uuid: %v. Assign random string as id ", err)
+		d.Id = config.RandomString(16)
+	}
 }
 
 // IsImage returns true if document file is image.

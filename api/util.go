@@ -50,8 +50,13 @@ func userIsAdmin(req *http.Request) (bool, error) {
 	return user.IsAdmin, nil
 }
 
-func getParamId(req *http.Request) (int, error) {
+func getParamId(req *http.Request) string {
 	idStr := mux.Vars(req)["id"]
+	return idStr
+}
+
+func getParamIntId(req *http.Request) (int, error) {
+	idStr := getParamId(req)
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		e := storage.ErrInvalid

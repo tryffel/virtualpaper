@@ -61,7 +61,7 @@ func (a *Api) getTag(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	id, err := getParamId(req)
+	id, err := getParamIntId(req)
 	if err != nil {
 		respError(resp, err, handler)
 		return

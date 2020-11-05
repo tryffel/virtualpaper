@@ -33,7 +33,7 @@ type MetadataStore struct {
 }
 
 // GetDocumentMetadata returns key-value metadata for given document. If userId != 0, user must own document.
-func (s *MetadataStore) GetDocumentMetadata(userId int, documentId int) (*[]models.Metadata, error) {
+func (s *MetadataStore) GetDocumentMetadata(userId int, documentId string) (*[]models.Metadata, error) {
 	var sql string
 	var args []interface{}
 
@@ -134,7 +134,7 @@ LIMIT $3;
 }
 
 // UpdateDocumentKeyValues updates key-values for document.
-func (s *MetadataStore) UpdateDocumentKeyValues(userId, documentId int, metadata []*models.Metadata) error {
+func (s *MetadataStore) UpdateDocumentKeyValues(userId int, documentId string, metadata []*models.Metadata) error {
 	var sql string
 	var err error
 
@@ -252,7 +252,7 @@ RETURNING id;
 	return nil
 }
 
-func (s *MetadataStore) GetDocumentTags(userId int, documentId int) (*[]models.Tag, error) {
+func (s *MetadataStore) GetDocumentTags(userId int, documentId string) (*[]models.Tag, error) {
 	sql := `
 select tags.id as id, tags.key as key, tags.comment as comment
 from tags

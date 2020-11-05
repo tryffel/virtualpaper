@@ -35,7 +35,7 @@ CREATE TABLE tags (
 
 
 CREATE TABLE document_tags (
-	document_id INT,
+	document_id TEXT,
 	tag_id INT,
 
 	CONSTRAINT document_tags_pkey PRIMARY KEY (document_id, tag_id)
@@ -70,7 +70,7 @@ CREATE TABLE metadata_values (
 
 
 CREATE TABLE document_metadata (
-	document_id INT,
+	document_id TEXT,
 	key_id INT,
 	value_id INT,
 

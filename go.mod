@@ -7,6 +7,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gorilla/mux v1.8.0
+	github.com/hashicorp/go-uuid v1.0.1
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/lib/pq v1.8.0
 	github.com/meilisearch/meilisearch-go v0.12.1
@@ -18,6 +19,7 @@ require (
 	github.com/otiai10/mint v1.3.2 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/rs/cors v1.7.0
+	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.7.1
