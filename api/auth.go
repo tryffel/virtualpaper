@@ -26,7 +26,9 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 	"tryffel.net/go/virtualpaper/config"
+	"tryffel.net/go/virtualpaper/storage"
 )
 
 const (
@@ -54,10 +56,11 @@ func (a *Api) authorizeUser(next http.Handler) http.Handler {
 
 		userId, err := validateToken(parts[1], config.C.Api.Key)
 		if userId == "" || err != nil {
-			respBadRequest(w, "invalid token", nil)
+			respError(w, err, "authorize user middleware")
+			return
 		}
 
-		if userId != "" && err == nil {
+		if userId != "" {
 			numId, err := strconv.Atoi(userId)
 			if err != nil {
 				logrus.Errorf("user id is not numerical: %v", err)
@@ -91,10 +94,17 @@ func (a *Api) corsHeader(next http.Handler) http.Handler {
 // if ExpireDuration == 0, disable expiration
 func newToken(userId string, privateKey string) (string, error) {
 	var token *jwt.Token = nil
-	token = jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		tokenClaimUserid: userId,
-	})
 
+	claims := jwt.MapClaims{
+		tokenClaimUserid: userId,
+	}
+
+	if config.C.Api.TokenExpire != 0 {
+		claims["nbf"] = time.Now().Unix()
+		claims["exp"] = time.Now().Add(config.C.Api.TokenExpire).Unix()
+	}
+
+	token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(privateKey))
 	if err != nil {
 		return tokenString, err
@@ -113,12 +123,33 @@ func validateToken(tokenString string, privateKey string) (string, error) {
 	})
 
 	if err != nil {
+		e, ok := err.(*jwt.ValidationError)
+		if ok {
+			if e.Inner.Error() == "Token is expired" {
+				logrus.Debugf("token expired")
+				e := storage.ErrInvalid
+				e.ErrMsg = "token expired"
+				return "", e
+			}
+
+		} else {
+			e := storage.ErrInvalid
+			e.ErrMsg = "invalid token"
+			return "", e
+		}
 		return "", fmt.Errorf("invalid token")
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if ok && token.Valid {
 		user := claims[tokenClaimUserid].(string)
+		expired := !claims.VerifyNotBefore(time.Now().Unix(), config.C.Api.TokenExpire != 0)
+		if expired {
+			logrus.Debugf("token expired")
+			e := storage.ErrInvalid
+			e.ErrMsg = "token expired"
+			return "", e
+		}
 		return user, nil
 	}
 	return "", fmt.Errorf("invalid token")

@@ -10,6 +10,7 @@ import (
 	"path"
 	"runtime"
 	"strings"
+	"time"
 )
 
 // Application config that is loaded upon starting program
@@ -26,9 +27,11 @@ type Config struct {
 
 // Api contains http server config
 type Api struct {
-	Host string
-	Port int
-	Key  string
+	Host           string
+	Port           int
+	Key            string
+	TokenExpireSec int
+	TokenExpire    time.Duration
 
 	PublicUrl string
 	CorsHosts []string
@@ -96,6 +99,7 @@ func ConfigFromViper() error {
 			PublicUrl:         viper.GetString("api.public_url"),
 			CorsHosts:         viper.GetStringSlice("api.cors_hosts"),
 			StaticContentPath: viper.GetString("api.static_content_path"),
+			TokenExpireSec:    viper.GetInt("api.token_expire_sec"),
 		},
 
 		Database: Database{
@@ -154,6 +158,10 @@ func InitConfig() error {
 	C.Processing.TmpDir, inputChanged = setVar(C.Processing.TmpDir, defaultTmpDir)
 	C.Processing.DataDir, dataChanged = setVar(C.Processing.DataDir, "data")
 	C.Meilisearch.Index, indexChanged = setVar(C.Meilisearch.Index, "virtualpaper")
+
+	if C.Api.TokenExpireSec != 0 {
+		C.Api.TokenExpire = time.Second * time.Duration(C.Api.TokenExpireSec)
+	}
 
 	if len(C.Processing.OcrLanguages) == 0 {
 		C.Processing.OcrLanguages = []string{"eng"}
