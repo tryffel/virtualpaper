@@ -67,8 +67,22 @@ func (a *Api) authorizeUser(next http.Handler) http.Handler {
 				respInternalError(w)
 				return
 			}
+
+			user, err := a.db.UserStore.GetUser(numId)
+			if err != nil {
+				respError(w, err, "api.authorizeUser")
+				return
+			}
+
+			if !user.IsActive {
+				logrus.Debugf("refuse to serve user %d, who is not active", user.Id)
+				respError(w, storage.ErrForbidden, "api.authorizeUser")
+				return
+			}
+
 			ctx := r.Context()
 			userCtx := context.WithValue(ctx, "user_id", numId)
+			userCtx = context.WithValue(userCtx, "user", user)
 			ctxReq := r.WithContext(userCtx)
 			next.ServeHTTP(w, ctxReq)
 			return

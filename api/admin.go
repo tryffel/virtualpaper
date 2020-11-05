@@ -24,6 +24,29 @@ import (
 	"tryffel.net/go/virtualpaper/models"
 )
 
+func (a *Api) authorizeAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		admin, err := userIsAdmin(r)
+		if err != nil {
+			respError(w, err, "api.authorizeAdmin")
+			return
+		}
+		if !admin {
+			if logrus.IsLevelEnabled(logrus.DebugLevel) {
+				user, ok := getUser(r)
+				if !ok {
+					logrus.Debug("user (unknown) is not admin, refuse to serve")
+				} else {
+					logrus.Debugf("user %d is not admin, refuse to serve", user.Id)
+				}
+			}
+			respUnauthorized(w)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // ForceDocumentsProcessingRequest describes request to force processing of documents.
 type ForceDocumentProcessingRequest struct {
 	UserId     int    `json:"user_id" valid:"-"`
@@ -33,25 +56,8 @@ type ForceDocumentProcessingRequest struct {
 
 func (a *Api) forceDocumentProcessing(resp http.ResponseWriter, req *http.Request) {
 	handler := "Api.getDocuments"
-	userId, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
-
-	user, err := a.db.UserStore.GetUser(userId)
-	if err != nil {
-		respError(resp, err, handler)
-	}
-
-	if !user.IsAdmin {
-		respUnauthorized(resp)
-		return
-	}
-
 	body := &ForceDocumentProcessingRequest{}
-	err = unMarshalBody(req, body)
+	err := unMarshalBody(req, body)
 	if err != nil {
 		respError(resp, err, handler)
 		return
@@ -87,24 +93,7 @@ type documentProcessStep struct {
 }
 
 func (a *Api) getDocumentProcessQueue(resp http.ResponseWriter, req *http.Request) {
-
 	handler := "Api.adminGetProcessQueue"
-	userId, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
-
-	user, err := a.db.UserStore.GetUser(userId)
-	if err != nil {
-		respError(resp, err, handler)
-	}
-
-	if !user.IsAdmin {
-		respUnauthorized(resp)
-		return
-	}
 
 	queue, n, err := a.db.JobStore.GetPendingProcessing()
 	if err != nil {

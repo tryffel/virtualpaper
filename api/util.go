@@ -19,6 +19,7 @@
 package api
 
 import (
+	"errors"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
@@ -32,6 +33,21 @@ func getUserId(req *http.Request) (int, bool) {
 	userId := ctx.Value("user_id")
 	id, ok := userId.(int)
 	return id, ok
+}
+
+func getUser(req *http.Request) (*models.User, bool) {
+	ctx := req.Context()
+	userId := ctx.Value("user")
+	user, ok := userId.(*models.User)
+	return user, ok
+}
+
+func userIsAdmin(req *http.Request) (bool, error) {
+	user, ok := getUser(req)
+	if !ok {
+		return false, errors.New("user record not found in context")
+	}
+	return user.IsAdmin, nil
 }
 
 func getParamId(req *http.Request) (int, error) {

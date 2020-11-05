@@ -40,6 +40,8 @@ type Api struct {
 	// privateRouter routes only authenticated endpoints
 	privateRouter *mux.Router
 
+	adminRouter *mux.Router
+
 	cors    http.Handler
 	db      *storage.Database
 	search  *search.Engine
@@ -75,6 +77,7 @@ func NewApi(database *storage.Database) (*Api, error) {
 	}
 
 	api.privateRouter = api.baseRouter.PathPrefix("/api/v1").Subrouter()
+	api.adminRouter = api.baseRouter.PathPrefix("/api/v1/admin").Subrouter()
 	api.addRoutes()
 	return api, err
 }
@@ -117,8 +120,9 @@ func (a *Api) addRoutes() {
 	a.privateRouter.HandleFunc("/metadata/keys/{id}/values", a.getMetadataKeyValues).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/metadata/keys/{id}/values", a.addMetadataValue).Methods(http.MethodPost)
 
-	a.privateRouter.HandleFunc("/admin/documents/process", a.forceDocumentProcessing).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/admin/documents/process", a.getDocumentProcessQueue).Methods(http.MethodGet)
+	a.adminRouter.Use(a.authorizeUser, a.authorizeAdmin)
+	a.adminRouter.HandleFunc("/documents/process", a.forceDocumentProcessing).Methods(http.MethodPost)
+	a.adminRouter.HandleFunc("/documents/process", a.getDocumentProcessQueue).Methods(http.MethodGet)
 
 	if config.C.Api.StaticContentPath != "" {
 		logrus.Debugf("Serve static files")
