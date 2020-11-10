@@ -76,7 +76,7 @@ ORDER BY key ASC;
 	err := s.db.Select(object, sql, args...)
 	if err != nil {
 		if strings.Contains(err.Error(), "converting NULL to int") {
-			logrus.Debugf("got empty row from metadata query: doc %d, %v", documentId, err)
+			logrus.Debugf("got empty row from metadata query: doc %s, %v", documentId, err)
 			return object, nil
 			// no rows returned
 		}

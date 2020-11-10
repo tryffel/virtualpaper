@@ -192,7 +192,7 @@ func (m *Manager) runFunc() {
 // schedule file operation to any idle task. If none of the tasks are idle, queue it to random task.
 func (m *Manager) scheduleNewOp(file string, doc *models.Document) {
 	if doc != nil {
-		logrus.Debugf("schedule new file process for document %d", doc.Id)
+		logrus.Debugf("schedule new file process for document %s", doc.Id)
 	} else {
 		logrus.Debugf("schedule new file process for file %s", file)
 

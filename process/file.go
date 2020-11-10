@@ -78,15 +78,15 @@ func (fp *fileProcessor) processDocument() {
 
 	pendingSteps, err := fp.db.JobStore.GetDocumentPendingSteps(fp.document.Id)
 	if err != nil {
-		logrus.Errorf("get pending processing steps for document %d: %v", fp.document.Id, err)
+		logrus.Errorf("get pending processing steps for document %s: %v", fp.document.Id, err)
 		return
 	}
 
-	logrus.Debugf("Task %d process file %d", fp.id, fp.document.Id)
+	logrus.Debugf("Task %d process file %s", fp.id, fp.document.Id)
 
 	file, err := os.Open(path.Join(config.C.Processing.DocumentsDir, fp.document.Hash))
 	if err != nil {
-		logrus.Errorf("open document %d file: %v", fp.document.Id, err)
+		logrus.Errorf("open document %s file: %v", fp.document.Id, err)
 		return
 	}
 
@@ -103,7 +103,7 @@ func (fp *fileProcessor) processDocument() {
 				file.Close()
 				file, err = os.Open(path.Join(config.C.Processing.DocumentsDir, fp.document.Hash))
 				if err != nil {
-					logrus.Errorf("open document %d file: %v", fp.document.Id, err)
+					logrus.Errorf("open document %s file: %v", fp.document.Id, err)
 					return
 				}
 			}
@@ -168,7 +168,7 @@ func (fp *fileProcessor) updateHash(doc *models.Document, file *os.File) error {
 	err = os.Rename(oldName, path.Join(config.C.Processing.DocumentsDir, hash))
 	if err != nil {
 		job.Status = models.JobFailure
-		return fmt.Errorf("rename file (doc %d) by old hash: %v", fp.document.Id, err)
+		return fmt.Errorf("rename file (doc %s) by old hash: %v", fp.document.Id, err)
 	}
 
 	fp.document.Hash = hash
@@ -198,7 +198,7 @@ func (fp *fileProcessor) updateThumbnail(doc *models.Document, file *os.File) er
 
 	output := path.Join(config.C.Processing.PreviewsDir, fp.document.Hash+".png")
 
-	logrus.Infof("generate thumbnail for document %d", fp.document.Id)
+	logrus.Infof("generate thumbnail for document %s", fp.document.Id)
 	_, err = imagick.ConvertImageCommand([]string{
 		"convert", "-thumbnail", "x500", "-background", "white", "-alpha", "remove", file.Name() + "[0]", output,
 	})
@@ -341,7 +341,7 @@ func (fp *fileProcessor) createNewDocumentRecord() error {
 
 	err = fp.db.DocumentStore.Create(doc)
 	if err != nil {
-		return fmt.Errorf("store document: %v", err)
+		return fmt.Errorf("store document: %s", err)
 	}
 
 	fp.document = doc
@@ -377,7 +377,7 @@ func (fp *fileProcessor) generateThumbnail(file *os.File) error {
 
 func (fp *fileProcessor) parseContent(file *os.File) error {
 
-	logrus.Infof("extract content for document %d", fp.document.Id)
+	logrus.Infof("extract content for document %s", fp.document.Id)
 	if fp.document.IsPdf() {
 		return fp.extractPdf(file)
 	} else if fp.document.IsImage() {
@@ -409,11 +409,11 @@ func (fp *fileProcessor) extractPdf(file *os.File) error {
 	useOcr := false
 
 	if fp.usePdfToText {
-		logrus.Infof("Attempt to parse document %d content with pdftotext", fp.document.Id)
+		logrus.Infof("Attempt to parse document %s content with pdftotext", fp.document.Id)
 		text, err = getPdfToText(file, fp.document.Hash)
 		if err != nil {
 			if err.Error() == "empty" {
-				logrus.Infof("document %d has no plain text, try ocr", fp.document.Id)
+				logrus.Infof("document %s has no plain text, try ocr", fp.document.Id)
 				useOcr = true
 			} else {
 				logrus.Debugf("failed to get content with pdftotext: %v", err)
@@ -435,7 +435,7 @@ func (fp *fileProcessor) extractPdf(file *os.File) error {
 	}
 
 	if text == "" {
-		logrus.Warningf("document %d content seems to be empty", fp.document.Id)
+		logrus.Warningf("document %s content seems to be empty", fp.document.Id)
 	}
 
 	text = strings.ToValidUTF8(text, "")
