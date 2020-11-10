@@ -2,11 +2,14 @@ package storage
 
 import (
 	"fmt"
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"tryffel.net/go/virtualpaper/config"
 )
 
+// Database connects to postgresql database
+// and contains store for each model/relation.
 type Database struct {
 	conn *sqlx.DB
 
@@ -16,6 +19,7 @@ type Database struct {
 	MetadataStore *MetadataStore
 }
 
+// NewDatabase returns working instance of database connection.
 func NewDatabase() (*Database, error) {
 	db := &Database{}
 
@@ -35,6 +39,27 @@ func NewDatabase() (*Database, error) {
 	db.JobStore = &JobStore{db: db.conn}
 	db.MetadataStore = &MetadataStore{db: db.conn}
 	return db, nil
+}
+
+// NewMockDatabase returns mock database instance
+func NewMockDatabase(matcher sqlmock.QueryMatcher) (*Database, sqlmock.Sqlmock, error) {
+	if matcher == nil {
+		matcher = sqlmock.QueryMatcherRegexp
+	}
+	mockDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(matcher))
+	if err != nil {
+		return nil, nil, fmt.Errorf("init mock db: %v", err)
+	}
+
+	db := &Database{
+		conn: sqlx.NewDb(mockDb, "sqlmock"),
+	}
+	db.UserStore = newUserStore(db.conn)
+	db.DocumentStore = &DocumentStore{db: db.conn}
+	db.JobStore = &JobStore{db: db.conn}
+	db.MetadataStore = &MetadataStore{db: db.conn}
+
+	return db, mock, nil
 }
 
 func (d *Database) Close() error {
