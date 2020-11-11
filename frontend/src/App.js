@@ -30,12 +30,15 @@ import tags from './tags';
 import metadata_keys from './metadata_keys';
 import { JobList} from "./job";
 
+import Dashboard from './dashboard'
+
 
 
 const App = () => (
     <Admin
         dataProvider={dataProvider}
         authProvider={authProvider}
+        dashboard={Dashboard}
     >
 
         <Resource name="documents" {...documents} icon={ DescriptionOutLinedIcon }/>
@@ -44,6 +47,7 @@ const App = () => (
         <Resource name="metadata/values"  label={"metadata values"} />
         <Resource name="jobs" list={JobList} />
         <Resource name="user"  />
+        <Resource name="documents/stats"  />
     </Admin>
     );
 

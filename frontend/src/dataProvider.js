@@ -85,10 +85,18 @@ export const dataProvider = {
         });
     },
 
-    getOne: (resource, params) =>
-        httpClient(`${apiUrl}/${resource}/${params.id}`).then(({ json }) => ({
+    getOne: (resource, params) => {
+
+        if (resource === "documents/stats") {
+            return httpClient(`${apiUrl}/${resource}`).then(({ json }) => ({
+
+                data: json,
+        }))}
+        else {
+            return httpClient(`${apiUrl}/${resource}/${params.id}`).then(({ json }) => ({
             data: json,
-        })),
+
+        }))}},
 
     getMany: (resource, params) => {
         const query = {
