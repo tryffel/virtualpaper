@@ -17,6 +17,7 @@ type Database struct {
 	DocumentStore *DocumentStore
 	JobStore      *JobStore
 	MetadataStore *MetadataStore
+	StatsStore    *StatsStore
 }
 
 // NewDatabase returns working instance of database connection.
@@ -38,6 +39,7 @@ func NewDatabase() (*Database, error) {
 	db.DocumentStore = &DocumentStore{db: db.conn}
 	db.JobStore = &JobStore{db: db.conn}
 	db.MetadataStore = &MetadataStore{db: db.conn}
+	db.StatsStore = &StatsStore{db: db.conn}
 	return db, nil
 }
 
@@ -58,6 +60,7 @@ func NewMockDatabase(matcher sqlmock.QueryMatcher) (*Database, sqlmock.Sqlmock, 
 	db.DocumentStore = &DocumentStore{db: db.conn}
 	db.JobStore = &JobStore{db: db.conn}
 	db.MetadataStore = &MetadataStore{db: db.conn}
+	db.StatsStore = &StatsStore{db: db.conn}
 
 	return db, mock, nil
 }

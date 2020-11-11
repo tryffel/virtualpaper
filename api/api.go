@@ -95,7 +95,7 @@ func (a *Api) addRoutes() {
 	a.privateRouter.HandleFunc("/documents", a.getDocuments).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/documents/undefined", a.getEmptyDocument).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/documents/{id}/show", a.getDocument).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents/{id}", a.getDocument).Methods(http.MethodGet)
+	a.privateRouter.HandleFunc("/documents/{id:[a-zA-Z0-9-]{30,40}}", a.getDocument).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/documents/{id}", a.updateDocument).Methods(http.MethodPut)
 	a.privateRouter.HandleFunc("/documents/{id}/preview", a.getDocumentPreview).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/documents/{id}/jobs", a.getDocumentLogs).Methods(http.MethodGet)
@@ -119,6 +119,8 @@ func (a *Api) addRoutes() {
 	a.privateRouter.HandleFunc("/metadata/keys/{id}", a.getMetadataKey).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/metadata/keys/{id}/values", a.getMetadataKeyValues).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/metadata/keys/{id}/values", a.addMetadataValue).Methods(http.MethodPost)
+
+	a.privateRouter.HandleFunc("/documents/stats", a.getUserDocumentStatistics).Methods(http.MethodGet)
 
 	a.adminRouter.Use(a.authorizeUser, a.authorizeAdmin)
 	a.adminRouter.HandleFunc("/documents/process", a.forceDocumentProcessing).Methods(http.MethodPost)
