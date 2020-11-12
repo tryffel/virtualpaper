@@ -24,11 +24,23 @@ import TimelineConnector from '@material-ui/lab/TimelineConnector';
 import TimelineContent from '@material-ui/lab/TimelineContent';
 import TimelineDot from '@material-ui/lab/TimelineDot';
 import TimelineOppositeContent from "@material-ui/lab/TimelineOppositeContent";
+import {Link} from 'react-router-dom';
+import {startOfYear, endOfYear} from "date-fns";
 
 import {Card, Typography} from '@material-ui/core';
 
 
 export const DocumentTimeline = (props) => {
+    function getDocumentsLink(year) {
+        const d = new Date(year, 1, 1);
+        const after = startOfYear(d).getTime();
+        const before = endOfYear(d).getTime();
+        return {
+            pathname: "/documents",
+            search: `filter=${JSON.stringify({ after: after, before: before })}`,
+        }
+    }
+
     return (
         <Card>
             <Typography style={{padding: 16}} variant="h5" color="textSecondary">Documents timeline</Typography>
@@ -36,7 +48,9 @@ export const DocumentTimeline = (props) => {
                 {props.stats.map( year =>
                     <TimelineItem>
                         <TimelineOppositeContent>
-                            <Typography color="textSecondary">{year.num_documents} Documents</Typography>
+                            <Typography component={Link} to={getDocumentsLink(year.year)}>
+                                    {year.num_documents} {year.num_documents === 1? "Document": "Documents"}
+                            </Typography>
                         </TimelineOppositeContent>
                         <TimelineSeparator>
                             <TimelineDot color={"primary"}/>
