@@ -23,6 +23,9 @@ import { Box } from '@material-ui/core';
 import CardContent from '@material-ui/core/CardContent';
 import {Error, Loading, SelectInput, Title, useQueryWithStore} from 'react-admin';
 
+import { Stats } from "./stats";
+import { DocumentTimeline } from "./timeline";
+
 
 export default () => {
     const {data, loading, error } = useQueryWithStore({
@@ -38,29 +41,10 @@ export default () => {
         <Card>
             <Box display="flex">
                 <Box flex="1">
-                    <Card>
-                        <CardContent>Total documents: {data.num_documents}</CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardContent>Total metadata keys: {data.num_metadata_keys}</CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardContent>Total metadata values: {data.num_metadata_values}</CardContent>
-                    </Card>
+                    <Stats {...data}/>
                 </Box>
                 <Box flex="2">
-                    <Card>
-                        <CardContent>Document count by year</CardContent>
-                    </Card>
-                    {data.yearly_stats.map (year =>
-                        <Box>
-                            <Card>
-                                <CardContent>{year.year}: {year.num_documents}</CardContent>
-                            </Card>
-                        </Box>)
-                    }
+                    <DocumentTimeline stats={data.yearly_stats}/>
                 </Box>
             </Box>
         </Card>
