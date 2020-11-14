@@ -32,14 +32,15 @@ func (s *StatsStore) GetUserDocumentStats(userId int) (*models.UserDocumentStati
 	sql := `
 
 -- document count
-select count(id) from documents where user_id = $1
+select count(id), 1 as ordering from documents where user_id = $1
 union
 
 -- metadata key count
-select count(id) from metadata_keys where user_id = $1
+select count(id), 2 from metadata_keys where user_id = $1
 union
 
-select count(id) from metadata_values where user_id = $1
+select count(id), 3 from metadata_values where user_id = $1
+order by ordering asc;
 `
 
 	stats := &models.UserDocumentStatistics{}
@@ -52,9 +53,11 @@ select count(id) from metadata_values where user_id = $1
 	}
 	defer rows.Close()
 
+	var order int
+
 	i := 0
 	for rows.Next() {
-		err = rows.Scan((values)[i])
+		err = rows.Scan((values)[i], &order)
 
 		if err != nil {
 			logrus.Errorf("scan int: %v", err)
