@@ -113,6 +113,22 @@ func applyRule(document *models.Document, rule models.Rule, match string) error 
 		document.Name = match
 		logMsg += "rename document"
 	case models.RuleActionSetDate:
+		if rule.Action.DateSeparator != "" {
+			splits := strings.Split(match, rule.Action.DateSeparator)
+			newMatch := ""
+			for i, v := range splits {
+				if i > 0 {
+					newMatch += rule.Action.DateSeparator
+				}
+				if len(v) == 1 {
+					newMatch += "0" + v
+				} else {
+					newMatch += v
+				}
+			}
+			match = newMatch
+		}
+
 		ts, err := time.Parse(rule.Action.DateFmt, match)
 		if err != nil {
 			return fmt.Errorf("date format '%s' does not match string '%s'", rule.Action.DateFmt, match)

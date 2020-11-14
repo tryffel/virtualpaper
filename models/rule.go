@@ -75,8 +75,12 @@ type RuleActionConfig struct {
 	MetadataKeyId   int
 	MetadataValueId int
 	Tag             int
-	DateFmt         string
-	Description     string
+	// DateFmt is format to try to parse time with
+	DateFmt string
+	// DateSeparator in format. This is to try to ensure and in some cases fix minor errors
+	// in invalid formats, e.g. 2020-5-01 -> 2020-05-01.
+	DateSeparator string
+	Description   string
 }
 
 func (r *RuleActionConfig) Scan(src interface{}) error {

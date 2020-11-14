@@ -277,8 +277,9 @@ func Test_applyRule(t *testing.T) {
 				document: &models.Document{},
 				rule: models.Rule{
 					Action: models.RuleActionConfig{
-						Action:  models.RuleActionSetDate,
-						DateFmt: "2006.01.02",
+						Action:        models.RuleActionSetDate,
+						DateFmt:       "2006.01.02",
+						DateSeparator: ".",
 					},
 				},
 				match: "2020.11.14",
@@ -322,6 +323,27 @@ func Test_applyRule(t *testing.T) {
 				},
 			},
 			wantErr: true,
+		},
+		{
+			name: "fix leading zeros on date",
+			args: args{
+				document: &models.Document{},
+				rule: models.Rule{
+					Action: models.RuleActionConfig{
+						Action:        models.RuleActionSetDate,
+						DateFmt:       "2006-01-02",
+						DateSeparator: "-",
+					},
+				},
+				match: "2020-11-5",
+				validate: func(doc *models.Document) {
+					y, m, d := doc.Date.Date()
+					if y != 2020 || m != 11 || d != 5 {
+						t.Errorf("invalid date")
+					}
+				},
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {

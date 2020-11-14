@@ -36,6 +36,7 @@ type ProcessingRule struct {
 		MetadataValue int    `json:"metadata_value_id" valid:"-"`
 		Tag           int    `json:"tag_id" valid:"-"`
 		DateFmt       string `json:"date_fmt" valid:"-"`
+		DateSeparator string `json:"date_separator" valid:"-"`
 		Description   string `json:"description" valid:"-"`
 	} `json:"action" valid:"-"`
 	CreatedAd int64 `json:"created_at" valid:"-"`
@@ -53,6 +54,7 @@ func (p *ProcessingRule) toRule() *models.Rule {
 			MetadataValueId: p.Action.MetadataValue,
 			Tag:             p.Action.Tag,
 			DateFmt:         p.Action.DateFmt,
+			DateSeparator:   p.Action.DateSeparator,
 			Description:     p.Action.Description,
 		},
 	}
@@ -79,12 +81,14 @@ func ruleToProcessingRule(rule *models.Rule) *ProcessingRule {
 			MetadataValue int    `json:"metadata_value_id" valid:"-"`
 			Tag           int    `json:"tag_id" valid:"-"`
 			DateFmt       string `json:"date_fmt" valid:"-"`
+			DateSeparator string `json:"date_separator" valid:"-"`
 			Description   string `json:"description" valid:"-"`
 		}{
 			MetadataKey:   rule.Action.MetadataKeyId,
 			MetadataValue: rule.Action.MetadataValueId,
 			Tag:           rule.Action.Tag,
 			DateFmt:       rule.Action.DateFmt,
+			DateSeparator: rule.Action.DateSeparator,
 			Description:   rule.Action.Description,
 		},
 	}
