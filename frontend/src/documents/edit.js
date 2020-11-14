@@ -50,7 +50,7 @@ export const DocumentEdit = (props) => {
 
     return (
     <Edit {...props} transform={transform}>
-        <SimpleForm>
+        <SimpleForm redirect="show">
             <TextField disabled label="Id" source="id" />
             <TextInput source="name" fullWidth />
             <MarkDownInputWithField source="description" />
