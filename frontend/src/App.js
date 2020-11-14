@@ -22,6 +22,7 @@ import { Admin, Resource } from 'react-admin';
 import MessageOutLinedIcon from '@material-ui/icons/Message';
 import DescriptionOutLinedIcon from '@material-ui/icons/Description';
 import LabelOutlinedIcon from '@material-ui/icons/LabelOutlined';
+import { Route } from 'react-router-dom';
 
 import { dataProvider } from "./dataProvider";
 import authProvider from './authProvider';
@@ -32,6 +33,9 @@ import { JobList} from "./job";
 
 import Dashboard from './dashboard'
 
+import {ProfileEdit} from "./preferences/edit";
+import MyLayout from "./appLayout";
+
 
 
 const App = () => (
@@ -39,6 +43,14 @@ const App = () => (
         dataProvider={dataProvider}
         authProvider={authProvider}
         dashboard={Dashboard}
+               customRoutes={[
+               <Route
+                   key="preferences"
+                   path="/preferences"
+                   component={ProfileEdit}
+              />
+           ]}
+        appLayout={MyLayout}
     >
 
         <Resource name="documents" {...documents} icon={ DescriptionOutLinedIcon }/>
@@ -48,6 +60,7 @@ const App = () => (
         <Resource name="jobs" list={JobList} />
         <Resource name="user"  />
         <Resource name="documents/stats"  />
+        <Resource name="preferences" />
     </Admin>
     );
 

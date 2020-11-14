@@ -92,10 +92,13 @@ export const dataProvider = {
 
                 data: json,
         }))}
+        else if (resource === "preferences") {
+            return httpClient(`${apiUrl}/${resource}/${params.id}`).then(({ json }) => ({
+            data: {...json, id: 'user'}
+            }))}
         else {
             return httpClient(`${apiUrl}/${resource}/${params.id}`).then(({ json }) => ({
             data: json,
-
         }))}},
 
     getMany: (resource, params) => {

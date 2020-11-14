@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
+	"time"
 )
 
 type User struct {
@@ -58,4 +59,13 @@ func (u *User) PasswordMatches(password string) (bool, error) {
 	}
 
 	return false, err
+}
+
+// UserPreferences are per-user preferences and configuration options.
+type UserPreferences struct {
+	UserId    int       `json:"user_id" db:"user_id"`
+	UserName  string    `json:"user_name" db:"username"`
+	Email     string    `json:"email" db:"email"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
 }
