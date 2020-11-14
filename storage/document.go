@@ -128,12 +128,12 @@ func (s *DocumentStore) GetByHash(hash string) (*models.Document, error) {
 
 func (s *DocumentStore) Create(doc *models.Document) error {
 	sql := `
-INSERT INTO documents (user_id, name, content, filename, hash, mimetype, size, description)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`
+INSERT INTO documents (id, user_id, name, content, filename, hash, mimetype, size, description)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`
 
 	doc.Init()
 
-	_, err := s.db.Exec(sql, doc.UserId, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
+	_, err := s.db.Exec(sql, doc.Id, doc.UserId, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
 		doc.Description)
 	return getDatabaseError(err, "documents", "created")
 }
