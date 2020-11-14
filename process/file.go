@@ -39,7 +39,7 @@ type fileProcessor struct {
 func newFileProcessor(conf *fpConfig) *fileProcessor {
 	fp := &fileProcessor{
 		Task:  newTask(conf.id, conf.db, conf.search),
-		input: make(chan fileOp, 5),
+		input: make(chan fileOp, 10),
 
 		usePdfToText: conf.usePdfToText,
 		useOcr:       conf.useOcr,
@@ -117,6 +117,12 @@ func (fp *fileProcessor) processDocument() {
 			err := fp.parseContent(file)
 			if err != nil {
 				logrus.Errorf("parse content: %v", err)
+				return
+			}
+		case models.ProcessRules:
+			err := fp.runRules()
+			if err != nil {
+				logrus.Errorf("run rules: %v", err)
 				return
 			}
 		case models.ProcessFts:
@@ -491,6 +497,43 @@ func (fp *fileProcessor) extractImage(file *os.File) error {
 		}
 	}
 	return nil
+}
+
+func (fp *fileProcessor) runRules() error {
+	if fp.document == nil {
+		return errors.New("no document set")
+	}
+
+	rules, err := fp.db.RuleStore.GetActiveUserRules(fp.document.UserId)
+	if err != nil {
+		return fmt.Errorf("load rules: %v", err)
+	}
+
+	process := &models.ProcessItem{
+		DocumentId: fp.document.Id,
+		Step:       models.ProcessRules,
+		CreatedAt:  time.Now(),
+	}
+	job, err := fp.db.JobStore.StartProcessItem(process, "process user rules")
+	if err != nil {
+		logrus.Warningf("persist job record: %v", err)
+	} else {
+		defer fp.persistProcess(process, job)
+	}
+	err = runRules(fp.document, rules)
+
+	if err != nil {
+		logrus.Errorf("run user rules: %v", err)
+		job.Status = models.JobFailure
+	} else {
+		job.Status = models.JobFinished
+	}
+
+	err = fp.db.DocumentStore.Update(fp.document)
+	if err != nil {
+		logrus.Errorf("update document (%s) after rules: %v", fp.document.Id, err)
+	}
+	return err
 }
 
 func (fp *fileProcessor) indexSearchContent() error {

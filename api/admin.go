@@ -71,6 +71,8 @@ func (a *Api) forceDocumentProcessing(resp http.ResponseWriter, req *http.Reques
 		step = models.ProcessThumbnail
 	case "content":
 		step = models.ProcessParseContent
+	case "rules":
+		step = models.ProcessRules
 	case "fts":
 		step = models.ProcessFts
 	default:

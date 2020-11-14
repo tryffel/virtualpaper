@@ -18,6 +18,7 @@ type Database struct {
 	JobStore      *JobStore
 	MetadataStore *MetadataStore
 	StatsStore    *StatsStore
+	RuleStore     *RuleStore
 }
 
 // NewDatabase returns working instance of database connection.
@@ -40,6 +41,7 @@ func NewDatabase() (*Database, error) {
 	db.JobStore = &JobStore{db: db.conn}
 	db.MetadataStore = &MetadataStore{db: db.conn}
 	db.StatsStore = &StatsStore{db: db.conn}
+	db.RuleStore = newRuleStore(db.conn)
 	return db, nil
 }
 

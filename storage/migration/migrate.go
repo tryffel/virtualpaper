@@ -42,6 +42,11 @@ var Migrations = []Migrator{
 		Level:  3,
 		Schema: schemaV3,
 	},
+	&Migration{
+		Name:   "processing rules",
+		Level:  4,
+		Schema: schemaV4,
+	},
 }
 
 type Schema struct {

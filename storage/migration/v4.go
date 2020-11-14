@@ -18,8 +18,26 @@
 
 package migration
 
+const schemaV4 = `
+CREATE TABLE process_rules (
+	id SERIAL PRIMARY KEY,
+	user_id INT,
+	rule_type TEXT NOT NULL,
+	filter TEXT NOT NULL,
+	comment TEXT NOT NULL default '',
+	action TEXT NOT NULL default '',
+	active BOOL NOT NULL DEFAULT true,
+
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  	updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+	CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id),
+	CONSTRAINT rules_user_filter_unique UNIQUE (user_id, filter)
+);
+`
+
 // This needs to be run manually and uuids need to be generated with external tool and inserted after first statement.
-// This only applies if there is existing schema with v3.
+// This only applies if there is existing schema with v3 before commit bf4e638c .
 const schemaDocumentIdToUuid = `
 alter table documents add column uuid TEXT;
 

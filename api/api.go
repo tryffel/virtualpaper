@@ -122,6 +122,9 @@ func (a *Api) addRoutes() {
 
 	a.privateRouter.HandleFunc("/documents/stats", a.getUserDocumentStatistics).Methods(http.MethodGet)
 
+	a.privateRouter.HandleFunc("/processing/rules", a.addUserRule).Methods(http.MethodPost)
+	a.privateRouter.HandleFunc("/processing/rules", a.getUserRules).Methods(http.MethodGet)
+
 	a.privateRouter.HandleFunc("/preferences/user", a.getUserPreferences).Methods(http.MethodGet)
 
 	a.adminRouter.Use(a.authorizeUser, a.authorizeAdmin)

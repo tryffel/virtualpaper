@@ -93,11 +93,12 @@ const (
 
 	ProcessThumbnail
 	ProcessParseContent
+	ProcessRules
 	ProcessFts
 )
 
 // ProcessStepsAll is a list of default steps to run for new document.
-var ProcessStepsAll = []ProcessStep{ProcessHash, ProcessThumbnail, ProcessParseContent, ProcessFts}
+var ProcessStepsAll = []ProcessStep{ProcessHash, ProcessThumbnail, ProcessParseContent, ProcessRules, ProcessFts}
 
 func (ps *ProcessStep) Value() (driver.Value, error) {
 	switch *ps {
@@ -109,8 +110,10 @@ func (ps *ProcessStep) Value() (driver.Value, error) {
 		return 2, nil
 	case ProcessParseContent:
 		return 3, nil
-	case ProcessFts:
+	case ProcessRules:
 		return 4, nil
+	case ProcessFts:
+		return 5, nil
 	default:
 		return 0, fmt.Errorf("unknown step: %d", *ps)
 	}
@@ -137,6 +140,8 @@ func (ps *ProcessStep) Scan(src interface{}) error {
 	case 3:
 		*ps = ProcessParseContent
 	case 4:
+		*ps = ProcessRules
+	case 5:
 		*ps = ProcessFts
 	default:
 		return fmt.Errorf("unknown step: %d", val)
@@ -155,6 +160,8 @@ func (ps ProcessStep) String() string {
 	case 3:
 		return "parsecontent"
 	case 4:
+		return "rules"
+	case 5:
 		return "fts"
 	default:
 		return fmt.Sprintf("unknkown step: %d", ps)
