@@ -97,8 +97,7 @@ func applyRule(document *models.Document, rule models.Rule, match string) error 
 	var err error
 	logMsg := fmt.Sprintf("(automatic rule) doc: %s: ", document.Id)
 
-	switch rule.Action.Action {
-	case models.RuleActionAddMetadata:
+	if rule.Action.Action.AddMetadata() {
 		if document.Metadata == nil {
 			document.Metadata = []models.Metadata{}
 		}
@@ -109,10 +108,14 @@ func applyRule(document *models.Document, rule models.Rule, match string) error 
 		document.Metadata = append(document.Metadata, metadata)
 		logMsg += fmt.Sprintf("add metadata (key %d, value %d)",
 			rule.Action.MetadataKeyId, rule.Action.MetadataValueId)
-	case models.RuleActionRename:
+	}
+	if rule.Action.Action.Rename() {
+
 		document.Name = match
 		logMsg += "rename document"
-	case models.RuleActionSetDate:
+	}
+	if rule.Action.Action.Date() {
+		dateMatch := match
 		if rule.Action.DateSeparator != "" {
 			splits := strings.Split(match, rule.Action.DateSeparator)
 			newMatch := ""
@@ -126,17 +129,18 @@ func applyRule(document *models.Document, rule models.Rule, match string) error 
 					newMatch += v
 				}
 			}
-			match = newMatch
+			dateMatch = newMatch
 		}
 
-		ts, err := time.Parse(rule.Action.DateFmt, match)
+		ts, err := time.Parse(rule.Action.DateFmt, dateMatch)
 		if err != nil {
 			return fmt.Errorf("date format '%s' does not match string '%s'", rule.Action.DateFmt, match)
 		}
 		logMsg += "set date"
 
 		document.Date = ts
-	case models.RuleActionAddTag:
+	}
+	if rule.Action.Action.Tag() {
 		if document.Tags == nil {
 			document.Tags = []models.Tag{}
 		}
@@ -145,11 +149,22 @@ func applyRule(document *models.Document, rule models.Rule, match string) error 
 		}
 		document.Tags = append(document.Tags, tag)
 		logMsg += "add tag"
-	case models.RuleActionSetDescription:
-		document.Description = strings.Join([]string{document.Description, match}, "\n\n")
+	}
+	if rule.Action.Action.Description() {
+		addDescription := rule.Action.Description
+		if rule.Type == models.RegexRule {
+			if addDescription == "" {
+				addDescription = match
+			} else {
+				addDescription += ": " + match
+			}
+		}
+		if document.Description == "" {
+			document.Description = addDescription
+		} else {
+			document.Description = strings.Join([]string{document.Description, addDescription}, "\n\n")
+		}
 		logMsg += "set description"
-	default:
-		err = fmt.Errorf("unknown action: %v", rule.Action.Action)
 	}
 	logrus.Debug(logMsg)
 	return err

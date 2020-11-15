@@ -218,12 +218,13 @@ func Test_applyRule(t *testing.T) {
 				document: &models.Document{},
 				rule: models.Rule{
 					Action: models.RuleActionConfig{
-						Action: models.RuleActionSetDescription,
+						Action:      models.RuleActionSetDescription,
+						Description: "description",
 					},
 				},
 				match: "some description found",
 				validate: func(doc *models.Document) {
-					if doc.Description != "some description found" {
+					if doc.Description != "description" {
 						t.Errorf("invalid description")
 					}
 				},
@@ -231,12 +232,33 @@ func Test_applyRule(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "set description, not-empty on start",
+			name: "set description with regex",
+			args: args{
+				document: &models.Document{},
+				rule: models.Rule{
+					Type: models.RegexRule,
+					Action: models.RuleActionConfig{
+						Action:      models.RuleActionSetDescription,
+						Description: "description",
+					},
+				},
+				match: "some description found",
+				validate: func(doc *models.Document) {
+					if doc.Description != "description: some description found" {
+						t.Errorf("invalid description")
+					}
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "set regex description, not-empty on start",
 			args: args{
 				document: &models.Document{
 					Description: "initial description",
 				},
 				rule: models.Rule{
+					Type: models.RegexRule,
 					Action: models.RuleActionConfig{
 						Action: models.RuleActionSetDescription,
 					},
@@ -345,12 +367,44 @@ func Test_applyRule(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "multiple actions",
+			args: args{
+				document: &models.Document{},
+				rule: models.Rule{
+					Action: models.RuleActionConfig{
+						Action:        models.RuleActionSetDate | models.RuleActionSetDescription | models.RuleActionRename,
+						DateFmt:       "2006-01-02",
+						DateSeparator: "-",
+						Description:   "desc",
+					},
+				},
+				match: "2020-11-5",
+				validate: func(doc *models.Document) {
+					y, m, d := doc.Date.Date()
+					if y != 2020 || m != 11 || d != 5 {
+						t.Error("invalid date")
+					}
+
+					if doc.Description != "desc" {
+						t.Error("invalid description")
+					}
+					if doc.Name != "2020-11-5" {
+						t.Error("invalid name")
+					}
+
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := applyRule(tt.args.document, tt.args.rule, tt.args.match); (err != nil) != tt.wantErr {
 				t.Errorf("applyRule() error = %v, wantErr %v", err, tt.wantErr)
 			}
+
+			tt.args.validate(tt.args.document)
 		})
 	}
 }

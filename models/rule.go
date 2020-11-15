@@ -36,26 +36,26 @@ const (
 // RuleAction defines what to do when rule has fired.
 // RuleActions are not exclusive, meaning multiple actions can be defined for single rule.
 // E.g. add metadata and tag + set description
-type RuleAction int
+type RuleAction uint16
 
 func (r RuleAction) AddMetadata() bool {
-	return r&RuleActionAddMetadata == 1
+	return r&RuleActionAddMetadata != 0
 }
 
 func (r RuleAction) Rename() bool {
-	return r&RuleActionRename == 1
+	return r&RuleActionRename != 0
 }
 
 func (r RuleAction) Date() bool {
-	return r&RuleActionSetDate == 1
+	return r&RuleActionSetDate != 0
 }
 
 func (r RuleAction) Tag() bool {
-	return r&RuleActionAddTag == 1
+	return r&RuleActionAddTag != 0
 }
 
 func (r RuleAction) Description() bool {
-	return r&RuleActionSetDescription == 1
+	return r&RuleActionSetDescription != 0
 }
 
 const (
