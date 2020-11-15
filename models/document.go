@@ -28,6 +28,7 @@ import (
 	"tryffel.net/go/virtualpaper/config"
 )
 
+// Document represents single file and data related to it.
 type Document struct {
 	Timestamp
 	Id          string    `db:"id"`
@@ -44,6 +45,7 @@ type Document struct {
 	Tags        []Tag
 }
 
+// Init initializes new document. It ensures document has valid uuid assigned to it.
 func (d *Document) Init() {
 	if d.Id == "" {
 		var err error
@@ -82,6 +84,7 @@ func (d *Document) GetType() string {
 	}
 }
 
+// GetSize returns human-formatted size
 func (d *Document) GetSize() string {
 	if d.Size < 1024 {
 		return strconv.Itoa(int(d.Size))
@@ -122,6 +125,7 @@ func (d *Document) SortAttributes() []string {
 	return d.FilterAttributes()
 }
 
+// Metadata is metadata key-value pair assigned to document
 type Metadata struct {
 	KeyId   int    `db:"key_id" json:"key_id"`
 	Key     string `db:"key" json:"key"`
