@@ -74,6 +74,18 @@ LIMIT $3;`
 	return rules, getDatabaseError(err, "rules", "get user rules")
 }
 
+func (s *RuleStore) GetUserRule(userId, ruleId int) (*models.Rule, error) {
+	sql := `
+SELECT * 
+FROM process_rules
+WHERE user_id = $1
+AND id = $2;`
+
+	rule := &models.Rule{}
+	err := s.db.Get(rule, sql, userId, ruleId)
+	return rule, getDatabaseError(err, "rules", "get user rules")
+}
+
 func (s *RuleStore) AddRule(userId int, rule *models.Rule) error {
 	sql := `
 INSERT INTO process_rules

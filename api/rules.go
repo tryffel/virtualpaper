@@ -169,3 +169,32 @@ func (a *Api) getUserRules(resp http.ResponseWriter, req *http.Request) {
 
 	respResourceList(resp, processingRules, len(processingRules))
 }
+
+func (a *Api) getUserRule(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route GET /api/v1/processing/rules/{id} Processing GetRule
+	// Get processing rule by id
+	// responses:
+	//   200: ProcessingRuleResponse
+	handler := "api.getUserRule"
+
+	userId, ok := getUserId(req)
+	if !ok {
+		respError(resp, errors.New("no user_id in request context"), handler)
+		return
+	}
+
+	id, err := getParamIntId(req)
+	if err != nil {
+		respBadRequest(resp, "no id specified", nil)
+		return
+	}
+
+	rule, err := a.db.RuleStore.GetUserRule(userId, id)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	r := ruleToProcessingRule(rule)
+	respResourceList(resp, r, 1)
+}

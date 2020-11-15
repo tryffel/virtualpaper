@@ -17,7 +17,7 @@
  */
 
 import * as React from "react";
-import { Admin, Resource } from 'react-admin';
+import { Admin, Resource, ListGuesser } from 'react-admin';
 
 import MessageOutLinedIcon from '@material-ui/icons/Message';
 import DescriptionOutLinedIcon from '@material-ui/icons/Description';
@@ -29,6 +29,7 @@ import authProvider from './authProvider';
 import documents from './documents';
 import tags from './tags';
 import metadata_keys from './metadata_keys';
+import rules from './rules';
 import { JobList} from "./job";
 
 import Dashboard from './dashboard'
@@ -61,6 +62,7 @@ const App = () => (
         <Resource name="user"  />
         <Resource name="documents/stats"  />
         <Resource name="preferences" />
+        <Resource name="processing/rules" options={{label:"Processing rules"}} {...rules} />
     </Admin>
     );
 
