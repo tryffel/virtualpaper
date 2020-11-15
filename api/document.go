@@ -35,7 +35,9 @@ import (
 	"tryffel.net/go/virtualpaper/storage"
 )
 
-type documentResponse struct {
+// DocumentResponse
+type DocumentResponse struct {
+	// swagger:strfmt uuid
 	Id          string            `json:"id"`
 	Name        string            `json:"name"`
 	Filename    string            `json:"filename"`
@@ -55,8 +57,8 @@ type documentResponse struct {
 	Tags        []models.Tag      `json:"tags"`
 }
 
-func responseFromDocument(doc *models.Document) *documentResponse {
-	resp := &documentResponse{
+func responseFromDocument(doc *models.Document) *DocumentResponse {
+	resp := &DocumentResponse{
 		Id:          doc.Id,
 		Name:        doc.Name,
 		Filename:    doc.Filename,
@@ -77,7 +79,9 @@ func responseFromDocument(doc *models.Document) *documentResponse {
 	return resp
 }
 
-type documentUpdateRequest struct {
+// DocumentUpdateRequest
+// swagger:model DocumentUpdateRequestBody
+type DocumentUpdateRequest struct {
 	Name        string            `json:"name" valid:"-"`
 	Description string            `json:"description" valid:"-"`
 	Filename    string            `json:"filename" valid:"-"`
@@ -86,6 +90,10 @@ type documentUpdateRequest struct {
 }
 
 func (a *Api) getDocuments(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route GET /api/v1/documents Documents GetDocuments
+	// Get documents
+	// responses:
+	//   200: DocumentResponse
 	handler := "Api.getDocuments"
 	user, ok := getUserId(req)
 	if !ok {
@@ -126,7 +134,7 @@ func (a *Api) getDocuments(resp http.ResponseWriter, req *http.Request) {
 		respInternalError(resp)
 		return
 	}
-	respDocs := make([]*documentResponse, len(*docs))
+	respDocs := make([]*DocumentResponse, len(*docs))
 
 	for i, v := range *docs {
 		respDocs[i] = responseFromDocument(&v)
@@ -136,6 +144,10 @@ func (a *Api) getDocuments(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) getDocument(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route GET /api/v1/documents/{id} Documents GetDocument
+	// Get document
+	// responses:
+	//   200: DocumentResponse
 	handler := "Api.getDocument"
 	user, ok := getUserId(req)
 	if !ok {
@@ -176,6 +188,10 @@ func (a *Api) getDocument(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) getDocumentContent(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route GET /api/v1/documents/{id}/content Documents GetDocumentContent
+	// Get full document parsed content
+	// responses:
+	//   200: DocumentResponse
 	user, ok := getUserId(req)
 	if !ok {
 		logrus.Errorf("no user in context")
@@ -193,6 +209,11 @@ func (a *Api) getDocumentContent(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) getDocumentLogs(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route GET /api/v1/documents/{id}/jobs Documents GetDocumentJobs
+	// Get processing job history related to document
+	// responses:
+	//   200: DocumentResponse
+
 	handler := "Api.getDocumentLogs"
 	user, ok := getUserId(req)
 	if !ok {
@@ -223,6 +244,10 @@ func (a *Api) getDocumentLogs(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) getDocumentPreview(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route GET /api/v1/documents/{id}/preview Documents GetDocumentPreview
+	// Get document preview, a small png image of first page of document.
+	// responses:
+	//   200: DocumentResponse
 	handler := "Api.getDocumentPreview"
 	user, ok := getUserId(req)
 	if !ok {
@@ -294,6 +319,11 @@ func (a *Api) getDocumentPreview(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route POST /api/v1/documents Documents UploadFile
+	// Upload new document file. New document already contains id, name, filename and timestamps.
+	// Otherwise document is not processed yet and lacks other fields.
+	// Responses:
+	//  200: DocumentResponse
 	handler := "api.uploadFile"
 	userId, ok := getUserId(req)
 	if !ok {
@@ -371,6 +401,10 @@ func (a *Api) getEmptyDocument(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) downloadDocument(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route GET /api/v1/documents/{id} Documents DownloadDocument
+	// Downloads original document
+	// Responses:
+	//  200: DocumentResponse
 	handler := "download document"
 	userId, ok := getUserId(req)
 	if !ok {
@@ -407,6 +441,11 @@ func (a *Api) downloadDocument(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route PUT /api/v1/documents/{id} Documents UpdateDocument
+	// Updates document
+	// Responses:
+	//  200: DocumentResponse
+
 	handler := "Api.updateDocument"
 	user, ok := getUserId(req)
 	if !ok {
@@ -416,7 +455,7 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	id := getParamId(req)
-	dto := &documentUpdateRequest{}
+	dto := &DocumentUpdateRequest{}
 	err := unMarshalBody(req, dto)
 	if err != nil {
 		respError(resp, err, handler)
@@ -488,7 +527,7 @@ func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, resp ht
 		return
 	}
 
-	docs := make([]*documentResponse, len(res))
+	docs := make([]*DocumentResponse, len(res))
 	for i, v := range res {
 		docs[i] = responseFromDocument(v)
 	}

@@ -55,6 +55,11 @@ type ForceDocumentProcessingRequest struct {
 }
 
 func (a *Api) forceDocumentProcessing(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route POST /api/v1/admin/documents/process Admin AdminForceDocumentProcessing
+	// Force document processing
+	//
+	// responses:
+	//   200:
 	handler := "Api.getDocuments"
 	body := &ForceDocumentProcessingRequest{}
 	err := unMarshalBody(req, body)
@@ -95,6 +100,11 @@ type documentProcessStep struct {
 }
 
 func (a *Api) getDocumentProcessQueue(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route GET /api/v1/admin/documents/process Admin AdminGetDocumentProcessQueue
+	// Get documents awaiting processing
+	//
+	// responses:
+	//   200: DocumentResponse
 	handler := "Api.adminGetProcessQueue"
 
 	queue, n, err := a.db.JobStore.GetPendingProcessing()

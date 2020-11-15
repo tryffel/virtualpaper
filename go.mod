@@ -7,6 +7,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fsnotify/fsnotify v1.4.9
+	github.com/go-swagger/go-swagger v0.25.0 // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/go-uuid v1.0.1
 	github.com/jmoiron/sqlx v1.2.0

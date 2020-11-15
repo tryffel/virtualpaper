@@ -25,6 +25,13 @@ run-frontend:
 
 build-frontend: 
 	cd frontend; REACT_APP_STAGE=prod yarn build
+
+
+swagger:
+	swagger serve -F=swagger swagger.yaml
+
+build-swagger:
+	swagger generate spec -o ./swagger.yaml --scan-models
 	
 
 all: test release build-frontend 

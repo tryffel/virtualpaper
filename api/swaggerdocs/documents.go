@@ -16,12 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package main
+package swaggerdocs
 
-import "tryffel.net/go/virtualpaper/cmd"
+import "tryffel.net/go/virtualpaper/api"
 
-import _ "tryffel.net/go/virtualpaper/api/swaggerdocs"
+// DocumentsResponse contains array of documents
+// swagger:response DocumentResponse
+type documentResponse struct {
 
-func main() {
-	cmd.Execute()
+	// in:body
+	Body []api.DocumentResponse
 }

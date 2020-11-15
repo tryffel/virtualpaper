@@ -180,6 +180,11 @@ type loginResponse struct {
 }
 
 func (a *Api) login(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route POST /api/v1/version Authentication Login
+	// Login
+	//
+	// responses:
+	//   200:
 	headers := req.Header
 	token := headers.Get("Authorization")
 	if len(token) > 0 {

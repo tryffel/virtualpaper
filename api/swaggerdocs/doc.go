@@ -16,12 +16,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package main
-
-import "tryffel.net/go/virtualpaper/cmd"
-
-import _ "tryffel.net/go/virtualpaper/api/swaggerdocs"
-
-func main() {
-	cmd.Execute()
-}
+// Package Virtualpaper API documentation.
+//
+// Documentation for Virtualpaper API.
+//
+// Schemes: http,https
+//
+// BasePath: /api/v1
+// Version: 0.1.0
+//
+// Consumes:
+// - application/json
+//
+// Produces:
+// - application/json
+//
+// Security:
+//   api_key:
+//
+// SecurityDefinitions:
+// api_key:
+//   type: apiKey
+//   name: token
+//   in: header
+//
+// swagger:meta
+package swaggerdocs

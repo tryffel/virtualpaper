@@ -60,6 +60,10 @@ func (m metadataRequest) toMetadata() *models.Metadata {
 }
 
 func (a *Api) getMetadataKeys(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route GET /api/v1/metadata/keys Metadata GetMetadataKeys
+	// Get metadata keys
+	// Responses:
+	//  200: MetadataKeyResponse
 	handler := "Api.getMetadataKeys"
 	user, ok := getUserId(req)
 	if !ok {
@@ -77,6 +81,10 @@ func (a *Api) getMetadataKeys(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) getMetadataKey(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route GET /api/v1/metadata/keys/{id} Metadata GetMetadataKey
+	// Get metadata key
+	// Responses:
+	//  200: MetadataKeyResponse
 	handler := "Api.getMetadataKey"
 	user, ok := getUserId(req)
 	if !ok {
@@ -100,6 +108,10 @@ func (a *Api) getMetadataKey(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) getMetadataKeyValues(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route GET /api/v1/metadata/keys/{id}/values Metadata GetMetadataKeyValues
+	// Get metadata key values
+	// Responses:
+	//  200: MetadataKeyValueResponse
 	handler := "Api.getMetadataKeyValues"
 	user, ok := getUserId(req)
 	if !ok {
@@ -123,6 +135,10 @@ func (a *Api) getMetadataKeyValues(resp http.ResponseWriter, req *http.Request) 
 }
 
 func (a *Api) updateDocumentMetadata(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route POST /api/v1/documents/{id}/metadata Documents UpdateDocumentMetadata
+	// Update document metadata
+	// Responses:
+	//  200: DocumentResponse
 	handler := "Api.updateDocumentMetadata"
 	user, ok := getUserId(req)
 	if !ok {
@@ -149,6 +165,10 @@ func (a *Api) updateDocumentMetadata(resp http.ResponseWriter, req *http.Request
 }
 
 func (a *Api) addMetadataKey(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route POST /api/v1/metadata/keys Metadata AddMetadataKey
+	// Add metadata key
+	// Responses:
+	//  200: MetadataKeyResponse
 	handler := "Api.addMetadataKey"
 	user, ok := getUserId(req)
 	if !ok {
@@ -181,6 +201,10 @@ func (a *Api) addMetadataKey(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) addMetadataValue(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route POST /api/v1/metadata/keys/{id}/values Metadata AddMetadataKeyValues
+	// Add metadata key values
+	// Responses:
+	//  200: MetadataKeyValueResponse
 	handler := "Api.addMetadataValue"
 	user, ok := getUserId(req)
 	if !ok {

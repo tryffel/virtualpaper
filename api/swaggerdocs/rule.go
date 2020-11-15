@@ -16,12 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package main
+package swaggerdocs
 
-import "tryffel.net/go/virtualpaper/cmd"
+import (
+	"tryffel.net/go/virtualpaper/api"
+)
 
-import _ "tryffel.net/go/virtualpaper/api/swaggerdocs"
-
-func main() {
-	cmd.Execute()
+// swagger:response ProcessingRuleResponse
+type ruleResponse struct {
+	// in:body
+	Body []api.ProcessingRule
 }

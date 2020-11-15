@@ -16,12 +16,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package main
+package swaggerdocs
 
-import "tryffel.net/go/virtualpaper/cmd"
+import (
+	"tryffel.net/go/virtualpaper/models"
+)
 
-import _ "tryffel.net/go/virtualpaper/api/swaggerdocs"
+// swagger:response MetadataKeyResponse
+type metadataKeysResponse struct {
+	// in:body
+	Body []models.MetadataKey
+}
 
-func main() {
-	cmd.Execute()
+// swagger:response MetadataKeyResponse
+type metadataKeyValueResponse struct {
+	// in:body
+	Body []models.MetadataValue
 }

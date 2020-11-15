@@ -25,6 +25,7 @@ import (
 	"tryffel.net/go/virtualpaper/storage"
 )
 
+// swagger:response DocumentResponse
 type ProcessingRule struct {
 	Id      int    `json:"id" valid:"-"`
 	Type    string `json:"type" valid:"-"`
@@ -76,6 +77,7 @@ func ruleToProcessingRule(rule *models.Rule) *ProcessingRule {
 		Type:      string(rule.Type),
 		Filter:    rule.Filter,
 		Comment:   rule.Comment,
+		Active:    rule.Active,
 		Action: struct {
 			MetadataKey   int    `json:"metadata_key_id" valid:"-"`
 			MetadataValue int    `json:"metadata_value_id" valid:"-"`
@@ -96,6 +98,10 @@ func ruleToProcessingRule(rule *models.Rule) *ProcessingRule {
 }
 
 func (a *Api) addUserRule(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route POST /api/v1/processing/rules Processing AddRule
+	// Add processing rule
+	// responses:
+	//   200: ProcessingRuleResponse
 	handler := "api.addUserRule"
 
 	userId, ok := getUserId(req)
@@ -131,6 +137,10 @@ func (a *Api) addUserRule(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) getUserRules(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route GET /api/v1/processing/rules Processing GetRules
+	// Get processing rules
+	// responses:
+	//   200: ProcessingRuleResponse
 	handler := "api.getUserRules"
 
 	userId, ok := getUserId(req)

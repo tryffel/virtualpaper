@@ -155,6 +155,11 @@ type VersionResponse struct {
 }
 
 func (a *Api) getVersion(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route GET /api/v1/version Public GetVersion
+	// Get server version
+	//
+	// responses:
+	//   200:
 	v := &VersionResponse{
 		Name:    "VirtualPaper",
 		Version: config.Version,
