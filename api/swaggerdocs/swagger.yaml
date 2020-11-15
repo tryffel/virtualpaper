@@ -1,0 +1,457 @@
+basePath: /api/v1
+consumes:
+- application/json
+definitions:
+  DocumentResponse:
+    description: DocumentResponse
+    properties:
+      content:
+        type: string
+        x-go-name: Content
+      created_at:
+        format: int64
+        type: integer
+        x-go-name: CreatedAt
+      date:
+        format: int64
+        type: integer
+        x-go-name: Date
+      description:
+        type: string
+        x-go-name: Description
+      download_url:
+        type: string
+        x-go-name: DownloadUrl
+      filename:
+        type: string
+        x-go-name: Filename
+      id:
+        format: uuid
+        type: string
+        x-go-name: Id
+      metadata:
+        items:
+          $ref: '#/definitions/Metadata'
+        type: array
+        x-go-name: Metadata
+      mimetype:
+        type: string
+        x-go-name: Mimetype
+      name:
+        type: string
+        x-go-name: Name
+      pretty_size:
+        type: string
+        x-go-name: PrettySize
+      preview_url:
+        type: string
+        x-go-name: PreviewUrl
+      size:
+        format: int64
+        type: integer
+        x-go-name: Size
+      status:
+        type: string
+        x-go-name: Status
+      tags:
+        items:
+          $ref: '#/definitions/Tag'
+        type: array
+        x-go-name: Tags
+      type:
+        type: string
+        x-go-name: Type
+      updated_at:
+        format: int64
+        type: integer
+        x-go-name: UpdatedAt
+    type: object
+    x-go-package: tryffel.net/go/virtualpaper/api
+  DocumentUpdateRequestBody:
+    description: DocumentUpdateRequest
+    properties:
+      date:
+        format: int64
+        type: integer
+        x-go-name: Date
+      description:
+        type: string
+        x-go-name: Description
+      filename:
+        type: string
+        x-go-name: Filename
+      metadata:
+        items:
+          $ref: '#/definitions/metadataRequest'
+        type: array
+        x-go-name: Metadata
+      name:
+        type: string
+        x-go-name: Name
+    type: object
+    x-go-name: DocumentUpdateRequest
+    x-go-package: tryffel.net/go/virtualpaper/api
+  Metadata:
+    description: Metadata is metadata key-value pair assigned to document
+    properties:
+      key:
+        type: string
+        x-go-name: Key
+      key_id:
+        format: int64
+        type: integer
+        x-go-name: KeyId
+      value:
+        type: string
+        x-go-name: Value
+      value_id:
+        format: int64
+        type: integer
+        x-go-name: ValueId
+    type: object
+    x-go-package: tryffel.net/go/virtualpaper/models
+  MetadataKey:
+    properties:
+      comment:
+        type: string
+        x-go-name: Comment
+      created_at:
+        format: date-time
+        type: string
+        x-go-name: CreatedAt
+      id:
+        format: int64
+        type: integer
+        x-go-name: Id
+      key:
+        type: string
+        x-go-name: Key
+    type: object
+    x-go-package: tryffel.net/go/virtualpaper/models
+  MetadataValue:
+    properties:
+      comment:
+        type: string
+        x-go-name: Comment
+      created_at:
+        format: date-time
+        type: string
+        x-go-name: CreatedAt
+      id:
+        format: int64
+        type: integer
+        x-go-name: Id
+      key:
+        type: string
+        x-go-name: Key
+      value:
+        type: string
+        x-go-name: Value
+    type: object
+    x-go-package: tryffel.net/go/virtualpaper/models
+  ProcessingRule:
+    properties:
+      action:
+        properties:
+          date_fmt:
+            type: string
+            x-go-name: DateFmt
+          date_separator:
+            type: string
+            x-go-name: DateSeparator
+          description:
+            type: string
+            x-go-name: Description
+          metadata_key_id:
+            format: int64
+            type: integer
+            x-go-name: MetadataKey
+          metadata_value_id:
+            format: int64
+            type: integer
+            x-go-name: MetadataValue
+          tag_id:
+            format: int64
+            type: integer
+            x-go-name: Tag
+        type: object
+        x-go-name: Action
+      active:
+        type: boolean
+        x-go-name: Active
+      comment:
+        type: string
+        x-go-name: Comment
+      created_at:
+        format: int64
+        type: integer
+        x-go-name: CreatedAd
+      filter:
+        type: string
+        x-go-name: Filter
+      id:
+        format: int64
+        type: integer
+        x-go-name: Id
+      type:
+        type: string
+        x-go-name: Type
+      updated_at:
+        format: int64
+        type: integer
+        x-go-name: UpdatedAt
+    type: object
+    x-go-package: tryffel.net/go/virtualpaper/api
+  Tag:
+    properties:
+      comment:
+        type: string
+        x-go-name: Comment
+      created_at:
+        format: date-time
+        type: string
+        x-go-name: CreatedAt
+      id:
+        format: int64
+        type: integer
+        x-go-name: Id
+      key:
+        type: string
+        x-go-name: Key
+      updated_at:
+        format: date-time
+        type: string
+        x-go-name: UpdatedAt
+    title: Tag is a per-user label to add to documents. It has many-to-many relationship with documents.
+    type: object
+    x-go-package: tryffel.net/go/virtualpaper/models
+  metadataRequest:
+    properties:
+      key_id:
+        format: int64
+        type: integer
+        x-go-name: KeyId
+      value_id:
+        format: int64
+        type: integer
+        x-go-name: ValueId
+    type: object
+    x-go-package: tryffel.net/go/virtualpaper/api
+info:
+  description: Documentation for Virtualpaper API.
+  title: API documentation.
+  version: 0.1.0
+paths:
+  /api/v1/admin/documents/process:
+    get:
+      description: Get documents awaiting processing
+      operationId: AdminGetDocumentProcessQueue
+      responses:
+        "200":
+          $ref: '#/responses/DocumentResponse'
+      tags:
+      - Admin
+    post:
+      description: Force document processing
+      operationId: AdminForceDocumentProcessing
+      responses:
+        "200": {}
+      tags:
+      - Admin
+  /api/v1/documents:
+    get:
+      description: Get documents
+      operationId: GetDocuments
+      responses:
+        "200":
+          $ref: '#/responses/DocumentResponse'
+      tags:
+      - Documents
+    post:
+      description: Otherwise document is not processed yet and lacks other fields.
+      operationId: UploadFile
+      responses:
+        "200":
+          $ref: '#/responses/DocumentResponse'
+      summary: Upload new document file. New document already contains id, name, filename and timestamps.
+      tags:
+      - Documents
+  /api/v1/documents/{id}:
+    get:
+      description: Downloads original document
+      operationId: DownloadDocument
+      responses:
+        "200":
+          $ref: '#/responses/DocumentResponse'
+      tags:
+      - Documents
+    put:
+      description: Updates document
+      operationId: UpdateDocument
+      responses:
+        "200":
+          $ref: '#/responses/DocumentResponse'
+      tags:
+      - Documents
+  /api/v1/documents/{id}/content:
+    get:
+      description: Get full document parsed content
+      operationId: GetDocumentContent
+      responses:
+        "200":
+          $ref: '#/responses/DocumentResponse'
+      tags:
+      - Documents
+  /api/v1/documents/{id}/jobs:
+    get:
+      description: Get processing job history related to document
+      operationId: GetDocumentJobs
+      responses:
+        "200":
+          $ref: '#/responses/DocumentResponse'
+      tags:
+      - Documents
+  /api/v1/documents/{id}/metadata:
+    post:
+      description: Update document metadata
+      operationId: UpdateDocumentMetadata
+      responses:
+        "200":
+          $ref: '#/responses/DocumentResponse'
+      tags:
+      - Documents
+  /api/v1/documents/{id}/preview:
+    get:
+      operationId: GetDocumentPreview
+      responses:
+        "200":
+          $ref: '#/responses/DocumentResponse'
+      summary: Get document preview, a small png image of first page of document.
+      tags:
+      - Documents
+  /api/v1/metadata/keys:
+    get:
+      description: Get metadata keys
+      operationId: GetMetadataKeys
+      responses:
+        "200":
+          $ref: '#/responses/MetadataKeyResponse'
+      tags:
+      - Metadata
+    post:
+      description: Add metadata key
+      operationId: AddMetadataKey
+      responses:
+        "200":
+          $ref: '#/responses/MetadataKeyResponse'
+      tags:
+      - Metadata
+  /api/v1/metadata/keys/{id}:
+    get:
+      description: Get metadata key
+      operationId: GetMetadataKey
+      responses:
+        "200":
+          $ref: '#/responses/MetadataKeyResponse'
+      tags:
+      - Metadata
+  /api/v1/metadata/keys/{id}/values:
+    get:
+      description: Get metadata key values
+      operationId: GetMetadataKeyValues
+      responses:
+        "200":
+          $ref: '#/responses/MetadataKeyValueResponse'
+      tags:
+      - Metadata
+    post:
+      description: Add metadata key values
+      operationId: AddMetadataKeyValues
+      responses:
+        "200":
+          $ref: '#/responses/MetadataKeyValueResponse'
+      tags:
+      - Metadata
+  /api/v1/processing/rules:
+    get:
+      description: Get processing rules
+      operationId: GetRules
+      responses:
+        "200":
+          $ref: '#/responses/ProcessingRuleResponse'
+      tags:
+      - Processing
+    post:
+      description: Add processing rule
+      operationId: AddRule
+      responses:
+        "200":
+          $ref: '#/responses/ProcessingRuleResponse'
+      tags:
+      - Processing
+  /api/v1/version:
+    get:
+      description: Get server version
+      operationId: GetVersion
+      responses:
+        "200": {}
+      tags:
+      - Public
+    post:
+      description: Login
+      operationId: Login
+      responses:
+        "200": {}
+      tags:
+      - Authentication
+produces:
+- application/json
+responses:
+  DocumentResponse:
+    description: DocumentsResponse contains array of documents
+    schema:
+      items:
+        $ref: '#/definitions/DocumentResponse'
+      properties:
+        date_fmt:
+          type: string
+          x-go-name: DateFmt
+        date_separator:
+          type: string
+          x-go-name: DateSeparator
+        description:
+          type: string
+          x-go-name: Description
+        metadata_key_id:
+          format: int64
+          type: integer
+          x-go-name: MetadataKey
+        metadata_value_id:
+          format: int64
+          type: integer
+          x-go-name: MetadataValue
+        tag_id:
+          format: int64
+          type: integer
+          x-go-name: Tag
+      type: array
+  MetadataKeyResponse:
+    schema:
+      items:
+        $ref: '#/definitions/MetadataValue'
+      type: array
+  ProcessingRuleResponse:
+    schema:
+      items:
+        $ref: '#/definitions/ProcessingRule'
+      type: array
+schemes:
+- http,https
+security:
+- api_key: []
+securityDefinitions:
+  api_key:
+    in: header
+    name: token
+    type: apiKey
+swagger: "2.0"
