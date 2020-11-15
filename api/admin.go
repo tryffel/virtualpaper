@@ -86,12 +86,22 @@ func (a *Api) forceDocumentProcessing(resp http.ResponseWriter, req *http.Reques
 	}
 
 	err = a.db.JobStore.ForceProcessing(body.UserId, body.DocumentId, step)
-	if err == nil {
-		respOk(resp, nil)
-		return
+	if err != nil {
+		respError(resp, err, handler)
 	}
 
-	respError(resp, err, handler)
+	if body.DocumentId != "" {
+		doc, err := a.db.DocumentStore.GetDocument(0, body.DocumentId)
+		if err != nil {
+			logrus.Errorf("Get document to process: %v", err)
+		} else {
+			err = a.process.AddDocumentForProcessing(doc)
+			if err != nil {
+				logrus.Errorf("schedule document processing: %v", err)
+			}
+		}
+	}
+	respOk(resp, nil)
 }
 
 type documentProcessStep struct {
