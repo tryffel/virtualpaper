@@ -22,6 +22,8 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"regexp"
 )
 
 type RuleType string
@@ -105,6 +107,14 @@ func (r *Rule) Validate() error {
 	if r.Filter == "" {
 		return errors.New("filter cannot be empty")
 	}
+
+	if r.Type == RegexRule {
+		_, err := regexp.Compile(r.Filter)
+		if err != nil {
+			return fmt.Errorf("invalid regex: %v", err.Error())
+		}
+	}
+
 	if r.Action.MetadataKeyId != 0 && r.Action.MetadataValueId != 0 {
 		r.Action.Action |= RuleActionAddMetadata
 	}
