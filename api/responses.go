@@ -108,6 +108,13 @@ func respInternalError(resp http.ResponseWriter) {
 	}
 }
 
+func respForbidden(resp http.ResponseWriter) {
+	err := respJson(resp, `{"error": "forbidden"}"`, http.StatusForbidden)
+	if err != nil {
+		logrus.Errorf("write response: %v", err)
+	}
+}
+
 func respError(resp http.ResponseWriter, err error, handler string) {
 	var statuscode int
 	var reason string

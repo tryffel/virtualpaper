@@ -17,12 +17,15 @@
  */
 
 import React, { useState } from "react";
-import {ArrayField, Datagrid, DateField, Show, Tab, TabbedShowLayout, TextField, ChipField, SingleFieldList, Labeled, Button
+import {ArrayField, Datagrid, DateField, Show, Tab, TabbedShowLayout, TextField, ChipField, SingleFieldList, Labeled, TopToolbar, EditButton, useNotify, useQuery
 } from "react-admin";
+import Button from '@material-ui/core/Button';
+import RepeatIcon from '@material-ui/icons/Repeat';
 
 import { ThumbnailField, EmbedFile} from "./file";
 import { MarkdownField } from '../markdown'
 import { IndexingStatusField } from "./list";
+import { requestDocumentProcessing } from "../dataProvider";
 
 
 export const DocumentShow = (props) => {
@@ -38,7 +41,7 @@ export const DocumentShow = (props) => {
 
     return (
 
-        <Show {...props} title="Document" >
+        <Show {...props} title="Document" actions={<DocumentShowActions/>} >
             <TabbedShowLayout>
                 <Tab label="general">
                     <TextField source="name" label="" style={{fontSize:'2em'}}  />
@@ -76,3 +79,19 @@ export const DocumentShow = (props) => {
         </Show>
     );
 }
+
+const DocumentShowActions = ({ basePath, data, resource }) => {
+    const requestProcessing = () => {
+        if (data) {
+            requestDocumentProcessing(data.id)
+        }
+    }
+
+    return (
+    <TopToolbar>
+        <EditButton basePath={basePath} record={data}/>
+        <Button color="primary" startIcon={<RepeatIcon/>} onClick={requestProcessing} >Request re-processing</Button>
+    </TopToolbar>
+    );
+}
+

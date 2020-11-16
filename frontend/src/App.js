@@ -22,6 +22,8 @@ import { Admin, Resource, ListGuesser } from 'react-admin';
 import MessageOutLinedIcon from '@material-ui/icons/Message';
 import DescriptionOutLinedIcon from '@material-ui/icons/Description';
 import LabelOutlinedIcon from '@material-ui/icons/LabelOutlined';
+import TuneIcon from '@material-ui/icons/Tune';
+
 import { Route } from 'react-router-dom';
 
 import { dataProvider } from "./dataProvider";
@@ -62,7 +64,7 @@ const App = () => (
         <Resource name="user"  />
         <Resource name="documents/stats"  />
         <Resource name="preferences" />
-        <Resource name="processing/rules" options={{label:"Processing rules"}} {...rules} />
+        <Resource name="processing/rules" options={{label:"Processing rules"}} {...rules} icon={ TuneIcon} />
     </Admin>
     );
 

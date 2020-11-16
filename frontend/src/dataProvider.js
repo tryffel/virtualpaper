@@ -232,4 +232,10 @@ export const dataProvider = {
         ).then(responses => ({ data: responses.map(({ json }) => json.id) })),
 };
 
+export const requestDocumentProcessing = (documentId) => {
+    httpClient(`${apiUrl}/documents/${documentId}/process`, {
+        method: 'POST',
+    }).then(({ json }) => ({ data: json }))
+}
+
 

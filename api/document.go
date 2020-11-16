@@ -533,3 +533,50 @@ func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, resp ht
 	}
 	respResourceList(resp, docs, n)
 }
+
+func (a *Api) requestDocumentProcessing(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route POST /api/v1/location Documents RequestProcessing
+	// Request document re-processing
+	// Responses:
+	//   200: RespOk
+	//   400: RespBadRequest
+	//   401: RespForbidden
+	//   403: RespNotFound
+	//   500: RespInternalError
+
+	handler := "Api.requestDocumentProcessing"
+	user, ok := getUserId(req)
+	if !ok {
+		logrus.Errorf("no user in context")
+		respInternalError(resp)
+		return
+	}
+	id := getParamId(req)
+
+	owns, err := a.db.DocumentStore.UserOwnsDocument(id, user)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	if !owns {
+		respForbidden(resp)
+		return
+	}
+
+	err = a.db.JobStore.ForceProcessing(user, id, models.ProcessRules)
+	if err != nil {
+		respError(resp, err, handler)
+	}
+
+	doc, err := a.db.DocumentStore.GetDocument(user, id)
+	if err != nil {
+		logrus.Errorf("Get document to process: %v", err)
+	} else {
+		err = a.process.AddDocumentForProcessing(doc)
+		if err != nil {
+			logrus.Errorf("schedule document processing: %v", err)
+		}
+	}
+	respOk(resp, nil)
+}
