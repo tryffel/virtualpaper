@@ -18,8 +18,11 @@
 
 
 import { RuleList } from "./list";
+import { RuleEdit } from "./edit";
+import { RuleCreate } from "./create";
 
 export default {
-    list: RuleList
-
+    list: RuleList,
+    edit: RuleEdit,
+    create: RuleCreate,
 }

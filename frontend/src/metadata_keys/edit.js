@@ -25,7 +25,8 @@ import {
     Labeled,
     SimpleForm,
     Edit,
-    SimpleList
+    BooleanField,
+    ChipField
 } from "react-admin";
 
 import { MarkdownField } from '../markdown'
@@ -44,11 +45,12 @@ export const MetadataKeyEdit = (props) => {
             </Labeled>
 
             <ReferenceManyField  label="Values" reference={"metadata/values"} target={"key_id"}>
-                <SimpleList
-                    primaryText={record => record.value}
-                    linkType=""
-                />
-
+                <Datagrid>
+                    <TextField source="value"/>
+                    <BooleanField label="Automatic matching" source="match_documents"/>
+                    <TextField label="Match by" source="match_type"/>
+                    <TextField label="Filter" source="match_filter"/>
+                </Datagrid>
             </ReferenceManyField>
 
             <MetadataValueCreateButton />

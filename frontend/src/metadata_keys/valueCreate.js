@@ -23,10 +23,11 @@ import {
     Button,
     SaveButton,
     TextInput,
+    BooleanInput,
     useCreate,
     useNotify,
     FormWithRedirect,
-    useRefresh
+    useRefresh, RadioButtonGroupInput, SimpleForm
 } from 'react-admin';
 import IconContentAdd from '@material-ui/icons/Add';
 import IconCancel from '@material-ui/icons/Cancel';
@@ -89,11 +90,14 @@ function MetadataValueCreateButton({ onChange, record }) {
                              }) => (
                         <>
                             <DialogContent>
-                                <TextInput
-                                    source="value"
-                                    validate={required()}
-                                    fullWidth
-                                />
+                                <TextInput source="value" validate={required()} fullWidth />
+                                <TextInput label="description" source="comment" fullWidth />
+                                <BooleanInput label="Automatic matching" source="match_documents"/>
+                                <RadioButtonGroupInput source="match_type" fullWidth={true} choices={[
+                                    { id: 'regex', name: 'Regular expression' },
+                                    { id: 'exact', name: 'Match' },
+                                ]} />
+                                <TextInput label="Filter expression" source="match_filter" fullWidth={true} />
                             </DialogContent>
                             <DialogActions>
                                 <Button
