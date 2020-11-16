@@ -1,7 +1,16 @@
-basePath: /api/v1
 consumes:
 - application/json
 definitions:
+  DocumentProcessStep:
+    properties:
+      document_id:
+        type: string
+        x-go-name: DocumentId
+      step:
+        type: string
+        x-go-name: Step
+    type: object
+    x-go-package: tryffel.net/go/virtualpaper/api
   DocumentResponse:
     description: DocumentResponse
     properties:
@@ -149,33 +158,10 @@ definitions:
         x-go-name: Value
     type: object
     x-go-package: tryffel.net/go/virtualpaper/models
-  ProcessingRule:
+  ProcessingRuleResp:
     properties:
       action:
-        properties:
-          date_fmt:
-            type: string
-            x-go-name: DateFmt
-          date_separator:
-            type: string
-            x-go-name: DateSeparator
-          description:
-            type: string
-            x-go-name: Description
-          metadata_key_id:
-            format: int64
-            type: integer
-            x-go-name: MetadataKey
-          metadata_value_id:
-            format: int64
-            type: integer
-            x-go-name: MetadataValue
-          tag_id:
-            format: int64
-            type: integer
-            x-go-name: Tag
-        type: object
-        x-go-name: Action
+        $ref: '#/definitions/processingRuleAction'
       active:
         type: boolean
         x-go-name: Active
@@ -225,6 +211,82 @@ definitions:
     title: Tag is a per-user label to add to documents. It has many-to-many relationship with documents.
     type: object
     x-go-package: tryffel.net/go/virtualpaper/models
+  UserDocumentStatistics:
+    properties:
+      id:
+        description: user id
+        format: int64
+        type: integer
+        x-go-name: UserId
+      last_documents_updated:
+        description: array of last updated document ids
+        example: '[abcd]'
+        items:
+          type: string
+        type: array
+        x-go-name: LastDocumentsUpdated
+      num_documents:
+        description: total number of documents
+        example: 53
+        format: int64
+        type: integer
+        x-go-name: NumDocuments
+      num_metadata_keys:
+        description: total number of metadata keys
+        example: 4
+        format: int64
+        type: integer
+        x-go-name: NumMetadataKeys
+      num_metadata_values:
+        description: total number of metadata values
+        example: 14
+        format: int64
+        type: integer
+        x-go-name: NumMetadataValues
+      yearly_stats:
+        description: per-year statistics
+        items:
+          properties:
+            num_documents:
+              description: number of documents
+              example: 49
+              format: int64
+              type: integer
+              x-go-name: NumDocuments
+            year:
+              description: year
+              example: 2020
+              format: int64
+              type: integer
+              x-go-name: Year
+          type: object
+        type: array
+        x-go-name: YearlyStats
+    type: object
+    x-go-package: tryffel.net/go/virtualpaper/api
+  UserPreferences:
+    properties:
+      created_at:
+        format: int64
+        type: integer
+        x-go-name: CreatedAt
+      email:
+        type: string
+        x-go-name: Email
+      updated_at:
+        format: int64
+        type: integer
+        x-go-name: UpdatedAt
+      user_id:
+        description: user
+        format: int64
+        type: integer
+        x-go-name: Id
+      user_name:
+        type: string
+        x-go-name: Name
+    type: object
+    x-go-package: tryffel.net/go/virtualpaper/api
   metadataRequest:
     properties:
       key_id:
@@ -235,6 +297,31 @@ definitions:
         format: int64
         type: integer
         x-go-name: ValueId
+    type: object
+    x-go-package: tryffel.net/go/virtualpaper/api
+  processingRuleAction:
+    properties:
+      date_fmt:
+        type: string
+        x-go-name: DateFmt
+      date_separator:
+        type: string
+        x-go-name: DateSeparator
+      description:
+        type: string
+        x-go-name: Description
+      metadata_key_id:
+        format: int64
+        type: integer
+        x-go-name: MetadataKey
+      metadata_value_id:
+        format: int64
+        type: integer
+        x-go-name: MetadataValue
+      tag_id:
+        format: int64
+        type: integer
+        x-go-name: Tag
     type: object
     x-go-package: tryffel.net/go/virtualpaper/api
 info:
@@ -248,7 +335,11 @@ paths:
       operationId: AdminGetDocumentProcessQueue
       responses:
         "200":
-          $ref: '#/responses/DocumentResponse'
+          $ref: '#/responses/RespDocumentProcessingSteps'
+        "401":
+          $ref: '#/responses/RespForbidden'
+        "500":
+          $ref: '#/responses/RespInternalError'
       tags:
       - Admin
     post:
@@ -329,6 +420,25 @@ paths:
       summary: Get document preview, a small png image of first page of document.
       tags:
       - Documents
+  /api/v1/documents/stats:
+    get:
+      description: Get document statistics
+      operationId: GetUserDocumentStatistics
+      responses:
+        "200":
+          $ref: '#/responses/RespDocumentStatistics'
+        "304":
+          $ref: '#/responses/RespNotModified'
+        "400":
+          $ref: '#/responses/RespBadRequest'
+        "401":
+          $ref: '#/responses/RespForbidden'
+        "403":
+          $ref: '#/responses/RespNotFound'
+        "500":
+          $ref: '#/responses/RespInternalError'
+      tags:
+      - Documents
   /api/v1/metadata/keys:
     get:
       description: Get metadata keys
@@ -372,6 +482,25 @@ paths:
           $ref: '#/responses/MetadataKeyValueResponse'
       tags:
       - Metadata
+  /api/v1/preferences/user:
+    get:
+      description: Get user preferences
+      operationId: GetPreferences
+      responses:
+        "200":
+          $ref: '#/responses/RespUserPreferences'
+        "304":
+          $ref: '#/responses/RespNotModified'
+        "400":
+          $ref: '#/responses/RespBadRequest'
+        "401":
+          $ref: '#/responses/RespForbidden'
+        "403":
+          $ref: '#/responses/RespNotFound'
+        "500":
+          $ref: '#/responses/RespInternalError'
+      tags:
+      - Preferences
   /api/v1/processing/rules:
     get:
       description: Get processing rules
@@ -384,6 +513,25 @@ paths:
     post:
       description: Add processing rule
       operationId: AddRule
+      responses:
+        "200":
+          $ref: '#/responses/ProcessingRuleResponse'
+        "304":
+          $ref: '#/responses/RespNotModified'
+        "400":
+          $ref: '#/responses/RespBadRequest'
+        "401":
+          $ref: '#/responses/RespForbidden'
+        "403":
+          $ref: '#/responses/RespNotFound'
+        "500":
+          $ref: '#/responses/RespInternalError'
+      tags:
+      - Processing
+  /api/v1/processing/rules/{id}:
+    get:
+      description: Get processing rule by id
+      operationId: GetRule
       responses:
         "200":
           $ref: '#/responses/ProcessingRuleResponse'
@@ -412,41 +560,63 @@ responses:
     schema:
       items:
         $ref: '#/definitions/DocumentResponse'
-      properties:
-        date_fmt:
-          type: string
-          x-go-name: DateFmt
-        date_separator:
-          type: string
-          x-go-name: DateSeparator
-        description:
-          type: string
-          x-go-name: Description
-        metadata_key_id:
-          format: int64
-          type: integer
-          x-go-name: MetadataKey
-        metadata_value_id:
-          format: int64
-          type: integer
-          x-go-name: MetadataValue
-        tag_id:
-          format: int64
-          type: integer
-          x-go-name: Tag
       type: array
   MetadataKeyResponse:
     schema:
       items:
         $ref: '#/definitions/MetadataValue'
       type: array
-  ProcessingRuleResponse:
+  ProcessingRuleArrayResponse:
     schema:
       items:
-        $ref: '#/definitions/ProcessingRule'
+        $ref: '#/definitions/ProcessingRuleResp'
       type: array
+  ProcessingRuleRequest:
+    headers:
+      action: {}
+      active:
+        type: boolean
+      comment:
+        type: string
+      filter:
+        type: string
+    schema:
+      $ref: '#/definitions/processingRuleAction'
+  RespBadRequest:
+    description: request validation failed
+    schema:
+      properties:
+        error:
+          type: string
+          x-go-name: Error
+      type: object
+  RespDocumentProcessingSteps:
+    description: Documents and processing steps pending
+    schema:
+      items:
+        $ref: '#/definitions/DocumentProcessStep'
+      type: array
+  RespDocumentStatistics:
+    description: Document / usage statistics
+    schema:
+      $ref: '#/definitions/UserDocumentStatistics'
+  RespForbidden:
+    description: action forbidden
+  RespInternalError:
+    description: internal error occured and server was unable to complete operation
+  RespNotFound:
+    description: resource not found
+  RespNotModified:
+    description: Content already exists and has not been modified
+  RespOk:
+    description: Request ok
+  RespUserPreferences:
+    description: User preferences
+    schema:
+      $ref: '#/definitions/UserPreferences'
 schemes:
-- http,https
+- http
+- https
 security:
 - api_key: []
 securityDefinitions:

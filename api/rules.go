@@ -25,26 +25,37 @@ import (
 	"tryffel.net/go/virtualpaper/storage"
 )
 
-// swagger:response DocumentResponse
-type ProcessingRule struct {
-	Id      int    `json:"id" valid:"-"`
-	Type    string `json:"type" valid:"-"`
-	Filter  string `json:"filter" valid:"-"`
-	Comment string `json:"comment" valid:"-"`
-	Active  bool   `json:"active" valid:"-"`
-	Action  struct {
-		MetadataKey   int    `json:"metadata_key_id" valid:"-"`
-		MetadataValue int    `json:"metadata_value_id" valid:"-"`
-		Tag           int    `json:"tag_id" valid:"-"`
-		DateFmt       string `json:"date_fmt" valid:"-"`
-		DateSeparator string `json:"date_separator" valid:"-"`
-		Description   string `json:"description" valid:"-"`
-	} `json:"action" valid:"-"`
-	CreatedAd int64 `json:"created_at" valid:"-"`
-	UpdatedAt int64 `json:"updated_at" valid:"-"`
+type ProcessingRuleResp struct {
+	Id        int                  `json:"id" valid:"-"`
+	Type      string               `json:"type" valid:"in(regex,exact)"`
+	Filter    string               `json:"filter" valid:"-"`
+	Comment   string               `json:"comment" valid:"-"`
+	Active    bool                 `json:"active" valid:"-"`
+	Action    processingRuleAction `json:"action" valid:"-"`
+	CreatedAd int64                `json:"created_at" valid:"-"`
+	UpdatedAt int64                `json:"updated_at" valid:"-"`
 }
 
-func (p *ProcessingRule) toRule() *models.Rule {
+type processingRuleAction struct {
+	MetadataKey   int    `json:"metadata_key_id" valid:"-"`
+	MetadataValue int    `json:"metadata_value_id" valid:"-"`
+	Tag           int    `json:"tag_id" valid:"-"`
+	DateFmt       string `json:"date_fmt" valid:"-"`
+	DateSeparator string `json:"date_separator" valid:"-"`
+	Description   string `json:"description" valid:"-"`
+}
+
+// swagger:response ProcessingRuleRequest
+type ProcessingRuleReq struct {
+	// in:body
+	Type    string               `json:"type" valid:"in(regex,exact)"`
+	Filter  string               `json:"filter" valid:"-"`
+	Comment string               `json:"comment" valid:"-"`
+	Active  bool                 `json:"active" valid:"-"`
+	Action  processingRuleAction `json:"action" valid:"-"`
+}
+
+func (p *ProcessingRuleReq) toRule() *models.Rule {
 	rule := &models.Rule{
 		Filter:  p.Filter,
 		Comment: p.Comment,
@@ -69,8 +80,8 @@ func (p *ProcessingRule) toRule() *models.Rule {
 	return rule
 }
 
-func ruleToProcessingRule(rule *models.Rule) *ProcessingRule {
-	pr := &ProcessingRule{
+func ruleToResp(rule *models.Rule) *ProcessingRuleResp {
+	pr := &ProcessingRuleResp{
 		CreatedAd: rule.CreatedAt.Unix() * 1000,
 		UpdatedAt: rule.UpdatedAt.Unix() * 1000,
 		Id:        rule.Id,
@@ -78,14 +89,7 @@ func ruleToProcessingRule(rule *models.Rule) *ProcessingRule {
 		Filter:    rule.Filter,
 		Comment:   rule.Comment,
 		Active:    rule.Active,
-		Action: struct {
-			MetadataKey   int    `json:"metadata_key_id" valid:"-"`
-			MetadataValue int    `json:"metadata_value_id" valid:"-"`
-			Tag           int    `json:"tag_id" valid:"-"`
-			DateFmt       string `json:"date_fmt" valid:"-"`
-			DateSeparator string `json:"date_separator" valid:"-"`
-			Description   string `json:"description" valid:"-"`
-		}{
+		Action: processingRuleAction{
 			MetadataKey:   rule.Action.MetadataKeyId,
 			MetadataValue: rule.Action.MetadataValueId,
 			Tag:           rule.Action.Tag,
@@ -102,6 +106,11 @@ func (a *Api) addUserRule(resp http.ResponseWriter, req *http.Request) {
 	// Add processing rule
 	// responses:
 	//   200: ProcessingRuleResponse
+	//   304: RespNotModified
+	//   400: RespBadRequest
+	//   401: RespForbidden
+	//   403: RespNotFound
+	//   500: RespInternalError
 	handler := "api.addUserRule"
 
 	userId, ok := getUserId(req)
@@ -110,7 +119,7 @@ func (a *Api) addUserRule(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	processingRule := &ProcessingRule{}
+	processingRule := &ProcessingRuleReq{}
 	err := unMarshalBody(req, processingRule)
 	if err != nil {
 		respError(resp, err, handler)
@@ -131,9 +140,7 @@ func (a *Api) addUserRule(resp http.ResponseWriter, req *http.Request) {
 		respError(resp, err, handler)
 		return
 	}
-
-	processingRule.Id = rule.Id
-	respOk(resp, processingRule)
+	respOk(resp, ruleToResp(rule))
 }
 
 func (a *Api) getUserRules(resp http.ResponseWriter, req *http.Request) {
@@ -162,9 +169,9 @@ func (a *Api) getUserRules(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	processingRules := make([]*ProcessingRule, len(*rules))
+	processingRules := make([]*ProcessingRuleResp, len(*rules))
 	for i, v := range *rules {
-		processingRules[i] = ruleToProcessingRule(&v)
+		processingRules[i] = ruleToResp(&v)
 	}
 
 	respResourceList(resp, processingRules, len(processingRules))
@@ -195,6 +202,6 @@ func (a *Api) getUserRule(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	r := ruleToProcessingRule(rule)
+	r := ruleToResp(rule)
 	respResourceList(resp, r, 1)
 }

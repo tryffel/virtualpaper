@@ -42,6 +42,17 @@ func (u *UserPreferences) copyUser(userPref *models.UserPreferences) {
 }
 
 func (a *Api) getUserPreferences(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route GET /api/v1/preferences/user Preferences GetPreferences
+	// Get user preferences
+	// responses:
+	//   200: RespUserPreferences
+	//   304: RespNotModified
+	//   400: RespBadRequest
+	//   401: RespForbidden
+	//   403: RespNotFound
+	//   500: RespInternalError
+	//
+
 	//handler := "Api.getUserPreferences"
 	user, ok := getUser(req)
 	if !ok {

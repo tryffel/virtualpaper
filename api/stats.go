@@ -21,9 +21,58 @@ package api
 import (
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"tryffel.net/go/virtualpaper/models"
 )
 
+type UserDocumentStatistics struct {
+	// user id
+	UserId int `json:"id"`
+	// total number of documents
+	// Example: 53
+	NumDocuments int `json:"num_documents"`
+	// per-year statistics
+	YearlyStats []struct {
+		// year
+		// Example: 2020
+		Year int `json:"year" db:"year"`
+		// number of documents
+		// Example: 49
+		NumDocuments int `json:"num_documents" db:"count"`
+	} `json:"yearly_stats"`
+	// total number of metadata keys
+	// Example: 4
+	NumMetadataKeys int `json:"num_metadata_keys"`
+	// total number of metadata values
+	// Example: 14
+	NumMetadataValues int `json:"num_metadata_values"`
+	// array of last updated document ids
+	// Example: [abcd]
+	LastDocumentsUpdated []string `json:"last_documents_updated"`
+}
+
+func docStatsToUserStats(stats *models.UserDocumentStatistics) *UserDocumentStatistics {
+	uds := &UserDocumentStatistics{
+		UserId:               stats.UserId,
+		NumDocuments:         stats.NumDocuments,
+		YearlyStats:          stats.YearlyStats,
+		NumMetadataKeys:      stats.NumMetadataKeys,
+		NumMetadataValues:    stats.NumMetadataValues,
+		LastDocumentsUpdated: stats.LastDocumentsUpdated,
+	}
+	return uds
+}
+
 func (a *Api) getUserDocumentStatistics(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route GET /api/v1/documents/stats Documents GetUserDocumentStatistics
+	// Get document statistics
+	//
+	// responses:
+	//   200: RespDocumentStatistics
+	//   304: RespNotModified
+	//   400: RespBadRequest
+	//   401: RespForbidden
+	//   403: RespNotFound
+	//   500: RespInternalError
 	handler := "Api.getUserDocumentStatistics"
 	user, ok := getUserId(req)
 	if !ok {
@@ -37,6 +86,6 @@ func (a *Api) getUserDocumentStatistics(resp http.ResponseWriter, req *http.Requ
 		respError(resp, err, handler)
 	} else {
 		stats.UserId = user
-		respOk(resp, stats)
+		respOk(resp, docStatsToUserStats(stats))
 	}
 }

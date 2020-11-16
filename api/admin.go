@@ -104,7 +104,7 @@ func (a *Api) forceDocumentProcessing(resp http.ResponseWriter, req *http.Reques
 	respOk(resp, nil)
 }
 
-type documentProcessStep struct {
+type DocumentProcessStep struct {
 	DocumentId string `json:"document_id"`
 	Step       string `json:"step"`
 }
@@ -114,7 +114,9 @@ func (a *Api) getDocumentProcessQueue(resp http.ResponseWriter, req *http.Reques
 	// Get documents awaiting processing
 	//
 	// responses:
-	//   200: DocumentResponse
+	//   200: RespDocumentProcessingSteps
+	//   401: RespForbidden
+	//   500: RespInternalError
 	handler := "Api.adminGetProcessQueue"
 
 	queue, n, err := a.db.JobStore.GetPendingProcessing()
@@ -123,7 +125,7 @@ func (a *Api) getDocumentProcessQueue(resp http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	processes := make([]documentProcessStep, len(*queue))
+	processes := make([]DocumentProcessStep, len(*queue))
 	for i, v := range *queue {
 		processes[i].DocumentId = v.DocumentId
 		processes[i].Step = v.Step.String()

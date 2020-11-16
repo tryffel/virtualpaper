@@ -20,9 +20,8 @@
 //
 // Documentation for Virtualpaper API.
 //
-// Schemes: http,https
+// Schemes: http, https
 //
-// BasePath: /api/v1
 // Version: 0.1.0
 //
 // Consumes:

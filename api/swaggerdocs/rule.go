@@ -22,8 +22,8 @@ import (
 	"tryffel.net/go/virtualpaper/api"
 )
 
-// swagger:response ProcessingRuleResponse
+// swagger:response ProcessingRuleArrayResponse
 type ruleResponse struct {
 	// in:body
-	Body []api.ProcessingRule
+	Body []api.ProcessingRuleResp
 }
