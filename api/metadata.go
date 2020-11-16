@@ -19,10 +19,13 @@
 package api
 
 import (
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"regexp"
 	"time"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/storage"
 )
 
 type metadataRequest struct {
@@ -44,6 +47,27 @@ type metadataValueRequest struct {
 	MatchDocuments bool   `json:"match_documents"`
 	MatchType      string `json:"match_type" valid:"-"`
 	MatchFilter    string `json:"match_filter" valid:"-"`
+}
+
+func (m *metadataValueRequest) validate() error {
+	invalidErr := storage.ErrInvalid
+	if m.MatchDocuments {
+		if m.MatchFilter == "" {
+			invalidErr.ErrMsg = "match_filter cannot be empty"
+			return invalidErr
+		}
+		if models.RuleType(m.MatchType) == models.RegexRule {
+			_, err := regexp.Compile(m.MatchFilter)
+			if err != nil {
+				invalidErr.ErrMsg = fmt.Sprintf("invalid regex: %v", err.Error())
+				return invalidErr
+			}
+		} else if models.RuleType(m.MatchType) != models.ExactRule {
+			invalidErr.ErrMsg = "unknown rule_type"
+			return invalidErr
+		}
+	}
+	return nil
 }
 
 type metadataUpdateRequest struct {
@@ -233,6 +257,11 @@ func (a *Api) addMetadataValue(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	err = dto.validate()
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
 	value := &models.MetadataValue{
 		UserId:         user,
 		KeyId:          keyId,
