@@ -203,6 +203,22 @@ END;
 	return getDatabaseError(err, "metadata", "update document key-values")
 }
 
+// GetUserValuesWithMatching retusn all metadata values that
+// have Metadatavalue.MatchDocuments enabled.
+func (s *MetadataStore) GetUserValuesWithMatching(userId int) (*[]models.MetadataValue, error) {
+	sql := `
+SELECT * FROM
+metadata_values
+WHERE user_id = $1
+AND match_documents = TRUE;
+`
+
+	values := &[]models.MetadataValue{}
+	err := s.db.Select(values, sql, userId)
+	return values, getDatabaseError(err, "metadata values", "get where match_documents = true")
+}
+
+// CreateKey creates new metadata key.
 func (s *MetadataStore) CreateKey(userId int, key *models.MetadataKey) error {
 
 	sql := `
@@ -228,6 +244,7 @@ RETURNING id;
 	return nil
 }
 
+// CreateValue creates new metadata value.
 func (s *MetadataStore) CreateValue(userId int, value *models.MetadataValue) error {
 	sql := `
 INSERT INTO metadata_values
@@ -252,6 +269,7 @@ RETURNING id;
 	return nil
 }
 
+// GetDocumentTags returns tags for given document.
 func (s *MetadataStore) GetDocumentTags(userId int, documentId string) (*[]models.Tag, error) {
 	sql := `
 select tags.id as id, tags.key as key, tags.comment as comment
@@ -268,6 +286,7 @@ limit 100;
 	return object, getDatabaseError(err, "metadata", "get document tags")
 }
 
+// GetTags returns all tags for user.
 func (s *MetadataStore) GetTags(userid int, paging Paging) (*[]models.TagComposite, int, error) {
 
 	sql := `
@@ -306,6 +325,7 @@ LIMIT $3;
 	return object, n, getDatabaseError(err, "metadata", "get tags count")
 }
 
+// GetTag returns tag with given id.
 func (s *MetadataStore) GetTag(userId, tagId int) (*models.TagComposite, error) {
 	sql := `
 SELECT 
@@ -328,6 +348,7 @@ GROUP BY (tags.id);
 	return object, getDatabaseError(err, "metadata", "get tag")
 }
 
+// CreateTag creates new tag.
 func (s *MetadataStore) CreateTag(userId int, tag *models.Tag) error {
 	sql := `
 INSERT INTO tags (user_id, key, comment, created_at, updated_at)

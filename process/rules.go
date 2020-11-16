@@ -32,7 +32,7 @@ var reRegexHasSubMatch = regexp.MustCompile("\\(.+\\)")
 func runRules(document *models.Document, rules *[]models.Rule) error {
 	for _, rule := range *rules {
 		logrus.Debugf("run rule %d against document %s", rule.Id, document.Id)
-		match, err := documentMatchesFilter(document, rule)
+		match, err := documentMatchesFilter(document, rule.Type, rule.Filter)
 		if err != nil {
 			logrus.Debugf("automatic rule, filter error: %v", err)
 			continue
@@ -48,27 +48,42 @@ func runRules(document *models.Document, rules *[]models.Rule) error {
 	return nil
 }
 
-func documentMatchesFilter(document *models.Document, rule models.Rule) (string, error) {
-	if rule.Type == models.ExactRule {
+func matchMetadata(document *models.Document, values *[]models.MetadataValue) error {
+	logrus.Debugf("match metadata keys for doc: %s, total of %d rules", document.Id, len(*values))
+	for _, v := range *values {
+		match, err := documentMatchesFilter(document, v.MatchType, v.MatchFilter)
+		if err != nil {
+			logrus.Debugf("automatic metadata rule, filter error: %v", err)
+			continue
+		}
+		if match != "" {
+			addMetadataToDocument(document, v.KeyId, v.Id)
+		}
+	}
+	return nil
+}
+
+func documentMatchesFilter(document *models.Document, ruleType models.RuleType, filter string) (string, error) {
+	if ruleType == models.ExactRule {
 
 		lowerContent := strings.ToLower(document.Content)
-		lowerRule := strings.ToLower(rule.Filter)
+		lowerRule := strings.ToLower(filter)
 		contains := strings.Contains(lowerContent, lowerRule)
 		if contains {
 			return lowerRule, nil
 		} else {
 			return "", nil
 		}
-	} else if rule.Type == models.RegexRule {
+	} else if ruleType == models.RegexRule {
 		// if regex captures submatch, return first submatch (not the match itself),
 		// else return regex match
 
-		re, err := regexp.Compile(rule.Filter)
+		re, err := regexp.Compile(filter)
 		if err != nil {
 			return "", fmt.Errorf("invalid regex: %v", err)
 		}
 
-		if reRegexHasSubMatch.MatchString(rule.Filter) {
+		if reRegexHasSubMatch.MatchString(filter) {
 			matches := re.FindStringSubmatch(document.Content)
 			if len(matches) == 0 {
 				return "", nil
@@ -80,32 +95,24 @@ func documentMatchesFilter(document *models.Document, rule models.Rule) (string,
 			if len(matches) == 2 {
 				return matches[1], nil
 			} else {
-				logrus.Debugf("more than 1 regex matches, pick first. RuleId: %v, doc. %s, matches: %v",
-					rule.Id, document.Id, matches)
+				logrus.Debugf("more than 1 regex matches, pick first. regex: %s doc. %s, matches: %v",
+					filter, document.Id, matches)
 				return matches[1], nil
 			}
 		} else {
-			match := re.FindString(rule.Filter)
+			match := re.FindString(filter)
 			return match, nil
 		}
 	} else {
-		return "", fmt.Errorf("unknown rule type: %s", rule.Type)
+		return "", fmt.Errorf("unknown rule type: %s", ruleType)
 	}
 }
 
 func applyRule(document *models.Document, rule models.Rule, match string) error {
-	var err error
 	logMsg := fmt.Sprintf("(automatic rule) doc: %s: ", document.Id)
 
 	if rule.Action.Action.AddMetadata() {
-		if document.Metadata == nil {
-			document.Metadata = []models.Metadata{}
-		}
-		metadata := models.Metadata{
-			KeyId:   rule.Action.MetadataKeyId,
-			ValueId: rule.Action.MetadataValueId,
-		}
-		document.Metadata = append(document.Metadata, metadata)
+		addMetadataToDocument(document, rule.Action.MetadataKeyId, rule.Action.MetadataValueId)
 		logMsg += fmt.Sprintf("add metadata (key %d, value %d)",
 			rule.Action.MetadataKeyId, rule.Action.MetadataValueId)
 	}
@@ -167,5 +174,25 @@ func applyRule(document *models.Document, rule models.Rule, match string) error 
 		logMsg += "set description"
 	}
 	logrus.Debug(logMsg)
-	return err
+	return nil
+}
+
+// add Metadata key-value to document. Make sure document does not already have given
+// key-value pair before adding one.
+func addMetadataToDocument(doc *models.Document, keyId, valueId int) {
+	if len(doc.Metadata) == 0 {
+		doc.Metadata = []models.Metadata{{
+			KeyId:   keyId,
+			ValueId: valueId,
+		}}
+		return
+	}
+
+	for _, v := range doc.Metadata {
+		if v.KeyId == keyId && v.ValueId == valueId {
+			return
+		}
+	}
+
+	doc.Metadata = append(doc.Metadata, models.Metadata{KeyId: keyId, ValueId: valueId})
 }

@@ -149,4 +149,9 @@ type MetadataValue struct {
 	Value     string    `db:"value" json:"value"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	Comment   string    `db:"comment" json:"comment"`
+
+	// MatchDocuments instructs to try to automatically match MetadataValue inside documents
+	MatchDocuments bool     `db:"match_documents" json:"match_documents"`
+	MatchType      RuleType `db:"match_type" json:"match_type"`
+	MatchFilter    string   `db:"match_filter" json:"match_filter"`
 }

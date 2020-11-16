@@ -34,6 +34,19 @@ CREATE TABLE process_rules (
 	CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id),
 	CONSTRAINT rules_user_filter_unique UNIQUE (user_id, filter)
 );
+
+
+ALTER TABLE metadata_values
+ADD COLUMN match_documents BOOL NOT NULL DEFAULT FALSE,
+    ADD COLUMN match_type TEXT NOT NULL DEFAULT '',
+    ADD COLUMN match_filter TEXT NOT NULL DEFAULT '';
+
+CREATE UNIQUE INDEX unique_user_metadata_value_filter
+    ON metadata_values(user_id, match_filter)
+    WHERE metadata_values.match_documents;
+
+ALTER TABLE documents
+DROP CONSTRAINT documents_filename_key;
 `
 
 // This needs to be run manually and uuids need to be generated with external tool and inserted after first statement.

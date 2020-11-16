@@ -36,7 +36,14 @@ type metadataKeyRequest struct {
 }
 
 type metadataValueRequest struct {
+	// Value of new metadata
 	Value string `json:"value" valid:"required"`
+	// Optional comment
+	Comment string `json:"comment" valid:"-"`
+	// MatchDocuments instructs to try to match documents for this value.
+	MatchDocuments bool   `json:"match_documents"`
+	MatchType      string `json:"match_type" valid:"-"`
+	MatchFilter    string `json:"match_filter" valid:"-"`
 }
 
 type metadataUpdateRequest struct {
@@ -227,10 +234,14 @@ func (a *Api) addMetadataValue(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	value := &models.MetadataValue{
-		UserId:    user,
-		KeyId:     keyId,
-		Value:     dto.Value,
-		CreatedAt: time.Now(),
+		UserId:         user,
+		KeyId:          keyId,
+		Value:          dto.Value,
+		CreatedAt:      time.Now(),
+		Comment:        dto.Comment,
+		MatchDocuments: dto.MatchDocuments,
+		MatchType:      models.RuleType(dto.MatchType),
+		MatchFilter:    dto.MatchFilter,
 	}
 
 	err = a.db.MetadataStore.CreateValue(user, value)

@@ -119,7 +119,7 @@ func Test_documentMatchesFilter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := documentMatchesFilter(tt.args.document, tt.args.rule)
+			got, err := documentMatchesFilter(tt.args.document, tt.args.rule.Type, tt.args.rule.Filter)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("documentMatchesFilter() error = %v, wantErr %v", err, tt.wantErr)
 				return

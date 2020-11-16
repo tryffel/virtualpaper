@@ -75,6 +75,7 @@ func (fp *fileProcessor) process(op fileOp) {
 }
 
 func (fp *fileProcessor) processDocument() {
+	logrus.Debugf("Task %d process file %s", fp.id, fp.document.Id)
 
 	pendingSteps, err := fp.db.JobStore.GetDocumentPendingSteps(fp.document.Id)
 	if err != nil {
@@ -82,7 +83,19 @@ func (fp *fileProcessor) processDocument() {
 		return
 	}
 
-	logrus.Debugf("Task %d process file %s", fp.id, fp.document.Id)
+	metadata, err := fp.db.MetadataStore.GetDocumentMetadata(fp.document.UserId, fp.document.Id)
+	if err != nil {
+		logrus.Errorf("get document metadata before processing: %v", err)
+	} else {
+		fp.document.Metadata = *metadata
+	}
+
+	tags, err := fp.db.MetadataStore.GetDocumentTags(fp.document.UserId, fp.document.Id)
+	if err != nil {
+		logrus.Errorf("get document tags before processing: %v", err)
+	} else {
+		fp.document.Tags = *tags
+	}
 
 	file, err := os.Open(path.Join(config.C.Processing.DocumentsDir, fp.document.Hash))
 	if err != nil {
@@ -131,7 +144,6 @@ func (fp *fileProcessor) processDocument() {
 				logrus.Errorf("index search content: %v", err)
 				return
 			}
-
 		default:
 			logrus.Warningf("unhandle process step: %v, skipping", step.Step)
 		}
@@ -522,6 +534,13 @@ func (fp *fileProcessor) runRules() error {
 	}
 	err = runRules(fp.document, rules)
 
+	metadataValues, err := fp.db.MetadataStore.GetUserValuesWithMatching(fp.document.UserId)
+	if err != nil {
+		logrus.Errorf("get metadata values with matching for user %d: %v", fp.document.UserId, err)
+	} else if len(*metadataValues) != 0 {
+		err = matchMetadata(fp.document, metadataValues)
+	}
+
 	if err != nil {
 		logrus.Errorf("run user rules: %v", err)
 		job.Status = models.JobFailure
@@ -532,6 +551,26 @@ func (fp *fileProcessor) runRules() error {
 	err = fp.db.DocumentStore.Update(fp.document)
 	if err != nil {
 		logrus.Errorf("update document (%s) after rules: %v", fp.document.Id, err)
+	}
+
+	if len(fp.document.Metadata) != 0 {
+		metadata := make([]*models.Metadata, len(fp.document.Metadata))
+		for i, v := range fp.document.Metadata {
+			metadata[i] = &v
+		}
+		err = fp.db.MetadataStore.UpdateDocumentKeyValues(fp.document.UserId, fp.document.Id, metadata)
+		if err != nil {
+			logrus.Errorf("update document metadata after processing rules")
+		} else {
+			// metadata added by rule does not contain all fields, only key/value ids. Load other values as well.
+			newMetadata, err := fp.db.MetadataStore.GetDocumentMetadata(fp.document.UserId, fp.document.Id)
+			if err != nil {
+				logrus.Errorf("reload full metadata records for document "+
+					"after (doc %s) rules: %v", fp.document.Id, err)
+			} else {
+				fp.document.Metadata = *newMetadata
+			}
+		}
 	}
 	return err
 }
