@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"os"
+	"strings"
 	"tryffel.net/go/virtualpaper/config"
 )
 
@@ -55,6 +56,9 @@ func initConfig() {
 		viper.SetConfigName("config.toml")
 	}
 
+	replacer := strings.NewReplacer(".", "_")
+	viper.SetEnvPrefix("virtualpaper")
+	viper.SetEnvKeyReplacer(replacer)
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
