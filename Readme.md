@@ -4,9 +4,9 @@ Virtualpaper is a text document management solution, featuring automatic content
 powerful search for all content. Documents are not stored in hierarchical directories, instead it relies
 on completely user-editable key-value metadata. Think of it as not having a single hierarchy, but as many views to 
 documents as you wish: 
-    * List all invoices from last year
-    * List all documents from company x
-    * List all documents related to a project
+* List all invoices from last year
+* List all documents from company x
+* List all documents related to a project
    
 If you wish to benefit from this kind of filtering, you need to assign at least a few of these meaningful 
 metadata-values. To help automate this, 
@@ -22,7 +22,7 @@ This project is a **work-in-progress**.
     * If configured, try to match key-values automatically from documents
     * Detect document date
 * Multiple users
-* REST api
+* REST api (swagger documentation is located at api/swaggerdocs/swagger.yaml)
 * Full-text-search
 
 
@@ -47,6 +47,8 @@ In addition, you need Tesseract with headers and Imagemagick-v7 with headers ins
 See Dockerfile for more info. Some distributions (e.g. Debian) ship Imagemagick-v6 by default. 
 Virtualpaper can use Imagemagick v6 as well, but you need to apply the provided imagick6.patch
 with ```git apply imagick6.patch``` and then try to compile.
+
+It is recommended to install ```poppler-utils``` for getting reliable results on pdfs that contain text (and not images).
 
 Build server with:
 ```make build```
