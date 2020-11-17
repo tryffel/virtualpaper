@@ -65,6 +65,7 @@ func (fp *fileProcessor) waitEvent() {
 
 func (fp *fileProcessor) process(op fileOp) {
 	if op.document == nil && op.file != "" {
+		fp.file = op.file
 		fp.processFile()
 	} else if op.document != nil {
 		fp.document = op.document
@@ -339,10 +340,24 @@ func (fp *fileProcessor) isDuplicate() (bool, error) {
 }
 
 func (fp *fileProcessor) createNewDocumentRecord() error {
-	_, fileName := path.Split(fp.file)
+	fullDir, fileName := path.Split(fp.file)
+	fullDir = strings.TrimSuffix(fullDir, "/")
+	fullDir = strings.TrimSuffix(fullDir, "\\")
+	_, userName := path.Split(fullDir)
+	userName = strings.Trim(userName, "/\\")
+
+	user, err := fp.db.UserStore.GetUserByName(userName)
+	if err != nil {
+		if errors.Is(err, storage.ErrRecordNotFound) {
+			return fmt.Errorf("unable to process document from input dir, since user '%s' does not exist. Ensure "+
+				"user has properly named directory assigned to them, and add documents there", userName)
+		} else {
+			return fmt.Errorf("get user: %v", err)
+		}
+	}
 
 	doc := &models.Document{
-		UserId:   5,
+		UserId:   user.Id,
 		Name:     fileName,
 		Content:  "",
 		Filename: fileName,
@@ -351,7 +366,6 @@ func (fp *fileProcessor) createNewDocumentRecord() error {
 	doc.UpdatedAt = time.Now()
 	doc.CreatedAt = time.Now()
 
-	var err error
 	doc.Hash, err = getHash(fp.rawFile)
 	if err != nil {
 		return fmt.Errorf("get hash: %v", err)

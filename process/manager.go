@@ -7,7 +7,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/gographics/imagick.v3/imagick"
 	"math/rand"
+	"os"
 	"path"
+	"path/filepath"
 	"sync"
 	"time"
 	config "tryffel.net/go/virtualpaper/config"
@@ -81,9 +83,18 @@ func (m *Manager) Start() error {
 
 	if config.C.Processing.InputDir != "" {
 		logrus.Infof("add directory wath for %s", config.C.Processing.InputDir)
-		err := m.inputWatch.Add(config.C.Processing.InputDir)
+
+		err := filepath.Walk(config.C.Processing.InputDir, func(filepath string, info os.FileInfo, err error) error {
+			logrus.Debugf("add dir watch for: %s", filepath)
+			err = m.inputWatch.Add(filepath)
+			if err != nil {
+				_, file := path.Split(filepath)
+				return fmt.Errorf(file)
+			}
+			return err
+		})
 		if err != nil {
-			return fmt.Errorf("add input directory watch: %v", err)
+			logrus.Errorf("add input watch: %v", err)
 		}
 	}
 
