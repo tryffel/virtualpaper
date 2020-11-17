@@ -65,6 +65,11 @@ func testPdfToText() error {
 	}
 }
 
+func GetPdfToTextIsInstalled() bool {
+	err := testPdfToText()
+	return err == nil
+}
+
 // try to convert pdf to text directly without ocr. If pdf does not contain any text, return err
 // 'empty'. Hash is used for temporary file
 func getPdfToText(file *os.File, id string) (string, error) {

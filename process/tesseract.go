@@ -90,3 +90,7 @@ func runOcr(inputImage, id string) (string, error) {
 	}
 	return content, err
 }
+
+func GetTesseractVersion() string {
+	return gosseract.Version()
+}

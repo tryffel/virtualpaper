@@ -21,7 +21,10 @@ package api
 import (
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"runtime"
+	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/process"
 )
 
 func (a *Api) authorizeAdmin(next http.Handler) http.Handler {
@@ -132,4 +135,30 @@ func (a *Api) getDocumentProcessQueue(resp http.ResponseWriter, req *http.Reques
 	}
 
 	respResourceList(resp, processes, n)
+}
+
+type SystemInfo struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+	Commit  string `json:"commit"`
+
+	ImagemagickVersion string `json:"imagemagick_version"`
+	TesseractVersion   string `json:"tesseract_version"`
+	PopplerInstalled   bool   `json:"poppler_installed"`
+
+	GoVersion string `json:"go_version"`
+}
+
+func (a *Api) getSystemInfo(resp http.ResponseWriter, req *http.Request) {
+
+	info := &SystemInfo{
+		Name:               "Virtualpaper",
+		Version:            config.Version,
+		Commit:             config.Commit,
+		ImagemagickVersion: process.GetImagickVersion(),
+		TesseractVersion:   process.GetTesseractVersion(),
+		PopplerInstalled:   process.GetPdfToTextIsInstalled(),
+		GoVersion:          runtime.Version(),
+	}
+	respOk(resp, info)
 }

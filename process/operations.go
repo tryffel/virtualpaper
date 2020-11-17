@@ -56,3 +56,8 @@ func generateThumbnail(rawFile string, previewFile string, page int, size int) e
 	return nil
 
 }
+
+func GetImagickVersion() string {
+	ver, _ := imagick.GetVersion()
+	return ver
+}
