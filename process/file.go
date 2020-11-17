@@ -98,7 +98,8 @@ func (fp *fileProcessor) processDocument() {
 		fp.document.Tags = *tags
 	}
 
-	file, err := os.Open(path.Join(config.C.Processing.DocumentsDir, fp.document.Hash))
+	filePath := storage.DocumentPath(fp.document.Id)
+	file, err := os.Open(filePath)
 	if err != nil {
 		logrus.Errorf("open document %s file: %v", fp.document.Id, err)
 		return
@@ -115,7 +116,7 @@ func (fp *fileProcessor) processDocument() {
 				return
 			} else {
 				file.Close()
-				file, err = os.Open(path.Join(config.C.Processing.DocumentsDir, fp.document.Hash))
+				file, err = os.Open(filePath)
 				if err != nil {
 					logrus.Errorf("open document %s file: %v", fp.document.Id, err)
 					return
@@ -168,7 +169,7 @@ func (fp *fileProcessor) updateHash(doc *models.Document, file *os.File) error {
 	}
 
 	defer fp.persistProcess(process, job)
-	hash, err := getHash(file)
+	hash, err := GetFileHash(file)
 	if err != nil {
 		job.Status = models.JobFailure
 		return err
@@ -215,7 +216,12 @@ func (fp *fileProcessor) updateThumbnail(doc *models.Document, file *os.File) er
 	job.Message = "Generate thumbnail"
 	defer fp.persistProcess(process, job)
 
-	output := path.Join(config.C.Processing.PreviewsDir, fp.document.Hash+".png")
+	output := storage.PreviewPath(fp.document.Id)
+
+	err = storage.CreatePreviewDir(fp.document.Id)
+	if err != nil {
+		logrus.Errorf("create preview dir: %v", err)
+	}
 
 	logrus.Infof("generate thumbnail for document %s", fp.document.Id)
 	_, err = imagick.ConvertImageCommand([]string{
@@ -302,7 +308,7 @@ func (fp *fileProcessor) cleanup() {
 	}
 
 	if fp.document != nil {
-		tmpDir := path.Join(config.C.Processing.TmpDir, fp.document.Hash)
+		tmpDir := storage.TempFilePath(fp.document.Hash)
 		err := os.RemoveAll(tmpDir)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
@@ -320,7 +326,7 @@ func (fp *fileProcessor) cleanup() {
 }
 
 func (fp *fileProcessor) isDuplicate() (bool, error) {
-	hash, err := getHash(fp.rawFile)
+	hash, err := GetFileHash(fp.rawFile)
 	if err != nil {
 		return false, err
 	}
@@ -366,7 +372,7 @@ func (fp *fileProcessor) createNewDocumentRecord() error {
 	doc.UpdatedAt = time.Now()
 	doc.CreatedAt = time.Now()
 
-	doc.Hash, err = getHash(fp.rawFile)
+	doc.Hash, err = GetFileHash(fp.rawFile)
 	if err != nil {
 		return fmt.Errorf("get hash: %v", err)
 	}
@@ -393,7 +399,11 @@ func (fp *fileProcessor) generateThumbnail(file *os.File) error {
 	}
 	defer fp.persistProcess(process, job)
 
-	output := path.Join(config.C.Processing.PreviewsDir, fp.document.Hash+".png")
+	output := storage.PreviewPath(fp.document.Id)
+	err = storage.CreatePreviewDir(fp.document.Id)
+	if err != nil {
+		return fmt.Errorf("create thumbnail output dir: %v", err)
+	}
 
 	name := file.Name()
 	err = generateThumbnail(name, output, 0, 500)
@@ -442,7 +452,7 @@ func (fp *fileProcessor) extractPdf(file *os.File) error {
 
 	if fp.usePdfToText {
 		logrus.Infof("Attempt to parse document %s content with pdftotext", fp.document.Id)
-		text, err = getPdfToText(file, fp.document.Hash)
+		text, err = getPdfToText(file, fp.document.Id)
 		if err != nil {
 			if err.Error() == "empty" {
 				logrus.Infof("document %s has no plain text, try ocr", fp.document.Id)
@@ -458,7 +468,7 @@ func (fp *fileProcessor) extractPdf(file *os.File) error {
 	}
 
 	if useOcr {
-		text, err = runOcr(file.Name(), fp.document.Hash)
+		text, err = runOcr(file.Name(), fp.document.Id)
 		if err != nil {
 			job.Message += "; " + err.Error()
 			job.Status = models.JobFailure

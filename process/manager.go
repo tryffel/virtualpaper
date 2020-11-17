@@ -163,7 +163,8 @@ func (m *Manager) Stop() error {
 
 // AddDocumentForProcessing marks document as available for processing.
 func (m *Manager) AddDocumentForProcessing(doc *models.Document) error {
-	m.scheduleNewOp(path.Join(config.C.Processing.DocumentsDir, doc.Hash), doc)
+	filePath := storage.DocumentPath(doc.Id)
+	m.scheduleNewOp(filePath, doc)
 	return nil
 }
 

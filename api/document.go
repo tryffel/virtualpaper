@@ -26,11 +26,11 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path"
 	"strconv"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/process"
 	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
@@ -262,7 +262,8 @@ func (a *Api) getDocumentPreview(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	file, err := os.OpenFile(path.Join(config.C.Processing.PreviewsDir, doc.Hash+".png"), os.O_RDONLY, os.ModePerm)
+	filePath := storage.PreviewPath(doc.Id)
+	file, err := os.Open(filePath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			/*
@@ -307,7 +308,7 @@ func (a *Api) getDocumentPreview(resp http.ResponseWriter, req *http.Request) {
 	header := resp.Header()
 	header.Set("Content-Type", "image/png")
 	header.Set("Content-Length", strconv.Itoa(int(stat.Size())))
-	header.Set("Content-Disposition", "attachment; filename="+doc.Hash+".png")
+	header.Set("Content-Disposition", "attachment; filename="+doc.Id+".png")
 	resp.Header().Set("Cache-Control", "max-age=600")
 
 	defer file.Close()
@@ -343,7 +344,7 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 	mimetype := header.Header.Get("Content-Type")
 	defer reader.Close()
 
-	hash := config.RandomString(10)
+	tempHash := config.RandomString(10)
 
 	document := &models.Document{
 		Id:       "",
@@ -351,20 +352,19 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 		Name:     header.Filename,
 		Content:  "",
 		Filename: header.Filename,
-		Hash:     hash,
+		Hash:     tempHash,
 		Mimetype: mimetype,
 		Size:     header.Size,
 		Date:     time.Now(),
 	}
 
-	file, err := os.OpenFile(path.Join(config.C.Processing.DocumentsDir, hash), os.O_CREATE|os.O_WRONLY, os.ModePerm)
+	tempFileName := storage.TempFilePath(tempHash)
+	inputFile, err := os.OpenFile(tempFileName, os.O_CREATE|os.O_WRONLY, os.ModePerm)
 	if err != nil {
 		respError(resp, fmt.Errorf("open new file for saving upload: %v", err), handler)
 		return
 	}
-	defer file.Close()
-
-	n, err := file.ReadFrom(reader)
+	n, err := inputFile.ReadFrom(reader)
 	if err != nil {
 		respError(resp, fmt.Errorf("write uploaded file to disk: %v", err), handler)
 		return
@@ -373,11 +373,57 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 	if n != header.Size {
 		logrus.Warningf("did not fully read file: %d, got: %d", header.Size, n)
 	}
-	defer file.Close()
 
+	err = inputFile.Close()
+	if err != nil {
+		respError(resp, fmt.Errorf("close file: %v", err), handler)
+		return
+	}
+
+	hash, err := process.GetHash(tempFileName)
+	if err != nil {
+		respError(resp, fmt.Errorf("get hash for temp file: %v", err), handler)
+		return
+	}
+
+	existingDoc, err := a.db.DocumentStore.GetByHash(hash)
+	if err != nil {
+		if errors.Is(err, storage.ErrRecordNotFound) {
+		} else {
+			respError(resp, fmt.Errorf("get existing document by hash: %v", err), handler)
+			return
+		}
+	}
+
+	if existingDoc != nil {
+		if existingDoc.Id != "" {
+			_ = respJson(resp, fmt.Sprintf(`{id: %s}`, existingDoc.Id), http.StatusNotModified)
+			err := os.Remove(tempFileName)
+			if err != nil {
+				logrus.Errorf("remove duplicated temp file: %v", err)
+			}
+			return
+		}
+	}
+
+	document.Hash = hash
 	err = a.db.DocumentStore.Create(document)
 	if err != nil {
 		respError(resp, err, handler)
+		return
+	}
+
+	newFile := storage.DocumentPath(document.Id)
+
+	err = storage.CreateDocumentDir(document.Id)
+	if err != nil {
+		logrus.Errorf("create directory for doc: %v", err)
+		return
+	}
+
+	err = storage.MoveFile(tempFileName, newFile)
+	if err != nil {
+		logrus.Errorf("rename temp file by document id: %v", err)
 		return
 	}
 
@@ -419,7 +465,8 @@ func (a *Api) downloadDocument(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	file, err := os.Open(path.Join(config.C.Processing.DocumentsDir, doc.Hash))
+	filePath := storage.DocumentPath(doc.Id)
+	file, err := os.Open(filePath)
 	if err != nil {
 		respError(resp, err, handler)
 		return

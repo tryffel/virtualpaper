@@ -19,6 +19,7 @@
 package storage
 
 import (
+	"fmt"
 	"github.com/jmoiron/sqlx"
 	"time"
 	"tryffel.net/go/virtualpaper/models"
@@ -129,13 +130,24 @@ func (s *DocumentStore) GetByHash(hash string) (*models.Document, error) {
 func (s *DocumentStore) Create(doc *models.Document) error {
 	sql := `
 INSERT INTO documents (id, user_id, name, content, filename, hash, mimetype, size, description)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id;`
 
 	doc.Init()
 
-	_, err := s.db.Exec(sql, doc.Id, doc.UserId, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
+	rows, err := s.db.Query(sql, doc.Id, doc.UserId, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
 		doc.Description)
-	return getDatabaseError(err, "documents", "created")
+	if err != nil {
+		return getDatabaseError(err, "documents", "created")
+	}
+
+	if rows.Next() {
+		err := rows.Scan(&doc.Id)
+		if err != nil {
+			return fmt.Errorf("scan new document id: %v", err)
+		}
+		rows.Close()
+	}
+	return nil
 }
 
 // SetDocumentContent sets content for given document id

@@ -106,15 +106,6 @@ func (d *Document) GetSize() string {
 
 }
 
-// GetThumbnail returns thumbnail file name
-func (d *Document) GetThumbnailName() string {
-	if d.Hash != "" {
-		return d.Hash + ".png"
-	} else {
-		return ""
-	}
-}
-
 func (d *Document) FilterAttributes() []string {
 	ts := d.Timestamp.FilterAttributes()
 	doc := []string{"id", "name", "content", "description", "filename", "hash", "mimetype", "size", "date"}

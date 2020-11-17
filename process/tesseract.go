@@ -27,14 +27,15 @@ import (
 	"path"
 	"path/filepath"
 	"tryffel.net/go/virtualpaper/config"
+	"tryffel.net/go/virtualpaper/storage"
 )
 
-func runOcr(inputImage, hash string) (string, error) {
+func runOcr(inputImage, id string) (string, error) {
 
 	var err error
 	var text string
 
-	dir := path.Join(config.C.Processing.TmpDir, hash)
+	dir := storage.TempFilePath(id)
 	err = os.Mkdir(dir, os.ModePerm|os.ModeDir)
 	if err != nil {
 		return text, fmt.Errorf("create tmp dir: %v", err)
@@ -57,7 +58,7 @@ func runOcr(inputImage, hash string) (string, error) {
 	pages := &[]string{}
 
 	walkFunc := func(fileName string, info os.FileInfo, err error) error {
-		if info.Name() == hash {
+		if info.Name() == id {
 			// root fileName
 			return nil
 		}

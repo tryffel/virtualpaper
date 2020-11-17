@@ -26,9 +26,9 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path"
 	"strings"
 	"tryffel.net/go/virtualpaper/config"
+	"tryffel.net/go/virtualpaper/storage"
 )
 
 // test pdftotext command exists
@@ -67,8 +67,8 @@ func testPdfToText() error {
 
 // try to convert pdf to text directly without ocr. If pdf does not contain any text, return err
 // 'empty'. Hash is used for temporary file
-func getPdfToText(file *os.File, hash string) (string, error) {
-	textFile := path.Join(config.C.Processing.TmpDir, hash+",txt")
+func getPdfToText(file *os.File, id string) (string, error) {
+	textFile := storage.TempFilePath(id) + ",txt"
 	defer removeTempData(textFile)
 
 	text := ""
