@@ -14,8 +14,12 @@ import (
 var cfgFile string
 
 var rootCmd = &cobra.Command{
-	Use:   "virtualpaper",
-	Short: "Virtualpaper",
+	Long: `Virtualpaper document manager
+
+Virtualpaper is a text document management solution, featuring automatic content extraction and
+powerful search for all content. Documents are not stored in hierarchical directories, instead it relies
+on completely user-editable key-value metadata. Think of it as not having a single hierarchy, but as many views to
+documents as you wish.`,
 }
 
 func Execute() {
@@ -26,7 +30,6 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file")
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(serveCmd)
@@ -36,7 +39,6 @@ func init() {
 }
 
 func initConfig() {
-
 	logrus.SetLevel(logrus.DebugLevel)
 
 	if cfgFile != "" {

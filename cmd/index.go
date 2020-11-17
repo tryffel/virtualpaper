@@ -29,6 +29,7 @@ var indexCmd = &cobra.Command{
 	Use:   "index",
 	Short: "Index documents to meilisearch for full-text-search",
 	Run: func(cmd *cobra.Command, args []string) {
+		initConfig()
 		db, err := storage.NewDatabase()
 		if err != nil {
 			logrus.Fatalf("Connect to database: %v", err)

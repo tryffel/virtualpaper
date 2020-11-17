@@ -13,6 +13,7 @@ var migrateCmd = &cobra.Command{
 	Use:   "migrate",
 	Short: "Run migrations or init empty application",
 	Run: func(cmd *cobra.Command, args []string) {
+		initConfig()
 		db, err := storage.NewDatabase()
 		if err != nil {
 			logrus.Fatalf("Connect to database: %v", err)
