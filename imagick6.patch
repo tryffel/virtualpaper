@@ -1,0 +1,64 @@
+
+diff --git a/go.mod b/go.mod
+index 638b9df..04a3fc1 100644
+--- a/go.mod
++++ b/go.mod
+@@ -28,5 +28,5 @@ require (
+        github.com/x-cray/logrus-prefixed-formatter v0.5.2
+        golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
+        golang.org/x/sys v0.0.0-20201013081832-0aaa2718063a // indirect
+-       gopkg.in/gographics/imagick.v3 v3.3.0
++       gopkg.in/gographics/imagick.v2 v2.6.0
+ )
+diff --git a/process/file.go b/process/file.go
+index a8d5b61..be5da35 100644
+--- a/process/file.go
++++ b/process/file.go
+@@ -5,7 +5,7 @@ import (
+        "fmt"
+        "github.com/otiai10/gosseract"
+        "github.com/sirupsen/logrus"
+-       "gopkg.in/gographics/imagick.v3/imagick"
++       "gopkg.in/gographics/imagick.v2/imagick"
+        "os"
+        "path"
+        "strings"
+diff --git a/process/manager.go b/process/manager.go
+index f6e0fd3..c021cdb 100644
+--- a/process/manager.go
++++ b/process/manager.go
+@@ -5,7 +5,7 @@ import (
+        "fmt"
+        "github.com/fsnotify/fsnotify"
+        "github.com/sirupsen/logrus"
+-       "gopkg.in/gographics/imagick.v3/imagick"
++       "gopkg.in/gographics/imagick.v2/imagick"
+        "math/rand"
+        "path"
+        "sync"
+diff --git a/process/operations.go b/process/operations.go
+index 7f9ab89..81a6090 100644
+--- a/process/operations.go
++++ b/process/operations.go
+@@ -21,7 +21,7 @@ package process
+ import (
+        "fmt"
+        "github.com/sirupsen/logrus"
+-       "gopkg.in/gographics/imagick.v3/imagick"
++       "gopkg.in/gographics/imagick.v2/imagick"
+        "strings"
+ )
+
+diff --git a/process/tesseract.go b/process/tesseract.go
+index a64f8bd..f4bad0d 100644
+--- a/process/tesseract.go
++++ b/process/tesseract.go
+@@ -22,7 +22,7 @@ import (
+        "fmt"
+        "github.com/otiai10/gosseract"
+        "github.com/sirupsen/logrus"
+-       "gopkg.in/gographics/imagick.v3/imagick"
++       "gopkg.in/gographics/imagick.v2/imagick"
+        "os"
+        "path"
+        "path/filepath"
