@@ -373,3 +373,13 @@ JOIN (SELECT DISTINCT * FROM (VALUES %s) AS v) AS steps(step) ON TRUE
 	_, err := s.db.Exec(sql, args...)
 	return getDatabaseError(err, "processSteps", "force processing")
 }
+
+// CancelDocumentProcessing removes all steps from processing queue for document.
+func (s *JobStore) CancelDocumentProcessing(documentId string) error {
+	sql := `
+	DELETE FROM process_queue
+	WHERE document_id = $1
+`
+	_, err := s.db.Exec(sql, documentId)
+	return getDatabaseError(err, "process queue", "clear document queue")
+}
