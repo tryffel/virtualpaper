@@ -53,6 +53,24 @@ ocr_languages = ["eng"]
 # to use pdftotext binary for faster and more reliable pdf parsing, set binary path.
 pdftotext_bin = ""
 
+# Mail configuration. Uncomment to enable setings mails.
+# Host must be smtp server that is accessible with authentication.
+# Mail uses TLS if available. Auth is of type PLAIN.
+#[mail]
+
+# Smpt host and port.
+#host = ""
+#port = 587
+
+# smpt plain text authentication
+#username = "smptuser"
+#password = "smtppasswd"
+
+# From-field in emails
+#from = "virtualpaper@demo"
+
+# Default error recipient. Uncomment to send errors via mail.
+#error_recipient = "foo@bar.com"
 
 
 # Logging configuration
@@ -69,5 +87,4 @@ http_log_file = "http.log"
 log_file = "virtualpaper.log"
 # Log all logs to stdout in, helpful for interactive mode / development
 log_stdout = true
-
 

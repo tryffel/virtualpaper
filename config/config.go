@@ -22,6 +22,7 @@ type Config struct {
 	Database    Database
 	Processing  Processing
 	Meilisearch Meilisearch
+	Mail        Mail
 	Logging     Logging
 }
 
@@ -73,6 +74,23 @@ type Meilisearch struct {
 	ApiKey string
 }
 
+// Mail contains configuration for sending mails.
+type Mail struct {
+	// Is mailing enabled
+	Enabled bool
+
+	// Smpt host
+	Host string
+	Port int
+
+	Username string
+	Password string
+
+	From string
+	// Recipient to send errors
+	ErrorRecipient string
+}
+
 // Logging configuration
 type Logging struct {
 	Loglevel     string
@@ -121,6 +139,15 @@ func ConfigFromViper() error {
 			Url:    viper.GetString("meilisearch.url"),
 			Index:  viper.GetString("meilisearch.index"),
 			ApiKey: viper.GetString("meilisearch.apikey"),
+		},
+		Mail: Mail{
+			Enabled:        false,
+			Host:           viper.GetString("mail.host"),
+			Port:           viper.GetInt("mail.port"),
+			Username:       viper.GetString("mail.username"),
+			Password:       viper.GetString("mail.password"),
+			From:           viper.GetString("mail.from"),
+			ErrorRecipient: viper.GetString("mail.error_recipient"),
 		},
 		Logging: Logging{
 			Loglevel:     viper.GetString("logging.log_level"),
@@ -197,6 +224,10 @@ func InitConfig() error {
 		if C.Processing.MaxWorkers == 0 {
 			C.Processing.MaxWorkers = 1
 		}
+	}
+
+	if C.Mail.Host != "" {
+		C.Mail.Enabled = true
 	}
 
 	err := os.MkdirAll(C.Processing.DataDir, os.ModePerm)

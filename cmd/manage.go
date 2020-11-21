@@ -19,7 +19,11 @@
 package cmd
 
 import (
+	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"tryffel.net/go/virtualpaper/config"
+	"tryffel.net/go/virtualpaper/mail"
 )
 
 var manageCmd = &cobra.Command{
@@ -28,4 +32,43 @@ var manageCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Help()
 	},
+}
+
+var mailTestCmd = &cobra.Command{
+	Use:   "test-mail",
+	Short: "Test sending mail",
+	Long: "Send test mail. Default recipient is config.mail.error_recipient, " +
+		"which can be overridden with flag --recipient",
+	Run: func(cmd *cobra.Command, args []string) {
+		initConfig()
+		err := config.InitLogging()
+		if err != nil {
+			logrus.Fatalf("init log: %v", err)
+			return
+		}
+		defer config.DeinitLogging()
+
+		var recipient string
+		if testMailRecipient != "" {
+			recipient = testMailRecipient
+		} else {
+			recipient = config.C.Mail.ErrorRecipient
+		}
+
+		err = mail.SendMail("A test mail from Virtualpaper", "Mail configuration seemd to be valid.",
+			config.C.Mail.ErrorRecipient)
+		if err == nil {
+			fmt.Printf("Sent mail to %s\n", recipient)
+		} else {
+			logrus.Fatalf("Mail send failed: %v", err)
+		}
+	},
+}
+
+var testMailRecipient string
+
+func init() {
+	manageCmd.AddCommand(mailTestCmd)
+	mailTestCmd.PersistentFlags().StringVarP(&testMailRecipient, "recipient", "r", "",
+		"Recipient to send test mail to")
 }
