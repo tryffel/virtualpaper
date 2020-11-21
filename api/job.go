@@ -3,14 +3,14 @@ package api
 import (
 	"fmt"
 	"net/http"
-	"tryffel.net/go/virtualpaper/storage"
+	"tryffel.net/go/virtualpaper/errors"
 )
 
 func (a *Api) GetJob(w http.ResponseWriter, req *http.Request) {
 	handler := "api.GetJob"
 	userId, ok := getUserId(req)
 	if !ok {
-		respError(w, fmt.Errorf("user id not found: %v", storage.ErrInternalError), handler)
+		respError(w, fmt.Errorf("user id not found: %v", errors.ErrInternalError), handler)
 		return
 	}
 

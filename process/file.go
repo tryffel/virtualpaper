@@ -1,7 +1,6 @@
 package process
 
 import (
-	"errors"
 	"fmt"
 	"github.com/otiai10/gosseract"
 	"github.com/sirupsen/logrus"
@@ -11,6 +10,7 @@ import (
 	"strings"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
+	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/storage"
@@ -56,11 +56,59 @@ func (fp *fileProcessor) waitEvent() {
 		// pass
 
 	case fileOp := <-fp.input:
+		defer fp.recoverPanic()
 		fp.process(fileOp)
-		//fp.processFile()
-
-		//fp.processFile()
 	}
+}
+
+func (fp *fileProcessor) recoverPanic() {
+	// panic during processing document
+	r := recover()
+	if r == nil {
+		return
+	}
+
+	fields := logrus.Fields{}
+	fields["task_id"] = fp.id
+	if fp.document != nil {
+		fields["document"] = fp.document.Id
+	}
+
+	err := errors.ErrInternalError
+	err.SetStack()
+	err.Err = fmt.Errorf("fatal error in processing task %d: panic: %v", fp.id, r)
+
+	fields["stack"] = string(err.Stack)
+	logrus.WithFields(fields).Errorf("panic in task: %v", err.Error())
+
+	if errors.MailEnabled() {
+		msg := err.Error()
+		if fp.document != nil {
+			msg += fmt.Sprintf("\ndocument_id: %s\n", fp.document.Id)
+		}
+		err.ErrMsg = msg
+		mailErr := errors.SendMail(err, "")
+		if mailErr != nil {
+			logrus.Errorf("send error stack on mail: %v", err)
+		}
+	}
+
+	e := fp.cancelDocumentProcessing()
+	if e != nil {
+		logrus.Error("cancel document processing: %v", err)
+	}
+}
+
+func (fp *fileProcessor) cancelDocumentProcessing() error {
+	if fp.document != nil {
+		logrus.Warningf("cancel processing document %s due to errors", fp.document.Id)
+		err := fp.db.JobStore.CancelDocumentProcessing(fp.document.Id)
+		if err != nil {
+			logrus.Errorf("cancel document processing: %v", err)
+		}
+		fp.document = nil
+	}
+	return nil
 }
 
 func (fp *fileProcessor) process(op fileOp) {
@@ -333,7 +381,7 @@ func (fp *fileProcessor) isDuplicate() (bool, error) {
 
 	document, err := fp.db.DocumentStore.GetByHash(hash)
 	if err != nil {
-		if errors.Is(err, storage.ErrRecordNotFound) {
+		if errors.Is(err, errors.ErrRecordNotFound) {
 			return false, nil
 		}
 		return false, err
@@ -354,7 +402,7 @@ func (fp *fileProcessor) createNewDocumentRecord() error {
 
 	user, err := fp.db.UserStore.GetUserByName(userName)
 	if err != nil {
-		if errors.Is(err, storage.ErrRecordNotFound) {
+		if errors.Is(err, errors.ErrRecordNotFound) {
 			return fmt.Errorf("unable to process document from input dir, since user '%s' does not exist. Ensure "+
 				"user has properly named directory assigned to them, and add documents there", userName)
 		} else {
@@ -620,7 +668,7 @@ func (fp *fileProcessor) indexSearchContent() error {
 	if len(fp.document.Tags) == 0 {
 		tags, err := fp.db.MetadataStore.GetDocumentTags(fp.document.UserId, fp.document.Id)
 		if err != nil {
-			if errors.Is(err, storage.ErrRecordNotFound) {
+			if errors.Is(err, errors.ErrRecordNotFound) {
 			} else {
 				logrus.Errorf("get document tags: %v", err)
 			}
@@ -631,7 +679,7 @@ func (fp *fileProcessor) indexSearchContent() error {
 	if len(fp.document.Metadata) == 0 {
 		metadata, err := fp.db.MetadataStore.GetDocumentMetadata(fp.document.UserId, fp.document.Id)
 		if err != nil {
-			if errors.Is(err, storage.ErrRecordNotFound) {
+			if errors.Is(err, errors.ErrRecordNotFound) {
 			} else {
 				logrus.Errorf("get document metadata: %v", err)
 			}

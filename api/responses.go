@@ -25,7 +25,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-	"tryffel.net/go/virtualpaper/storage"
+	"tryffel.net/go/virtualpaper/errors"
 )
 
 // PrettyTime prints time as default time string when marshaled as json
@@ -119,24 +119,24 @@ func respError(resp http.ResponseWriter, err error, handler string) {
 	var statuscode int
 	var reason string
 
-	appError, ok := err.(storage.Error)
+	appError, ok := err.(errors.Error)
 	if ok {
 
-		if appError.ErrType == storage.ErrAlreadyExists.ErrType {
+		if appError.ErrType == errors.ErrAlreadyExists.ErrType {
 			statuscode = http.StatusNotModified
 			reason = appError.ErrMsg
-		} else if appError.ErrType == storage.ErrRecordNotFound.ErrType {
+		} else if appError.ErrType == errors.ErrRecordNotFound.ErrType {
 			statuscode = http.StatusNotFound
 			reason = appError.ErrMsg
-		} else if appError.ErrType == storage.ErrInternalError.ErrType {
+		} else if appError.ErrType == errors.ErrInternalError.ErrType {
 			statuscode = http.StatusInternalServerError
 			reason = "internal error"
 			logrus.WithField("handler", handler).Errorf("internal error: %v", appError.ErrMsg)
-		} else if appError.ErrType == storage.ErrForbidden.ErrType {
+		} else if appError.ErrType == errors.ErrForbidden.ErrType {
 			statuscode = http.StatusForbidden
 			reason = appError.ErrMsg
 			logrus.Errorf("internal error: %v", err)
-		} else if appError.ErrType == storage.ErrInvalid.ErrType {
+		} else if appError.ErrType == errors.ErrInvalid.ErrType {
 			statuscode = http.StatusBadRequest
 			reason = appError.ErrMsg
 		} else {

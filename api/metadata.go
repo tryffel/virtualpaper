@@ -24,8 +24,8 @@ import (
 	"net/http"
 	"regexp"
 	"time"
+	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
-	"tryffel.net/go/virtualpaper/storage"
 )
 
 type metadataRequest struct {
@@ -50,7 +50,7 @@ type metadataValueRequest struct {
 }
 
 func (m *metadataValueRequest) validate() error {
-	invalidErr := storage.ErrInvalid
+	invalidErr := errors.ErrInvalid
 	if m.MatchDocuments {
 		if m.MatchFilter == "" {
 			invalidErr.ErrMsg = "match_filter cannot be empty"

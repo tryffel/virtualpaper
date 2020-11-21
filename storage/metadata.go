@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
+	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 )
 
@@ -158,7 +159,7 @@ END;
 			return getDatabaseError(err, "metadata", "update key-values, check ownership")
 		}
 		if !ownership {
-			return ErrRecordNotFound
+			return errors.ErrRecordNotFound
 		}
 	}
 
@@ -216,6 +217,28 @@ AND match_documents = TRUE;
 	values := &[]models.MetadataValue{}
 	err := s.db.Select(values, sql, userId)
 	return values, getDatabaseError(err, "metadata values", "get where match_documents = true")
+}
+
+// KeyValuePairExists checks whether given pair actually exists and is user owns them.
+func (s *MetadataStore) KeyValuePairExists(userId, key, value int) (bool, error) {
+
+	sql := `
+SELECT CASE WHEN EXISTS
+(
+	select id
+   	m metadata_values
+    	e user_id = $1
+    	d key_id = $2
+    	d id = $3
+)
+THEN TRUE
+ELSE FALSE
+END AS exists;
+`
+
+	exists := false
+	err := s.db.Get(&exists, sql, userId, key, value)
+	return exists, getDatabaseError(err, "metadata", "check key-value ownership")
 }
 
 // CreateKey creates new metadata key.

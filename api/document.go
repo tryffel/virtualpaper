@@ -19,7 +19,6 @@
 package api
 
 import (
-	"errors"
 	"fmt"
 	"github.com/asaskevich/govalidator"
 	"github.com/sirupsen/logrus"
@@ -29,6 +28,7 @@ import (
 	"strconv"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
+	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/process"
 	"tryffel.net/go/virtualpaper/search"
@@ -293,7 +293,7 @@ func (a *Api) getDocumentPreview(resp http.ResponseWriter, req *http.Request) {
 				}
 
 			*/
-			respError(resp, storage.ErrInternalError, handler)
+			respError(resp, errors.ErrInternalError, handler)
 			return
 		}
 		respError(resp, err, handler)
@@ -334,7 +334,7 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 	err = req.ParseMultipartForm(1024 * 1024 * 500)
 	reader, header, err := req.FormFile("file")
 	if err != nil {
-		userError := storage.ErrInvalid
+		userError := errors.ErrInvalid
 		userError.ErrMsg = err.Error()
 		userError.Err = err
 		respError(resp, userError, handler)
@@ -388,7 +388,7 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 
 	existingDoc, err := a.db.DocumentStore.GetByHash(hash)
 	if err != nil {
-		if errors.Is(err, storage.ErrRecordNotFound) {
+		if errors.Is(err, errors.ErrRecordNotFound) {
 		} else {
 			respError(resp, fmt.Errorf("get existing document by hash: %v", err), handler)
 			return

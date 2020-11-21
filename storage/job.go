@@ -1,11 +1,11 @@
 package storage
 
 import (
-	"errors"
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 	"time"
+	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 )
 
@@ -191,7 +191,7 @@ GROUP BY running;
 	rows, err := s.db.Query(sql, documentId)
 	if err != nil {
 		dbERr := getDatabaseError(err, "processSteps", "get document status")
-		if errors.Is(dbERr, ErrRecordNotFound) {
+		if errors.Is(dbERr, errors.ErrRecordNotFound) {
 			return "ready", nil
 		}
 

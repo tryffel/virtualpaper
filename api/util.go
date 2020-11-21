@@ -19,11 +19,11 @@
 package api
 
 import (
-	"errors"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
 	"strings"
+	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/storage"
 )
@@ -59,13 +59,13 @@ func getParamIntId(req *http.Request) (int, error) {
 	idStr := getParamId(req)
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		e := storage.ErrInvalid
+		e := errors.ErrInvalid
 		e.ErrMsg = "id not integer"
 		return -1, e
 	}
 
 	if id < 0 {
-		e := storage.ErrInvalid
+		e := errors.ErrInvalid
 		e.ErrMsg = "id must be >0"
 		return -1, e
 	}

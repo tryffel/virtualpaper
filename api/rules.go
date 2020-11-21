@@ -19,10 +19,9 @@
 package api
 
 import (
-	"errors"
 	"net/http"
+	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
-	"tryffel.net/go/virtualpaper/storage"
 )
 
 type ProcessingRuleResp struct {
@@ -129,7 +128,7 @@ func (a *Api) addUserRule(resp http.ResponseWriter, req *http.Request) {
 	rule := processingRule.toRule()
 	err = rule.Validate()
 	if err != nil {
-		e := storage.ErrInvalid
+		e := errors.ErrInvalid
 		e.ErrMsg = err.Error()
 		respError(resp, e, handler)
 		return

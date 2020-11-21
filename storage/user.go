@@ -19,11 +19,11 @@
 package storage
 
 import (
-	"errors"
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
 	"time"
+	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 )
 
@@ -178,7 +178,7 @@ func (u *UserStore) GetUserByName(username string) (*models.User, error) {
 // Update existing user. Username cannot be changed,
 func (u *UserStore) Update(user *models.User) error {
 	if user.Id < 1 {
-		e := ErrInvalid
+		e := errors.ErrInvalid
 		e.ErrMsg = fmt.Sprintf("user (%d) does not exist", user.Id)
 		return e
 

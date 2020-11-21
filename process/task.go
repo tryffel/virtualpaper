@@ -1,9 +1,9 @@
 package process
 
 import (
-	"errors"
 	"github.com/sirupsen/logrus"
 	"sync"
+	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/storage"
 )

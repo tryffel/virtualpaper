@@ -25,31 +25,31 @@ import (
 	"io"
 	"net/http"
 	"regexp"
-	"tryffel.net/go/virtualpaper/storage"
+	"tryffel.net/go/virtualpaper/errors"
 )
 
 func unMarshalBody(r *http.Request, body interface{}) error {
 	err := json.NewDecoder(r.Body).Decode(body)
 	if err != nil {
 		if err == io.EOF {
-			return storage.ErrInvalid
+			return errors.ErrInvalid
 		} else {
 			logrus.Debugf("invalid json: %v", err)
-			e := storage.ErrInvalid
+			e := errors.ErrInvalid
 			e.ErrMsg = "invalid json"
 			return e
 		}
-		return storage.ErrInvalid
+		return errors.ErrInvalid
 	}
 
 	ok, err := govalidator.ValidateStruct(body)
 	if err != nil {
-		e := storage.ErrInvalid
+		e := errors.ErrInvalid
 		e.ErrMsg = err.Error()
 		return e
 	}
 	if !ok {
-		e := storage.ErrInvalid
+		e := errors.ErrInvalid
 		e.ErrMsg = "invalid request"
 		return e
 	}

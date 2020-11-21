@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
-	"tryffel.net/go/virtualpaper/storage"
+	"tryffel.net/go/virtualpaper/errors"
 )
 
 const (
@@ -76,7 +76,7 @@ func (a *Api) authorizeUser(next http.Handler) http.Handler {
 
 			if !user.IsActive {
 				logrus.Debugf("refuse to serve user %d, who is not active", user.Id)
-				respError(w, storage.ErrForbidden, "api.authorizeUser")
+				respError(w, errors.ErrForbidden, "api.authorizeUser")
 				return
 			}
 
@@ -141,13 +141,13 @@ func validateToken(tokenString string, privateKey string) (string, error) {
 		if ok {
 			if e.Inner.Error() == "Token is expired" {
 				logrus.Debugf("token expired")
-				e := storage.ErrInvalid
+				e := errors.ErrInvalid
 				e.ErrMsg = "token expired"
 				return "", e
 			}
 
 		} else {
-			e := storage.ErrInvalid
+			e := errors.ErrInvalid
 			e.ErrMsg = "invalid token"
 			return "", e
 		}
@@ -160,7 +160,7 @@ func validateToken(tokenString string, privateKey string) (string, error) {
 		expired := !claims.VerifyNotBefore(time.Now().Unix(), config.C.Api.TokenExpire != 0)
 		if expired {
 			logrus.Debugf("token expired")
-			e := storage.ErrInvalid
+			e := errors.ErrInvalid
 			e.ErrMsg = "token expired"
 			return "", e
 		}

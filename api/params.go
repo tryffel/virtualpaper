@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
+	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
@@ -98,19 +99,19 @@ func getDocumentFilter(req *http.Request) (*search.DocumentFilter, error) {
 	}
 	err := json.Unmarshal([]byte(query), body)
 	if err != nil {
-		e := storage.ErrInvalid
+		e := errors.ErrInvalid
 		e.ErrMsg = "invalid json in search params"
 		return nil, e
 	}
 
 	ok, err := govalidator.ValidateStruct(body)
 	if err != nil {
-		e := storage.ErrInvalid
+		e := errors.ErrInvalid
 		e.ErrMsg = formatValidatorError(err)
 		return nil, e
 	}
 	if !ok {
-		return nil, storage.ErrInvalid
+		return nil, errors.ErrInvalid
 	}
 
 	filter := &search.DocumentFilter{}
