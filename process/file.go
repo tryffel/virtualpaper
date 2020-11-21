@@ -99,6 +99,8 @@ func (fp *fileProcessor) recoverPanic() {
 	}
 }
 
+// cancel ongoing processing, in case of errors.
+// without cancel processing probably gets stuck in the same processing step.
 func (fp *fileProcessor) cancelDocumentProcessing() error {
 	if fp.document != nil {
 		logrus.Warningf("cancel processing document %s due to errors", fp.document.Id)
@@ -216,7 +218,7 @@ func (fp *fileProcessor) updateHash(doc *models.Document, file *os.File) error {
 		return fmt.Errorf("persist process item: %v", err)
 	}
 
-	defer fp.persistProcess(process, job)
+	defer fp.completeProcessingStep(process, job)
 	hash, err := GetFileHash(file)
 	if err != nil {
 		job.Status = models.JobFailure
@@ -262,7 +264,7 @@ func (fp *fileProcessor) updateThumbnail(doc *models.Document, file *os.File) er
 		return fmt.Errorf("persist process item: %v", err)
 	}
 	job.Message = "Generate thumbnail"
-	defer fp.persistProcess(process, job)
+	defer fp.completeProcessingStep(process, job)
 
 	output := storage.PreviewPath(fp.document.Id)
 
@@ -445,7 +447,7 @@ func (fp *fileProcessor) generateThumbnail(file *os.File) error {
 	if err != nil {
 		return fmt.Errorf("persist process item: %v", err)
 	}
-	defer fp.persistProcess(process, job)
+	defer fp.completeProcessingStep(process, job)
 
 	output := storage.PreviewPath(fp.document.Id)
 	err = storage.CreatePreviewDir(fp.document.Id)
@@ -493,7 +495,7 @@ func (fp *fileProcessor) extractPdf(file *os.File) error {
 		return fmt.Errorf("start process: %v", err)
 	}
 
-	defer fp.persistProcess(process, job)
+	defer fp.completeProcessingStep(process, job)
 
 	var text string
 	useOcr := false
@@ -555,7 +557,7 @@ func (fp *fileProcessor) extractImage(file *os.File) error {
 		return fmt.Errorf("start process: %v", err)
 	}
 
-	defer fp.persistProcess(process, job)
+	defer fp.completeProcessingStep(process, job)
 	client := gosseract.NewClient()
 	defer client.Close()
 
@@ -602,7 +604,7 @@ func (fp *fileProcessor) runRules() error {
 	if err != nil {
 		logrus.Warningf("persist job record: %v", err)
 	} else {
-		defer fp.persistProcess(process, job)
+		defer fp.completeProcessingStep(process, job)
 	}
 	err = runRules(fp.document, rules)
 
@@ -663,7 +665,7 @@ func (fp *fileProcessor) indexSearchContent() error {
 		return fmt.Errorf("start process: %v", err)
 	}
 
-	defer fp.persistProcess(process, job)
+	defer fp.completeProcessingStep(process, job)
 
 	if len(fp.document.Tags) == 0 {
 		tags, err := fp.db.MetadataStore.GetDocumentTags(fp.document.UserId, fp.document.Id)
@@ -703,8 +705,25 @@ func (fp *fileProcessor) indexSearchContent() error {
 	return nil
 }
 
-func (fp *fileProcessor) persistProcess(process *models.ProcessItem, job *models.Job) {
-	err := fp.db.JobStore.MarkProcessingDone(process, job.Status == models.JobFinished)
+func (fp *fileProcessor) completeProcessingStep(process *models.ProcessItem, job *models.Job) {
+
+	// remove step if it was successful. In addition, remove step from queue.
+	// if further steps do not absolutely require running this step.
+	removeStep := job.Status == models.JobFinished
+	switch process.Step {
+	case models.ProcessThumbnail:
+		removeStep = true
+	case models.ProcessRules:
+		removeStep = true
+	case models.ProcessFts:
+		removeStep = true
+	}
+
+	if job.Status == models.JobFailure && removeStep {
+		logrus.Infof("failure in processing document %s, skipping step %s", job.DocumentId, job.Step.String())
+	}
+
+	err := fp.db.JobStore.MarkProcessingDone(process, removeStep)
 	if err != nil {
 		logrus.Errorf("mark process complete: %v", err)
 	}
@@ -713,14 +732,6 @@ func (fp *fileProcessor) persistProcess(process *models.ProcessItem, job *models
 		job.Status = models.JobFailure
 	}
 	err = fp.db.JobStore.Update(job)
-	if err != nil {
-		logrus.Errorf("save job to database: %v", err)
-	}
-}
-
-func (fp *fileProcessor) persistJob(job *models.Job) {
-	job.StoppedAt = time.Now()
-	err := fp.db.JobStore.Update(job)
 	if err != nil {
 		logrus.Errorf("save job to database: %v", err)
 	}
