@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"time"
+	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 )
 
@@ -124,7 +125,14 @@ func (s *DocumentStore) GetByHash(hash string) (*models.Document, error) {
 `
 	object := &models.Document{}
 	err := s.db.Get(object, sql, hash)
-	return object, getDatabaseError(err, "documents", "get by hash")
+	if err != nil {
+		e := getDatabaseError(err, "document", "get by hash")
+		if errors.Is(e, errors.ErrRecordNotFound) {
+			return object, nil
+		}
+		return object, e
+	}
+	return object, nil
 }
 
 func (s *DocumentStore) Create(doc *models.Document) error {

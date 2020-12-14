@@ -33,10 +33,12 @@ func getPostgresError(err error, resource string, action string) (bool, error) {
 }
 
 // Catch SQL error, always resulting in internal error
-func getSqlError(err error) (bool, error) {
+func getSqlError(err error, resource string) (bool, error) {
 	if strings.Contains(err.Error(), "sql:") {
 		if err.Error() == "sql: no rows in result set" {
-			return true, errors.ErrRecordNotFound
+			e := errors.ErrRecordNotFound
+			e.ErrMsg = resource + " not found"
+			return true, e
 		}
 		return true, fmt.Errorf("%v: %v, ", errors.ErrInternalError, err)
 	}
@@ -51,7 +53,7 @@ func getDatabaseError(e error, resource string, action string) error {
 	if p {
 		return err
 	}
-	sql, err := getSqlError(e)
+	sql, err := getSqlError(e, resource)
 	if sql {
 		return err
 	}

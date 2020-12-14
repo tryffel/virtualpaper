@@ -79,6 +79,15 @@ func (e Error) Error() string {
 	return fmt.Sprintf("%s - %s", e.ErrType, e.ErrMsg)
 }
 
+func (e Error) Is(target error) bool {
+	eTarget, ok := target.(Error)
+	if !ok {
+		return false
+	}
+
+	return eTarget.ErrType == e.ErrType
+}
+
 var ErrRecordNotFound = newError("not found")
 var ErrForbidden = newError("forbidden")
 var ErrAlreadyExists = newError("already exists")
