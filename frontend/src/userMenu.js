@@ -28,12 +28,15 @@ class MyUserMenuView extends Component {
     }
 
     fetchProfile = () => {
+        /*
         this.props.crudGetOne(
             'preferences',
             'user',
             '/preferences',
             true
         );
+
+         */
     };
 
     render() {
