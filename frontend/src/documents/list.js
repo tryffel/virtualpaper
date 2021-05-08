@@ -23,8 +23,21 @@ import * as React from "react";
 import { Card, CardActions, CardContent, CardHeader, CardActionArea, Box, useMediaQuery, Typography } from '@material-ui/core';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
-import { List, useListContext, DateField, EditButton, ShowButton, Filter, TextInput, RichTextField,
-    Pagination, ReferenceArrayInput, SelectInput, TopToolbar, SortButton, CreateButton, ExportButton } from "react-admin";
+import {
+    List,
+    useListContext,
+    DateField,
+    EditButton,
+    ShowButton,
+    Filter,
+    TextInput,
+    RichTextField,
+    Pagination,
+    TopToolbar,
+    SortButton,
+    CreateButton,
+    ExportButton,
+} from "react-admin";
 
 import { ThumbnailSmall } from "./file";
 import { FilterSidebar } from './filter';
@@ -48,10 +61,7 @@ const DocumentFilter = (props) => {
 
     return (
         <Filter {...props} >
-            <TextInput label="Search" source="q" alwaysOn/>
-            <ReferenceArrayInput source="tag" reference="tags" allowEmpty label={"Tags"} alwaysOn>
-                <SelectInput optionText="key" optionValue="key"/>
-            </ReferenceArrayInput>
+            <TextInput label="Search" source="q" alwaysOn resettable={true}/>
             <TextInput label="Metadata (k.v)" source="metadata" alwaysOn/>
         </Filter>
 
@@ -62,13 +72,9 @@ const DocumentFilter = (props) => {
 const DocumentSearchFilter = (props) => {
     return (
         <Filter {...props} >
-                <TextInput label="Search" source="q" alwaysOn/>
-                <ReferenceArrayInput source="tag" reference="tags" allowEmpty label={"Tags"}>
-                    <SelectInput optionText="key" optionValue="key"/>
-                </ReferenceArrayInput>
+                <TextInput label="Search" source="q" alwaysOn resettable={true}/>
             <TextInput label="Metadata (k.v)" source="metadata"/>
         </Filter>
-
     );
 }
 
@@ -168,7 +174,7 @@ export const IndexingStatusField = (props) => {
 
 const DocumentListActions = () => (
     <TopToolbar>
-        <SortButton label="Sort" fields={['date', 'name', 'description']} />
+        <SortButton label="Sort" fields={['date', 'name', 'updated_at']} />
         <CreateButton basePath="/documents" />
         <ExportButton />
     </TopToolbar>

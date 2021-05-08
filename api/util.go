@@ -103,7 +103,7 @@ func getSortParams(req *http.Request, model models.Modeler) ([]storage.SortKey, 
 				sort := storage.NewSortKey(v, "id", false)
 				sortKeys = append(sortKeys, sort)
 			case "DESC":
-				sort := storage.NewSortKey(v, "id", false)
+				sort := storage.NewSortKey(v, "id", true)
 				sortKeys = append(sortKeys, sort)
 			default:
 				sort := storage.NewSortKey(v, "id", false)

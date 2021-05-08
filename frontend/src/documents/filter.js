@@ -40,7 +40,7 @@ const Card = withStyles(theme => ({
 
 
 export const FilterSidebar = () => (
-    <Card style={{width: '20em', minWidth: '15em'}}>
+    <Card style={{width: '13em', minWidth: '13em'}}>
         <CardContent>
             <LastVisitedFilter/>
         </CardContent>
