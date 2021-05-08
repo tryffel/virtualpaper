@@ -27,6 +27,7 @@ import (
 	"os"
 	"strings"
 	"syscall"
+	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/storage"
 )
@@ -116,6 +117,14 @@ var resetPwCMd = &cobra.Command{
 	Use:   "reset-password",
 	Short: "Reset user password",
 	Run: func(cmd *cobra.Command, args []string) {
+		initConfig()
+		err := config.InitLogging()
+		if err != nil {
+			logrus.Fatalf("init log: %v", err)
+			return
+		}
+		defer config.DeinitLogging()
+
 		db, err := storage.NewDatabase()
 		if err != nil {
 			logrus.Fatalf("Connect to database: %v", err)
