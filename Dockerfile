@@ -1,5 +1,5 @@
 # Build env
-FROM golang:1.15.5-alpine3.12 as builder
+FROM golang:1.16.4-alpine3.13 as builder
 
 RUN apk update
 RUN apk --no-cache add \
@@ -30,7 +30,7 @@ RUN make build-frontend
 
 
 # Runtime
-FROM alpine:3.12.1
+FROM alpine:3.13.5
 EXPOSE 8000:8000
 
 RUN apk add \
