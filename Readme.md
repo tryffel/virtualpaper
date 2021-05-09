@@ -21,9 +21,12 @@ This project is a **work-in-progress**.
 * Save any key-value metadata to documents
     * If configured, try to match key-values automatically from documents
     * Detect document date
-* Multiple users
 * REST api (swagger documentation is located at api/swaggerdocs/swagger.yaml)
 * Full-text-search
+* **Total number of users is limited to 200.** This is because Meilisearch has a limit of 200 indices, and each user
+uses one index. The benefit for own index is that each user can now configure their personal settings: 
+  synonyms, stop words and results ranking, thus users have more powerful search capability over their files.
+  Maybe one day it is possible to have more users, though.
 
 
 ## Requirements
@@ -35,8 +38,9 @@ Create postgresql database and make sure to **initialize database as utf8** with
 ```CREATE DATABASE virtualpaper WITH ENCODING='utf8' TEMPLATE template0;```
 
 Meilisearch does not require configuration other than from security perspective: consider setting apikey
-and mode to production, and configure Virtualpaper accordingly.
-
+and mode to production, and configure Virtualpaper accordingly. 
+Meilisearch only indexes first 1000 words per document, which means that long documents
+are not fully searchable by their content. 
 
 # Building
 
