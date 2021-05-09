@@ -17,7 +17,7 @@
  */
 
 import * as React from "react";
-import { Admin, Resource, ListGuesser } from 'react-admin';
+import { Admin, Resource } from 'react-admin';
 
 import MessageOutLinedIcon from '@material-ui/icons/Message';
 import DescriptionOutLinedIcon from '@material-ui/icons/Description';

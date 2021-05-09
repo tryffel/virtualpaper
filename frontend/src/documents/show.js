@@ -17,7 +17,8 @@
  */
 
 import React, { useState } from "react";
-import {ArrayField, Datagrid, DateField, Show, Tab, TabbedShowLayout, TextField, ChipField, SingleFieldList, Labeled, TopToolbar, EditButton, useNotify, useQuery
+import {ArrayField, Datagrid, DateField, Show, Tab, TabbedShowLayout, TextField,
+    ChipField, SingleFieldList, Labeled, TopToolbar, EditButton,
 } from "react-admin";
 import Button from '@material-ui/core/Button';
 import RepeatIcon from '@material-ui/icons/Repeat';

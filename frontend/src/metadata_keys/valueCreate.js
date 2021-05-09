@@ -27,7 +27,7 @@ import {
     useCreate,
     useNotify,
     FormWithRedirect,
-    useRefresh, RadioButtonGroupInput, SimpleForm
+    useRefresh, RadioButtonGroupInput
 } from 'react-admin';
 import IconContentAdd from '@material-ui/icons/Add';
 import IconCancel from '@material-ui/icons/Cancel';

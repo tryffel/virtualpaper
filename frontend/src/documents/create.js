@@ -18,7 +18,7 @@
 
 
 import * as React from "react";
-import {Create, Error, FileField, FileInput, Loading, SimpleForm, TextInput, useQueryWithStore} from "react-admin";
+import {Create, Error, FileField, FileInput, Loading, SimpleForm, useQueryWithStore} from "react-admin";
 import {useEffect} from "react";
 
 
@@ -38,7 +38,7 @@ export const DocumentCreate = (props) => {
             setFileNames(data.names.join(', '));
             setMimeTypes(data.mimetypes.join(', '));
         }
-    })
+    }, [data])
 
     if (loading) return <Loading />;
     if (error) return <Error error={error}/>;

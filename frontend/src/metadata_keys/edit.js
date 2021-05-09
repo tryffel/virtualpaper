@@ -25,8 +25,7 @@ import {
     Labeled,
     SimpleForm,
     Edit,
-    BooleanField,
-    ChipField
+    BooleanField
 } from "react-admin";
 
 import { MarkdownField } from '../markdown'

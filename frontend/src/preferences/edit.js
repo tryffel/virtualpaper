@@ -34,8 +34,8 @@ export const ProfileEdit = ({ staticContext, ...props }) => {
                 <TextField source="user_name" label={"Username"}/>
                 <TextInput source="email" />
                 <DateField source="created_at" label={"Joined at"}/>
-                <DateField  source="updated_at" label={"Last updated"}/>
-                </SimpleForm>
+                <DateField source="updated_at" label={"Last updated"}/>
+            </SimpleForm>
         </Edit>
     );
 };

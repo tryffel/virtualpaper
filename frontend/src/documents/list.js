@@ -174,7 +174,7 @@ export const IndexingStatusField = (props) => {
 
 const DocumentListActions = () => (
     <TopToolbar>
-        <SortButton label="Sort" fields={['date', 'name', 'updated_at']} />
+        <SortButton label="Sort" fields={['date', 'name', 'updated_at', 'created_at']} />
         <CreateButton basePath="/documents" />
         <ExportButton />
     </TopToolbar>
