@@ -97,9 +97,15 @@ export const dataProvider = {
             data: {...json, id: 'user'}
             }))}
         else {
-            return httpClient(`${apiUrl}/${resource}/${params.id}`).then(({ json }) => ({
-            data: json,
-        }))}},
+            if (params.id === null || params.id === "") {
+                return httpClient(`${apiUrl}/${resource}`).then(({json}) => ({
+                    data: {...json, id: "1"},
+                }))
+            } else {
+                return httpClient(`${apiUrl}/${resource}/${params.id}`).then(({json}) => ({
+                    data: json,
+                }))
+            }}},
 
     getMany: (resource, params) => {
         const query = {

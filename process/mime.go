@@ -19,6 +19,7 @@
 package process
 
 import (
+	"sort"
 	"strings"
 )
 
@@ -34,6 +35,10 @@ var fileExtensionToMimeType map[string]string
 var fileExtensionToName map[string]string
 
 var pandocMimesSupported map[string]bool
+
+// pre-filled arrays for method SupportedFileTypes().
+var mimetypesSupported []string
+var fileTypesSupported []string
 
 func buildEmptyMimedataMapping() {
 	mimeTypeToFileExtension = map[string][]string{}
@@ -92,6 +97,14 @@ func buildMimeDataMapping() {
 		fileExtensionToMimeType[t.Extension] = t.Mimetype
 		fileExtensionToName[t.Extension] = t.Name
 	}
+
+	for mime, types := range mimeTypeToFileExtension {
+		mimetypesSupported = append(mimetypesSupported, mime)
+		for _, filetype := range types {
+			fileTypesSupported = append(fileTypesSupported, "."+filetype)
+		}
+	}
+	sort.Strings(fileTypesSupported)
 }
 
 // MimeTypeIsSupported returns true if mime type or file ending is supported.
@@ -136,4 +149,9 @@ func fileEndingFromName(filename string) string {
 	}
 	return ""
 
+}
+
+// SupportedFileTypes returns a list of supported file endings.
+func SupportedFileTypes() (mimetypes []string, filetypes []string) {
+	return mimetypesSupported, fileTypesSupported
 }

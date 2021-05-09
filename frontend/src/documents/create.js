@@ -18,19 +18,39 @@
 
 
 import * as React from "react";
-import {Create, FileField, FileInput, SimpleForm, TextInput} from "react-admin";
+import {Create, Error, FileField, FileInput, Loading, SimpleForm, TextInput, useQueryWithStore} from "react-admin";
+import {useEffect} from "react";
 
 
-export const DocumentCreate = (props) => (
+
+export const DocumentCreate = (props) => {
+    const {data, loading, error} = useQueryWithStore({
+        type: 'getOne',
+        resource: 'filetypes',
+        payload: {id: ""},
+    });
+
+    const [fileNames, setFileNames ] = React.useState('');
+    const [mimeTypes, setMimeTypes ] = React.useState('');
+
+    useEffect(() => {
+        if (data) {
+            setFileNames(data.names.join(', '));
+            setMimeTypes(data.mimetypes.join(', '));
+        }
+    })
+
+    if (loading) return <Loading />;
+    if (error) return <Error error={error}/>;
+
+    return (
     <Create{...props}>
-        <SimpleForm>
-            <TextInput disabled source="id" label="id"/>
-            <TextInput source="name" label="name" />
-            <FileInput accept="application/pdf, image/*" multiple={false} label="File upload" source="file">
-                <FileField source="src" title="title" />
+        <SimpleForm title={"Upload new document"}>
+            <span>Supported file types: {fileNames}</span>
+            <FileInput accept={mimeTypes} multiple={false} label="File upload" source="file">
+                <FileField source="src" title="title"/>
             </FileInput>
-
         </SimpleForm>
     </Create>
-);
+    )};
 

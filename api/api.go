@@ -129,6 +129,8 @@ func (a *Api) addRoutes() {
 
 	a.privateRouter.HandleFunc("/preferences/user", a.getUserPreferences).Methods(http.MethodGet)
 
+	a.privateRouter.HandleFunc("/filetypes", a.getSupportedFileTypes).Methods(http.MethodGet)
+
 	a.adminRouter.Use(a.authorizeUser, a.authorizeAdmin)
 	a.adminRouter.HandleFunc("/documents/process", a.forceDocumentProcessing).Methods(http.MethodPost)
 	a.adminRouter.HandleFunc("/documents/process", a.getDocumentProcessQueue).Methods(http.MethodGet)
@@ -152,10 +154,17 @@ func (a *Api) Serve() error {
 	return a.server.ListenAndServe()
 }
 
+// VersionResponse contains general server info.
 type VersionResponse struct {
-	Name    string
-	Version string
-	Commit  string
+	Name    string `json:"name"`
+	Version string `json:"version"`
+	Commit  string `json:"commit"`
+}
+
+// MimeTypesSupportedResponse conatains info on mime types that server can extract.
+type MimeTypesSupportedResponse struct {
+	Names     []string `json:"names"`
+	Mimetypes []string `json:"mimetypes"`
 }
 
 func (a *Api) getVersion(resp http.ResponseWriter, req *http.Request) {
@@ -170,6 +179,23 @@ func (a *Api) getVersion(resp http.ResponseWriter, req *http.Request) {
 		Commit:  config.Commit,
 	}
 	respOk(resp, v)
+}
+
+func (a *Api) getSupportedFileTypes(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route GET /api/v1/filetypes Public GetFileTypes
+	// Get supported file types
+	//
+	// responses:
+	//   200:
+
+	mimetypes, filetypes := process.SupportedFileTypes()
+
+	mimes := &MimeTypesSupportedResponse{
+		Names:     filetypes,
+		Mimetypes: mimetypes,
+	}
+
+	respOk(resp, mimes)
 }
 
 func (a *Api) getEmptyResp(resp http.ResponseWriter, req *http.Request) {
