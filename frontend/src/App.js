@@ -33,6 +33,7 @@ import tags from './tags';
 import metadata_keys from './metadata_keys';
 import rules from './rules';
 import { JobList} from "./job";
+import AdminView from "./admin";
 
 import Dashboard from './dashboard'
 
@@ -46,13 +47,18 @@ const App = () => (
         dataProvider={dataProvider}
         authProvider={authProvider}
         dashboard={Dashboard}
-               customRoutes={[
-               <Route
-                   key="preferences"
-                   path="/preferences"
-                   component={ProfileEdit}
-              />
-           ]}
+        customRoutes= { [
+            <Route
+                key="preferences"
+                path="/preferences"
+                component={ProfileEdit}
+            />,
+            <Route
+                key="administrating"
+                path={"/admin"}
+                component={AdminView}
+            />
+        ]}
         appLayout={MyLayout}
     >
 
@@ -65,6 +71,7 @@ const App = () => (
         <Resource name="documents/stats"  />
         <Resource name="preferences" />
         <Resource name="processing/rules" options={{label:"Processing rules"}} {...rules} icon={ TuneIcon} />
+        <Resource name="admin" />
     </Admin>
     );
 

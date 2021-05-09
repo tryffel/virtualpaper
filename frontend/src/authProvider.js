@@ -51,15 +51,17 @@ const authProvider = {
     checkError: error => Promise.resolve(),
     getPermissions: () => {
         const isAdmin = localStorage.getItem('is_admin');
-        if (isAdmin === null) {
-            return Promise.reject();
-        }
         const permissions = {
             admin: isAdmin,
         }
         return Promise.resolve(permissions);
     },
     getIdentity: () => Promise.resolve(),
+
+    isAdmin: () => {
+        const admin = localStorage.getItem('is_admin');
+        return admin === "true";
+    },
 };
 
 

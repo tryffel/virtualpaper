@@ -34,7 +34,7 @@ type UserPreferences struct {
 	DocumentsCount      int64  `json:"documents_count"`
 	DocumentsSize       int64  `json:"documents_size"`
 	DocumentsSizeString string `json:"documents_size_string"`
-	IsAdmin             int64  `json:"is_admin"`
+	IsAdmin             bool   `json:"is_admin"`
 }
 
 func (u *UserPreferences) copyUser(userPref *models.UserPreferences) {
@@ -46,6 +46,7 @@ func (u *UserPreferences) copyUser(userPref *models.UserPreferences) {
 	u.DocumentsCount = userPref.DocumentCount
 	u.DocumentsSize = userPref.DocumentsSize
 	u.DocumentsSizeString = models.GetPrettySize(u.DocumentsSize)
+	u.IsAdmin = userPref.IsAdmin
 }
 
 func (a *Api) getUserPreferences(resp http.ResponseWriter, req *http.Request) {

@@ -103,7 +103,7 @@ export const dataProvider = {
                 }))
             } else {
                 return httpClient(`${apiUrl}/${resource}/${params.id}`).then(({json}) => ({
-                    data: json,
+                    data: {...json, id: json.id ? json.id : params.id},
                 }))
             }}},
 

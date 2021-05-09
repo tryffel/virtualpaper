@@ -147,6 +147,7 @@ type SystemInfo struct {
 	PopplerInstalled   bool   `json:"poppler_installed"`
 
 	GoVersion string `json:"go_version"`
+	Uptime    string `json:"uptime"`
 }
 
 func (a *Api) getSystemInfo(resp http.ResponseWriter, req *http.Request) {
@@ -159,6 +160,7 @@ func (a *Api) getSystemInfo(resp http.ResponseWriter, req *http.Request) {
 		TesseractVersion:   process.GetTesseractVersion(),
 		PopplerInstalled:   process.GetPdfToTextIsInstalled(),
 		GoVersion:          runtime.Version(),
+		Uptime:             config.UptimeString(),
 	}
 	respOk(resp, info)
 }

@@ -20,6 +20,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { crudGetOne, UserMenu, MenuItemLink } from 'react-admin';
 import SettingsIcon from '@material-ui/icons/Settings';
+import AccountCircle from '@material-ui/icons/AccountCircle';
 import authProvider from "./authProvider";
 
 class MyUserMenuView extends Component {
@@ -34,25 +35,28 @@ class MyUserMenuView extends Component {
                 'user',
                 '/preferences',
                 true
-        )}).then((data) => {
-            localStorage.setItem('is_admin', data.is_admin);
-            localStorage.setItem('userName', data.username);
-        }).catch((error) => {
+            )}).catch((error) => {
             console.error(error)
-
         });
     };
 
     render() {
-        const { crudGetOne, profile, ...props } = this.props;
-
+        const { crudGetOne, profile, admin, ...props } = this.props;
         return (
             <UserMenu label={profile ? profile.user_name: ''} {...props}>
                 <MenuItemLink
                     to="/preferences"
-                    primaryText="Configuration"
-                    leftIcon={<SettingsIcon />}
+                    primaryText="Preferences"
+                    leftIcon={<AccountCircle/>}
                 />
+
+                {authProvider.isAdmin() ?
+                    <MenuItemLink
+                        to="/admin"
+                        primaryText="Administrator"
+                        leftIcon={<SettingsIcon/>}
+                    />: null
+                }
             </UserMenu>
         );
     }
@@ -61,6 +65,12 @@ class MyUserMenuView extends Component {
 const mapStateToProps = state => {
     const resource = 'preferences';
     const id = 'user';
+
+    if (state.admin.resources[resource]) {
+        if (state.admin.resources[resource].data[id]) {
+            localStorage.setItem("is_admin", state.admin.resources[resource].data[id].is_admin);
+        }
+    }
 
     return {
         profile: state.admin.resources[resource]
