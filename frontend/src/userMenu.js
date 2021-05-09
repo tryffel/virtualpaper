@@ -18,9 +18,9 @@
 
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import Typography from '@material-ui/core/Typography';
 import { crudGetOne, UserMenu, MenuItemLink } from 'react-admin';
 import SettingsIcon from '@material-ui/icons/Settings';
+import authProvider from "./authProvider";
 
 class MyUserMenuView extends Component {
     componentDidMount() {
@@ -28,15 +28,17 @@ class MyUserMenuView extends Component {
     }
 
     fetchProfile = () => {
-        /*
-        this.props.crudGetOne(
-            'preferences',
-            'user',
-            '/preferences',
-            true
-        );
+        authProvider.checkAuth().then((x) => {
+            this.props.crudGetOne(
+                'preferences',
+                'user',
+                '/preferences',
+                true
+        )}
+        ).catch((error) => {
+            console.error(error)
 
-         */
+        });
     };
 
     render() {
