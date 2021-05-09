@@ -17,10 +17,25 @@
  */
 
 import * as React from "react";
+import {useState} from "react";
+
+import keyBy from 'lodash/keyBy';
+
+import {
+    Card,
+    CardActions,
+    CardContent,
+    CardHeader,
+    Box,
+    useMediaQuery,
+    Typography,
+    Grid
+} from '@material-ui/core';
+
+import {createMuiTheme} from '@material-ui/core/styles'
+import { ThemeProvider } from '@material-ui/styles';
 
 
-
-import { Card, CardActions, CardContent, CardHeader, CardActionArea, Box, useMediaQuery, Typography } from '@material-ui/core';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
 import {
@@ -36,14 +51,14 @@ import {
     TopToolbar,
     SortButton,
     CreateButton,
-    ExportButton,
+    ExportButton, Datagrid, TextField,
+    Loading, Error, useQuery, useQueryWithStore, BooleanField,
 } from "react-admin";
 
 import { ThumbnailSmall } from "./file";
 import { FilterSidebar } from './filter';
 
 import '../App.css';
-import {useState} from "react";
 
 
 const cardStyle = {
@@ -53,6 +68,24 @@ const cardStyle = {
     display: 'inline-block',
     verticalAlign: 'top',
 };
+
+
+const theme = createMuiTheme({
+    palette: {
+        primary: {
+            main: '#3949ab',
+        },
+        secondary: {
+            main: '#673ab7',
+        },
+        background: {
+            default: '#fcfcfe',
+        },
+    },
+    shape: {
+        borderRadius: 15,
+    },
+})
 
 const DocumentPagination = props => <Pagination rowsPerPageOptions={[10, 25, 50, 100]} {...props} />;
 
@@ -84,28 +117,77 @@ const DocumentGrid = () => {
 
     return (
         ids ?
-        <Box style={{ margin: '1em' }}>
+            <ThemeProvider theme={theme}>
+        <Grid  style={{background:theme.palette.background.default, margin: '1em'}} >
+
             {ids.map(id =>
-                <Card key={id} style={cardStyle}>
-                    <CardActionArea>
+                <Card key={id} style={cardStyle} >
                         <CardHeader
-                            title={<RichTextField record={data[id]} source="name"  style={{'.em': {'background-color':'#FFFF00'}}} />}
+                            title={<RichTextField record={data[id]} source="name" />}
                             subheader={<DateField record={data[id]} source="date" />}
                         />
                         <CardContent>
                             <ThumbnailSmall component="img" url={data[id].preview_url} title="Img" />
                         </CardContent>
-                    </CardActionArea>
                     <CardActions style={{ textAlign: 'right' }}>
                         <ShowButton resource="documents" basePath={basePath} record={data[id]} />
                         <EditButton resource="documents" basePath={basePath} record={data[id]} />
                     </CardActions>
                 </Card>
             )}
-        </Box>
+
+        </Grid>
+            </ThemeProvider>
+
             : null
     );
 };
+
+export const LatestDocumentsList = (props) => {
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(10);
+    const [sort, setSort] = useState({ field: 'updated_at', order: 'DESC' })
+    const { data, total, loading, error } = useQueryWithStore({
+        type: 'getList',
+        resource: 'documents',
+        payload: {
+            pagination: { page, perPage },
+            sort: {field: "updated_at", order: "DESC"},
+            filter: {},
+        }
+    });
+
+
+    if (loading) {
+        return <Loading />;
+    }
+    if (error) {
+        return <Error error={error}/>;
+    }
+
+    return (
+        <Grid>
+            <Card>
+                <CardContent>
+            <Typography variant="h5" color="textSecondary">Latest documents</Typography>
+            <Datagrid
+                basePath="/documents"
+                rowClick="show"
+                isRowSelectable={false}
+                data={keyBy(data, 'id')}
+                ids={data.map(({ id }) => id)}
+                currentSort={sort}
+            >
+                <TextField source="name"/>
+                <DateField source="date"/>
+                <DateField source="created_at"/>
+            </Datagrid>
+                </CardContent>
+            </Card>
+        </Grid>
+    )
+}
+
 
 export const DocumentList = (props) => {
     const isSmall = useMediaQuery(theme => theme.breakpoints.down('sm'));

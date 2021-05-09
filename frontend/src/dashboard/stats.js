@@ -23,16 +23,16 @@ import {Card, Typography, Box, CardContent, Grid} from '@material-ui/core';
 export const SingleStat = (props) => {
 
     return (
-        <Grid item >
+        <Grid item xs={4} sm={4}>
             <Card>
                 <CardContent>
                     <Typography
-                        variant="h6"
+                        variant="h7"
                         color="textSecondary"
                     >
                         {props.title}
                     </Typography>
-                    <Typography variant="h6" component="h2">
+                    <Typography variant="h7" component="h4">
                         {props.count|| ' '}
                     </Typography>
                 </CardContent>
@@ -45,7 +45,7 @@ export const SingleStat = (props) => {
 export const Stats = (data) => {
 
     return (
-        <Grid container spacing={1} direction="column">
+        <Grid container spacing={1}>
             <SingleStat title={"Total documents"} count={data.num_documents}/>
             <SingleStat title={"Metadata keys"} count={data.num_metadata_keys}/>
             <SingleStat title={"Metadata values"} count={data.num_metadata_values}/>
