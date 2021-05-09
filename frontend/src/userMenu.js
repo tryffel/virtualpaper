@@ -34,8 +34,10 @@ class MyUserMenuView extends Component {
                 'user',
                 '/preferences',
                 true
-        )}
-        ).catch((error) => {
+        )}).then((data) => {
+            localStorage.setItem('is_admin', data.is_admin);
+            localStorage.setItem('userName', data.username);
+        }).catch((error) => {
             console.error(error)
 
         });

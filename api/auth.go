@@ -139,6 +139,11 @@ func validateToken(tokenString string, privateKey string) (string, error) {
 	if err != nil {
 		e, ok := err.(*jwt.ValidationError)
 		if ok {
+			if e.Inner == nil {
+				e := errors.ErrInvalid
+				e.ErrMsg = "invalid token"
+				return "", e
+			}
 			if e.Inner.Error() == "Token is expired" {
 				logrus.Debugf("token expired")
 				e := errors.ErrInvalid
@@ -201,13 +206,14 @@ func (a *Api) login(resp http.ResponseWriter, req *http.Request) {
 
 	dto.Username = strings.ToLower(dto.Username)
 	userId, err := a.db.UserStore.TryLogin(dto.Username, dto.Password)
+	remoteAddr := getRemoteAddr(req)
 	if userId == -1 || err != nil {
-		remoteAddr := getRemoteAddr(req)
 		logrus.Infof("Failed login attempt for user %s from remote %s", dto.Username, remoteAddr)
 		respUnauthorized(resp)
 		return
 	}
 
+	logrus.Infof("User %d '%s' logged in from %s", userId, dto.Username, remoteAddr)
 	token, err = newToken(strconv.Itoa(userId), config.C.Api.Key)
 	if err != nil {
 		logrus.Errorf("Create new token: %v", err)

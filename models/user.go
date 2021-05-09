@@ -63,9 +63,12 @@ func (u *User) PasswordMatches(password string) (bool, error) {
 
 // UserPreferences are per-user preferences and configuration options.
 type UserPreferences struct {
-	UserId    int       `json:"user_id" db:"user_id"`
-	UserName  string    `json:"user_name" db:"username"`
-	Email     string    `json:"email" db:"email"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UserId        int       `json:"user_id" db:"user_id"`
+	UserName      string    `json:"user_name" db:"username"`
+	Email         string    `json:"email" db:"email"`
+	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
+	CreatedAt     time.Time `json:"created_at" db:"created_at"`
+	DocumentCount int64     `json:"documents_count" db:"documents_count"`
+	DocumentsSize int64     `json:"documents_size" db:"documents_size"`
+	IsAdmin       bool      `json:"is_admin" db:"is_admin"`
 }

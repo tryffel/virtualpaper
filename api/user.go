@@ -26,11 +26,15 @@ import (
 
 type UserPreferences struct {
 	// user
-	Id        int    `json:"user_id"`
-	Name      string `json:"user_name"`
-	Email     string `json:"email"`
-	UpdatedAt int64  `json:"updated_at"`
-	CreatedAt int64  `json:"created_at"`
+	Id                  int    `json:"user_id"`
+	Name                string `json:"user_name"`
+	Email               string `json:"email"`
+	UpdatedAt           int64  `json:"updated_at"`
+	CreatedAt           int64  `json:"created_at"`
+	DocumentsCount      int64  `json:"documents_count"`
+	DocumentsSize       int64  `json:"documents_size"`
+	DocumentsSizeString string `json:"documents_size_string"`
+	IsAdmin             int64  `json:"is_admin"`
 }
 
 func (u *UserPreferences) copyUser(userPref *models.UserPreferences) {
@@ -39,6 +43,9 @@ func (u *UserPreferences) copyUser(userPref *models.UserPreferences) {
 	u.Email = userPref.Email
 	u.UpdatedAt = userPref.UpdatedAt.Unix() * 1000
 	u.CreatedAt = userPref.CreatedAt.Unix() * 1000
+	u.DocumentsCount = userPref.DocumentCount
+	u.DocumentsSize = userPref.DocumentsSize
+	u.DocumentsSizeString = models.GetPrettySize(u.DocumentsSize)
 }
 
 func (a *Api) getUserPreferences(resp http.ResponseWriter, req *http.Request) {
@@ -61,13 +68,15 @@ func (a *Api) getUserPreferences(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	preferences := &models.UserPreferences{
-		UserId:    user.Id,
-		UserName:  user.Name,
-		Email:     user.Email,
-		UpdatedAt: user.CreatedAt,
-		CreatedAt: user.UpdatedAt,
+	preferences, err := a.db.UserStore.GetUserPreferences(user.Id)
+	if err != nil {
+		respError(resp, err, "get user preferences")
+		return
 	}
+
+	preferences.CreatedAt = user.CreatedAt
+	preferences.UpdatedAt = user.UpdatedAt
+	preferences.Email = user.Email
 
 	userPref := &UserPreferences{}
 	userPref.copyUser(preferences)

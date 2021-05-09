@@ -194,3 +194,24 @@ where id = $1
 	_, err := u.db.Exec(sql, user.Id, user.Email, user.UpdatedAt, user.Password, user.IsActive, user.IsAdmin)
 	return getDatabaseError(err, "user", "update")
 }
+
+func (u *UserStore) GetUserPreferences(userid int) (*models.UserPreferences, error) {
+
+	sql := `
+SELECT
+       u.id AS user_id,
+       u.name AS username,
+       u.admin AS is_admin,
+       count(d.id) AS documents_count,
+       sum(d.size) AS documents_size
+FROM users u
+LEFT JOIN documents d ON u.id = d.user_id
+
+WHERE u.id = $1
+GROUP BY(u.id);`
+
+	pref := &models.UserPreferences{}
+
+	err := u.db.Get(pref, sql, userid)
+	return pref, getDatabaseError(err, "user", "get preferences")
+}

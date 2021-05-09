@@ -19,10 +19,8 @@
 package models
 
 import (
-	"fmt"
 	"github.com/hashicorp/go-uuid"
 	"github.com/sirupsen/logrus"
-	"strconv"
 	"strings"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
@@ -86,24 +84,7 @@ func (d *Document) GetType() string {
 
 // GetSize returns human-formatted size
 func (d *Document) GetSize() string {
-	if d.Size < 1024 {
-		return strconv.Itoa(int(d.Size))
-	}
-	size := float64(d.Size)
-	size /= 1024
-	if size < 1024 {
-		return fmt.Sprintf("%.2f KiB", size)
-	}
-	size /= 1024
-	if size < 1024 {
-		return fmt.Sprintf("%.2f MiB", size)
-	}
-	size /= 1024
-	if size < 1024 {
-		return fmt.Sprintf("%.2f GiB", size)
-	}
-	return fmt.Sprintf("%f B", size)
-
+	return GetPrettySize(d.Size)
 }
 
 func (d *Document) FilterAttributes() []string {

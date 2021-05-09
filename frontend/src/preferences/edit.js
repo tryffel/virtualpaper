@@ -31,10 +31,13 @@ export const ProfileEdit = ({ staticContext, ...props }) => {
             {...props}
         >
             <SimpleForm>
+                <TextField source="user_id" label={"User Id"}/>
                 <TextField source="user_name" label={"Username"}/>
                 <TextInput source="email" />
                 <DateField source="created_at" label={"Joined at"}/>
                 <DateField source="updated_at" label={"Last updated"}/>
+                <TextField source="documents_count" label={"Documents count"}/>
+                <TextField source="documents_size_string" label={"Total size of documents"}/>
             </SimpleForm>
         </Edit>
     );
