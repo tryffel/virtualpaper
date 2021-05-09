@@ -61,6 +61,7 @@ type Processing struct {
 	MaxWorkers   int
 	OcrLanguages []string
 	PdfToTextBin string
+	PandocBin    string
 
 	// application directories. Stored by default in ./media/{previews, documents}.
 	PreviewsDir  string
@@ -134,6 +135,7 @@ func ConfigFromViper() error {
 			MaxWorkers:   viper.GetInt("processing.max_workers"),
 			OcrLanguages: viper.GetStringSlice("processing.ocr_languages"),
 			PdfToTextBin: viper.GetString("processing.pdftotext_bin"),
+			PandocBin:    viper.GetString("processing.pandoc_bin"),
 		},
 		Meilisearch: Meilisearch{
 			Url:    viper.GetString("meilisearch.url"),

@@ -56,6 +56,14 @@ func NewManager(database *storage.Database, search *search.Engine) (*Manager, er
 		usePdfToText = false
 	}
 
+	usePandoc := true
+	err = testPandoc()
+	if err != nil {
+		usePandoc = false
+	}
+
+	buildMimeDataMapping()
+
 	count := config.C.Processing.MaxWorkers
 	manager.numtasks = count
 	manager.tasks = make([]*fileProcessor, count)
@@ -67,6 +75,7 @@ func NewManager(database *storage.Database, search *search.Engine) (*Manager, er
 			search:       search,
 			usePdfToText: usePdfToText,
 			useOcr:       useOcr,
+			usePandoc:    usePandoc,
 		}
 		manager.tasks[i] = newFileProcessor(conf)
 	}

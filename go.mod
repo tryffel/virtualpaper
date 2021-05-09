@@ -27,6 +27,7 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
+	golang.org/x/image v0.0.0-20210504121937-7319ad40d33e
 	golang.org/x/sys v0.0.0-20201013081832-0aaa2718063a // indirect
 	gopkg.in/gographics/imagick.v3 v3.3.0
 )

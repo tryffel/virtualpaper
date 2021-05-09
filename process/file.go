@@ -22,6 +22,7 @@ type fpConfig struct {
 	search       *search.Engine
 	usePdfToText bool
 	useOcr       bool
+	usePandoc    bool
 }
 
 type fileProcessor struct {
@@ -34,6 +35,7 @@ type fileProcessor struct {
 
 	usePdfToText bool
 	useOcr       bool
+	usePandoc    bool
 }
 
 func newFileProcessor(conf *fpConfig) *fileProcessor {
@@ -43,6 +45,7 @@ func newFileProcessor(conf *fpConfig) *fileProcessor {
 
 		usePdfToText: conf.usePdfToText,
 		useOcr:       conf.useOcr,
+		usePandoc:    conf.usePandoc,
 	}
 	fp.idle = true
 	fp.runFunc = fp.waitEvent
@@ -95,7 +98,7 @@ func (fp *fileProcessor) recoverPanic() {
 
 	e := fp.cancelDocumentProcessing()
 	if e != nil {
-		logrus.Error("cancel document processing: %v", err)
+		logrus.Errorf("cancel document processing: %v", err)
 	}
 }
 
@@ -456,7 +459,7 @@ func (fp *fileProcessor) generateThumbnail(file *os.File) error {
 	}
 
 	name := file.Name()
-	err = generateThumbnail(name, output, 0, 500)
+	err = generateThumbnail(name, output, 0, 500, fp.document.Mimetype)
 	if err != nil {
 		job.Status = models.JobFailure
 		job.Message += "; " + err.Error()
@@ -474,6 +477,8 @@ func (fp *fileProcessor) parseContent(file *os.File) error {
 		return fp.extractPdf(file)
 	} else if fp.document.IsImage() {
 		return fp.extractImage(file)
+	} else if fp.usePandoc && isPandocMimetype(fp.document.Mimetype) {
+		return fp.extractPandoc(file)
 	} else {
 		return fmt.Errorf("cannot extract content from mimetype: %v", fp.document.Mimetype)
 	}
@@ -566,6 +571,41 @@ func (fp *fileProcessor) extractImage(file *os.File) error {
 		return fmt.Errorf("set ocr image source: %v", err)
 	}
 	text, err := client.Text()
+	if err != nil {
+		job.Message += "; " + err.Error()
+		job.Status = models.JobFailure
+		return fmt.Errorf("parse document text: %v", err)
+	} else {
+		text = strings.ToValidUTF8(text, "")
+		fp.document.Content = text
+		err = fp.db.DocumentStore.SetDocumentContent(fp.document.Id, fp.document.Content)
+		if err != nil {
+			job.Message += "; " + "save document content: " + err.Error()
+			job.Status = models.JobFailure
+			return fmt.Errorf("save document content: %v", err)
+		} else {
+			job.Status = models.JobFinished
+		}
+	}
+	return nil
+}
+
+func (fp *fileProcessor) extractPandoc(file *os.File) error {
+	var err error
+	process := &models.ProcessItem{
+		DocumentId: fp.document.Id,
+		Step:       models.ProcessParseContent,
+		CreatedAt:  time.Now(),
+	}
+
+	job, err := fp.db.JobStore.StartProcessItem(process, fmt.Sprintf("extract content from %s", fp.document.Mimetype))
+	if err != nil {
+		return fmt.Errorf("start process: %v", err)
+	}
+
+	defer fp.completeProcessingStep(process, job)
+
+	text, err := getPandocText(fp.document.Mimetype, fp.document.Filename, file)
 	if err != nil {
 		job.Message += "; " + err.Error()
 		job.Status = models.JobFailure
