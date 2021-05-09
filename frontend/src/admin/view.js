@@ -16,32 +16,38 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {Show, TextField, SimpleShowLayout} from "react-admin";
+import {useShowController} from "react-admin";
+import {Typography, Card, CardContent, Grid} from "@material-ui/core";
 
 
-export const AdminView = ({staticContext, ...props}) => {
+export const AdminView = (props) => {
+    const {record} = useShowController({...props, resource:"admin", basePath:"/admin", id:"systeminfo" })
+
+    if (!record) return null;
     return (
-
-        <Show
-            redirect={false}
-            id="systeminfo"
-            resource="admin"
-            basePath="/admin"
-            title="Administrating"
-            {...props}
-        >
-            <SimpleShowLayout>
-                <TextField source="name" />
-                <TextField source="version" />
-                <TextField source="commit" />
-                <TextField source="uptime" />
-                <TextField source="imagemagick_version" />
-                <TextField source="tesseract_version" />
-                <TextField source="poppler_installed" />
-                <TextField source="go_version" />
-            </SimpleShowLayout>
-        </Show>
-
+        <Grid container spacing={3} alignItems="stretch"  flexGrow={1}>
+            <Grid item xs={5}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h4">Server info</Typography>
+                        <Typography variant="h6">{record.name} </Typography>
+                        <Typography color="textSecondary" >Version: {record.version}, commit: {record.commit} </Typography>
+                        <Typography>Go version: {record.go_version} </Typography>
+                        <Typography>Uptime: {record.uptime} </Typography>
+                    </CardContent>
+                </Card>
+            </Grid>
+            <Grid item xs={6}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h4">Server installation</Typography>
+                        <Typography>{record.imagemagick_version} </Typography>
+                        <Typography>Tesseract version: {record.tesseract_version} </Typography>
+                        <Typography>Poppler installed: {record.poppler_installed ? 'Yes': 'No'} </Typography>
+                    </CardContent>
+                </Card>
+            </Grid>
+        </Grid>
     );
 }
 

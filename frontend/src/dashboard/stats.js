@@ -17,52 +17,27 @@
  */
 
 import * as React from "react";
-import {Card, Typography, Box} from '@material-ui/core';
-import {makeStyles} from "@material-ui/core/styles";
-
-
-const useStyles = makeStyles(() => ({
-
-    card: {
-        minHeight: 30,
-        display: 'flex',
-        flexDirection: 'column',
-        flex: '1',
-        '& a': {
-            textDecoration: 'none',
-            color: 'inherit',
-        },
-    },
-    main: (props) => ({
-        overflow: 'inherit',
-        padding: 16,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    }),
-    title: {},
-}));
+import {Card, Typography, Box, CardContent, Grid} from '@material-ui/core';
 
 
 export const SingleStat = (props) => {
-    const classes = useStyles(props);
 
     return (
-        <Card className={classes.card}>
-            <div className={classes.main}>
-                <Box textAlign="right" >
+        <Grid item >
+            <Card>
+                <CardContent>
                     <Typography
-                        variant="h5"
+                        variant="h6"
                         color="textSecondary"
                     >
                         {props.title}
                     </Typography>
-                    <Typography variant="h5" component="h2">
+                    <Typography variant="h6" component="h2">
                         {props.count|| ' '}
                     </Typography>
-                </Box>
-            </div>
-        </Card>
+                </CardContent>
+            </Card>
+        </Grid>
     )
 }
 
@@ -70,10 +45,10 @@ export const SingleStat = (props) => {
 export const Stats = (data) => {
 
     return (
-        <Card>
+        <Grid container spacing={1} direction="column">
             <SingleStat title={"Total documents"} count={data.num_documents}/>
             <SingleStat title={"Metadata keys"} count={data.num_metadata_keys}/>
             <SingleStat title={"Metadata values"} count={data.num_metadata_values}/>
-        </Card>
+        </Grid>
     )
 }

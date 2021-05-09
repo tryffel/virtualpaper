@@ -19,7 +19,7 @@
 
 import * as React from "react";
 import Card from '@material-ui/core/Card';
-import { Box } from '@material-ui/core';
+import {Box, Grid, useMediaQuery} from '@material-ui/core';
 import {Error, Loading, useQueryWithStore} from 'react-admin';
 
 import { Stats } from "./stats";
@@ -33,19 +33,26 @@ export default () => {
         payload: { target:"documents/stats", sort:"id", order:"asc"},
     });
 
+    const isSmall = useMediaQuery(theme => theme.breakpoints.down('sm'));
+
     if (loading) return <Loading />;
     if (error) return <Error error={error}/>;
 
+    let direction = "row";
+    if  (isSmall) {
+        direction= "column";
+    } else {
+        direction= "row";
+    }
     return (
-        <Card>
-            <Box display="flex">
-                <Box flex="1">
-                    <Stats {...data}/>
-                </Box>
-                <Box flex="2">
-                    <DocumentTimeline stats={data.yearly_stats}/>
-                </Box>
-            </Box>
-        </Card>
+
+            <Grid container spacing={1} alignItems="flex-start" justify="flex-start"  direction={direction} flexGrow={1}>
+            <Grid item sm={6}>
+                <Stats {...data}/>
+            </Grid>
+            <Grid item sm={6}>
+                <DocumentTimeline stats={data.yearly_stats}/>
+            </Grid>
+        </Grid>
     );
 }
