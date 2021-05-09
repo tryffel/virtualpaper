@@ -4,15 +4,19 @@
 
 VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2> /dev/null || \
             echo v0)
+COMMIT ?= $(shell git describe --always --dirty 2> /dev/null || \
+            echo v0)
 
-build: 
+build: set-commit
 	go build -o virtualpaper .
 
-release: 
+release: set-commit
 	go build \
 		-tags release \
-		-ldflags '-X tryffel.net/go/virtualpaper/config.Version=$(VERSION)' \
 		-o virtualpaper .
+
+set-commit:
+	sed -i 's/var Commit = ".*"/var Commit = "$(COMMIT)"/g' config/version.go
 
 run: 
 	go run main.go

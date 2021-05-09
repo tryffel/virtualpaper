@@ -155,6 +155,7 @@ func (a *Api) Serve() error {
 type VersionResponse struct {
 	Name    string
 	Version string
+	Commit  string
 }
 
 func (a *Api) getVersion(resp http.ResponseWriter, req *http.Request) {
@@ -166,6 +167,7 @@ func (a *Api) getVersion(resp http.ResponseWriter, req *http.Request) {
 	v := &VersionResponse{
 		Name:    "VirtualPaper",
 		Version: config.Version,
+		Commit:  config.Commit,
 	}
 	respOk(resp, v)
 }
