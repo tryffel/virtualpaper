@@ -358,6 +358,14 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 		Date:     time.Now(),
 	}
 
+	if !process.MimeTypeIsSupported(mimetype, header.Filename) {
+		e := errors.ErrInvalid
+		e.ErrMsg = "unsupported file type"
+		respError(resp, e, handler)
+		req.Body.Close()
+		return
+	}
+
 	tempFileName := storage.TempFilePath(tempHash)
 	inputFile, err := os.OpenFile(tempFileName, os.O_CREATE|os.O_WRONLY, os.ModePerm)
 	if err != nil {
