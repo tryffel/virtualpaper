@@ -94,8 +94,8 @@ const DocumentFilter = (props) => {
 
     return (
         <Filter {...props} >
-            <TextInput label="Search" source="q" alwaysOn resettable={true}/>
-            <TextInput label="Metadata (k.v)" source="metadata" alwaysOn/>
+            <TextInput label="Search" source="q" alwaysOn resettable fullWidth/>
+            <TextInput label="Metadata filter" source="metadata" alwaysOn resettable fullWidth/>
         </Filter>
 
     );
@@ -105,8 +105,8 @@ const DocumentFilter = (props) => {
 const DocumentSearchFilter = (props) => {
     return (
         <Filter {...props} >
-                <TextInput label="Search" source="q" alwaysOn resettable={true}/>
-            <TextInput label="Metadata (k.v)" source="metadata"/>
+                <TextInput label="Search" source="q" alwaysOn resettable fullWidth/>
+            <TextInput label="Metadata filter" alwaysOn resettable fullWidth source="metadata"/>
         </Filter>
     );
 }
