@@ -24,6 +24,7 @@ import {Error, Loading, useQueryWithStore} from 'react-admin';
 
 import { Stats } from "./stats";
 import { DocumentTimeline } from "./timeline";
+import {LatestDocumentsList} from "../documents/list";
 
 
 export default (props) => {
@@ -41,7 +42,7 @@ export default (props) => {
 
             <Grid container spacing={1} direction={direction} flexGrow={1} alignItems="stretch">
                 <Grid item xl={6} lg={6} sm={12} md={10} xs={12}>
-                    <RecentDocumentsList {...props}/>
+                    <LatestDocumentsList{...props}/>
                 </Grid>
                 <Grid item xl={2} lg={5} xs={12} sm={10} md={8}>
                     <DocumentTimeline stats={data.yearly_stats}/>
