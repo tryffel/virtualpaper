@@ -53,6 +53,8 @@ ocr_languages = ["eng"]
 # to use pdftotext binary for faster and more reliable pdf parsing, set binary path.
 pdftotext_bin = ""
 
+pandoc_bin = ""
+
 # Mail configuration. Uncomment to enable setings mails.
 # Host must be smtp server that is accessible with authentication.
 # Mail uses TLS if available. Auth is of type PLAIN.
