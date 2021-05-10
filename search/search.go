@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
+	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/storage"
 )
@@ -76,17 +77,17 @@ func (d *DocumentFilter) buildRequest(paging storage.Paging) *meilisearch.Search
 	}
 
 	if d.Metadata != "" {
-		metadata := strings.Replace(d.Metadata, " ", "_", -1)
+		metadata := parseFilter(d.Metadata)
 
 		if request.Filters != "" {
 			request.Filters += " AND "
 		}
-		request.Filters += fmt.Sprintf("metadata=%s", metadata)
+		request.Filters += metadata
 	}
 	return request
 }
 
-// SearchDocument searches documents for given user. Query can be anything. If field="", search in any field,
+// SearchDocuments searches documents for given user. Query can be anything. If field="", search in any field,
 // else search only specified field
 func (e *Engine) SearchDocuments(userId int, query *DocumentFilter, paging storage.Paging) ([]*models.Document, int, error) {
 
@@ -97,6 +98,14 @@ func (e *Engine) SearchDocuments(userId int, query *DocumentFilter, paging stora
 
 	res, err := e.client.Search(indexName(userId)).Search(*request)
 	if err != nil {
+		if meiliError, ok := err.(*meilisearch.Error); ok {
+			if meiliError.StatusCode == 400 {
+				// invalid query
+				userError := errors.ErrInvalid
+				userError.ErrMsg = "Invalid query"
+				return nil, 0, userError
+			}
+		}
 		return docs, 0, err
 	}
 	if len(res.Hits) == 0 {
@@ -166,4 +175,58 @@ func getInt(key string, container map[string]interface{}) int {
 		return int(float64Val)
 	}
 	return 0
+}
+
+// parse user filter into meilisearch metadata filter
+func parseFilter(filter string) string {
+	if filter == "" {
+		return filter
+	}
+
+	inEscape := false
+	textLeft := filter
+
+	// sweep through the filter, remove whitespaces in sentences with underscore
+	for i := 0; i < len(filter); i++ {
+		if textLeft == "" {
+			break
+		}
+		character := filter[i]
+		if inEscape {
+			if character == '"' {
+				inEscape = false
+				continue
+			}
+			if character == ' ' {
+				textLeft = textLeft[:i] + "_" + textLeft[i+1:]
+			}
+		} else {
+			if character == '"' {
+				inEscape = true
+			}
+		}
+	}
+
+	// ensure parantheses are tokenized
+	textLeft = strings.Replace(textLeft, "(", " ( ", -1)
+	textLeft = strings.Replace(textLeft, ")", " ) ", -1)
+
+	tokens := strings.Split(textLeft, " ")
+	output := ""
+
+	// join tokens back, removing escapes strings
+	for _, token := range tokens {
+		if token == "" {
+			continue
+		}
+		if strings.Contains(token, ":") {
+			token = strings.Replace(token, "\"", "", -1)
+			token = "metadata=\"" + token + "\""
+		}
+		if output != "" {
+			output += " "
+		}
+		output += token
+	}
+	return output
 }

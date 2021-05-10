@@ -88,7 +88,7 @@ func getDocumentFilter(req *http.Request) (*search.DocumentFilter, error) {
 		Tag      string `json:"tag" valid:"-"`
 		After    int64  `json:"after" valid:"-"`
 		Before   int64  `json:"before" valid:"-"`
-		Metadata string `json:"metadata" valid:"optional,matches(^([^.]+).([^.]+)$)"`
+		Metadata string `json:"metadata" valid:"-"`
 	}
 
 	body := &documentFilter{}
