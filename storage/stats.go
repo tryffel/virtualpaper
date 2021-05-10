@@ -91,3 +91,36 @@ order by updated_at desc limit 10;
 	err = s.db.Select(&stats.LastDocumentsUpdated, sql, userId)
 	return stats, getDatabaseError(err, "stats", "get last updated docs")
 }
+
+func (s *StatsStore) GetSystemStats() (*models.SystemStatistics, error) {
+
+	sql := `
+SELECT
+    count(distinct(d.id)) AS documents_total,
+    sum(d.size) AS documents_size,
+    count(distinct(pq.document_id)) as documents_queued,
+    (
+        select count(distinct(j.document_id)) as documents_processed_today
+        from jobs j
+        where date(j.started_at) = date(now())
+    ) as documents_processed_today,
+    (
+        select count(distinct(j.document_id)) as documents_processed_today
+        from jobs j
+        where date(j.started_at) > date(now()) - interval '1 week'
+    ) as documents_processed_past_week,
+    (
+        select count(distinct(j.document_id)) as documents_processed_today
+        from jobs j
+        where date(j.started_at) > date(now()) - interval '1 month'
+    ) as documents_processed_past_month
+
+from documents d
+         left join process_queue pq on d.id = pq.document_id
+         left join jobs j on d.id = j.document_id;
+`
+
+	stats := &models.SystemStatistics{}
+	err := s.db.Get(stats, sql)
+	return stats, getDatabaseError(err, "stats", "get system stats")
+}

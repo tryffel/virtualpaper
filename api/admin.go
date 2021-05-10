@@ -19,9 +19,12 @@
 package api
 
 import (
+	"bytes"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"os/exec"
 	"runtime"
+	"strings"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/process"
@@ -138,16 +141,27 @@ func (a *Api) getDocumentProcessQueue(resp http.ResponseWriter, req *http.Reques
 }
 
 type SystemInfo struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
-	Commit  string `json:"commit"`
+	Name      string `json:"name"`
+	Version   string `json:"version"`
+	Commit    string `json:"commit"`
+	GoVersion string `json:"go_version"`
 
 	ImagemagickVersion string `json:"imagemagick_version"`
 	TesseractVersion   string `json:"tesseract_version"`
 	PopplerInstalled   bool   `json:"poppler_installed"`
+	PandocInstalled    bool   `json:"pandoc_installed"`
 
-	GoVersion string `json:"go_version"`
-	Uptime    string `json:"uptime"`
+	NumCpu     int    `json:"number_cpus"`
+	ServerLoad string `json:"server_load"`
+	Uptime     string `json:"uptime"`
+
+	DocumentsInQueue            int    `json:"documents_queued"`
+	DocumentsProcessedToday     int    `json:"documents_processed_today"`
+	DocumentsProcessedLastWeek  int    `json:"documents_processed_past_week"`
+	DocumentsProcessedLastMonth int    `json:"documents_processed_past_month"`
+	DocumentsTotal              int    `json:"documents_total"`
+	DocumentsTotalSize          int64  `json:"documents_total_size"`
+	DocumentsTotalSizeString    string `json:"documents_total_size_string"`
 }
 
 func (a *Api) getSystemInfo(resp http.ResponseWriter, req *http.Request) {
@@ -156,11 +170,47 @@ func (a *Api) getSystemInfo(resp http.ResponseWriter, req *http.Request) {
 		Name:               "Virtualpaper",
 		Version:            config.Version,
 		Commit:             config.Commit,
+		NumCpu:             runtime.NumCPU(),
 		ImagemagickVersion: process.GetImagickVersion(),
 		TesseractVersion:   process.GetTesseractVersion(),
 		PopplerInstalled:   process.GetPdfToTextIsInstalled(),
 		GoVersion:          runtime.Version(),
 		Uptime:             config.UptimeString(),
+		PandocInstalled:    process.GetPandocInstalled(),
 	}
+
+	stats, err := a.db.StatsStore.GetSystemStats()
+	if err != nil {
+		respError(resp, err, "getSystemInfo")
+		return
+	}
+
+	info.DocumentsInQueue = stats.DocumentsInQueue
+	info.DocumentsProcessedToday = stats.DocumentsProcessedToday
+	info.DocumentsProcessedLastWeek = stats.DocumentsProcessedLastWeek
+	info.DocumentsProcessedLastMonth = stats.DocumentsProcessedLastMonth
+	info.DocumentsTotal = stats.DocumentsTotal
+	info.DocumentsTotalSize = stats.DocumentsTotalSize
+	info.DocumentsTotalSizeString = models.GetPrettySize(stats.DocumentsTotalSize)
+
+	stdout := &bytes.Buffer{}
+	cmd := exec.Command("uptime")
+	cmd.Stdout = stdout
+	err = cmd.Run()
+
+	if err != nil {
+		logrus.Warningf("exec 'uptime': %v", err)
+	} else {
+		text := stdout.String()
+		text = strings.Trim(text, " \n")
+		splits := strings.Split(text, " ")
+		if len(splits) != 13 {
+			logrus.Warningf("invalid 'uptime' result: %v", splits)
+		} else {
+			load := strings.Join(splits[10:], " ")
+			info.ServerLoad = load
+		}
+	}
+
 	respOk(resp, info)
 }

@@ -31,3 +31,14 @@ type UserDocumentStatistics struct {
 	NumMetadataValues    int      `json:"num_metadata_values"`
 	LastDocumentsUpdated []string `json:"last_documents_updated"`
 }
+
+type SystemStatistics struct {
+	DocumentsInQueue            int    `json:"documents_queued" db:"documents_queued"`
+	DocumentsProcessedToday     int    `json:"documents_processed_today" db:"documents_processed_today"`
+	DocumentsProcessedLastWeek  int    `json:"documents_processed_past_week" db:"documents_processed_past_week"`
+	DocumentsProcessedLastMonth int    `json:"documents_processed_past_month" db:"documents_processed_past_month"`
+	DocumentsTotal              int    `json:"documents_total" db:"documents_total"`
+	DocumentsTotalSize          int64  `json:"documents_total_size" db:"documents_size"`
+	DocumentsTotalSizeString    string `json:"documents_total_size_string"`
+	ServerLoad                  string `json:"server_load"`
+}

@@ -26,24 +26,49 @@ export const AdminView = (props) => {
     if (!record) return null;
     return (
         <Grid container spacing={3} alignItems="stretch"  flexGrow={1}>
-            <Grid item xs={5}>
+            <Grid item lg={6} md={6} s={11} xs={11} >
                 <Card>
                     <CardContent>
                         <Typography variant="h4">Server info</Typography>
                         <Typography variant="h6">{record.name} </Typography>
                         <Typography color="textSecondary" >Version: {record.version}, commit: {record.commit} </Typography>
                         <Typography>Go version: {record.go_version} </Typography>
-                        <Typography>Uptime: {record.uptime} </Typography>
+
                     </CardContent>
                 </Card>
             </Grid>
-            <Grid item xs={6}>
+            <Grid item lg={6} md={6} s={11} xs={11} >
                 <Card>
                     <CardContent>
                         <Typography variant="h4">Server installation</Typography>
+                        <Typography>Number of CPUs: {record.number_cpus} </Typography>
                         <Typography>{record.imagemagick_version} </Typography>
                         <Typography>Tesseract version: {record.tesseract_version} </Typography>
                         <Typography>Poppler installed: {record.poppler_installed ? 'Yes': 'No'} </Typography>
+                        <Typography>Pandoc installed: {record.pandoc_installed ? 'Yes': 'No'} </Typography>
+                    </CardContent>
+                </Card>
+            </Grid>
+            <Grid item lg={6} md={6} s={11} xs={11} >
+                <Card>
+                    <CardContent>
+                        <Typography variant="h4">Server statistics</Typography>
+                        <Typography>Uptime: {record.uptime} </Typography>
+                        <Typography>Server load: {record.server_load} </Typography>
+                        <Typography>Waiting for processing: {record.documents_queued} </Typography>
+                        <Typography>Processed today: {record.documents_processed_today} </Typography>
+                        <Typography>Processed past week: {record.documents_processed_past_week} </Typography>
+                        <Typography>Processed past month: {record.documents_processed_past_month} </Typography>
+                    </CardContent>
+
+                </Card>
+            </Grid>
+            <Grid item lg={6} md={6} s={11} xs={11} >
+                <Card>
+                    <CardContent>
+                        <Typography variant="h4">Documents statistics</Typography>
+                        <Typography>Documents total: {record.documents_total} </Typography>
+                        <Typography>Documents total size: {record.documents_total_size_string} </Typography>
                     </CardContent>
                 </Card>
             </Grid>
