@@ -17,11 +17,65 @@
  */
 
 import { stringify } from 'query-string';
-import { fetchUtils } from 'ra-core';
+import { HttpError } from 'react-admin';
 
 import { config } from "./env.js";
 
 const apiUrl = config.url;
+
+
+/* copied from ra-core fetchUtils. */
+export const createHeadersFromOptions = (options) => {
+    const requestHeaders = (options.headers ||
+        new Headers({
+            Accept: 'application/json',
+        }));
+    if (
+        !requestHeaders.has('Content-Type') &&
+        !(options && (!options.method || options.method === 'GET')) &&
+        !(options && options.body && options.body instanceof FormData)
+    ) {
+        requestHeaders.set('Content-Type', 'application/json');
+    }
+    if (options.user && options.user.authenticated && options.user.token) {
+        requestHeaders.set('Authorization', options.user.token);
+    }
+    return requestHeaders;
+};
+
+
+/* modified from ra-core fetchUtils, use json.error if any. */
+const fetchJson = (url, options= {}) => {
+    const requestHeaders = createHeadersFromOptions(options);
+
+    return fetch(url, { ...options, headers: requestHeaders })
+        .then(response =>
+            response.text().then(text => ({
+                status: response.status,
+                statusText: response.statusText,
+                headers: response.headers,
+                body: text,
+            }))
+        )
+        .then(({ status, statusText, headers, body }) => {
+            let json;
+            try {
+                json = JSON.parse(body);
+            } catch (e) {
+                // not json, no big deal
+            }
+            if (status < 200 || status >= 300) {
+                return Promise.reject(
+                    new HttpError(
+                        (json && json.Error) || statusText,
+                        status,
+                        json
+                    )
+                );
+            }
+            return Promise.resolve({ status, headers, body, json });
+        });
+};
 
 const httpClient = (url, options = {}) => {
     if (!options.headers) {
@@ -29,7 +83,7 @@ const httpClient = (url, options = {}) => {
     }
     const  token  = localStorage.getItem('auth');
     options.headers.set('Authorization', `Bearer ${token}`);
-    return fetchUtils.fetchJson(url, options);
+    return fetchJson(url, options);
 };
 const countHeader = "Content-Range";
 
