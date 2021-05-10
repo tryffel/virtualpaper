@@ -29,7 +29,11 @@ import {
     Box,
     useMediaQuery,
     Typography,
-    Grid
+    Grid,
+    Dialog,
+    DialogTitle,
+    DialogContentText,
+    DialogContent,
 } from '@material-ui/core';
 
 import {createMuiTheme} from '@material-ui/core/styles'
@@ -37,6 +41,7 @@ import { ThemeProvider } from '@material-ui/styles';
 
 
 import CircularProgress from '@material-ui/core/CircularProgress';
+import HelpIcon from '@material-ui/icons/Help';
 
 import {
     List,
@@ -52,7 +57,7 @@ import {
     SortButton,
     CreateButton,
     ExportButton, Datagrid, TextField,
-    Loading, Error, useQuery, useQueryWithStore, BooleanField,
+    Loading, Error, useQueryWithStore, Button,
 } from "react-admin";
 
 import { ThumbnailSmall } from "./file";
@@ -87,6 +92,64 @@ const theme = createMuiTheme({
     },
 })
 
+const HelpDialog = props => {
+    const [scroll, setScroll] = React.useState('paper');
+
+    const {onClose, open} = props;
+    const handleClose = () => {
+        onClose();
+    };
+
+    return (
+        <Dialog onClose={handleClose} aria-labelledby="simple-dialog-title" open={open} scroll={scroll}>
+            <DialogTitle id="simple-dialog-title">Help: Querying documents</DialogTitle>
+            <DialogContent dividers={scroll === 'paper'}>
+                <DialogContentText>
+                    <Typography variant="h6" color="textPrimary">Full text search</Typography>
+                    <p>Full text input filters documents on any fields available.
+                        For reference, see &nbsp;
+                        <a href="https://docs.meilisearch.com/learn/what_is_meilisearch/features.html">
+                            Meilisearch documentation
+                        </a>
+                    </p>
+                    <Typography variant="h6" color="textPrimary">Metadata filter</Typography>
+                    Returned documents can be filtered by their metadata.
+                    Possible queries:
+                    <Typography>- class:report</Typography>
+                    <Typography>- author:apple OR author:google</Typography>
+                    <Typography>- class:book AND (author:"agatha christie" OR author:"doyle")</Typography>
+                </DialogContentText>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+
+const HelpButton = props => {
+    const [open, setOpen] = React.useState(false);
+
+    const handleClickOpen = () => {
+        setOpen(true);
+    };
+
+    const handleClose = (value) => {
+        setOpen(false);
+    };
+
+    return (
+        <div>
+            <Button
+                label="Help"
+                size="small"
+                icon={<HelpIcon />}
+                alignIcon='left'
+                onClick={handleClickOpen}
+            ><HelpIcon/></Button>
+            <HelpDialog open={open} onClose={handleClose} />
+        </div>
+    )
+}
+
 const DocumentPagination = props => <Pagination rowsPerPageOptions={[10, 25, 50, 100]} {...props} />;
 
 
@@ -118,27 +181,24 @@ const DocumentGrid = () => {
     return (
         ids ?
             <ThemeProvider theme={theme}>
-        <Grid  style={{background:theme.palette.background.default, margin: '1em'}} >
-
-            {ids.map(id =>
-                <Card key={id} style={cardStyle} >
-                        <CardHeader
-                            title={<RichTextField record={data[id]} source="name" />}
-                            subheader={<DateField record={data[id]} source="date" />}
-                        />
-                        <CardContent>
-                            <ThumbnailSmall component="img" url={data[id].preview_url} title="Img" />
-                        </CardContent>
-                    <CardActions style={{ textAlign: 'right' }}>
-                        <ShowButton resource="documents" basePath={basePath} record={data[id]} />
-                        <EditButton resource="documents" basePath={basePath} record={data[id]} />
-                    </CardActions>
-                </Card>
-            )}
-
-        </Grid>
+                <Grid  style={{background:theme.palette.background.default, margin: '1em'}} >
+                    {ids.map(id =>
+                        <Card key={id} style={cardStyle} >
+                            <CardHeader
+                                title={<RichTextField record={data[id]} source="name" />}
+                                subheader={<DateField record={data[id]} source="date" />}
+                            />
+                            <CardContent>
+                                <ThumbnailSmall component="img" url={data[id].preview_url} title="Img" />
+                            </CardContent>
+                            <CardActions style={{ textAlign: 'right' }}>
+                                <ShowButton resource="documents" basePath={basePath} record={data[id]} />
+                                <EditButton resource="documents" basePath={basePath} record={data[id]} />
+                            </CardActions>
+                        </Card>
+                    )}
+                </Grid>
             </ThemeProvider>
-
             : null
     );
 };
@@ -199,6 +259,7 @@ const SmallDocumentList = (props) => {
     return (
         <List
             title="All documents"
+            actions={<DocumentListActions />}
             pagination={<DocumentPagination/>}
             filters={<DocumentSearchFilter/>}
             {...props}
@@ -256,6 +317,7 @@ export const IndexingStatusField = (props) => {
 
 const DocumentListActions = () => (
     <TopToolbar>
+        <HelpButton />
         <SortButton label="Sort" fields={['date', 'name', 'updated_at', 'created_at']} />
         <CreateButton basePath="/documents" />
         <ExportButton />
