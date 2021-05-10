@@ -80,7 +80,6 @@ func GetPandocInstalled() bool {
 }
 
 func isPandocMimetype(mimeType string) bool {
-	return true
 	return pandocMimesSupported[mimeType]
 }
 
