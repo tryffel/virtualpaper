@@ -110,6 +110,27 @@ func (e *Engine) ensureIndexExists() error {
 	return nil
 }
 
+func (e *Engine) UpdateUserPreferences(userId int) error {
+
+	preferences, err := e.db.UserStore.GetUserPreferences(userId)
+	if err != nil {
+		return fmt.Errorf("get preferences: %v", err)
+	}
+	index := indexName(userId)
+
+	_, err = e.client.Settings(index).UpdateStopWords(preferences.StopWords)
+	if err != nil {
+		return fmt.Errorf("update stopwords: %v", err)
+	}
+
+	synonyms := buildSynonyms(preferences.Synonyms)
+	_, err = e.client.Settings(index).UpdateSynonyms(synonyms)
+	if err != nil {
+		return fmt.Errorf("update synonyms: %v", err)
+	}
+	return nil
+}
+
 func (e *Engine) ping() error {
 	v, err := e.client.Version().Get()
 	if err != nil {
@@ -163,14 +184,33 @@ func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 	return nil
 }
 
-func documentToDto(doc *models.Document) *map[string]interface{} {
-	return &map[string]interface{}{
-		"document_id": doc.Id,
-		"user_id":     doc.UserId,
-		"name":        doc.Name,
-		"file_name":   doc.Filename,
-		"content":     doc.Content,
-		"hash":        doc.Hash,
-		"created_at":  doc.CreatedAt.String(),
+func buildSynonyms(synonyms [][]string) map[string][]string {
+	output := map[string][]string{}
+	for _, tuple := range synonyms {
+
+		for i, word := range tuple {
+			if len(tuple) <= 1 {
+				continue
+			}
+
+			var words []string
+			if i == 0 {
+				words = tuple[1:]
+			} else if i == len(tuple)-1 {
+				words = tuple[:i]
+			} else {
+				// need to iterate over list. This is needed for not mutating the tuple list.
+				words = make([]string, 0, len(tuple)-1)
+				for index, v := range tuple {
+					if index == i {
+						continue
+					}
+					words = append(words, v)
+				}
+			}
+			output[word] = words
+		}
 	}
+
+	return output
 }

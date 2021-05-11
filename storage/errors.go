@@ -62,3 +62,26 @@ func getDatabaseError(e error, resource string, action string) error {
 	Err.ErrMsg = fmt.Sprintf("%s - %s", resource, action)
 	return Err
 }
+
+func getDatabaseErrorIgnoreEmpty(e error, resource string, action string) error {
+	if e == nil {
+		return nil
+	}
+	p, err := getPostgresError(e, resource, action)
+	if p {
+		if e, ok := err.(errors.Error); ok {
+			if e.Is(errors.ErrRecordNotFound) {
+				return nil
+			}
+		}
+		return err
+	}
+	sql, err := getSqlError(e, resource)
+	if sql {
+		return err
+	}
+	Err := errors.ErrInternalError
+	Err.Err = err
+	Err.ErrMsg = fmt.Sprintf("%s - %s", resource, action)
+	return Err
+}

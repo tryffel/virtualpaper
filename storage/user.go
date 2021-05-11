@@ -19,6 +19,7 @@
 package storage
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
@@ -213,5 +214,89 @@ GROUP BY(u.id);`
 	pref := &models.UserPreferences{}
 
 	err := u.db.Get(pref, sql, userid)
-	return pref, getDatabaseError(err, "user", "get preferences")
+	if err != nil {
+		return pref, getDatabaseError(err, "user", "get preferences")
+	}
+
+	stopWords, err := u.GetPreferenceValue(userid, PreferenceStopWords)
+	if err != nil {
+		return pref, fmt.Errorf("get stopwords: %v", err)
+	}
+	if stopWords != "" {
+		err = json.Unmarshal([]byte(stopWords), &pref.StopWords)
+		if err != nil {
+			return pref, fmt.Errorf("unmarshal stopwords: %v", err)
+		}
+	}
+
+	synonyms, err := u.GetPreferenceValue(userid, PreferenceSynonyms)
+	if err != nil {
+		return pref, fmt.Errorf("get synonyms: %v", err)
+	}
+	if synonyms != "" {
+		err = json.Unmarshal([]byte(synonyms), &pref.Synonyms)
+		if err != nil {
+			return pref, fmt.Errorf("unmarshal synonyms: %v", err)
+		}
+	}
+	return pref, err
+
+}
+
+type PreferenceKey string
+
+const (
+	PreferenceStopWords PreferenceKey = "stop_words"
+	PreferenceSynonyms  PreferenceKey = "synonyms"
+)
+
+func (u *UserStore) GetPreferenceValue(userId int, key PreferenceKey) (string, error) {
+	sql := `
+SELECT value
+FROM user_preferences
+WHERE user_id=$1
+AND key=$2
+`
+
+	value := ""
+	err := u.db.Get(&value, sql, userId, string(key))
+	return value, getDatabaseErrorIgnoreEmpty(err, "preferences", "get")
+}
+
+func (u *UserStore) SetPreferenceValue(userId int, key PreferenceKey, value string) error {
+	now := time.Now()
+
+	sql := `
+INSERT INTO user_preferences (user_id, "key", "value", updated_at)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (user_id, key)  DO
+UPDATE SET "value"=$3, updated_at=$4
+WHERE user_preferences.user_id=$1
+AND user_preferences.key=$2;
+`
+	_, err := u.db.Exec(sql, userId, key, value, now)
+	return getDatabaseErrorIgnoreEmpty(err, "preferences", "set")
+}
+
+func (u *UserStore) UpdatePreferences(userId int, stopWords []string, synonyms [][]string) error {
+
+	stopWordsB, err := json.Marshal(stopWords)
+	if err != nil {
+		return fmt.Errorf("serialize stopwords: %v", err)
+	}
+	synonymsB, err := json.Marshal(synonyms)
+	if err != nil {
+		return fmt.Errorf("serialize synonyms: %v", err)
+	}
+
+	err = u.SetPreferenceValue(userId, PreferenceStopWords, string(stopWordsB))
+	if err != nil {
+		return fmt.Errorf("save stopwords: %v", err)
+	}
+
+	err = u.SetPreferenceValue(userId, PreferenceSynonyms, string(synonymsB))
+	if err != nil {
+		return fmt.Errorf("save synonyms: %v", err)
+	}
+	return nil
 }

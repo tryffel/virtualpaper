@@ -47,6 +47,11 @@ var Migrations = []Migrator{
 		Level:  4,
 		Schema: schemaV4,
 	},
+	&Migration{
+		Name:   "support for user preferences",
+		Level:  5,
+		Schema: schemaV5,
+	},
 }
 
 type Schema struct {

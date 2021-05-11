@@ -129,6 +129,7 @@ func (a *Api) addRoutes() {
 	a.privateRouter.HandleFunc("/processing/rules/{id}", a.getUserRule).Methods(http.MethodGet)
 
 	a.privateRouter.HandleFunc("/preferences/user", a.getUserPreferences).Methods(http.MethodGet)
+	a.privateRouter.HandleFunc("/preferences/user", a.updateUserPreferences).Methods(http.MethodPut)
 
 	a.privateRouter.HandleFunc("/filetypes", a.getSupportedFileTypes).Methods(http.MethodGet)
 

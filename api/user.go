@@ -27,15 +27,17 @@ import (
 // swagger:model UserPreferences
 type UserPreferences struct {
 	// user
-	Id                  int    `json:"user_id"`
-	Name                string `json:"user_name"`
-	Email               string `json:"email"`
-	UpdatedAt           int64  `json:"updated_at"`
-	CreatedAt           int64  `json:"created_at"`
-	DocumentsCount      int64  `json:"documents_count"`
-	DocumentsSize       int64  `json:"documents_size"`
-	DocumentsSizeString string `json:"documents_size_string"`
-	IsAdmin             bool   `json:"is_admin"`
+	Id                  int        `json:"user_id"`
+	Name                string     `json:"user_name"`
+	Email               string     `json:"email"`
+	UpdatedAt           int64      `json:"updated_at"`
+	CreatedAt           int64      `json:"created_at"`
+	DocumentsCount      int64      `json:"documents_count"`
+	DocumentsSize       int64      `json:"documents_size"`
+	DocumentsSizeString string     `json:"documents_size_string"`
+	IsAdmin             bool       `json:"is_admin"`
+	StopWords           []string   `json:"stop_words"`
+	Synonyms            [][]string `json:"synonyms"`
 }
 
 func (u *UserPreferences) copyUser(userPref *models.UserPreferences) {
@@ -48,6 +50,8 @@ func (u *UserPreferences) copyUser(userPref *models.UserPreferences) {
 	u.DocumentsSize = userPref.DocumentsSize
 	u.DocumentsSizeString = models.GetPrettySize(u.DocumentsSize)
 	u.IsAdmin = userPref.IsAdmin
+	u.StopWords = userPref.StopWords
+	u.Synonyms = userPref.Synonyms
 }
 
 func (a *Api) getUserPreferences(resp http.ResponseWriter, req *http.Request) {
@@ -83,4 +87,42 @@ func (a *Api) getUserPreferences(resp http.ResponseWriter, req *http.Request) {
 	userPref := &UserPreferences{}
 	userPref.copyUser(preferences)
 	respOk(resp, userPref)
+}
+
+// swagger:model UserPreferences
+type ReqUserPreferences struct {
+	StopWords []string   `json:"stop_words" valid:"-"`
+	Synonyms  [][]string `json:"synonyms" valid:"-"`
+}
+
+func (a *Api) updateUserPreferences(resp http.ResponseWriter, req *http.Request) {
+	handler := "updateUserPreferences"
+
+	user, ok := getUserId(req)
+	if !ok {
+		logrus.Errorf("no user in context")
+		respInternalError(resp)
+		return
+	}
+
+	dto := &ReqUserPreferences{}
+	err := unMarshalBody(req, dto)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	err = a.db.UserStore.UpdatePreferences(user, dto.StopWords, dto.Synonyms)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	err = a.search.UpdateUserPreferences(user)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	respOk(resp, nil)
 }
