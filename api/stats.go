@@ -59,6 +59,13 @@ func docStatsToUserStats(stats *models.UserDocumentStatistics) *UserDocumentStat
 		NumMetadataValues:    stats.NumMetadataValues,
 		LastDocumentsUpdated: stats.LastDocumentsUpdated,
 	}
+
+	if uds.YearlyStats == nil {
+		uds.YearlyStats = []struct {
+			Year         int `json:"year" db:"year"`
+			NumDocuments int `json:"num_documents" db:"count"`
+		}{}
+	}
 	return uds
 }
 
