@@ -25,7 +25,7 @@ import {
     Labeled,
     SimpleForm,
     Edit,
-    BooleanField
+    BooleanField, NumberField
 } from "react-admin";
 
 import { MarkdownField } from '../markdown'
@@ -68,6 +68,7 @@ export const MetadataKeyEdit = (props) => {
                     <BooleanField label="Automatic matching" source="match_documents"/>
                     <TextField label="Match by" source="match_type"/>
                     <TextField label="Filter" source="match_filter"/>
+                    <NumberField source="documents_count" label={"Total documents"}/>
                 </Datagrid>
             </ReferenceManyField>
 

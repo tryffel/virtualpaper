@@ -106,21 +106,23 @@ type Metadata struct {
 }
 
 type MetadataKey struct {
-	Id        int       `db:"id" json:"id"`
-	UserId    int       `db:"user_id" json:"-"`
-	Key       string    `db:"key" json:"key"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	Comment   string    `db:"comment" json:"comment"`
+	Id           int       `db:"id" json:"id"`
+	UserId       int       `db:"user_id" json:"-"`
+	Key          string    `db:"key" json:"key"`
+	CreatedAt    time.Time `db:"created_at" json:"created_at"`
+	Comment      string    `db:"comment" json:"comment"`
+	NumDocuments int       `db:"documents_count" json:"documents_count"`
 }
 
 type MetadataValue struct {
-	Id        int       `db:"id" json:"id"`
-	UserId    int       `db:"user_id" json:"-"`
-	Key       string    `db:"key" json:"key"`
-	KeyId     int       `db:"key_id" json:"-"`
-	Value     string    `db:"value" json:"value"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	Comment   string    `db:"comment" json:"comment"`
+	Id           int       `db:"id" json:"id"`
+	UserId       int       `db:"user_id" json:"-"`
+	Key          string    `db:"key" json:"key"`
+	KeyId        int       `db:"key_id" json:"-"`
+	Value        string    `db:"value" json:"value"`
+	CreatedAt    time.Time `db:"created_at" json:"created_at"`
+	Comment      string    `db:"comment" json:"comment"`
+	NumDocuments int       `db:"documents_count" json:"documents_count"`
 
 	// MatchDocuments instructs to try to automatically match MetadataValue inside documents
 	MatchDocuments bool     `db:"match_documents" json:"match_documents"`

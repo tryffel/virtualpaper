@@ -18,7 +18,7 @@
 
 import * as React from "react";
 
-import { List, Datagrid, ChipField, TextField, DateField } from "react-admin";
+import { List, Datagrid, ChipField, TextField, DateField, NumberField } from "react-admin";
 
 
 
@@ -28,6 +28,7 @@ export const MetadataKeyList = (props) => (
             <ChipField source="key" label={"Name"}/>
             <TextField source="comment" label={"Description"}/>
             <DateField source="created_at" label={"Created at"}/>
+            <NumberField source="documents_count" label={"Total documents"}/>
         </Datagrid>
     </List>
 );

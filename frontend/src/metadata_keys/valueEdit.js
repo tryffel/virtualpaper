@@ -76,7 +76,7 @@ const MetadataValueUpdateDialog = (props)  => {
                 onClose={handleCloseClick}
                 aria-label="Update metadata value"
             >
-                <DialogTitle>Add new metadata</DialogTitle>
+                <DialogTitle>Update metadata</DialogTitle>
 
                 <FormWithRedirect
                     resource="metadata/value"

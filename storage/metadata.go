@@ -89,9 +89,16 @@ ORDER BY key ASC;
 func (s *MetadataStore) GetKeys(userId int) (*[]models.MetadataKey, error) {
 	limit := config.MaxRows
 	sql := `
-SELECT *
-FROM metadata_keys
+SELECT
+    mk.id as id,
+    mk.key as key,
+    mk.comment as comment,
+    mk.created_at as created_at,
+    COUNT(dm.document_id) as documents_count
+FROM metadata_keys mk
+LEFT JOIN document_metadata dm ON mk.id = dm.key_id
 WHERE user_id = $1
+GROUP BY (mk.id)
 ORDER BY key ASC
 LIMIT $2;
 `
@@ -121,11 +128,20 @@ func (s *MetadataStore) GetValues(userId int, keyId int) (*[]models.MetadataValu
 	limit := config.MaxRows
 
 	sql := `
-SELECT *
+SELECT
+    mv.id as id,
+    mv.value as value,
+    mv.created_at as created_at,
+    match_documents,
+    match_type,
+    match_filter,
+    count(dm.document_id) as documents_count
 FROM metadata_values mv
+LEFT JOIN document_metadata dm on mv.id = dm.value_id
 WHERE  mv.user_id = $1
-AND key_id = $2
-ORDER BY value ASC
+  AND mv.key_id = $2
+GROUP BY (mv.id, mv.value)
+ORDER BY mv.value ASC
 LIMIT $3;
 `
 
