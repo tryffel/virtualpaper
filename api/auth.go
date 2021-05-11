@@ -29,6 +29,7 @@ import (
 	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
+	"tryffel.net/go/virtualpaper/mail"
 )
 
 const (
@@ -219,6 +220,26 @@ func (a *Api) login(resp http.ResponseWriter, req *http.Request) {
 		logrus.Errorf("Create new token: %v", err)
 		respInternalError(resp)
 		return
+	}
+
+	user, err := a.db.UserStore.GetUser(userId)
+	if err != nil {
+		logrus.Errorf("get user: %v", err)
+	} else {
+		if user.Email != "" {
+			logrus.Debugf("Send email for logged in user to %s", user.Email)
+
+			msg := fmt.Sprintf(`User logged in
+
+ip address: %s,
+user agent: %s,
+`, remoteAddr, req.Header.Get("user-agent"))
+
+			err := mail.SendMail("User logged in", msg, user.Email)
+			if err != nil {
+				logrus.Errorf("send logged-in email to user: %s: %v", user.Email, err)
+			}
+		}
 	}
 
 	respBody := &loginResponse{
