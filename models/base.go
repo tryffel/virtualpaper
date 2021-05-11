@@ -18,7 +18,12 @@
 
 package models
 
-import "time"
+import (
+	"database/sql/driver"
+	"fmt"
+	"math"
+	"time"
+)
 
 // Modeler is a basic interface for all models.
 type Modeler interface {
@@ -45,4 +50,34 @@ func (t *Timestamp) FilterAttributes() []string {
 
 func (t *Timestamp) SortAttributes() []string {
 	return t.FilterAttributes()
+}
+
+// Int as an integer that accepts null values from database.
+type Int int64
+
+func (i *Int) Scan(src interface{}) error {
+	if src == nil {
+		*i = 0
+		return nil
+	}
+
+	if isInt64, ok := src.(int64); ok {
+		*i = Int(isInt64)
+	} else if intArray, ok := src.([]uint8); ok {
+		var val int64 = 0
+		for i := int64(0); i < int64(len(intArray)); i++ {
+			if intArray[i] < 48 || intArray[i] > 57 {
+				return fmt.Errorf("not ascii number: %d", intArray[i])
+			}
+			val += int64(intArray[i]-48) * int64(math.Pow10(int(i)+1))
+		}
+		*i = Int(val)
+	} else {
+		return fmt.Errorf("unknown type: %T", src)
+	}
+	return nil
+}
+
+func (i Int) Value() (driver.Value, error) {
+	return int64(i), nil
 }

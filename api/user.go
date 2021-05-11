@@ -46,8 +46,8 @@ func (u *UserPreferences) copyUser(userPref *models.UserPreferences) {
 	u.Email = userPref.Email
 	u.UpdatedAt = userPref.UpdatedAt.Unix() * 1000
 	u.CreatedAt = userPref.CreatedAt.Unix() * 1000
-	u.DocumentsCount = userPref.DocumentCount
-	u.DocumentsSize = userPref.DocumentsSize
+	u.DocumentsCount = int64(userPref.DocumentCount)
+	u.DocumentsSize = int64(userPref.DocumentsSize)
 	u.DocumentsSizeString = models.GetPrettySize(u.DocumentsSize)
 	u.IsAdmin = userPref.IsAdmin
 	u.StopWords = userPref.StopWords

@@ -60,6 +60,13 @@ var addUserCmd = &cobra.Command{
 	Use:   "add-user",
 	Short: "Add new user. Enter username, password and whether to make user administrator.",
 	Run: func(cmd *cobra.Command, args []string) {
+		initConfig()
+		err := config.InitLogging()
+		if err != nil {
+			logrus.Fatalf("init log: %v", err)
+			return
+		}
+		defer config.DeinitLogging()
 		db, err := storage.NewDatabase()
 		if err != nil {
 			logrus.Fatalf("Connect to database: %v", err)

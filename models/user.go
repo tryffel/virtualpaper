@@ -68,8 +68,8 @@ type UserPreferences struct {
 	Email         string     `json:"email" db:"email"`
 	UpdatedAt     time.Time  `json:"updated_at" db:"updated_at"`
 	CreatedAt     time.Time  `json:"created_at" db:"created_at"`
-	DocumentCount int64      `json:"documents_count" db:"documents_count"`
-	DocumentsSize int64      `json:"documents_size" db:"documents_size"`
+	DocumentCount Int        `json:"documents_count" db:"documents_count"`
+	DocumentsSize Int        `json:"documents_size" db:"documents_size"`
 	IsAdmin       bool       `json:"is_admin" db:"is_admin"`
 	StopWords     []string   `json:"stop_words""`
 	Synonyms      [][]string `json:"synonyms"`

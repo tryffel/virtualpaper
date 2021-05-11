@@ -124,7 +124,9 @@ VALUES ($1, $2, $3, $4) RETURNING id;
 	} else {
 		return errors.New("no id returned")
 	}
-	return nil
+
+	err = u.UpdatePreferences(user.Id, []string{}, [][]string{})
+	return err
 }
 
 // GetUsers returns all users.

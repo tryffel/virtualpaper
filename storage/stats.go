@@ -97,7 +97,9 @@ func (s *StatsStore) GetSystemStats() (*models.SystemStatistics, error) {
 	sql := `
 SELECT
     count(distinct(d.id)) AS documents_total,
-    sum(d.size) AS documents_size,
+    ( 
+        select sum(d.size) from documents d
+    ) as documents_size,
     count(distinct(pq.document_id)) as documents_queued,
     (
         select count(distinct(j.document_id)) as documents_processed_today
