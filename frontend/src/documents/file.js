@@ -82,7 +82,7 @@ export function ThumbnailSmall ({ url, label })
     });
 
     return (
-        <div style={{'overflow': 'hidden', 'max-height': '200px'}}>
+        <div style={{'overflow': 'hidden', 'max-height': '200px', 'min-height': '200px'}}>
             <img src={imgData} style={{'max-width': '250px'}} alt={label}/>
         </div>
     );

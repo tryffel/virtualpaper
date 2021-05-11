@@ -187,6 +187,7 @@ const DocumentGrid = () => {
                             <CardHeader
                                 title={<RichTextField record={data[id]} source="name" />}
                                 subheader={<DateField record={data[id]} source="date" />}
+                                style={{flex:1, height:'4em'}}
                             />
                             <CardContent>
                                 <ThumbnailSmall component="img" url={data[id].preview_url} title="Img" />
