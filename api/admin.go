@@ -54,6 +54,7 @@ func (a *Api) authorizeAdmin(next http.Handler) http.Handler {
 }
 
 // ForceDocumentsProcessingRequest describes request to force processing of documents.
+// swagger:model ForceDocumumentsProcessing
 type ForceDocumentProcessingRequest struct {
 	UserId     int    `json:"user_id" valid:"-"`
 	DocumentId string `json:"document_id" valid:"-"`
@@ -62,10 +63,33 @@ type ForceDocumentProcessingRequest struct {
 
 func (a *Api) forceDocumentProcessing(resp http.ResponseWriter, req *http.Request) {
 	// swagger:route POST /api/v1/admin/documents/process Admin AdminForceDocumentProcessing
-	// Force document processing
+	// Force document processing.
+	//
+	// Administrator can force re-processing documents.
+	// Options:
+	// 1. Process all documents in the system. Do not provide user_id or document_id
+	// 2. Process documents for a user: provide user_id.
+	// 3. Process one document: provide document_id.
+	//
+	// In addition, step can be configured. Possible steps are:
+	// * 1. 'hash' (calculate document hash)
+	// * 2. 'thumbnail' (create document thumbnail)
+	// * 3. 'content' (extract content with suitable tool)
+	// * 4. 'rules' (run metadata-rules)
+	// * 5. 'fts' (index document in full-text-search engine)
+	//
+	// Steps are in order. Supplying e.g. 'content' will result in executing steps 3, 4 and 5.
+	// Empty body will result in all documents being processed from step 1.
+	// Depending on document content, processing on document takes anywhere from a second to minutes.
+	// Consumes:
+	// - application/json
 	//
 	// responses:
-	//   200:
+	//   200: RespOk
+	//   400: RespBadRequest
+	//   401: RespForbidden
+	//   403: RespNotFound
+
 	handler := "Api.getDocuments"
 	body := &ForceDocumentProcessingRequest{}
 	err := unMarshalBody(req, body)
@@ -140,6 +164,7 @@ func (a *Api) getDocumentProcessQueue(resp http.ResponseWriter, req *http.Reques
 	respResourceList(resp, processes, n)
 }
 
+// swagger:response SystemInfo
 type SystemInfo struct {
 	Name      string `json:"name"`
 	Version   string `json:"version"`
@@ -165,6 +190,13 @@ type SystemInfo struct {
 }
 
 func (a *Api) getSystemInfo(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route GET /api/v1/admin/systeminfo Admin AdminGetSystemInfo
+	// Get system information
+	//
+	// responses:
+	//   200: RespAdminSystemInfo
+	//   401: RespForbidden
+	//   500: RespInternalError
 
 	info := &SystemInfo{
 		Name:               "Virtualpaper",

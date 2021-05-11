@@ -32,7 +32,7 @@ type RespNotModified struct{}
 // swagger:response RespBadRequest
 type RespBadRequest struct {
 	// in:body
-	Err struct {
+	Body struct {
 		Error string `json:"error"`
 	}
 }
@@ -68,4 +68,18 @@ type DocumentProcessingResp struct {
 type UserDocumentStatistics struct {
 	// in:body
 	Body api.UserDocumentStatistics
+}
+
+// System information
+// swagger:response RespAdminSystemInfo
+type AdminSystemInfo struct {
+	// in:body
+	Body api.SystemInfo
+}
+
+// Force processing documents
+// swagger:parameters AdminForceDocumentProcessing ReqForceDocumentsProcessing
+type AdminForceDocumentsProcessing struct {
+	// in:body
+	Body api.ForceDocumentProcessingRequest
 }

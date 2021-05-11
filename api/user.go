@@ -24,6 +24,7 @@ import (
 	"tryffel.net/go/virtualpaper/models"
 )
 
+// swagger:model UserPreferences
 type UserPreferences struct {
 	// user
 	Id                  int    `json:"user_id"`

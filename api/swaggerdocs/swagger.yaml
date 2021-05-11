@@ -100,6 +100,22 @@ definitions:
     type: object
     x-go-name: DocumentUpdateRequest
     x-go-package: tryffel.net/go/virtualpaper/api
+  ForceDocumumentsProcessing:
+    properties:
+      document_id:
+        type: string
+        x-go-name: DocumentId
+      from_step:
+        type: string
+        x-go-name: FromStep
+      user_id:
+        format: int64
+        type: integer
+        x-go-name: UserId
+    title: ForceDocumentsProcessingRequest describes request to force processing of documents.
+    type: object
+    x-go-name: ForceDocumentProcessingRequest
+    x-go-package: tryffel.net/go/virtualpaper/api
   Metadata:
     description: Metadata is metadata key-value pair assigned to document
     properties:
@@ -153,6 +169,15 @@ definitions:
       key:
         type: string
         x-go-name: Key
+      match_documents:
+        description: MatchDocuments instructs to try to automatically match MetadataValue inside documents
+        type: boolean
+        x-go-name: MatchDocuments
+      match_filter:
+        type: string
+        x-go-name: MatchFilter
+      match_type:
+        $ref: '#/definitions/RuleType'
       value:
         type: string
         x-go-name: Value
@@ -186,6 +211,74 @@ definitions:
         format: int64
         type: integer
         x-go-name: UpdatedAt
+    type: object
+    x-go-package: tryffel.net/go/virtualpaper/api
+  RuleType:
+    type: string
+    x-go-package: tryffel.net/go/virtualpaper/models
+  SystemInfo:
+    properties:
+      commit:
+        type: string
+        x-go-name: Commit
+      documents_processed_past_month:
+        format: int64
+        type: integer
+        x-go-name: DocumentsProcessedLastMonth
+      documents_processed_past_week:
+        format: int64
+        type: integer
+        x-go-name: DocumentsProcessedLastWeek
+      documents_processed_today:
+        format: int64
+        type: integer
+        x-go-name: DocumentsProcessedToday
+      documents_queued:
+        format: int64
+        type: integer
+        x-go-name: DocumentsInQueue
+      documents_total:
+        format: int64
+        type: integer
+        x-go-name: DocumentsTotal
+      documents_total_size:
+        format: int64
+        type: integer
+        x-go-name: DocumentsTotalSize
+      documents_total_size_string:
+        type: string
+        x-go-name: DocumentsTotalSizeString
+      go_version:
+        type: string
+        x-go-name: GoVersion
+      imagemagick_version:
+        type: string
+        x-go-name: ImagemagickVersion
+      name:
+        type: string
+        x-go-name: Name
+      number_cpus:
+        format: int64
+        type: integer
+        x-go-name: NumCpu
+      pandoc_installed:
+        type: boolean
+        x-go-name: PandocInstalled
+      poppler_installed:
+        type: boolean
+        x-go-name: PopplerInstalled
+      server_load:
+        type: string
+        x-go-name: ServerLoad
+      tesseract_version:
+        type: string
+        x-go-name: TesseractVersion
+      uptime:
+        type: string
+        x-go-name: Uptime
+      version:
+        type: string
+        x-go-name: Version
     type: object
     x-go-package: tryffel.net/go/virtualpaper/api
   Tag:
@@ -270,9 +363,23 @@ definitions:
         format: int64
         type: integer
         x-go-name: CreatedAt
+      documents_count:
+        format: int64
+        type: integer
+        x-go-name: DocumentsCount
+      documents_size:
+        format: int64
+        type: integer
+        x-go-name: DocumentsSize
+      documents_size_string:
+        type: string
+        x-go-name: DocumentsSizeString
       email:
         type: string
         x-go-name: Email
+      is_admin:
+        type: boolean
+        x-go-name: IsAdmin
       updated_at:
         format: int64
         type: integer
@@ -343,16 +450,94 @@ paths:
       tags:
       - Admin
     post:
-      description: Force document processing
+      consumes:
+      - application/json
+      description: |-
+        Administrator can force re-processing documents.
+        Options:
+        1. Process all documents in the system. Do not provide user_id or document_id
+        2. Process documents for a user: provide user_id.
+        3. Process one document: provide document_id.
+
+        In addition, step can be configured. Possible steps are:
+        1. 'hash' (calculate document hash)
+        2. 'thumbnail' (create document thumbnail)
+        3. 'content' (extract content with suitable tool)
+        4. 'rules' (run metadata-rules)
+        5. 'fts' (index document in full-text-search engine)
+
+        Steps are in order. Supplying e.g. 'content' will result in executing steps 3, 4 and 5.
+        Empty body will result in all documents being processed from step 1.
+        Depending on document content, processing on document takes anywhere from a second to minutes.
       operationId: AdminForceDocumentProcessing
+      parameters:
+      - in: body
+        name: Body
+        schema:
+          $ref: '#/definitions/ForceDocumumentsProcessing'
       responses:
-        "200": {}
+        "200":
+          $ref: '#/responses/RespOk'
+        "400":
+          $ref: '#/responses/RespBadRequest'
+        "401":
+          $ref: '#/responses/RespForbidden'
+        "403":
+          $ref: '#/responses/RespNotFound'
+      summary: Force document processing.
+      tags:
+      - Admin
+  /api/v1/admin/systeminfo:
+    get:
+      description: Get system information
+      operationId: AdminGetSystemInfo
+      responses:
+        "200":
+          $ref: '#/responses/RespAdminSystemInfo'
+        "401":
+          $ref: '#/responses/RespForbidden'
+        "500":
+          $ref: '#/responses/RespInternalError'
       tags:
       - Admin
   /api/v1/documents:
     get:
       description: Get documents
       operationId: GetDocuments
+      parameters:
+      - description: |-
+          Json filter containing max two keys: q and metadata.
+          Q is full-text-search query.
+          Metadata is a metadata filter.
+          E.g. 'class:book AND (author:"agatha christie" OR author:"doyle")'
+          Filter is json-formatted and must be url-safe.
+        example: '''{"q":"my search", "metadata":"class:book"}'''
+        in: query
+        name: filter
+        type: string
+        x-go-name: Filter
+      - description: 'Order which order results in, either: ''DESC'' or ''ASC''.'
+        in: query
+        name: order
+        type: string
+        x-go-name: Order
+      - description: Sort field to sort results.
+        in: query
+        name: sort
+        type: string
+        x-go-name: Sort
+      - description: Page number
+        format: int64
+        in: query
+        name: page
+        type: integer
+        x-go-name: Page
+      - description: Page size.
+        format: int64
+        in: query
+        name: perPage
+        type: integer
+        x-go-name: PerPage
       responses:
         "200":
           $ref: '#/responses/DocumentResponse'
@@ -429,6 +614,31 @@ paths:
           $ref: '#/responses/RespDocumentStatistics'
         "304":
           $ref: '#/responses/RespNotModified'
+        "400":
+          $ref: '#/responses/RespBadRequest'
+        "401":
+          $ref: '#/responses/RespForbidden'
+        "403":
+          $ref: '#/responses/RespNotFound'
+        "500":
+          $ref: '#/responses/RespInternalError'
+      tags:
+      - Documents
+  /api/v1/filetypes:
+    get:
+      description: Get supported file types
+      operationId: GetFileTypes
+      responses:
+        "200": {}
+      tags:
+      - Public
+  /api/v1/location:
+    post:
+      description: Request document re-processing
+      operationId: RequestProcessing
+      responses:
+        "200":
+          $ref: '#/responses/RespOk'
         "400":
           $ref: '#/responses/RespBadRequest'
         "401":
@@ -582,6 +792,10 @@ responses:
         type: string
     schema:
       $ref: '#/definitions/processingRuleAction'
+  RespAdminSystemInfo:
+    description: System information
+    schema:
+      $ref: '#/definitions/SystemInfo'
   RespBadRequest:
     description: request validation failed
     schema:
@@ -614,6 +828,51 @@ responses:
     description: User preferences
     schema:
       $ref: '#/definitions/UserPreferences'
+  SystemInfo:
+    headers:
+      commit:
+        type: string
+      documents_processed_past_month:
+        format: int64
+        type: integer
+      documents_processed_past_week:
+        format: int64
+        type: integer
+      documents_processed_today:
+        format: int64
+        type: integer
+      documents_queued:
+        format: int64
+        type: integer
+      documents_total:
+        format: int64
+        type: integer
+      documents_total_size:
+        format: int64
+        type: integer
+      documents_total_size_string:
+        type: string
+      go_version:
+        type: string
+      imagemagick_version:
+        type: string
+      name:
+        type: string
+      number_cpus:
+        format: int64
+        type: integer
+      pandoc_installed:
+        type: boolean
+      poppler_installed:
+        type: boolean
+      server_load:
+        type: string
+      tesseract_version:
+        type: string
+      uptime:
+        type: string
+      version:
+        type: string
 schemes:
 - http
 - https

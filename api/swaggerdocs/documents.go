@@ -23,7 +23,41 @@ import "tryffel.net/go/virtualpaper/api"
 // DocumentsResponse contains array of documents
 // swagger:response DocumentResponse
 type documentResponse struct {
-
 	// in:body
 	Body []api.DocumentResponse
+}
+
+// swagger:parameters GetDocuments ReqDocumentFilter
+type documentFilter struct {
+	// Json filter containing max two keys: q and metadata.
+	// Q is full-text-search query.
+	// Metadata is a metadata filter.
+	// E.g. 'class:book AND (author:"agatha christie" OR author:"doyle")'
+	// Filter is json-formatted and must be url-safe.
+	// example: '{"q":"my search", "metadata":"class:book"}'
+	// in: query
+	// required: false
+	Filter string `json:"filter"`
+	// Order which order results in, either: 'DESC' or 'ASC'.
+	Order string `json:"order"`
+	// Sort field to sort results.
+	Sort string `json:"sort"`
+	// Page number
+	// required: false
+	Page int `json:"page"`
+	// Page size.
+	// required: false
+	PerPage int `json:"perPage"`
+
+	/*
+			// Full-text-search query
+			//
+			Query string `json:"q"`
+			// Metadata filter
+			// example: "class:book AND (author:"agatha christie" OR author:"doyle")"
+			//
+			MetadataFilter string `json:"metadata"`
+		}
+
+	*/
 }

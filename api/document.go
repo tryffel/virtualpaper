@@ -92,6 +92,7 @@ type DocumentUpdateRequest struct {
 func (a *Api) getDocuments(resp http.ResponseWriter, req *http.Request) {
 	// swagger:route GET /api/v1/documents Documents GetDocuments
 	// Get documents
+	//
 	// responses:
 	//   200: DocumentResponse
 	handler := "Api.getDocuments"
