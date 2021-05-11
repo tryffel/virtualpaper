@@ -52,17 +52,18 @@ type metadataValueRequest struct {
 func (m *metadataValueRequest) validate() error {
 	invalidErr := errors.ErrInvalid
 	if m.MatchDocuments {
-		if m.MatchFilter == "" {
-			invalidErr.ErrMsg = "match_filter cannot be empty"
-			return invalidErr
-		}
 		if models.RuleType(m.MatchType) == models.RegexRule {
 			_, err := regexp.Compile(m.MatchFilter)
 			if err != nil {
 				invalidErr.ErrMsg = fmt.Sprintf("invalid regex: %v", err.Error())
 				return invalidErr
 			}
-		} else if models.RuleType(m.MatchType) != models.ExactRule {
+		} else if models.RuleType(m.MatchType) == models.ExactRule {
+			if len(m.MatchFilter) < 3 {
+				invalidErr.ErrMsg = "too short filter. Must be >=3 characters"
+				return invalidErr
+			}
+		} else {
 			invalidErr.ErrMsg = "unknown rule_type"
 			return invalidErr
 		}
@@ -279,5 +280,73 @@ func (a *Api) addMetadataValue(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	respResourceList(resp, value, 1)
+}
+
+func (a *Api) updateMetadataValue(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route POST /api/v1/metadata/keys/{id}/values Metadata AddMetadataKeyValues
+	// Add metadata key values
+	// Responses:
+	//  200: MetadataKeyValueResponse
+	handler := "Api.updateMetadataValue"
+	user, ok := getUserId(req)
+	if !ok {
+		logrus.Errorf("no user in context")
+		respInternalError(resp)
+		return
+	}
+
+	keyId, err := getParamInt(req, "key_id")
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	valueId, err := getParamInt(req, "value_id")
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	dto := &metadataValueRequest{}
+	err = unMarshalBody(req, dto)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	err = dto.validate()
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+	value := &models.MetadataValue{
+		Id:             valueId,
+		UserId:         user,
+		KeyId:          keyId,
+		Value:          dto.Value,
+		Comment:        dto.Comment,
+		MatchDocuments: dto.MatchDocuments,
+		MatchType:      models.RuleType(dto.MatchType),
+		MatchFilter:    dto.MatchFilter,
+	}
+
+	ownerShip, err := a.db.MetadataStore.UserHasKeyValue(user, keyId, valueId)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	if !ownerShip {
+		err := errors.ErrRecordNotFound
+		respError(resp, err, handler)
+		return
+	}
+
+	err = a.db.MetadataStore.UpdateValue(value)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
 	respResourceList(resp, value, 1)
 }

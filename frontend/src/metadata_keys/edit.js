@@ -31,20 +31,39 @@ import {
 import { MarkdownField } from '../markdown'
 
 import MetadataValueCreateButton from './valueCreate'
+import MetadataValueUpdateDialog from "./valueEdit";
+import {useState} from "react";
 
 
 export const MetadataKeyEdit = (props) => {
+    const [showUpdateDialog, setShowUpdateDialog] = useState(false);
+    const [valueToUpdate, setValueToUpdate] = useState({id: 35});
+
+    const onClickValue = (id, basePath, record) => {
+        setValueToUpdate({record: record, key_id: props.id, id: record.id, basePath: "metadata/keys/" + props.id + "/values"});
+        setShowUpdateDialog(true);
+
+    }
 
     return (
     <Edit {...props} title={props.record ? props.record.key: 'Metadata key'}>
         <SimpleForm>
+            <MetadataValueUpdateDialog
+                showDialog={showUpdateDialog}
+                setShowDialog={setShowUpdateDialog}
+                {...props}
+                basePath={valueToUpdate.basePath}
+                resource="metadata/values"
+                {...valueToUpdate}
+            />
+
             <TextField source="key"/>
             <Labeled label="Description">
                 <MarkdownField source="description"/>
             </Labeled>
 
             <ReferenceManyField  label="Values" reference={"metadata/values"} target={"key_id"}>
-                <Datagrid>
+                <Datagrid rowClick={onClickValue}>
                     <TextField source="value"/>
                     <BooleanField label="Automatic matching" source="match_documents"/>
                     <TextField label="Match by" source="match_type"/>

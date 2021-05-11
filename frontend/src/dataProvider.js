@@ -222,11 +222,17 @@ export const dataProvider = {
         });
     },
 
-    update: (resource, params) =>
-        httpClient(`${apiUrl}/${resource}/${params.id}`, {
+    update: (resource, params) =>  {
+        let url = `${apiUrl}/${resource}/${params.id}`;
+
+        if (resource === 'metadata/values') {
+            url =`${apiUrl}/metadata/keys/${params.key_id}/values/${params.data.id}`;
+        }
+
+        return httpClient(url, {
             method: 'PUT',
             body: JSON.stringify(params.data),
-        }).then(({ json }) => ({ data: json })),
+        }).then(({ json }) => ({ data: json }))},
 
     // simple-rest doesn't handle provide an updateMany route, so we fallback to calling update n times instead
     updateMany: (resource, params) =>

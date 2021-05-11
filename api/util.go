@@ -55,6 +55,33 @@ func getParamId(req *http.Request) string {
 	return idStr
 }
 
+func getParamKeyId(req *http.Request) string {
+	idStr := mux.Vars(req)["key_id"]
+	return idStr
+}
+
+func getParamValueId(req *http.Request) string {
+	idStr := mux.Vars(req)["value_id"]
+	return idStr
+}
+
+func getParamInt(req *http.Request, key_name string) (int, error) {
+	idStr := mux.Vars(req)[key_name]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		e := errors.ErrInvalid
+		e.ErrMsg = "id not integer"
+		return -1, e
+	}
+
+	if id < 0 {
+		e := errors.ErrInvalid
+		e.ErrMsg = "id must be >0"
+		return -1, e
+	}
+	return id, err
+}
+
 func getParamIntId(req *http.Request) (int, error) {
 	idStr := getParamId(req)
 	id, err := strconv.Atoi(idStr)

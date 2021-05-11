@@ -391,3 +391,33 @@ VALUES ($1, $2, $3, $4, $5) RETURNING id;
 	tag.Id = id
 	return nil
 }
+
+func (s *MetadataStore) UserHasKeyValue(userId, keyId, valueId int) (bool, error) {
+
+	sql := `
+SELECT CASE WHEN EXISTS (
+    SELECT mv.id
+        FROM metadata_values mv
+        LEFT JOIN metadata_keys mk ON mv.key_id = mk.id
+        WHERE mk.user_id = $1
+            AND mv.id = $3
+    AND mk.id = $2
+    )
+THEN TRUE ELSE FALSE END AS exists;
+`
+
+	var ownership bool
+	err := s.db.Get(&ownership, sql, userId, keyId, valueId)
+	return ownership, getDatabaseError(err, "metadata-value", "check user has key-value")
+}
+
+func (s *MetadataStore) UpdateValue(value *models.MetadataValue) error {
+	sql := `
+	UPDATE metadata_values
+	SET value=$1, match_documents=$2, match_type=$3, match_filter=$4
+	WHERE id=$5;
+`
+
+	_, err := s.db.Exec(sql, value.Value, value.MatchDocuments, value.MatchType, value.MatchFilter, value.Id)
+	return getDatabaseError(err, "metadata/value", "update value")
+}
