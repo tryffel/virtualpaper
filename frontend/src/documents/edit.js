@@ -33,7 +33,8 @@ import {
     SelectInput,
     ArrayInput,
     SimpleFormIterator,
-    FormDataConsumer
+    FormDataConsumer,
+    AutocompleteInput,
 } from "react-admin";
 
 import MarkDownInputWithField from "ra-input-markdown";
@@ -103,7 +104,7 @@ const MetadataValueInput = props => {
     if (error) return <Error error={error}/>;
     if (data) {
         return (
-            <SelectInput {...props} choices={data} optionText="value" />
+            <AutocompleteInput{...props} choices={data} optionText="value" />
 
         )} else {
         return <Loading />;
