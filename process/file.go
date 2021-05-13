@@ -96,7 +96,7 @@ func (fp *fileProcessor) recoverPanic() {
 		}
 	}
 
-	e := fp.cancelDocumentProcessing()
+	e := fp.cancelDocumentProcessing("server error")
 	if e != nil {
 		logrus.Errorf("cancel document processing: %v", err)
 	}
@@ -104,12 +104,35 @@ func (fp *fileProcessor) recoverPanic() {
 
 // cancel ongoing processing, in case of errors.
 // without cancel processing probably gets stuck in the same processing step.
-func (fp *fileProcessor) cancelDocumentProcessing() error {
+func (fp *fileProcessor) cancelDocumentProcessing(reason string) error {
 	if fp.document != nil {
 		logrus.Warningf("cancel processing document %s due to errors", fp.document.Id)
 		err := fp.db.JobStore.CancelDocumentProcessing(fp.document.Id)
 		if err != nil {
 			logrus.Errorf("cancel document processing: %v", err)
+		}
+		now := time.Now()
+		errDescription := fmt.Sprintf("(Processing error at %s: %s)", now.Format(time.ANSIC), reason)
+
+		if !strings.HasPrefix(fp.document.Name, "(Error)") {
+			if fp.document.Name == "" {
+				fp.document.Name = "(Error) " + fp.document.Name
+			} else {
+				fp.document.Name = "(Error)"
+			}
+		}
+
+		if !strings.HasPrefix(fp.document.Description, "(Processing error") {
+			if fp.document.Description != "" {
+				fp.document.Description = errDescription + "\n" + fp.document.Description
+			} else {
+				fp.document.Description = errDescription
+			}
+		}
+
+		err = fp.db.DocumentStore.Update(fp.document)
+		if err != nil {
+			return fmt.Errorf("update document: %v", err)
 		}
 		fp.document = nil
 	}
@@ -155,6 +178,10 @@ func (fp *fileProcessor) processDocument() {
 	file, err := os.Open(filePath)
 	if err != nil {
 		logrus.Errorf("open document %s file: %v", fp.document.Id, err)
+		err = fp.cancelDocumentProcessing("file not found")
+		if err != nil {
+			logrus.Errorf("cancel document processing: %v", err)
+		}
 		return
 	}
 
@@ -172,6 +199,10 @@ func (fp *fileProcessor) processDocument() {
 				file, err = os.Open(filePath)
 				if err != nil {
 					logrus.Errorf("open document %s file: %v", fp.document.Id, err)
+					err = fp.cancelDocumentProcessing("file not found")
+					if err != nil {
+						logrus.Errorf("cancel document processing: %v", err)
+					}
 					return
 				}
 			}
