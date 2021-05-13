@@ -33,6 +33,14 @@ type MetadataStore struct {
 	db *sqlx.DB
 }
 
+func (s MetadataStore) Name() string {
+	return "Metadata"
+}
+
+func (s MetadataStore) parseError(err error, action string) error {
+	return getDatabaseError(err, s, action)
+}
+
 // GetDocumentMetadata returns key-value metadata for given document. If userId != 0, user must own document.
 func (s *MetadataStore) GetDocumentMetadata(userId int, documentId string) (*[]models.Metadata, error) {
 	var sql string
@@ -82,7 +90,7 @@ ORDER BY key ASC;
 			// no rows returned
 		}
 	}
-	return object, getDatabaseError(err, "metadata", "get document metadata")
+	return object, s.parseError(err, "get document metadata")
 }
 
 // GetKeys returns all possible metadata-keys for user.
@@ -105,7 +113,7 @@ LIMIT $2;
 
 	keys := &[]models.MetadataKey{}
 	err := s.db.Select(keys, sql, userId, limit)
-	return keys, getDatabaseError(err, "metadata", "get keys")
+	return keys, s.parseError(err, "get keys")
 }
 
 // GetKeys returns all possible metadata-keys for user.
@@ -120,7 +128,7 @@ AND id = $2;
 	key := &models.MetadataKey{}
 
 	err := s.db.Get(key, sql, userId, keyId)
-	return key, getDatabaseError(err, "metadata", "get key")
+	return key, s.parseError(err, "get key")
 }
 
 // GetValues returns all values to given key.
@@ -147,7 +155,7 @@ LIMIT $3;
 
 	values := &[]models.MetadataValue{}
 	err := s.db.Select(values, sql, userId, keyId, limit)
-	return values, getDatabaseError(err, "metadata", "get key values")
+	return values, s.parseError(err, "get key values")
 }
 
 // UpdateDocumentKeyValues updates key-values for document.
@@ -172,7 +180,7 @@ END;
 		var ownership bool
 		err = s.db.Get(&ownership, sql, documentId, userId)
 		if err != nil {
-			return getDatabaseError(err, "metadata", "update key-values, check ownership")
+			return s.parseError(err, "update key-values, check ownership")
 		}
 		if !ownership {
 			return errors.ErrRecordNotFound
@@ -181,7 +189,7 @@ END;
 
 	tx, err := s.db.Beginx()
 	if err != nil {
-		return getDatabaseError(err, "metadata", "update document, start tx")
+		return s.parseError(err, "update document, start tx")
 	}
 
 	sql = `
@@ -193,7 +201,7 @@ END;
 	_, err = tx.Exec(sql, documentId)
 	if err != nil {
 		logrus.Warningf("error deleting old metadata: %v", err)
-		return getDatabaseError(tx.Rollback(), "metadata", "rollback tx")
+		return s.parseError(tx.Rollback(), "rollback tx")
 	}
 
 	sql = `	
@@ -217,7 +225,7 @@ END;
 	} else {
 		err = tx.Commit()
 	}
-	return getDatabaseError(err, "metadata", "update document key-values")
+	return s.parseError(err, "update document key-values")
 }
 
 // GetUserValuesWithMatching retusn all metadata values that
@@ -232,7 +240,7 @@ AND match_documents = TRUE;
 
 	values := &[]models.MetadataValue{}
 	err := s.db.Select(values, sql, userId)
-	return values, getDatabaseError(err, "metadata values", "get where match_documents = true")
+	return values, s.parseError(err, "(value) get where match_documents = true")
 }
 
 // KeyValuePairExists checks whether given pair actually exists and is user owns them.
@@ -254,7 +262,7 @@ END AS exists;
 
 	exists := false
 	err := s.db.Get(&exists, sql, userId, key, value)
-	return exists, getDatabaseError(err, "metadata", "check key-value ownership")
+	return exists, s.parseError(err, "check key-value ownership")
 }
 
 // CreateKey creates new metadata key.
@@ -269,14 +277,14 @@ RETURNING id;
 
 	res, err := s.db.Query(sql, userId, key.Key, key.Comment)
 	if err != nil {
-		return getDatabaseError(err, "metadata keys", "create")
+		return s.parseError(err, "create key")
 	}
 
 	if res.Next() {
 		var id int
 		err = res.Scan(&id)
 		if err != nil {
-			return getDatabaseError(err, "metadata keys", "create, scan id")
+			return s.parseError(err, "create key, scan id")
 		}
 		key.Id = id
 	}
@@ -294,14 +302,14 @@ RETURNING id;
 
 	res, err := s.db.Query(sql, userId, value.KeyId, value.Value)
 	if err != nil {
-		return getDatabaseError(err, "metadata values", "create")
+		return s.parseError(err, "create value")
 	}
 
 	if res.Next() {
 		var id int
 		err = res.Scan(&id)
 		if err != nil {
-			return getDatabaseError(err, "metadata values", "create, scan id")
+			return s.parseError(err, "create value, scan id")
 		}
 		value.Id = id
 	}
@@ -322,7 +330,7 @@ limit 100;
 `
 	object := &[]models.Tag{}
 	err := s.db.Select(object, sql, documentId, userId)
-	return object, getDatabaseError(err, "metadata", "get document tags")
+	return object, s.parseError(err, "get document tags")
 }
 
 // GetTags returns all tags for user.
@@ -346,7 +354,7 @@ LIMIT $3;
 
 	err := s.db.Select(object, sql, userid, paging.Offset, paging.Limit)
 	if err != nil {
-		return object, len(*object), getDatabaseError(err, "metadata", "get tags")
+		return object, len(*object), s.parseError(err, "get tags")
 	}
 
 	sql = `SELECT
@@ -359,9 +367,9 @@ LIMIT $3;
 	row := s.db.QueryRow(sql, userid)
 	err = row.Scan(&n)
 	if err != nil {
-		return object, len(*object), getDatabaseError(err, "metadata", "scan tags count")
+		return object, len(*object), s.parseError(err, "scan tags count")
 	}
-	return object, n, getDatabaseError(err, "metadata", "get tags count")
+	return object, n, s.parseError(err, "get tags count")
 }
 
 // GetTag returns tag with given id.
@@ -384,7 +392,7 @@ GROUP BY (tags.id);
 
 	object := &models.TagComposite{}
 	err := s.db.Get(object, sql, tagId, userId)
-	return object, getDatabaseError(err, "metadata", "get tag")
+	return object, s.parseError(err, "get tag")
 }
 
 // CreateTag creates new tag.
@@ -401,7 +409,7 @@ VALUES ($1, $2, $3, $4, $5) RETURNING id;
 	row := s.db.QueryRow(sql, userId, tag.Key, tag.Comment, tag.CreatedAt, tag.UpdatedAt)
 	err := row.Scan(&id)
 	if err != nil {
-		return getDatabaseError(err, "metadata", "create tag")
+		return s.parseError(err, "create tag")
 	}
 
 	tag.Id = id
@@ -424,7 +432,7 @@ THEN TRUE ELSE FALSE END AS exists;
 
 	var ownership bool
 	err := s.db.Get(&ownership, sql, userId, keyId, valueId)
-	return ownership, getDatabaseError(err, "metadata-value", "check user has key-value")
+	return ownership, s.parseError(err, "check user has key-value")
 }
 
 func (s *MetadataStore) UpdateValue(value *models.MetadataValue) error {
@@ -435,5 +443,5 @@ func (s *MetadataStore) UpdateValue(value *models.MetadataValue) error {
 `
 
 	_, err := s.db.Exec(sql, value.Value, value.MatchDocuments, value.MatchType, value.MatchFilter, value.Id)
-	return getDatabaseError(err, "metadata/value", "update value")
+	return s.parseError(err, "update value")
 }

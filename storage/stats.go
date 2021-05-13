@@ -28,6 +28,14 @@ type StatsStore struct {
 	db *sqlx.DB
 }
 
+func (s *StatsStore) Name() string {
+	return "Stats"
+}
+
+func (s *StatsStore) parseError(e error, action string) error {
+	return getDatabaseError(e, s, action)
+}
+
 func (s *StatsStore) GetUserDocumentStats(userId int) (*models.UserDocumentStatistics, error) {
 	sql := `
 
@@ -49,7 +57,7 @@ order by ordering asc;
 
 	rows, err := s.db.Query(sql, userId)
 	if err != nil {
-		return stats, getDatabaseError(err, "stats", "get document counts")
+		return stats, s.parseError(err, "get document counts")
 	}
 	defer rows.Close()
 
@@ -78,7 +86,7 @@ order by year desc;
 
 	err = s.db.Select(&stats.YearlyStats, sql, userId)
 	if err != nil {
-		return stats, getDatabaseError(err, "stats", "get yearly stats")
+		return stats, s.parseError(err, "get yearly stats")
 	}
 
 	sql = `
@@ -89,7 +97,7 @@ order by updated_at desc limit 10;
 `
 
 	err = s.db.Select(&stats.LastDocumentsUpdated, sql, userId)
-	return stats, getDatabaseError(err, "stats", "get last updated docs")
+	return stats, s.parseError(err, "get last updated docs")
 }
 
 func (s *StatsStore) GetSystemStats() (*models.SystemStatistics, error) {
@@ -124,5 +132,5 @@ from documents d
 
 	stats := &models.SystemStatistics{}
 	err := s.db.Get(stats, sql)
-	return stats, getDatabaseError(err, "stats", "get system stats")
+	return stats, s.parseError(err, "get system stats")
 }

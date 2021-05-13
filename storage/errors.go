@@ -7,7 +7,7 @@ import (
 	"tryffel.net/go/virtualpaper/errors"
 )
 
-func getPostgresError(err error, resource string, action string) (bool, error) {
+func getPostgresError(err error, resource Resource, action string) (bool, error) {
 	pError, ok := err.(*pq.Error)
 	if !ok {
 		return false, nil
@@ -16,13 +16,13 @@ func getPostgresError(err error, resource string, action string) (bool, error) {
 	// Unique violation
 	if pError.Code == "23505" {
 		e := errors.ErrAlreadyExists
-		e.ErrMsg = resource + " already exists"
+		e.ErrMsg = resource.Name() + " already exists"
 		return true, e
 	}
 
 	if pError.Code == "23503" {
 		e := errors.ErrRecordNotFound
-		e.ErrMsg = resource + " not found"
+		e.ErrMsg = resource.Name() + " not found"
 		return true, e
 	}
 
@@ -33,11 +33,11 @@ func getPostgresError(err error, resource string, action string) (bool, error) {
 }
 
 // Catch SQL error, always resulting in internal error
-func getSqlError(err error, resource string) (bool, error) {
+func getSqlError(err error, resource Resource) (bool, error) {
 	if strings.Contains(err.Error(), "sql:") {
 		if err.Error() == "sql: no rows in result set" {
 			e := errors.ErrRecordNotFound
-			e.ErrMsg = resource + " not found"
+			e.ErrMsg = resource.Name() + " not found"
 			return true, e
 		}
 		return true, fmt.Errorf("%v: %v, ", errors.ErrInternalError, err)
@@ -45,7 +45,7 @@ func getSqlError(err error, resource string) (bool, error) {
 	return false, nil
 }
 
-func getDatabaseError(e error, resource string, action string) error {
+func getDatabaseError(e error, resource Resource, action string) error {
 	if e == nil {
 		return nil
 	}
@@ -63,7 +63,7 @@ func getDatabaseError(e error, resource string, action string) error {
 	return Err
 }
 
-func getDatabaseErrorIgnoreEmpty(e error, resource string, action string) error {
+func getDatabaseErrorIgnoreEmpty(e error, resource Resource, action string) error {
 	if e == nil {
 		return nil
 	}

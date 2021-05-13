@@ -33,6 +33,14 @@ type UserStore struct {
 	cache *cache.Cache
 }
 
+func (s *UserStore) Name() string {
+	return "Users"
+}
+
+func (s *UserStore) parseError(e error, action string) error {
+	return getDatabaseError(e, s, action)
+}
+
 func newUserStore(db *sqlx.DB) *UserStore {
 	store := &UserStore{
 		db:    db,
@@ -41,42 +49,42 @@ func newUserStore(db *sqlx.DB) *UserStore {
 	return store
 }
 
-func (u *UserStore) getUserIdCache(id int) *models.User {
-	cacheRecord, found := u.cache.Get(fmt.Sprintf("userid-%d", id))
+func (s *UserStore) getUserIdCache(id int) *models.User {
+	cacheRecord, found := s.cache.Get(fmt.Sprintf("userid-%d", id))
 	if found {
 		user, ok := cacheRecord.(*models.User)
 		if ok {
 			return user
 		} else {
-			u.cache.Delete(fmt.Sprintf("userid-%d", id))
+			s.cache.Delete(fmt.Sprintf("userid-%d", id))
 		}
 	}
 	return nil
 }
 
-func (u *UserStore) getUserNameCache(username string) *models.User {
-	cacheRecord, found := u.cache.Get(fmt.Sprintf("username-%s", username))
+func (s *UserStore) getUserNameCache(username string) *models.User {
+	cacheRecord, found := s.cache.Get(fmt.Sprintf("username-%s", username))
 	if found {
 		user, ok := cacheRecord.(*models.User)
 		if ok {
 			return user
 		} else {
-			u.cache.Delete(fmt.Sprintf("username-%s", username))
+			s.cache.Delete(fmt.Sprintf("username-%s", username))
 		}
 	}
 	return nil
 }
 
-func (u *UserStore) setUserCache(user *models.User) {
+func (s *UserStore) setUserCache(user *models.User) {
 	if user == nil || user.Id == 0 {
 		return
 	}
-	u.cache.Set(fmt.Sprintf("userid-%d", user.Id), user, cache.DefaultExpiration)
-	u.cache.Set(fmt.Sprintf("username-%s", user.Name), user, cache.DefaultExpiration)
+	s.cache.Set(fmt.Sprintf("userid-%d", user.Id), user, cache.DefaultExpiration)
+	s.cache.Set(fmt.Sprintf("username-%s", user.Name), user, cache.DefaultExpiration)
 }
 
 // TryLogin tries to log user in by password. Return userId = -1 and error if login fails.
-func (u *UserStore) TryLogin(username, password string) (int, error) {
+func (s *UserStore) TryLogin(username, password string) (int, error) {
 	sql :=
 		`
 SELECT id, name, password
@@ -85,9 +93,9 @@ WHERE name = $1;
 `
 
 	user := &models.User{}
-	err := u.db.Get(user, sql, username)
+	err := s.db.Get(user, sql, username)
 	if err != nil {
-		return -1, err
+		return -1, s.parseError(err, "get user by username")
 	}
 
 	if user.Name != username {
@@ -102,35 +110,35 @@ WHERE name = $1;
 }
 
 // AddUser adds user. Id is updated.
-func (u *UserStore) AddUser(user *models.User) error {
+func (s *UserStore) AddUser(user *models.User) error {
 
 	sql := `
 INSERT INTO users (name, email, updated_at, password)
 VALUES ($1, $2, $3, $4) RETURNING id;
 
 `
-	rows, err := u.db.Query(sql, user.Name, "", time.Now(), user.Password)
+	rows, err := s.db.Query(sql, user.Name, "", time.Now(), user.Password)
 	if err != nil {
-		return getDatabaseError(err, "user", "add")
+		return s.parseError(err, "add")
 	}
 
 	if rows.Next() {
 		id := 0
 		err := rows.Scan(&id)
 		if err != nil {
-			return getDatabaseError(err, "user", "add user, scan id")
+			return s.parseError(err, "add user, scan id")
 		}
 		user.Id = id
 	} else {
 		return errors.New("no id returned")
 	}
 
-	err = u.UpdatePreferences(user.Id, []string{}, [][]string{})
+	err = s.UpdatePreferences(user.Id, []string{}, [][]string{})
 	return err
 }
 
 // GetUsers returns all users.
-func (u *UserStore) GetUsers() (*[]models.User, error) {
+func (s *UserStore) GetUsers() (*[]models.User, error) {
 	sql := `
 	SELECT *
 	FROM users
@@ -138,13 +146,13 @@ func (u *UserStore) GetUsers() (*[]models.User, error) {
 	`
 
 	users := &[]models.User{}
-	err := u.db.Select(users, sql)
-	return users, getDatabaseError(err, "users", "get many")
+	err := s.db.Select(users, sql)
+	return users, s.parseError(err, "get users")
 }
 
 // GetUser returns single user with id.
-func (u *UserStore) GetUser(userid int) (*models.User, error) {
-	user := u.getUserIdCache(userid)
+func (s *UserStore) GetUser(userid int) (*models.User, error) {
+	user := s.getUserIdCache(userid)
 	if user != nil {
 		return user, nil
 	}
@@ -156,17 +164,17 @@ func (u *UserStore) GetUser(userid int) (*models.User, error) {
 	`
 
 	user = &models.User{}
-	err := u.db.Get(user, sql, userid)
+	err := s.db.Get(user, sql, userid)
 	if err != nil {
-		return user, getDatabaseError(err, "users", "get by id")
+		return user, s.parseError(err, "get by id")
 	}
 
-	u.setUserCache(user)
+	s.setUserCache(user)
 	return user, nil
 }
 
 // GetUserByName returns user matching username
-func (u *UserStore) GetUserByName(username string) (*models.User, error) {
+func (s *UserStore) GetUserByName(username string) (*models.User, error) {
 	sql := `
 	SELECT *
 	FROM users
@@ -174,12 +182,12 @@ func (u *UserStore) GetUserByName(username string) (*models.User, error) {
 	`
 
 	user := &models.User{}
-	err := u.db.Get(user, sql, username)
-	return user, getDatabaseError(err, "users", "get by name")
+	err := s.db.Get(user, sql, username)
+	return user, s.parseError(err, "get by name")
 }
 
 // Update existing user. Username cannot be changed,
-func (u *UserStore) Update(user *models.User) error {
+func (s *UserStore) Update(user *models.User) error {
 	if user.Id < 1 {
 		e := errors.ErrInvalid
 		e.ErrMsg = fmt.Sprintf("user (%d) does not exist", user.Id)
@@ -194,33 +202,33 @@ email=$2, updated_at=$3, password=$4, active=$5, admin=$6
 where id = $1
 `
 
-	_, err := u.db.Exec(sql, user.Id, user.Email, user.UpdatedAt, user.Password, user.IsActive, user.IsAdmin)
-	return getDatabaseError(err, "user", "update")
+	_, err := s.db.Exec(sql, user.Id, user.Email, user.UpdatedAt, user.Password, user.IsActive, user.IsAdmin)
+	return s.parseError(err, "update")
 }
 
-func (u *UserStore) GetUserPreferences(userid int) (*models.UserPreferences, error) {
+func (s *UserStore) GetUserPreferences(userid int) (*models.UserPreferences, error) {
 
 	sql := `
 SELECT
-       u.id AS user_id,
-       u.name AS username,
-       u.admin AS is_admin,
+       s.id AS user_id,
+       s.name AS username,
+       s.admin AS is_admin,
        count(d.id) AS documents_count,
        sum(d.size) AS documents_size
-FROM users u
-LEFT JOIN documents d ON u.id = d.user_id
+FROM users s
+LEFT JOIN documents d ON s.id = d.user_id
 
-WHERE u.id = $1
-GROUP BY(u.id);`
+WHERE s.id = $1
+GROUP BY(s.id);`
 
 	pref := &models.UserPreferences{}
 
-	err := u.db.Get(pref, sql, userid)
+	err := s.db.Get(pref, sql, userid)
 	if err != nil {
-		return pref, getDatabaseError(err, "user", "get preferences")
+		return pref, s.parseError(err, "get preferences")
 	}
 
-	stopWords, err := u.GetPreferenceValue(userid, PreferenceStopWords)
+	stopWords, err := s.GetPreferenceValue(userid, PreferenceStopWords)
 	if err != nil {
 		return pref, fmt.Errorf("get stopwords: %v", err)
 	}
@@ -231,7 +239,7 @@ GROUP BY(u.id);`
 		}
 	}
 
-	synonyms, err := u.GetPreferenceValue(userid, PreferenceSynonyms)
+	synonyms, err := s.GetPreferenceValue(userid, PreferenceSynonyms)
 	if err != nil {
 		return pref, fmt.Errorf("get synonyms: %v", err)
 	}
@@ -252,7 +260,7 @@ const (
 	PreferenceSynonyms  PreferenceKey = "synonyms"
 )
 
-func (u *UserStore) GetPreferenceValue(userId int, key PreferenceKey) (string, error) {
+func (s *UserStore) GetPreferenceValue(userId int, key PreferenceKey) (string, error) {
 	sql := `
 SELECT value
 FROM user_preferences
@@ -261,11 +269,11 @@ AND key=$2
 `
 
 	value := ""
-	err := u.db.Get(&value, sql, userId, string(key))
-	return value, getDatabaseErrorIgnoreEmpty(err, "preferences", "get")
+	err := s.db.Get(&value, sql, userId, string(key))
+	return value, s.parseError(err, "get preference value")
 }
 
-func (u *UserStore) SetPreferenceValue(userId int, key PreferenceKey, value string) error {
+func (s *UserStore) SetPreferenceValue(userId int, key PreferenceKey, value string) error {
 	now := time.Now()
 
 	sql := `
@@ -276,11 +284,11 @@ UPDATE SET "value"=$3, updated_at=$4
 WHERE user_preferences.user_id=$1
 AND user_preferences.key=$2;
 `
-	_, err := u.db.Exec(sql, userId, key, value, now)
-	return getDatabaseErrorIgnoreEmpty(err, "preferences", "set")
+	_, err := s.db.Exec(sql, userId, key, value, now)
+	return s.parseError(err, "set preference value")
 }
 
-func (u *UserStore) UpdatePreferences(userId int, stopWords []string, synonyms [][]string) error {
+func (s *UserStore) UpdatePreferences(userId int, stopWords []string, synonyms [][]string) error {
 
 	stopWordsB, err := json.Marshal(stopWords)
 	if err != nil {
@@ -291,12 +299,12 @@ func (u *UserStore) UpdatePreferences(userId int, stopWords []string, synonyms [
 		return fmt.Errorf("serialize synonyms: %v", err)
 	}
 
-	err = u.SetPreferenceValue(userId, PreferenceStopWords, string(stopWordsB))
+	err = s.SetPreferenceValue(userId, PreferenceStopWords, string(stopWordsB))
 	if err != nil {
 		return fmt.Errorf("save stopwords: %v", err)
 	}
 
-	err = u.SetPreferenceValue(userId, PreferenceSynonyms, string(synonymsB))
+	err = s.SetPreferenceValue(userId, PreferenceSynonyms, string(synonymsB))
 	if err != nil {
 		return fmt.Errorf("save synonyms: %v", err)
 	}

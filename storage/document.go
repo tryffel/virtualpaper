@@ -30,6 +30,14 @@ type DocumentStore struct {
 	db *sqlx.DB
 }
 
+func (s DocumentStore) Name() string {
+	return "Documents"
+}
+
+func (s DocumentStore) parseError(err error, action string) error {
+	return getDatabaseError(err, s, action)
+}
+
 // GetDocuments returns user's documents according to paging. In addition, return total count of documents available.
 func (s *DocumentStore) GetDocuments(userId int, paging Paging, sort SortKey, limitContent bool) (*[]models.Document, int, error) {
 	sort.SetDefaults("date", false)
@@ -54,7 +62,7 @@ LIMIT $3;
 	dest := &[]models.Document{}
 	err := s.db.Select(dest, sql, userId, paging.Offset, paging.Limit)
 	if err != nil {
-		return dest, 0, getDatabaseError(err, "documents", "get")
+		return dest, 0, s.parseError(err, "get")
 	}
 
 	if limitContent && len(*dest) > 0 {
@@ -72,7 +80,7 @@ WHERE user_id = $1
 `
 	var count int
 	err = s.db.Get(&count, sql, userId)
-	err = getDatabaseError(err, "documents", "get documents")
+	err = s.parseError(err, "get documents")
 	return dest, count, err
 }
 
@@ -91,7 +99,7 @@ WHERE id = $1
 	}
 	dest := &models.Document{}
 	err := s.db.Get(dest, sql, args...)
-	return dest, getDatabaseError(err, "documents", "get document")
+	return dest, s.parseError(err, "get document")
 }
 
 // UserOwnsDocumet returns true if user has ownership for document.
@@ -113,7 +121,7 @@ end;
 	var ownership bool
 
 	err := s.db.Get(&ownership, sql, documentId, userId)
-	return ownership, getDatabaseError(err, "documents", "check ownership")
+	return ownership, s.parseError(err, "check ownership")
 }
 
 func (s *DocumentStore) GetByHash(hash string) (*models.Document, error) {
@@ -126,7 +134,7 @@ func (s *DocumentStore) GetByHash(hash string) (*models.Document, error) {
 	object := &models.Document{}
 	err := s.db.Get(object, sql, hash)
 	if err != nil {
-		e := getDatabaseError(err, "document", "get by hash")
+		e := s.parseError(err, "get by hash")
 		if errors.Is(e, errors.ErrRecordNotFound) {
 			return object, nil
 		}
@@ -145,7 +153,7 @@ INSERT INTO documents (id, user_id, name, content, filename, hash, mimetype, siz
 	rows, err := s.db.Query(sql, doc.Id, doc.UserId, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
 		doc.Description)
 	if err != nil {
-		return getDatabaseError(err, "documents", "created")
+		return s.parseError(err, "created")
 	}
 
 	if rows.Next() {
@@ -167,7 +175,7 @@ WHERE id=$1;
 `
 
 	_, err := s.db.Exec(sql, id, content)
-	return getDatabaseError(err, "documents", "set content")
+	return s.parseError(err, "set content")
 }
 
 // GetContent returns full content. If userId != 0, user must own the document of given id.
@@ -188,7 +196,7 @@ WHERE id=$1
 	} else {
 		err = s.db.Get(&content, sql, id, userId)
 	}
-	return &content, getDatabaseError(err, "documents", "get content")
+	return &content, s.parseError(err, "get content")
 }
 
 // GetNeedsIndexing returns documents that need indexing ( awaits_indexing=true). If userId != 0, return
@@ -212,7 +220,7 @@ WHERE awaits_indexing=True
 	docs := &[]models.Document{}
 
 	err := s.db.Select(docs, sql, args...)
-	return docs, getDatabaseError(err, "documents", "get needs indexing")
+	return docs, s.parseError(err, "get needs indexing")
 }
 
 // BulkUpdateIndexingStatus sets indexing status for all documents that are defined in ids-array.
@@ -226,7 +234,7 @@ WHERE id IN ($3);
 `
 
 	_, err := s.db.Exec(sql, !indexed, at, ids)
-	return getDatabaseError(err, "documents", "bulk update indexing")
+	return s.parseError(err, "bulk update indexing status")
 }
 
 // Update sets complete document record, not just changed attributes. Thus document must be read before updating.
@@ -241,5 +249,5 @@ WHERE id=$1
 
 	_, err := s.db.Exec(sql, doc.Id, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
 		doc.Date, doc.UpdatedAt, doc.Description)
-	return getDatabaseError(err, "documents", "update")
+	return s.parseError(err, "update")
 }

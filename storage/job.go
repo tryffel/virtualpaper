@@ -13,6 +13,14 @@ type JobStore struct {
 	db *sqlx.DB
 }
 
+func (s JobStore) Name() string {
+	return "Jobs"
+}
+
+func (s JobStore) parseError(err error, action string) error {
+	return getDatabaseError(err, s, action)
+}
+
 // GetByDocument returns all jobs related to document
 func (s *JobStore) GetByDocument(documentId string) (*[]models.Job, error) {
 
@@ -26,7 +34,7 @@ WHERE jobs.document_id = $1;
 	jobs := &[]models.Job{}
 
 	err := s.db.Select(jobs, sql, documentId)
-	return jobs, getDatabaseError(err, "jobs", "get by document")
+	return jobs, s.parseError(err, "get by document")
 }
 
 // GetByDocument returns all jobs related to document
@@ -61,7 +69,7 @@ LIMIT $3;
 			(*jobs)[i].Duration = v.Duration
 		}
 	}
-	return jobs, getDatabaseError(err, "jobs", "get by user")
+	return jobs, s.parseError(err, "get by user")
 }
 
 func (s *JobStore) Create(documentId string, job *models.Job) error {
@@ -75,7 +83,7 @@ VALUES ($1, $2, $3, $4, $5) RETURNING id;
 
 	res, err := s.db.Query(sql, documentId, val, job.Message, job.StartedAt, job.StoppedAt)
 	if err != nil {
-		return getDatabaseError(err, "jobs", "create")
+		return s.parseError(err, "create")
 	}
 	defer res.Close()
 
@@ -83,7 +91,7 @@ VALUES ($1, $2, $3, $4, $5) RETURNING id;
 		var id int
 		err := res.Scan(&id)
 		if err != nil {
-			return getDatabaseError(err, "jobs", "create, scan results")
+			return s.parseError(err, "create, scan results")
 		}
 		job.Id = id
 	}
@@ -101,7 +109,7 @@ WHERE id = $1;
 
 	val, _ := job.Status.Value()
 	_, err := s.db.Exec(sql, job.Id, job.DocumentId, val, job.Message, job.StartedAt, job.StoppedAt)
-	return getDatabaseError(err, "jobs", "update")
+	return s.parseError(err, "update")
 }
 
 // GetPendingProcessing returns max 100 processQueue items ordered by created_at.
@@ -127,7 +135,7 @@ limit 20;
 
 	err := s.db.Select(dto, sql)
 	if err != nil {
-		return dto, 0, getDatabaseError(err, "processItem", "get pending")
+		return dto, 0, s.parseError(err, "get pending processItems")
 	}
 
 	sql = `
@@ -138,7 +146,7 @@ FROM process_queue;
 
 	row := s.db.QueryRow(sql)
 	err = row.Scan(&n)
-	return dto, n, getDatabaseError(err, "processItem", "get pending, scan")
+	return dto, n, s.parseError(err, "get pending ProcessItems, scan")
 }
 
 // GetPendingProcessing returns max 100 documents ordered by process_queue created_at.
@@ -158,9 +166,9 @@ LIMIT 40;
 
 	err := s.db.Select(dto, sql)
 	if err != nil {
-		return dto, getDatabaseError(err, "jobs", "get documents pending")
+		return dto, s.parseError(err, "get documents pending")
 	}
-	return dto, getDatabaseError(err, "jobs", "scan documents pending")
+	return dto, s.parseError(err, "scan documents pending")
 }
 
 // GetDocumentPendingSteps returns ProcessItems not yet started on given document in ascending order.
@@ -175,7 +183,7 @@ ORDER BY step ASC;
 
 	dto := &[]models.ProcessItem{}
 	err := s.db.Select(dto, sql, documentId)
-	return dto, getDatabaseError(err, "processSteps", "get pending")
+	return dto, s.parseError(err, "get pending ProcessSteps")
 }
 
 // GetDocumentStatus returns status for given document:
@@ -190,12 +198,12 @@ GROUP BY running;
 
 	rows, err := s.db.Query(sql, documentId)
 	if err != nil {
-		dbERr := getDatabaseError(err, "processSteps", "get document status")
+		dbERr := s.parseError(err, "get document status for processSteps")
 		if errors.Is(dbERr, errors.ErrRecordNotFound) {
 			return "ready", nil
 		}
 
-		return "", getDatabaseError(err, "processSteps", "get document status")
+		return "", s.parseError(err, "get document status for processSteps")
 	}
 
 	jobPending := false
@@ -237,7 +245,7 @@ AND running=FALSE;
 `
 	res, err := s.db.Exec(sql, item.DocumentId, item.Step)
 	if err != nil {
-		return nil, getDatabaseError(err, "processSteps", "start")
+		return nil, s.parseError(err, "start ProcessItem")
 	}
 
 	affected, err := res.RowsAffected()
@@ -258,7 +266,7 @@ AND running=FALSE;
 	}
 
 	err = s.Create(item.DocumentId, job)
-	return job, getDatabaseError(err, "processStep", "mark started")
+	return job, s.parseError(err, "mark ProcessStep started")
 }
 
 // CreateProcessItem add single process item.
@@ -268,7 +276,7 @@ INSERT INTO process_queue (document_id, step)
 VALUES ($1, $2);
 `
 	_, err := s.db.Exec(sql, item.DocumentId, item.Step)
-	return getDatabaseError(err, "processSteps", "create")
+	return s.parseError(err, "create ProcessSteps")
 }
 
 // MarkProcessinDone update given item. If ok, remove record, else mark it as not running
@@ -291,7 +299,7 @@ func (s *JobStore) MarkProcessingDone(item *models.ProcessItem, ok bool) error {
 			`
 	}
 	_, err := s.db.Exec(sql, item.DocumentId, item.Step)
-	return getDatabaseError(err, "processSetps", "mark done")
+	return s.parseError(err, "mark ProcessSteps done")
 }
 
 // AddDocument adds default processing steps for document. Document must be existing.
@@ -324,7 +332,7 @@ VALUES
 	sql += ";"
 
 	_, err = s.db.Exec(sql, args...)
-	return getDatabaseError(err, "processSteps", "add document")
+	return s.parseError(err, "add document ProcessSteps")
 
 }
 
@@ -337,7 +345,7 @@ WHERE running=TRUE
 `
 
 	_, err := s.db.Exec(sql)
-	return getDatabaseError(err, "processItem", "cancel running")
+	return s.parseError(err, "cancel running ProcessItem")
 }
 
 // ForceProcessing adds documents to process queue. If documentID != 0, mark only given document. If
@@ -371,7 +379,7 @@ JOIN (SELECT DISTINCT * FROM (VALUES %s) AS v) AS steps(step) ON TRUE
 	}
 
 	_, err := s.db.Exec(sql, args...)
-	return getDatabaseError(err, "processSteps", "force processing")
+	return s.parseError(err, "force processing ProcessSteps")
 }
 
 // CancelDocumentProcessing removes all steps from processing queue for document.
@@ -381,5 +389,5 @@ func (s *JobStore) CancelDocumentProcessing(documentId string) error {
 	WHERE document_id = $1
 `
 	_, err := s.db.Exec(sql, documentId)
-	return getDatabaseError(err, "process queue", "clear document queue")
+	return s.parseError(err, "clear document queue")
 }

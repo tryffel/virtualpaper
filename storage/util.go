@@ -65,3 +65,10 @@ func (s *SortKey) Validate(defaultKey string) {
 	logrus.Infof("illegal sort parameter %s", s.Key)
 	s.Key = defaultKey
 }
+
+// Resource is a generic persistence storage for single resource type.
+type Resource interface {
+	Name() string
+
+	parseError(e error, action string) error
+}

@@ -33,6 +33,14 @@ type RuleStore struct {
 	cache *cache.Cache
 }
 
+func (s *RuleStore) Name() string {
+	return "Rules"
+}
+
+func (s *RuleStore) parseError(e error, action string) error {
+	return getDatabaseError(e, s, action)
+}
+
 func newRuleStore(db *sqlx.DB) *RuleStore {
 	store := &RuleStore{
 		db:    db,
@@ -71,7 +79,7 @@ LIMIT $3;`
 
 	rules := &[]models.Rule{}
 	err := s.db.Select(rules, sql, userId, paging.Offset, paging.Limit)
-	return rules, getDatabaseError(err, "rules", "get user rules")
+	return rules, s.parseError(err, "get user rules")
 }
 
 func (s *RuleStore) GetUserRule(userId, ruleId int) (*models.Rule, error) {
@@ -83,7 +91,7 @@ AND id = $2;`
 
 	rule := &models.Rule{}
 	err := s.db.Get(rule, sql, userId, ruleId)
-	return rule, getDatabaseError(err, "rules", "get user rules")
+	return rule, s.parseError(err, "get user rule")
 }
 
 func (s *RuleStore) AddRule(userId int, rule *models.Rule) error {
@@ -101,14 +109,14 @@ RETURNING id;
 	}
 	rows, err := s.db.Query(sql, userId, string(rule.Type), rule.Filter, rule.Comment, action, rule.Active)
 	if err != nil {
-		return getDatabaseError(err, "rules", "get user rules")
+		return s.parseError(err, "add user rule")
 	}
 
 	if rows.Next() {
 		err = rows.Scan(&rule.Id)
 	}
 
-	return getDatabaseError(err, "rules", "get user rules")
+	return s.parseError(err, "add rule, scan rows")
 }
 
 // GetActiveUresRules returns all active rules (with some limit) for given user.
@@ -122,5 +130,5 @@ LIMIT $2;`
 
 	rules := &[]models.Rule{}
 	err := s.db.Select(rules, sql, userId, config.MaxRulesToProcess)
-	return rules, getDatabaseError(err, "get active user rules", "")
+	return rules, s.parseError(err, "get active user rules")
 }
