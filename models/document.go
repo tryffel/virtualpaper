@@ -19,6 +19,7 @@
 package models
 
 import (
+	"database/sql"
 	"github.com/hashicorp/go-uuid"
 	"github.com/sirupsen/logrus"
 	"strings"
@@ -41,6 +42,8 @@ type Document struct {
 	Date        time.Time `db:"date"`
 	Metadata    []Metadata
 	Tags        []Tag
+
+	DeletedAt sql.NullTime `db:"deleted_at"`
 }
 
 // Init initializes new document. It ensures document has valid uuid assigned to it.

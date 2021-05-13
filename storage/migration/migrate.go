@@ -52,6 +52,11 @@ var Migrations = []Migrator{
 		Level:  5,
 		Schema: schemaV5,
 	},
+	&Migration{
+		Name:   "cascade deletions, add deleted_at col to documents",
+		Level:  6,
+		Schema: schemaV6,
+	},
 }
 
 type Schema struct {
