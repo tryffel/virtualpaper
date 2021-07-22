@@ -1,6 +1,6 @@
 /*
  * Virtualpaper is a service to manage users paper documents in virtual format.
- * Copyright (C) 2020  Tero Vierimaa
+ * Copyright (C) 2021  Tero Vierimaa
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,131 +18,93 @@
 
 package models
 
-import (
-	"database/sql/driver"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"regexp"
-)
-
-type RuleType string
+type RuleConditionMatchType int
 
 const (
-	// RegexRule matches filter with regex
-	RegexRule RuleType = "regex"
-	// Exact must match exactly.
-	ExactRule RuleType = "exact"
+	// RuleMatchAll requires all conditions must be matched
+	RuleMatchAll RuleConditionMatchType = 1
+	//RuleMatchAny allows any condition to match
+	RuleMatchAny RuleConditionMatchType = 2
 )
 
-// RuleAction defines what to do when rule has fired.
-// RuleActions are not exclusive, meaning multiple actions can be defined for single rule.
-// E.g. add metadata and tag + set description
-type RuleAction uint16
-
-func (r RuleAction) AddMetadata() bool {
-	return r&RuleActionAddMetadata != 0
-}
-
-func (r RuleAction) Rename() bool {
-	return r&RuleActionRename != 0
-}
-
-func (r RuleAction) Date() bool {
-	return r&RuleActionSetDate != 0
-}
-
-func (r RuleAction) Tag() bool {
-	return r&RuleActionAddTag != 0
-}
-
-func (r RuleAction) Description() bool {
-	return r&RuleActionSetDescription != 0
-}
-
-const (
-	RuleActionAddMetadata    RuleAction = 1 << 0
-	RuleActionRename         RuleAction = 1 << 1
-	RuleActionSetDate        RuleAction = 1 << 2
-	RuleActionAddTag         RuleAction = 1 << 3
-	RuleActionSetDescription RuleAction = 1 << 4
-)
-
-// RuleActionConfig defines action to perform when rule has fired.
-// Fields and their content depends on Action, and specific key only applies if
-// it's defined in Action.
-// RuleActionConfig is serialized as json in database.
-type RuleActionConfig struct {
-	Action          RuleAction
-	MetadataKeyId   int
-	MetadataValueId int
-	Tag             int
-	// DateFmt is format to try to parse time with
-	DateFmt string
-	// DateSeparator in format. This is to try to ensure and in some cases fix minor errors
-	// in invalid formats, e.g. 2020-5-01 -> 2020-05-01.
-	DateSeparator string
-	Description   string
-}
-
-func (r *RuleActionConfig) Scan(src interface{}) error {
-	buf := []byte{}
-	if b, ok := src.([]byte); ok {
-		buf = b
-	} else if str, ok := src.(string); ok {
-		buf = []byte(str)
-	}
-	err := json.Unmarshal(buf, r)
-	return err
-}
-
-func (r *RuleActionConfig) Value() (driver.Value, error) {
-	buf, err := json.Marshal(r)
-	return string(buf), err
-}
-
-// Validate ensures rule configuration is valid. If valid, return nil, else return
-// exact reason for why rule is invalid.
-func (r *Rule) Validate() error {
-	if r.Filter == "" {
-		return errors.New("filter cannot be empty")
-	}
-
-	if r.Type == RegexRule {
-		_, err := regexp.Compile(r.Filter)
-		if err != nil {
-			return fmt.Errorf("invalid regex: %v", err.Error())
-		}
-	}
-
-	if r.Action.MetadataKeyId != 0 && r.Action.MetadataValueId != 0 {
-		r.Action.Action |= RuleActionAddMetadata
-	}
-	if r.Action.Tag != 0 {
-		r.Action.Action |= RuleActionAddTag
-	}
-	if r.Action.DateFmt != "" {
-		r.Action.Action |= RuleActionSetDate
-	}
-	if r.Action.Description != "" {
-		r.Action.Action |= RuleActionSetDescription
-	}
-
-	if r.Action.Action == 0 {
-		return errors.New("no action set")
-	}
-	return nil
-}
-
-// Rule defines single rule, which has filter (either exact or regex) and action to perform when filter
-// fires.
 type Rule struct {
+	Id int
+	UserId int
+	Name string
+	Description string
+	Enabled bool
+	Order int
+	Mode RuleConditionMatchType
 	Timestamp
-	Id      int              `db:"id"`
-	Userid  int              `db:"user_id"`
-	Type    RuleType         `db:"rule_type" json:"rule_type"`
-	Filter  string           `db:"filter"`
-	Comment string           `db:"comment"`
-	Action  RuleActionConfig `db:"action"`
-	Active  bool             `db:"active"`
 }
+
+
+type RuleConditionType string
+
+const (
+	RuleConditionNameIs RuleConditionType = "name_is"
+	RuleConditionNameStarts RuleConditionType = "name_starts"
+	RuleConditionNameContains RuleConditionType = "name_contains"
+
+	RuleConditionDescriptionIs RuleConditionType = "description_is"
+	RuleConditionDescriptionStarts RuleConditionType = "description_starts"
+	RuleConditionDescriptionContains RuleConditionType = "description_contains"
+
+	RuleConditionContentIs RuleConditionType = "content_is"
+	RuleConditionContentStarts RuleConditionType = "content_starts"
+	RuleConditionContentContains RuleConditionType = "content_contains"
+
+	RuleConditionDateIs RuleConditionType = "date_is"
+	RuleConditionDateAfter RuleConditionType = "date_after"
+	RuleConditionDateBefore RuleConditionType = "date_before"
+
+	RuleConditionMetadataHasKey RuleConditionType = "metadata_has_key"
+	RuleConditionMetadataHasKeyValue RuleConditionType = "metadata_has_key_value"
+	RuleConditionMetadataCount RuleConditionType = "metadata_count"
+)
+
+
+type RuleCondition struct {
+	Id int
+	RuleId int
+	Enabled int
+	CaseInsensitive bool
+	// Inverted inverts the match result
+	Inverted bool
+	ConditionType RuleConditionType
+
+	// IsRegex defines whether to apply regex pattern
+	IsRegex bool
+	// Value to compare against, if text field
+	Value string
+
+	// Metadata to operate with
+	MetadataKey int
+	MetadataValue int
+}
+
+
+type RuleActionType string
+
+const (
+	RuleActionSetName RuleConditionType = "name_set"
+	RuleActionAppendName RuleConditionType = "name_append"
+	RuleActionSetDescription RuleConditionType = "description_set"
+	RuleActionAppendDescription RuleConditionType = "description_append"
+	RuleActionAddMetadata RuleConditionType = "metadata_add"
+	RuleActionRemoveMetadata RuleConditionType = "metadata_remove"
+	RuleActionSetDate RuleConditionType = "date_set"
+)
+
+type RuleAction struct {
+	Id int
+	RuleId int
+	// OnCondition, if vs else
+	OnCondition bool
+
+	Action RuleActionType
+	Value string
+	MetadataKey int
+	MetadataValue
+}
+
