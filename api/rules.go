@@ -20,8 +20,6 @@ package api
 
 import (
 	"net/http"
-	"tryffel.net/go/virtualpaper/errors"
-	"tryffel.net/go/virtualpaper/models"
 )
 
 type ProcessingRuleResp struct {
@@ -54,8 +52,9 @@ type ProcessingRuleReq struct {
 	Action  processingRuleAction `json:"action" valid:"-"`
 }
 
-func (p *ProcessingRuleReq) toRule() *models.Rule {
-	rule := &models.Rule{
+/*
+func (p *ProcessingRuleReq) toRule() *models.Match {
+	rule := &models.Match{
 		Filter:  p.Filter,
 		Comment: p.Comment,
 		Active:  p.Active,
@@ -79,7 +78,7 @@ func (p *ProcessingRuleReq) toRule() *models.Rule {
 	return rule
 }
 
-func ruleToResp(rule *models.Rule) *ProcessingRuleResp {
+func ruleToResp(rule *models.Match) *ProcessingRuleResp {
 	pr := &ProcessingRuleResp{
 		CreatedAd: rule.CreatedAt.Unix() * 1000,
 		UpdatedAt: rule.UpdatedAt.Unix() * 1000,
@@ -100,6 +99,8 @@ func ruleToResp(rule *models.Rule) *ProcessingRuleResp {
 	return pr
 }
 
+*/
+
 func (a *Api) addUserRule(resp http.ResponseWriter, req *http.Request) {
 	// swagger:route POST /api/v1/processing/rules Processing AddRule
 	// Add processing rule
@@ -110,36 +111,41 @@ func (a *Api) addUserRule(resp http.ResponseWriter, req *http.Request) {
 	//   401: RespForbidden
 	//   403: RespNotFound
 	//   500: RespInternalError
-	handler := "api.addUserRule"
 
-	userId, ok := getUserId(req)
-	if !ok {
-		respError(resp, errors.New("no user_id in request context"), handler)
-		return
-	}
+	/*
+		handler := "api.addUserRule"
 
-	processingRule := &ProcessingRuleReq{}
-	err := unMarshalBody(req, processingRule)
-	if err != nil {
-		respError(resp, err, handler)
-		return
-	}
+		userId, ok := getUserId(req)
+		if !ok {
+			respError(resp, errors.New("no user_id in request context"), handler)
+			return
+		}
 
-	rule := processingRule.toRule()
-	err = rule.Validate()
-	if err != nil {
-		e := errors.ErrInvalid
-		e.ErrMsg = err.Error()
-		respError(resp, e, handler)
-		return
-	}
+		processingRule := &ProcessingRuleReq{}
+		err := unMarshalBody(req, processingRule)
+		if err != nil {
+			respError(resp, err, handler)
+			return
+		}
 
-	err = a.db.RuleStore.AddRule(userId, rule)
-	if err != nil {
-		respError(resp, err, handler)
-		return
-	}
-	respOk(resp, ruleToResp(rule))
+
+		rule := processingRule.toRule()
+		err = rule.Validate()
+		if err != nil {
+			e := errors.ErrInvalid
+			e.ErrMsg = err.Error()
+			respError(resp, e, handler)
+			return
+		}
+
+		err = a.db.RuleStore.AddRule(userId, rule)
+		if err != nil {
+			respError(resp, err, handler)
+			return
+		}
+		respOk(resp, ruleToResp(rule))
+
+	*/
 }
 
 func (a *Api) getUserRules(resp http.ResponseWriter, req *http.Request) {
@@ -147,33 +153,38 @@ func (a *Api) getUserRules(resp http.ResponseWriter, req *http.Request) {
 	// Get processing rules
 	// responses:
 	//   200: ProcessingRuleResponse
-	handler := "api.getUserRules"
 
-	userId, ok := getUserId(req)
-	if !ok {
-		respError(resp, errors.New("no user_id in request context"), handler)
-		return
-	}
+	/*
+		handler := "api.getUserRules"
 
-	paging, err := getPaging(req)
-	if err != nil {
-		respError(resp, err, handler)
-		return
+		userId, ok := getUserId(req)
+		if !ok {
+			respError(resp, errors.New("no user_id in request context"), handler)
+			return
+		}
 
-	}
+		paging, err := getPaging(req)
+		if err != nil {
+			respError(resp, err, handler)
+			return
 
-	rules, err := a.db.RuleStore.GetUserRules(userId, paging)
-	if err != nil {
-		respError(resp, err, handler)
-		return
-	}
+		}
 
-	processingRules := make([]*ProcessingRuleResp, len(*rules))
-	for i, v := range *rules {
-		processingRules[i] = ruleToResp(&v)
-	}
 
-	respResourceList(resp, processingRules, len(processingRules))
+		rules, err := a.db.RuleStore.GetUserRules(userId, paging)
+		if err != nil {
+			respError(resp, err, handler)
+			return
+		}
+
+		processingRules := make([]*ProcessingRuleResp, len(*rules))
+		for i, v := range *rules {
+			processingRules[i] = ruleToResp(&v)
+		}
+
+		respResourceList(resp, processingRules, len(processingRules))
+
+	*/
 }
 
 func (a *Api) getUserRule(resp http.ResponseWriter, req *http.Request) {
@@ -181,26 +192,31 @@ func (a *Api) getUserRule(resp http.ResponseWriter, req *http.Request) {
 	// Get processing rule by id
 	// responses:
 	//   200: ProcessingRuleResponse
-	handler := "api.getUserRule"
 
-	userId, ok := getUserId(req)
-	if !ok {
-		respError(resp, errors.New("no user_id in request context"), handler)
-		return
-	}
+	/*
+		handler := "api.getUserRule"
 
-	id, err := getParamIntId(req)
-	if err != nil {
-		respBadRequest(resp, "no id specified", nil)
-		return
-	}
+		userId, ok := getUserId(req)
+		if !ok {
+			respError(resp, errors.New("no user_id in request context"), handler)
+			return
+		}
 
-	rule, err := a.db.RuleStore.GetUserRule(userId, id)
-	if err != nil {
-		respError(resp, err, handler)
-		return
-	}
+		id, err := getParamIntId(req)
+		if err != nil {
+			respBadRequest(resp, "no id specified", nil)
+			return
+		}
 
-	r := ruleToResp(rule)
-	respResourceList(resp, r, 1)
+
+		rule, err := a.db.RuleStore.GetUserRule(userId, id)
+		if err != nil {
+			respError(resp, err, handler)
+			return
+		}
+
+		r := ruleToResp(rule)
+		respResourceList(resp, r, 1)
+
+	*/
 }

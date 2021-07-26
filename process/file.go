@@ -677,13 +677,31 @@ func (fp *fileProcessor) runRules() error {
 	} else {
 		defer fp.completeProcessingStep(process, job)
 	}
-	err = runRules(fp.document, rules)
+
+	for i, rule := range rules {
+		logrus.Debugf("(%d.) run user rule %d", i, rule.Id)
+		runner := NewDocumentRule(fp.document, rule)
+		match, err := runner.Match()
+		if err != nil {
+			logrus.Errorf("match rule (%d): %v", rule.Id, err)
+		}
+		if !match {
+			logrus.Debugf("document %s does not match rule: %d", fp.document.Id, rule.Id)
+		} else {
+
+			logrus.Debugf("document %s matches rule %d, run actions", fp.document.Id, rule.Id)
+			err = runner.RunActions()
+			if err != nil {
+				logrus.Errorf("run rule (%d) actions: %v", rule.Id, err)
+			}
+		}
+	}
 
 	metadataValues, err := fp.db.MetadataStore.GetUserValuesWithMatching(fp.document.UserId)
 	if err != nil {
 		logrus.Errorf("get metadata values with matching for user %d: %v", fp.document.UserId, err)
 	} else if len(*metadataValues) != 0 {
-		err = matchMetadata(fp.document, metadataValues)
+		//err = matchMetadata(fp.document, metadataValues)
 	}
 
 	if err != nil {
@@ -717,7 +735,7 @@ func (fp *fileProcessor) runRules() error {
 			}
 		}
 	}
-	return err
+	return nil
 }
 
 func (fp *fileProcessor) indexSearchContent() error {

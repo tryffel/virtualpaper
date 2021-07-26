@@ -18,6 +18,8 @@
 
 package models
 
+import "database/sql"
+
 type RuleConditionMatchType int
 
 const (
@@ -28,83 +30,85 @@ const (
 )
 
 type Rule struct {
-	Id int
-	UserId int
-	Name string
-	Description string
-	Enabled bool
-	Order int
-	Mode RuleConditionMatchType
+	Id          int                    `db:"id"`
+	UserId      int                    `db:"user_id"`
+	Name        string                 `db:"name"`
+	Description string                 `db:"description"`
+	Enabled     bool                   `db:"enabled"`
+	Order       int                    `db:"rule_order"`
+	Mode        RuleConditionMatchType `db:"mode"`
 	Timestamp
-}
 
+	Conditions []*RuleCondition
+	Actions    []*RuleAction
+}
 
 type RuleConditionType string
 
 const (
-	RuleConditionNameIs RuleConditionType = "name_is"
-	RuleConditionNameStarts RuleConditionType = "name_starts"
+	RuleConditionNameIs       RuleConditionType = "name_is"
+	RuleConditionNameStarts   RuleConditionType = "name_starts"
 	RuleConditionNameContains RuleConditionType = "name_contains"
 
-	RuleConditionDescriptionIs RuleConditionType = "description_is"
-	RuleConditionDescriptionStarts RuleConditionType = "description_starts"
+	RuleConditionDescriptionIs       RuleConditionType = "description_is"
+	RuleConditionDescriptionStarts   RuleConditionType = "description_starts"
 	RuleConditionDescriptionContains RuleConditionType = "description_contains"
 
-	RuleConditionContentIs RuleConditionType = "content_is"
-	RuleConditionContentStarts RuleConditionType = "content_starts"
+	RuleConditionContentIs       RuleConditionType = "content_is"
+	RuleConditionContentStarts   RuleConditionType = "content_starts"
 	RuleConditionContentContains RuleConditionType = "content_contains"
 
-	RuleConditionDateIs RuleConditionType = "date_is"
-	RuleConditionDateAfter RuleConditionType = "date_after"
+	RuleConditionDateIs     RuleConditionType = "date_is"
+	RuleConditionDateAfter  RuleConditionType = "date_after"
 	RuleConditionDateBefore RuleConditionType = "date_before"
 
-	RuleConditionMetadataHasKey RuleConditionType = "metadata_has_key"
-	RuleConditionMetadataHasKeyValue RuleConditionType = "metadata_has_key_value"
-	RuleConditionMetadataCount RuleConditionType = "metadata_count"
+	RuleConditionMetadataHasKey        RuleConditionType = "metadata_has_key"
+	RuleConditionMetadataHasKeyValue   RuleConditionType = "metadata_has_key_value"
+	RuleConditionMetadataCount         RuleConditionType = "metadata_count"
+	RuleConditionMetadataCountLessThan RuleConditionType = "metadata_count_less_than"
+	RuleConditionMetadataCountMoreThan RuleConditionType = "metadata_count_more_than"
 )
 
-
 type RuleCondition struct {
-	Id int
-	RuleId int
-	Enabled int
-	CaseInsensitive bool
+	Id              int  `db:"id"`
+	RuleId          int  `db:"rule_id"`
+	Enabled         bool `db:"enabled"`
+	CaseInsensitive bool `db:"case_insensitive"`
 	// Inverted inverts the match result
-	Inverted bool
-	ConditionType RuleConditionType
+	Inverted      bool              `db:"inverted_match"`
+	ConditionType RuleConditionType `db:"condition_type"`
 
 	// IsRegex defines whether to apply regex pattern
-	IsRegex bool
+	IsRegex bool `db:"is_regex"`
 	// Value to compare against, if text field
-	Value string
+	Value string `db:"value"`
 
 	// Metadata to operate with
-	MetadataKey int
-	MetadataValue int
+	MetadataKey   sql.NullInt64 `db:"metadata_key"`
+	MetadataValue sql.NullInt64 `db:"metadata_value"`
 }
-
 
 type RuleActionType string
 
 const (
-	RuleActionSetName RuleConditionType = "name_set"
-	RuleActionAppendName RuleConditionType = "name_append"
-	RuleActionSetDescription RuleConditionType = "description_set"
-	RuleActionAppendDescription RuleConditionType = "description_append"
-	RuleActionAddMetadata RuleConditionType = "metadata_add"
-	RuleActionRemoveMetadata RuleConditionType = "metadata_remove"
-	RuleActionSetDate RuleConditionType = "date_set"
+	RuleActionSetName           RuleActionType = "name_set"
+	RuleActionAppendName        RuleActionType = "name_append"
+	RuleActionSetDescription    RuleActionType = "description_set"
+	RuleActionAppendDescription RuleActionType = "description_append"
+	RuleActionAddMetadata       RuleActionType = "metadata_add"
+	RuleActionRemoveMetadata    RuleActionType = "metadata_remove"
+	RuleActionSetDate           RuleActionType = "date_set"
 )
 
 type RuleAction struct {
-	Id int
-	RuleId int
+	Id      int  `db:"id"`
+	RuleId  int  `db:"rule_id"`
+	Enabled bool `db:"enabled"`
 	// OnCondition, if vs else
-	OnCondition bool
+	OnCondition bool `db:"on_condition"`
 
-	Action RuleActionType
-	Value string
-	MetadataKey int
-	MetadataValue
+	Action        RuleActionType `db:"action"`
+	Value         string         `db:"value"`
+	MetadataKey   sql.NullInt64  `db:"metadata_key"`
+	MetadataValue sql.NullInt64  `db:"metadata_value"`
 }
-

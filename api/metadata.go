@@ -19,10 +19,8 @@
 package api
 
 import (
-	"fmt"
 	"github.com/sirupsen/logrus"
 	"net/http"
-	"regexp"
 	"time"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
@@ -50,24 +48,28 @@ type metadataValueRequest struct {
 }
 
 func (m *metadataValueRequest) validate() error {
-	invalidErr := errors.ErrInvalid
-	if m.MatchDocuments {
-		if models.RuleType(m.MatchType) == models.RegexRule {
-			_, err := regexp.Compile(m.MatchFilter)
-			if err != nil {
-				invalidErr.ErrMsg = fmt.Sprintf("invalid regex: %v", err.Error())
+	/*
+		invalidErr := errors.ErrInvalid
+
+		if m.MatchDocuments {
+			if models.RuleType(m.MatchType) == models.RegexRule {
+				_, err := regexp.Compile(m.MatchFilter)
+				if err != nil {
+					invalidErr.ErrMsg = fmt.Sprintf("invalid regex: %v", err.Error())
+					return invalidErr
+				}
+			} else if models.RuleType(m.MatchType) == models.ExactRule {
+				if len(m.MatchFilter) < 3 {
+					invalidErr.ErrMsg = "too short filter. Must be >=3 characters"
+					return invalidErr
+				}
+			} else {
+				invalidErr.ErrMsg = "unknown rule_type"
 				return invalidErr
 			}
-		} else if models.RuleType(m.MatchType) == models.ExactRule {
-			if len(m.MatchFilter) < 3 {
-				invalidErr.ErrMsg = "too short filter. Must be >=3 characters"
-				return invalidErr
-			}
-		} else {
-			invalidErr.ErrMsg = "unknown rule_type"
-			return invalidErr
 		}
-	}
+
+	*/
 	return nil
 }
 
@@ -270,8 +272,8 @@ func (a *Api) addMetadataValue(resp http.ResponseWriter, req *http.Request) {
 		CreatedAt:      time.Now(),
 		Comment:        dto.Comment,
 		MatchDocuments: dto.MatchDocuments,
-		MatchType:      models.RuleType(dto.MatchType),
-		MatchFilter:    dto.MatchFilter,
+		//MatchType:      models.RuleType(dto.MatchType),
+		MatchFilter: dto.MatchFilter,
 	}
 
 	err = a.db.MetadataStore.CreateValue(user, value)
@@ -327,8 +329,8 @@ func (a *Api) updateMetadataValue(resp http.ResponseWriter, req *http.Request) {
 		Value:          dto.Value,
 		Comment:        dto.Comment,
 		MatchDocuments: dto.MatchDocuments,
-		MatchType:      models.RuleType(dto.MatchType),
-		MatchFilter:    dto.MatchFilter,
+		//MatchType:      models.RuleType(dto.MatchType),
+		MatchFilter: dto.MatchFilter,
 	}
 
 	ownerShip, err := a.db.MetadataStore.UserHasKeyValue(user, keyId, valueId)

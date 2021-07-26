@@ -69,32 +69,33 @@ func (s *RuleStore) setRuleCached(rule *models.Rule) {
 	s.cache.Set(fmt.Sprintf("rule-%d", rule.Id), rule, cache.DefaultExpiration)
 }
 
-func (s *RuleStore) GetUserRules(userId int, paging Paging) (*[]models.Rule, error) {
+/*
+func (s *RuleStore) GetUserRules(userId int, paging Paging) (*[]models.Match, error) {
 	sql := `
-SELECT * 
+SELECT *
 FROM process_rules
 WHERE user_id = $1
 OFFSET $2
 LIMIT $3;`
 
-	rules := &[]models.Rule{}
+	rules := &[]models.Match{}
 	err := s.db.Select(rules, sql, userId, paging.Offset, paging.Limit)
 	return rules, s.parseError(err, "get user rules")
 }
 
-func (s *RuleStore) GetUserRule(userId, ruleId int) (*models.Rule, error) {
+func (s *RuleStore) GetUserRule(userId, ruleId int) (*models.Match, error) {
 	sql := `
-SELECT * 
+SELECT *
 FROM process_rules
 WHERE user_id = $1
 AND id = $2;`
 
-	rule := &models.Rule{}
+	rule := &models.Match{}
 	err := s.db.Get(rule, sql, userId, ruleId)
 	return rule, s.parseError(err, "get user rule")
 }
 
-func (s *RuleStore) AddRule(userId int, rule *models.Rule) error {
+func (s *RuleStore) AddRule(userId int, rule *models.Match) error {
 	sql := `
 INSERT INTO process_rules
 (user_id, rule_type, filter, comment, action, active)
@@ -119,16 +120,90 @@ RETURNING id;
 	return s.parseError(err, "add rule, scan rows")
 }
 
+
+*/
 // GetActiveUresRules returns all active rules (with some limit) for given user.
-func (s *RuleStore) GetActiveUserRules(userId int) (*[]models.Rule, error) {
+func (s *RuleStore) GetActiveUserRules(userId int) ([]*models.Rule, error) {
 
 	sql := `
-SELECT * 
-FROM process_rules
-WHERE user_id = $1
-LIMIT $2;`
+select *
+from rules
+where user_id = $1
+order by rule_order asc
+limit $2;`
 
 	rules := &[]models.Rule{}
 	err := s.db.Select(rules, sql, userId, config.MaxRulesToProcess)
-	return rules, s.parseError(err, "get active user rules")
+	if err != nil {
+		return nil, s.parseError(err, "get active user rules")
+	}
+
+	sql = `
+SELECT
+    rule_conditions.id as id,
+    rule_id,
+    rule_conditions.enabled as enabled,
+    case_insensitive,
+    inverted_match,
+    condition_type,
+    is_regex,
+    value,
+    metadata_key,
+    metadata_value
+FROM rule_conditions
+         LEFT JOIN rules on rule_conditions.rule_id = rules.id
+WHERE rules.user_id = $1
+  AND rule_conditions.enabled = true
+order by rule_id, rule_conditions.id asc;
+`
+
+	conditions := &[]models.RuleCondition{}
+	err = s.db.Select(conditions, sql, userId)
+	if err != nil {
+		return nil, s.parseError(err, "get rule conditions")
+	}
+
+	actions := &[]models.RuleAction{}
+	sql = `
+SELECT
+    rule_actions.id AS id,
+    rule_id,
+    rule_actions.enabled AS enabled,
+    on_condition,
+    rule_actions.value AS value,
+    metadata_key,
+    metadata_value
+FROM rule_actions
+         LEFT JOIN rules ON rule_actions.rule_id = rules.id
+WHERE rules.user_id = $1
+  AND rule_actions.enabled = TRUE
+ORDER BY rule_id, rule_actions.id ASC;
+`
+
+	err = s.db.Select(actions, sql, userId)
+	if err != nil {
+		return nil, s.parseError(err, "get rule conditions")
+	}
+
+	ruleArr := make([]*models.Rule, len(*rules))
+
+	for i, rule := range *rules {
+		rule.Conditions = make([]*models.RuleCondition, 0, 10)
+		rule.Actions = make([]*models.RuleAction, 0, 10)
+
+		for _, condition := range *conditions {
+			if condition.RuleId == rule.Id {
+				rule.Conditions = append(rule.Conditions, &condition)
+			}
+		}
+
+		for _, action := range *actions {
+			if action.RuleId == rule.Id {
+				rule.Actions = append(rule.Actions, &action)
+			}
+		}
+
+		ruleArr[i] = &rule
+	}
+	return ruleArr, nil
 }
