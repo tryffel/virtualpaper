@@ -18,7 +18,6 @@
 
 package migration
 
-
 const schemaV7 = `
 CREATE TABLE rules (
 	id SERIAL PRIMARY KEY,
@@ -45,6 +44,7 @@ CREATE TABLE rule_conditions (
 	inverted_match BOOLEAN NOT NULL DEFAULT false,
 	condition_type TEXT NOT NULL DEFAULT '',
 	is_regex BOOL NOT NULL DEFAULT false,
+	date_fmt TEXT NOT NULL DEFAULT '',
 	value TEXT NOT NULL DEFAULT '',
 	metadata_key INT,
 	metadata_value INT,

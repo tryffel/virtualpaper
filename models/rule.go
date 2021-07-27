@@ -79,7 +79,8 @@ type RuleCondition struct {
 	// IsRegex defines whether to apply regex pattern
 	IsRegex bool `db:"is_regex"`
 	// Value to compare against, if text field
-	Value string `db:"value"`
+	Value   string `db:"value"`
+	DateFmt string `db:"date_fmt"`
 
 	// Metadata to operate with
 	MetadataKey   IntId `db:"metadata_key"`

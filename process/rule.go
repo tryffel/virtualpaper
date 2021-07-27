@@ -22,8 +22,10 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"math"
+	"regexp"
 	"strconv"
 	"strings"
+	"time"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 )
@@ -31,6 +33,7 @@ import (
 type DocumentRule struct {
 	Rule     *models.Rule
 	Document *models.Document
+	date     time.Time
 }
 
 func NewDocumentRule(document *models.Document, rule *models.Rule) DocumentRule {
@@ -60,6 +63,8 @@ func (d *DocumentRule) Match() (bool, error) {
 			ok, err = d.matchText(condition, d.Document.Content)
 		} else if strings.HasPrefix(condText, "metadata_has_key") {
 			ok = d.hasMetadataKey(condition)
+		} else if strings.HasPrefix(condText, "date") {
+			ok, err = d.extractDates(condition)
 		} else if condition.ConditionType == models.RuleConditionMetadataHasKey {
 			ok = d.hasMetadataKey(condition)
 		} else if condition.ConditionType == models.RuleConditionMetadataHasKeyValue {
@@ -161,6 +166,73 @@ func (d *DocumentRule) hasMetadataCount(condition *models.RuleCondition) (bool, 
 	}
 }
 
+// Try to extract all dates from the document.
+// In case there are multiple dates found, prioritice:
+// 1. a future date that has most matches
+// 2. a passed date that has most matches
+// 3. any date found from document.
+func (d *DocumentRule) extractDates(condition *models.RuleCondition) (bool, error) {
+	dateFmt := condition.Value
+
+	re, err := regexp.Compile(dateFmt)
+	if err != nil {
+		return false, fmt.Errorf("regex: %v", err)
+	}
+
+	matches := re.FindAllString(d.Document.Content, -1)
+	dates := make(map[time.Time]int)
+	datesPassed := make(map[time.Time]int)
+	datesUpcoming := make(map[time.Time]int)
+	now := time.Now()
+
+	putDateToMap := func(date time.Time, m *map[time.Time]int) {
+		if (*m)[date] == 0 {
+			(*m)[date] = 1
+		} else {
+			(*m)[date] += 1
+		}
+	}
+
+	for _, v := range matches {
+		date, err := time.Parse(condition.DateFmt, v)
+		if err != nil {
+			logrus.Tracef("text %s does not match date fmt %s", v, condition.DateFmt)
+		} else {
+			putDateToMap(date, &dates)
+			if date.After(now) {
+				putDateToMap(date, &datesUpcoming)
+			} else {
+				putDateToMap(date, &datesPassed)
+			}
+		}
+	}
+
+	if len(dates) == 0 {
+		return false, nil
+	}
+
+	pickDate := time.Time{}
+	pickFrequency := 0
+	for date, freq := range datesUpcoming {
+		if freq > pickFrequency {
+			pickDate = date
+			pickFrequency = freq
+		}
+	}
+
+	if len(datesUpcoming) == 0 {
+		for date, freq := range datesPassed {
+			if freq > pickFrequency {
+				pickDate = date
+				pickFrequency = freq
+			}
+		}
+	}
+
+	d.date = pickDate
+	return true, nil
+}
+
 func (d *DocumentRule) RunActions() error {
 	logrus.Debugf("(documentRule) run actions, document: %s, rule: %d", d.Document.Id, d.Rule.Id)
 
@@ -174,6 +246,10 @@ func (d *DocumentRule) RunActions() error {
 			actionError = d.setName(action)
 		case models.RuleActionAppendName:
 			actionError = d.appendName(action)
+		case models.RuleActionSetDescription:
+			actionError = d.setDescription(action)
+		case models.RuleActionAppendDescription:
+			actionError = d.appendDescription(action)
 		case models.RuleActionAddMetadata:
 			actionError = d.addMetadata(action)
 		default:
@@ -200,6 +276,16 @@ func (d *DocumentRule) appendName(action *models.RuleAction) error {
 	return nil
 }
 
+func (d *DocumentRule) setDescription(action *models.RuleAction) error {
+	d.Document.Description = action.Value
+	return nil
+}
+
+func (d *DocumentRule) appendDescription(action *models.RuleAction) error {
+	d.Document.Description += action.Value
+	return nil
+}
+
 func (d *DocumentRule) addMetadata(action *models.RuleAction) error {
 	if len(d.Document.Metadata) == 0 {
 		d.Document.Metadata = []models.Metadata{{
@@ -220,6 +306,13 @@ func (d *DocumentRule) addMetadata(action *models.RuleAction) error {
 		KeyId:   int(action.MetadataKey),
 		ValueId: int(action.MetadataValue),
 	})
+	return nil
+}
+
+func (d *DocumentRule) setDate(action models.RuleAction) error {
+	if !d.date.IsZero() {
+		d.Document.Date = d.date
+	}
 	return nil
 }
 
