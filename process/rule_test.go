@@ -384,3 +384,64 @@ func TestDocumentRule_matchTextByDistance(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkDocumentRule_matchTextByDistance_shorttext(b *testing.B) {
+	// 66 words to search from.
+	match := "a short match"
+	text := "Lorem ipsum dolor sit amet, consectetur adipiscing elit, " +
+		"sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. " +
+		"Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo " +
+		"consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat " +
+		"nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui " +
+		"officia deserunt mollit anim id est laborum."
+
+	for i := 0; i < b.N; i++ {
+		_, _ = matchTextByDistance(match, text, 1, false, false)
+	}
+}
+
+func BenchmarkDocumentRule_matchTextByDistance_mediumtext(b *testing.B) {
+	// 6600 words to search from.
+	match := "a short match"
+	text := `Lorem ipsum dolor sit amet, consectetur adipiscing elit,
+		sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
+		Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+		consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat
+		nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui 
+		officia deserunt mollit anim id est laborum.`
+
+	longText := ""
+
+	b.StopTimer()
+	for i := 0; i < 100; i++ {
+		longText += text
+	}
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, _ = matchTextByDistance(match, longText, 1, false, false)
+	}
+}
+
+func BenchmarkDocumentRule_matchTextByDistance_longtext(b *testing.B) {
+	// 660000 words to search from.
+	match := "a short match"
+	text := "Lorem ipsum dolor sit amet, consectetur adipiscing elit, " +
+		"sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. " +
+		"Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo " +
+		"consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat " +
+		"nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui " +
+		"officia deserunt mollit anim id est laborum."
+
+	longText := ""
+
+	b.StopTimer()
+	for i := 0; i < 10000; i++ {
+		longText += text
+	}
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, _ = matchTextByDistance(match, longText, 1, false, false)
+	}
+}
