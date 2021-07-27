@@ -171,6 +171,7 @@ SELECT
     rule_actions.enabled AS enabled,
     on_condition,
     rule_actions.value AS value,
+    rule_actions.action as action,
     metadata_key,
     metadata_value
 FROM rule_actions
