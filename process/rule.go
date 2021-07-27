@@ -3,6 +3,7 @@ package process
 import (
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"math"
 	"strconv"
 	"strings"
 	"tryffel.net/go/virtualpaper/errors"
@@ -91,11 +92,11 @@ func (d *DocumentRule) matchText(condition *models.RuleCondition, text string) (
 
 	switch condition.ConditionType {
 	case models.RuleConditionNameIs, models.RuleConditionDescriptionIs, models.RuleConditionContentIs:
-		return text == value, nil
+		return matchTextAllowTypo(value, text, false, true)
 	case models.RuleConditionNameStarts, models.RuleConditionDescriptionStarts, models.RuleConditionContentStarts:
-		return strings.HasPrefix(text, value), nil
+		return matchTextAllowTypo(value, text, true, false)
 	case models.RuleConditionNameContains, models.RuleConditionDescriptionContains, models.RuleConditionContentContains:
-		return strings.Contains(text, value), nil
+		return matchTextAllowTypo(value, text, false, false)
 	default:
 		err := errors.ErrInternalError
 		err.ErrMsg = fmt.Sprintf("unknown condition type: %s", condition.ConditionType)
@@ -106,7 +107,7 @@ func (d *DocumentRule) matchText(condition *models.RuleCondition, text string) (
 
 func (d *DocumentRule) hasMetadataKey(condition *models.RuleCondition) bool {
 	for _, v := range d.Document.Metadata {
-		if v.KeyId == int(condition.MetadataKey.Int64) {
+		if v.KeyId == int(condition.MetadataKey) {
 			return true
 		}
 	}
@@ -115,7 +116,7 @@ func (d *DocumentRule) hasMetadataKey(condition *models.RuleCondition) bool {
 
 func (d *DocumentRule) hasMetadataKeyValue(condition *models.RuleCondition) bool {
 	for _, v := range d.Document.Metadata {
-		if v.KeyId == int(condition.MetadataKey.Int64) && v.ValueId == int(condition.MetadataValue.Int64) {
+		if v.KeyId == int(condition.MetadataKey) && v.ValueId == int(condition.MetadataValue) {
 			return true
 		}
 	}
@@ -184,22 +185,98 @@ func (d *DocumentRule) appendName(action *models.RuleAction) error {
 func (d *DocumentRule) addMetadata(action *models.RuleAction) error {
 	if len(d.Document.Metadata) == 0 {
 		d.Document.Metadata = []models.Metadata{{
-			KeyId:   int(action.MetadataKey.Int64),
-			ValueId: int(action.MetadataValue.Int64),
+			KeyId:   int(action.MetadataKey),
+			ValueId: int(action.MetadataValue),
 		}}
 		return nil
 	}
 
 	// check if key-value already exists
 	for _, v := range d.Document.Metadata {
-		if v.KeyId == int(action.MetadataKey.Int64) && v.ValueId == int(action.MetadataValue.Int64) {
+		if v.KeyId == int(action.MetadataKey) && v.ValueId == int(action.MetadataValue) {
 			return nil
 		}
 	}
 
 	d.Document.Metadata = append(d.Document.Metadata, models.Metadata{
-		KeyId:   int(action.MetadataKey.Int64),
-		ValueId: int(action.MetadataValue.Int64),
+		KeyId:   int(action.MetadataKey),
+		ValueId: int(action.MetadataValue),
 	})
 	return nil
+}
+
+func matchTextAllowTypo(match, text string, matchPrefix, matchIs bool) (bool, error) {
+	allowTypos := int(math.Ceil(float64(len(match) / 10)))
+	if len(text) < 5 {
+		allowTypos = 0
+	}
+	return matchTextByDistance(match, text, allowTypos, matchPrefix, matchIs)
+}
+
+func matchTextByDistance(match, text string, maxTypos int, matchPrefix, matchIs bool) (bool, error) {
+	if len(match) < 2 || len(text) < 2 {
+		return false, nil
+	}
+	if len(match) > len(text)+maxTypos {
+		return false, nil
+	}
+
+	// compare match and text, allowing maxTypos of difference between texts.
+	matchRunes := []rune(match)
+	textRunes := []rune(text)
+	matchIndex := 0
+	typos := 0
+
+	for i, r := range textRunes {
+		if matchIs && matchIndex == len(matchRunes)-1 && matchIndex < len(matchRunes)-1 {
+			// text continues after match
+			return false, nil
+		}
+
+		if matchIs && matchIndex == len(matchRunes)-1 && i < len(textRunes)-1 {
+			// match sequence completed, but there's still text left, no match
+			return false, nil
+		}
+
+		if matchIndex == len(matchRunes)-1 {
+			// found match
+			return true, nil
+		}
+		if matchIndex > 0 {
+			// inside match sequence
+			if matchRunes[matchIndex] == r {
+				// next character
+				matchIndex += 1
+			} else {
+				// no match
+				typos += 1
+
+				if matchRunes[matchIndex+1] == r {
+					// if text is missing one character, skip match character as well and
+					matchIndex += 1
+					typos -= 1
+				} else if i < len(textRunes)-1 {
+					// if text has one character too much, skip the character
+					if matchRunes[matchIndex] == textRunes[i+1] {
+						typos -= 1
+					}
+				}
+				matchIndex += 1
+				if typos > maxTypos {
+					// match failed, reset
+					typos = 0
+					matchIndex = 0
+				}
+			}
+		} else if matchRunes[0] == r {
+			// start match
+			matchIndex += 1
+		}
+
+		if matchPrefix && matchIndex == 0 && i > 0 {
+			// match didn't start from beginning
+			return false, nil
+		}
+	}
+	return false, nil
 }

@@ -187,3 +187,200 @@ func TestDocumentRule_RunActions(t *testing.T) {
 	}
 
 }
+
+func TestDocumentRule_matchTextByDistance(t *testing.T) {
+	type args struct {
+		match       string
+		text        string
+		maxTypos    int
+		matchPrefix bool
+		matchIs     bool
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		{
+			name: "no typos",
+			args: args{
+				match:       "a test match",
+				text:        "this is a test match indeed",
+				maxTypos:    0,
+				matchPrefix: false,
+				matchIs:     false,
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "one typo",
+			args: args{
+				match:       "a test match",
+				text:        "this is a test2match indeed",
+				maxTypos:    1,
+				matchPrefix: false,
+				matchIs:     false,
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "two typos",
+			args: args{
+				match:       "a test match",
+				text:        "this is a1test2match indeed",
+				maxTypos:    2,
+				matchPrefix: false,
+				matchIs:     false,
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "two typos, one allowed",
+			args: args{
+				match:       "a test match",
+				text:        "this is a1test2match indeed",
+				maxTypos:    1,
+				matchPrefix: false,
+				matchIs:     false,
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name: "first nomatch + match",
+			args: args{
+				match:       "a test match",
+				text:        "first a no match a1test matc, second matches a2test m2tch",
+				maxTypos:    2,
+				matchPrefix: false,
+				matchIs:     false,
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "skip one character in original text",
+			args: args{
+				match:       "a test match",
+				text:        "empty a testmatch",
+				maxTypos:    1,
+				matchPrefix: false,
+				matchIs:     false,
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "one extra character",
+			args: args{
+				match:       "a test match",
+				text:        "empty a test  match",
+				maxTypos:    1,
+				matchPrefix: false,
+				matchIs:     false,
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "empty text",
+			args: args{
+				match:       "a test match",
+				text:        "",
+				maxTypos:    1,
+				matchPrefix: false,
+				matchIs:     false,
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name: "empty match",
+			args: args{
+				match:       "",
+				text:        "empty test match",
+				maxTypos:    1,
+				matchPrefix: false,
+				matchIs:     false,
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name: "match prefix",
+			args: args{
+				match:       "empty test",
+				text:        "empty 2test match",
+				maxTypos:    1,
+				matchPrefix: true,
+				matchIs:     false,
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "match failed prefix",
+			args: args{
+				match:       "empty test",
+				text:        "not empty test match",
+				maxTypos:    0,
+				matchPrefix: true,
+				matchIs:     false,
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name: "match is",
+			args: args{
+				match:       "empty test",
+				text:        "enpty test",
+				maxTypos:    1,
+				matchPrefix: false,
+				matchIs:     true,
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "match too short",
+			args: args{
+				match:       "empty",
+				text:        "enpty test",
+				maxTypos:    1,
+				matchPrefix: false,
+				matchIs:     true,
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name: "text too short",
+			args: args{
+				match:       "empty test",
+				text:        "enpty",
+				maxTypos:    1,
+				matchPrefix: false,
+				matchIs:     true,
+			},
+			want:    false,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := matchTextByDistance(tt.args.match, tt.args.text, tt.args.maxTypos, tt.args.matchPrefix, tt.args.matchIs)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("matchTextByDistance() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("matchTextByDistance() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

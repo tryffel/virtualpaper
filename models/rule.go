@@ -18,8 +18,6 @@
 
 package models
 
-import "database/sql"
-
 type RuleConditionMatchType int
 
 const (
@@ -84,8 +82,8 @@ type RuleCondition struct {
 	Value string `db:"value"`
 
 	// Metadata to operate with
-	MetadataKey   sql.NullInt64 `db:"metadata_key"`
-	MetadataValue sql.NullInt64 `db:"metadata_value"`
+	MetadataKey   IntId `db:"metadata_key"`
+	MetadataValue IntId `db:"metadata_value"`
 }
 
 type RuleActionType string
@@ -109,6 +107,6 @@ type RuleAction struct {
 
 	Action        RuleActionType `db:"action"`
 	Value         string         `db:"value"`
-	MetadataKey   sql.NullInt64  `db:"metadata_key"`
-	MetadataValue sql.NullInt64  `db:"metadata_value"`
+	MetadataKey   IntId          `db:"metadata_key"`
+	MetadataValue IntId          `db:"metadata_value"`
 }
