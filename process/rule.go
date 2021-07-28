@@ -62,6 +62,8 @@ func (d *DocumentRule) Match() (bool, error) {
 			ok = d.hasMetadataKey(condition)
 		} else if strings.HasPrefix(condText, "date") {
 			ok, err = d.extractDates(condition)
+		} else if strings.HasPrefix(condText, "metadata_count") {
+			ok, err = d.hasMetadataCount(condition)
 		} else if condition.ConditionType == models.RuleConditionMetadataHasKey {
 			ok = d.hasMetadataKey(condition)
 		} else if condition.ConditionType == models.RuleConditionMetadataHasKeyValue {
