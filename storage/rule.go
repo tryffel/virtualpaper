@@ -137,12 +137,29 @@ limit $2;`
 	if err != nil {
 		return nil, s.parseError(err, "get active user rules")
 	}
+	ruleArr := make([]*models.Rule, len(*rules))
 
-	sql = `
+	for i, _ := range *rules {
+		ruleArr[i] = &(*rules)[i]
+	}
+
+	err = s.getUserRuleConditionsForRules(userId, ruleArr)
+	if err != nil {
+		return ruleArr, fmt.Errorf("get conditions: %v", err)
+	}
+	err = s.getUserRuleActionsForRules(userId, ruleArr)
+	if err != nil {
+		return ruleArr, fmt.Errorf("get actions: %v", err)
+	}
+	return ruleArr, nil
+}
+
+func (s *RuleStore) getUserRuleConditionsForRules(userId int, rules []*models.Rule) error {
+	sql := `
 SELECT
-    rule_conditions.id as id,
+    rule_conditions.id AS id,
     rule_id,
-    rule_conditions.enabled as enabled,
+    rule_conditions.enabled AS enabled,
     case_insensitive,
     inverted_match,
     condition_type,
@@ -151,27 +168,31 @@ SELECT
     metadata_key,
     metadata_value
 FROM rule_conditions
-         LEFT JOIN rules on rule_conditions.rule_id = rules.id
+	LEFT JOIN rules ON rule_conditions.rule_id = rules.id
 WHERE rules.user_id = $1
-  AND rule_conditions.enabled = true
-order by rule_id, rule_conditions.id asc;
+	AND rule_conditions.enabled = TRUE
+ORDER BY rule_id, rule_conditions.id ASC;
 `
 
 	conditions := &[]models.RuleCondition{}
-	err = s.db.Select(conditions, sql, userId)
+	err := s.db.Select(conditions, sql, userId)
 	if err != nil {
-		return nil, s.parseError(err, "get rule conditions")
+		return s.parseError(err, "get rule conditions")
 	}
+	mapConditionsToRules(rules, conditions)
+	return nil
+}
 
+func (s *RuleStore) getUserRuleActionsForRules(userId int, rules []*models.Rule) error {
 	actions := &[]models.RuleAction{}
-	sql = `
+	sql := `
 SELECT
     rule_actions.id AS id,
     rule_id,
     rule_actions.enabled AS enabled,
     on_condition,
     rule_actions.value AS value,
-    rule_actions.action as action,
+    rule_actions.action AS action,
     metadata_key,
     metadata_value
 FROM rule_actions
@@ -180,32 +201,34 @@ WHERE rules.user_id = $1
 	AND rule_actions.enabled = TRUE
 ORDER BY rule_id, rule_actions.id ASC;
 `
-
-	err = s.db.Select(actions, sql, userId)
+	err := s.db.Select(actions, sql, userId)
 	if err != nil {
-		return nil, s.parseError(err, "get rule conditions")
+		return s.parseError(err, "get rule conditions")
 	}
+	mapActionsToRules(rules, actions)
+	return nil
+}
 
-	ruleArr := make([]*models.Rule, len(*rules))
-
-	for i, _ := range *rules {
-		rule := (*rules)[i]
+func mapConditionsToRules(rules []*models.Rule, conditions *[]models.RuleCondition) {
+	for i, _ := range rules {
+		rule := rules[i]
 		rule.Conditions = make([]*models.RuleCondition, 0, 10)
-		rule.Actions = make([]*models.RuleAction, 0, 10)
-
 		for conditionI, condition := range *conditions {
 			if condition.RuleId == rule.Id {
 				rule.Conditions = append(rule.Conditions, &(*conditions)[conditionI])
 			}
 		}
+	}
+}
 
+func mapActionsToRules(rules []*models.Rule, actions *[]models.RuleAction) {
+	for i, _ := range rules {
+		rule := rules[i]
+		rule.Actions = make([]*models.RuleAction, 0, 10)
 		for actionI, action := range *actions {
 			if action.RuleId == rule.Id {
 				rule.Actions = append(rule.Actions, &(*actions)[actionI])
 			}
 		}
-
-		ruleArr[i] = &rule
 	}
-	return ruleArr, nil
 }
