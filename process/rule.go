@@ -388,7 +388,7 @@ func matchTextByDistance(match, text string, maxTypos int, matchPrefix, matchIs 
 }
 
 func matchMetadata(document *models.Document, values *[]models.MetadataValue) error {
-	logrus.Debugf("match metadata keys for doc: %s, total of %d rules", document.Id, len(*values))
+	logrus.Debugf("match metadata keys for doc: %s, %d rules", document.Id, len(*values))
 	for _, v := range *values {
 		match, err := documentMatchesFilter(document, v.MatchType, v.MatchFilter)
 		if err != nil {
