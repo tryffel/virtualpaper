@@ -80,25 +80,18 @@ func (d *DocumentRule) Match() (bool, error) {
 
 		if ok {
 			if condition.Inverted {
-				println("condition (inverted) ok")
 				hasMatch = true
 			} else {
-				println("condition ok")
 				hasMatch = true
 			}
-
 		} else {
 			if d.Rule.Mode == models.RuleMatchAll && !condition.Inverted {
-				println("condition failed, skip")
 				return false, nil
 			} else {
-				println("no match")
 
 			}
 		}
-
 		if hasMatch && d.Rule.Mode == models.RuleMatchAny {
-			println("condition passed any, skip rest")
 			// already found a match, skip rest of the conditions
 			break
 		}
