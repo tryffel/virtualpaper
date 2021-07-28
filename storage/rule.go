@@ -188,19 +188,20 @@ ORDER BY rule_id, rule_actions.id ASC;
 
 	ruleArr := make([]*models.Rule, len(*rules))
 
-	for i, rule := range *rules {
+	for i, _ := range *rules {
+		rule := (*rules)[i]
 		rule.Conditions = make([]*models.RuleCondition, 0, 10)
 		rule.Actions = make([]*models.RuleAction, 0, 10)
 
-		for _, condition := range *conditions {
+		for conditionI, condition := range *conditions {
 			if condition.RuleId == rule.Id {
-				rule.Conditions = append(rule.Conditions, &condition)
+				rule.Conditions = append(rule.Conditions, &(*conditions)[conditionI])
 			}
 		}
 
-		for _, action := range *actions {
+		for actionI, action := range *actions {
 			if action.RuleId == rule.Id {
-				rule.Actions = append(rule.Actions, &action)
+				rule.Actions = append(rule.Actions, &(*actions)[actionI])
 			}
 		}
 
