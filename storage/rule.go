@@ -69,31 +69,59 @@ func (s *RuleStore) setRuleCached(rule *models.Rule) {
 	s.cache.Set(fmt.Sprintf("rule-%d", rule.Id), rule, cache.DefaultExpiration)
 }
 
-/*
-func (s *RuleStore) GetUserRules(userId int, paging Paging) (*[]models.Match, error) {
+func (s *RuleStore) GetUserRules(userId int, paging Paging) ([]*models.Rule, error) {
 	sql := `
 SELECT *
-FROM process_rules
+FROM rules
 WHERE user_id = $1
 OFFSET $2
 LIMIT $3;`
 
-	rules := &[]models.Match{}
+	rules := &[]models.Rule{}
 	err := s.db.Select(rules, sql, userId, paging.Offset, paging.Limit)
-	return rules, s.parseError(err, "get user rules")
+	if err != nil {
+		return nil, s.parseError(err, "get user rules")
+	}
+	ruleArr := make([]*models.Rule, len(*rules))
+	for i, _ := range *rules {
+		ruleArr[i] = &(*rules)[i]
+	}
+	err = s.getUserRuleConditionsForRules(userId, ruleArr)
+	if err != nil {
+		return ruleArr, fmt.Errorf("get conditions: %v", err)
+	}
+	err = s.getUserRuleActionsForRules(userId, ruleArr)
+	if err != nil {
+		return ruleArr, fmt.Errorf("get actions: %v", err)
+	}
+	return ruleArr, nil
 }
 
-func (s *RuleStore) GetUserRule(userId, ruleId int) (*models.Match, error) {
+func (s *RuleStore) GetUserRule(userId, ruleId int) (*models.Rule, error) {
 	sql := `
 SELECT *
-FROM process_rules
+FROM rules
 WHERE user_id = $1
 AND id = $2;`
 
-	rule := &models.Match{}
+	rule := &models.Rule{}
 	err := s.db.Get(rule, sql, userId, ruleId)
-	return rule, s.parseError(err, "get user rule")
+	if err != nil {
+		return rule, s.parseError(err, "get user rule")
+	}
+
+	err = s.getUserRuleConditionsForRules(userId, []*models.Rule{rule})
+	if err != nil {
+		return rule, fmt.Errorf("get conditions: %v", err)
+	}
+	err = s.getUserRuleActionsForRules(userId, []*models.Rule{rule})
+	if err != nil {
+		return rule, fmt.Errorf("get actions: %v", err)
+	}
+	return rule, nil
 }
+
+/*
 
 func (s *RuleStore) AddRule(userId int, rule *models.Match) error {
 	sql := `

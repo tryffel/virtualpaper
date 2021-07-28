@@ -18,7 +18,36 @@
 
 package models
 
+import (
+	"tryffel.net/go/virtualpaper/errors"
+)
+
 type RuleConditionMatchType int
+
+func (r RuleConditionMatchType) String() string {
+	switch r {
+	case RuleMatchAll:
+		return "match_all"
+	case RuleMatchAny:
+		return "match_any"
+	default:
+		return ""
+	}
+}
+
+func (r *RuleConditionMatchType) FromString(str string) error {
+	switch str {
+	case "match_all":
+		*r = RuleMatchAll
+	case "match_any":
+		*r = RuleMatchAny
+	default:
+		e := errors.ErrInvalid
+		e.ErrMsg = "invalid match type: " + str
+		return errors.ErrInvalid
+	}
+	return nil
+}
 
 const (
 	// RuleMatchAll requires all conditions must be matched
@@ -42,6 +71,10 @@ type Rule struct {
 }
 
 type RuleConditionType string
+
+func (r RuleConditionType) String() string {
+	return string(r)
+}
 
 const (
 	RuleConditionNameIs       RuleConditionType = "name_is"

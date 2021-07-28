@@ -20,7 +20,101 @@ package api
 
 import (
 	"net/http"
+	"tryffel.net/go/virtualpaper/errors"
+	"tryffel.net/go/virtualpaper/models"
 )
+
+type RuleResp struct {
+	Id          int    `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Enabled     bool   `json:"enabled"`
+	Order       int    `json:"order"`
+	Mode        string `json:"mode"`
+	CreatedAt   int64  `json:"created_at"`
+	UpdatedAt   int64  `json:"updated_at"`
+
+	Conditions []RuleConditionResp `json:"conditions"`
+	Actions    []RuleActionResp    `json:"actions"`
+}
+
+type RuleConditionResp struct {
+	Id              int          `json:"id"`
+	RuleId          int          `json:"rule_id"`
+	Enabled         bool         `json:"enabled"`
+	CaseInsensitive bool         `json:"case_insensitive"`
+	Inverted        bool         `json:"inverted_match"`
+	ConditionType   string       `json:"condition_type"`
+	IsRegex         bool         `json:"is_regex"`
+	Value           string       `json:"value"`
+	DateFmt         string       `json:"date_fmt"`
+	MetadataKey     models.IntId `json:"metadata_key"`
+	MetadataValue   models.IntId `json:"metadata_value"`
+}
+
+type RuleActionResp struct {
+	Id            int          `json:"id"`
+	RuleId        int          `json:"rule_id"`
+	Enabled       bool         `json:"enabled"`
+	OnCondition   bool         `json:"on_condition"`
+	Action        string       `json:"action"`
+	Value         string       `json:"value"`
+	MetadataKey   models.IntId `json:"metadata_key"`
+	MetadataValue models.IntId `json:"metadata_value"`
+}
+
+func actionToResp(action *models.RuleAction) RuleActionResp {
+	return RuleActionResp{
+		Id:            action.Id,
+		RuleId:        action.RuleId,
+		Enabled:       action.Enabled,
+		OnCondition:   action.OnCondition,
+		Action:        action.Action.String(),
+		Value:         action.Value,
+		MetadataKey:   action.MetadataKey,
+		MetadataValue: action.MetadataValue,
+	}
+}
+
+func conditionToResp(cond *models.RuleCondition) RuleConditionResp {
+	return RuleConditionResp{
+		Id:              cond.Id,
+		RuleId:          cond.RuleId,
+		Enabled:         cond.Enabled,
+		CaseInsensitive: cond.CaseInsensitive,
+		Inverted:        cond.Inverted,
+		ConditionType:   cond.ConditionType.String(),
+		IsRegex:         cond.IsRegex,
+		Value:           cond.Value,
+		DateFmt:         cond.DateFmt,
+		MetadataKey:     cond.MetadataKey,
+		MetadataValue:   cond.MetadataValue,
+	}
+}
+
+func ruleToResp(rule *models.Rule) *RuleResp {
+	resp := &RuleResp{
+		Id:          rule.Id,
+		Name:        rule.Name,
+		Description: rule.Description,
+		Enabled:     rule.Enabled,
+		Order:       rule.Order,
+		Mode:        rule.Mode.String(),
+		CreatedAt:   rule.CreatedAt.Unix(),
+		UpdatedAt:   rule.UpdatedAt.Unix(),
+	}
+
+	resp.Conditions = make([]RuleConditionResp, len(rule.Conditions))
+	resp.Actions = make([]RuleActionResp, len(rule.Actions))
+
+	for i, v := range rule.Conditions {
+		resp.Conditions[i] = conditionToResp(v)
+	}
+	for i, v := range rule.Actions {
+		resp.Actions[i] = actionToResp(v)
+	}
+	return resp
+}
 
 type ProcessingRuleResp struct {
 	Id        int                  `json:"id" valid:"-"`
@@ -153,38 +247,30 @@ func (a *Api) getUserRules(resp http.ResponseWriter, req *http.Request) {
 	// Get processing rules
 	// responses:
 	//   200: ProcessingRuleResponse
+	handler := "api.getUserRules"
+	userId, ok := getUserId(req)
+	if !ok {
+		respError(resp, errors.New("no user_id in request context"), handler)
+		return
+	}
 
-	/*
-		handler := "api.getUserRules"
+	paging, err := getPaging(req)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
 
-		userId, ok := getUserId(req)
-		if !ok {
-			respError(resp, errors.New("no user_id in request context"), handler)
-			return
-		}
+	rules, err := a.db.RuleStore.GetUserRules(userId, paging)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
 
-		paging, err := getPaging(req)
-		if err != nil {
-			respError(resp, err, handler)
-			return
-
-		}
-
-
-		rules, err := a.db.RuleStore.GetUserRules(userId, paging)
-		if err != nil {
-			respError(resp, err, handler)
-			return
-		}
-
-		processingRules := make([]*ProcessingRuleResp, len(*rules))
-		for i, v := range *rules {
-			processingRules[i] = ruleToResp(&v)
-		}
-
-		respResourceList(resp, processingRules, len(processingRules))
-
-	*/
+	processingRules := make([]*RuleResp, len(rules))
+	for i, v := range rules {
+		processingRules[i] = ruleToResp(v)
+	}
+	respResourceList(resp, processingRules, len(processingRules))
 }
 
 func (a *Api) getUserRule(resp http.ResponseWriter, req *http.Request) {
@@ -192,31 +278,25 @@ func (a *Api) getUserRule(resp http.ResponseWriter, req *http.Request) {
 	// Get processing rule by id
 	// responses:
 	//   200: ProcessingRuleResponse
+	handler := "api.getUserRule"
+	userId, ok := getUserId(req)
+	if !ok {
+		respError(resp, errors.New("no user_id in request context"), handler)
+		return
+	}
 
-	/*
-		handler := "api.getUserRule"
+	id, err := getParamIntId(req)
+	if err != nil {
+		respBadRequest(resp, "no id specified", nil)
+		return
+	}
 
-		userId, ok := getUserId(req)
-		if !ok {
-			respError(resp, errors.New("no user_id in request context"), handler)
-			return
-		}
+	rule, err := a.db.RuleStore.GetUserRule(userId, id)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
 
-		id, err := getParamIntId(req)
-		if err != nil {
-			respBadRequest(resp, "no id specified", nil)
-			return
-		}
-
-
-		rule, err := a.db.RuleStore.GetUserRule(userId, id)
-		if err != nil {
-			respError(resp, err, handler)
-			return
-		}
-
-		r := ruleToResp(rule)
-		respResourceList(resp, r, 1)
-
-	*/
+	r := ruleToResp(rule)
+	respResourceList(resp, r, 1)
 }
