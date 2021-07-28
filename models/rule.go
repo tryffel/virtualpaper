@@ -115,3 +115,10 @@ type RuleAction struct {
 	MetadataKey   IntId          `db:"metadata_key"`
 	MetadataValue IntId          `db:"metadata_value"`
 }
+
+type MetadataRuleType string
+
+const (
+	MetadataMatchExact MetadataRuleType = "exact"
+	MetadataMatchRegex MetadataRuleType = "regex"
+)

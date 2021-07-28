@@ -21,7 +21,6 @@ package process
 import (
 	"fmt"
 	"github.com/sirupsen/logrus"
-	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -312,18 +311,35 @@ func (d *DocumentRule) setDate(action models.RuleAction) error {
 }
 
 func matchTextAllowTypo(match, text string, matchPrefix, matchIs bool) (bool, error) {
-	allowTypos := int(math.Ceil(float64(len(match) / 10)))
-	if len(text) < 5 {
-		allowTypos = 0
+	// max typos affect greatly the number of false positives, so try to be conservative with them..
+	maxTypos := 0
+	if len(match) > 30 {
+		maxTypos = 3
 	}
-	return matchTextByDistance(match, text, allowTypos, matchPrefix, matchIs)
+	if len(match) > 20 {
+		maxTypos = 2
+	} else if len(match) > 10 {
+		maxTypos = 1
+	}
+
+	if maxTypos == 0 {
+		if matchPrefix {
+			return strings.HasPrefix(text, match), nil
+		}
+		if matchIs {
+			return text == match, nil
+		}
+		return strings.Contains(text, match), nil
+	}
+
+	return matchTextByDistance(match, text, maxTypos, matchPrefix, matchIs)
 }
 
 func matchTextByDistance(match, text string, maxTypos int, matchPrefix, matchIs bool) (bool, error) {
 	if len(match) < 2 || len(text) < 2 {
 		return false, nil
 	}
-	if len(match) > len(text)+maxTypos {
+	if len(match) > len(text) {
 		return false, nil
 	}
 
@@ -344,7 +360,7 @@ func matchTextByDistance(match, text string, maxTypos int, matchPrefix, matchIs 
 			return false, nil
 		}
 
-		if matchIndex == len(matchRunes)-1 {
+		if matchIndex >= len(matchRunes)-1 {
 			// found match
 			return true, nil
 		}
@@ -405,7 +421,7 @@ func matchMetadata(document *models.Document, values *[]models.MetadataValue) er
 var reRegexHasSubMatch = regexp.MustCompile("\\(.+\\)")
 
 func documentMatchesFilter(document *models.Document, ruleType models.RuleActionType, filter string) (string, error) {
-	if ruleType == "exact" {
+	if ruleType == models.RuleActionType(models.MetadataMatchExact) {
 		lowerContent := strings.ToLower(document.Content)
 		lowerRule := strings.ToLower(filter)
 		contains, err := matchTextAllowTypo(lowerRule, lowerContent, false, false)
@@ -414,8 +430,7 @@ func documentMatchesFilter(document *models.Document, ruleType models.RuleAction
 		} else {
 			return "", err
 		}
-
-	} else if ruleType == "regex" {
+	} else if ruleType == models.RuleActionType(models.MetadataMatchRegex) {
 		// if regex captures submatch, return first submatch (not the match itself),
 		// else return regex match
 		re, err := regexp.Compile(filter)
