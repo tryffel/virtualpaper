@@ -242,7 +242,7 @@ func (d *DocumentRule) RunActions() error {
 		case models.RuleActionAppendDescription:
 			actionError = d.appendDescription(action)
 		case models.RuleActionAddMetadata:
-			actionError = d.addMetadata(action)
+			actionError = addMetadata(d.Document, int(action.MetadataKey), int(action.MetadataValue))
 		default:
 			e := errors.ErrInternalError
 			e.ErrMsg = fmt.Sprintf("unknown action type: %v", action.Action)
@@ -281,25 +281,25 @@ func (d *DocumentRule) appendDescription(action *models.RuleAction) error {
 	return nil
 }
 
-func (d *DocumentRule) addMetadata(action *models.RuleAction) error {
-	if len(d.Document.Metadata) == 0 {
-		d.Document.Metadata = []models.Metadata{{
-			KeyId:   int(action.MetadataKey),
-			ValueId: int(action.MetadataValue),
+func addMetadata(doc *models.Document, key, value int) error {
+	if len(doc.Metadata) == 0 {
+		doc.Metadata = []models.Metadata{{
+			KeyId:   key,
+			ValueId: value,
 		}}
 		return nil
 	}
 
 	// check if key-value already exists
-	for _, v := range d.Document.Metadata {
-		if v.KeyId == int(action.MetadataKey) && v.ValueId == int(action.MetadataValue) {
+	for _, v := range doc.Metadata {
+		if v.KeyId == key && v.ValueId == value {
 			return nil
 		}
 	}
 
-	d.Document.Metadata = append(d.Document.Metadata, models.Metadata{
-		KeyId:   int(action.MetadataKey),
-		ValueId: int(action.MetadataValue),
+	doc.Metadata = append(doc.Metadata, models.Metadata{
+		KeyId:   key,
+		ValueId: value,
 	})
 	return nil
 }
@@ -385,4 +385,65 @@ func matchTextByDistance(match, text string, maxTypos int, matchPrefix, matchIs 
 		}
 	}
 	return false, nil
+}
+
+func matchMetadata(document *models.Document, values *[]models.MetadataValue) error {
+	logrus.Debugf("match metadata keys for doc: %s, total of %d rules", document.Id, len(*values))
+	for _, v := range *values {
+		match, err := documentMatchesFilter(document, v.MatchType, v.MatchFilter)
+		if err != nil {
+			logrus.Debugf("automatic metadata rule, filter error: %v", err)
+			continue
+		}
+		if match != "" {
+			addMetadata(document, v.KeyId, v.Id)
+		}
+	}
+	return nil
+}
+
+var reRegexHasSubMatch = regexp.MustCompile("\\(.+\\)")
+
+func documentMatchesFilter(document *models.Document, ruleType models.RuleActionType, filter string) (string, error) {
+	if ruleType == "exact" {
+		lowerContent := strings.ToLower(document.Content)
+		lowerRule := strings.ToLower(filter)
+		contains, err := matchTextAllowTypo(lowerRule, lowerContent, false, false)
+		if contains {
+			return lowerRule, err
+		} else {
+			return "", err
+		}
+
+	} else if ruleType == "regex" {
+		// if regex captures submatch, return first submatch (not the match itself),
+		// else return regex match
+		re, err := regexp.Compile(filter)
+		if err != nil {
+			return "", fmt.Errorf("invalid regex: %v", err)
+		}
+
+		if reRegexHasSubMatch.MatchString(filter) {
+			matches := re.FindStringSubmatch(document.Content)
+			if len(matches) == 0 {
+				return "", nil
+			}
+			if len(matches) == 1 {
+				return "", nil
+			}
+
+			if len(matches) == 2 {
+				return matches[1], nil
+			} else {
+				logrus.Debugf("more than 1 regex matches, pick first. regex: %s doc. %s, matches: %v",
+					filter, document.Id, matches)
+				return matches[1], nil
+			}
+		} else {
+			match := re.FindString(filter)
+			return match, nil
+		}
+	} else {
+		return "", fmt.Errorf("unknown rule type: %s", ruleType)
+	}
 }
