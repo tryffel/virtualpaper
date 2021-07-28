@@ -165,8 +165,10 @@ func (s *MetadataStore) UpdateDocumentKeyValues(userId int, documentId string, m
 	var sql string
 	var err error
 
-	if userId != 0 {
-		sql = `
+	if len(metadata) > 0 {
+
+		if userId != 0 {
+			sql = `
 SELECT CASE WHEN EXISTS
     (
         SELECT id
@@ -179,13 +181,14 @@ SELECT CASE WHEN EXISTS
 END;
 `
 
-		var ownership bool
-		err = s.db.Get(&ownership, sql, documentId, userId)
-		if err != nil {
-			return s.parseError(err, "update key-values, check ownership")
-		}
-		if !ownership {
-			return errors.ErrRecordNotFound
+			var ownership bool
+			err = s.db.Get(&ownership, sql, documentId, userId)
+			if err != nil {
+				return s.parseError(err, "update key-values, check ownership")
+			}
+			if !ownership {
+				return errors.ErrRecordNotFound
+			}
 		}
 	}
 
@@ -206,22 +209,26 @@ END;
 		return s.parseError(tx.Rollback(), "rollback tx")
 	}
 
-	sql = `	
+	if len(metadata) > 0 {
+
+		sql = `	
 	INSERT INTO document_metadata (document_id, key_id, value_id)
 	VALUES `
 
-	var args []interface{}
-	args = append(args, documentId)
-	for i, v := range metadata {
-		if i > 0 {
-			sql += ", "
+		var args []interface{}
+		args = append(args, documentId)
+		for i, v := range metadata {
+			if i > 0 {
+				sql += ", "
+			}
+			value := fmt.Sprintf("($1, $%d, $%d)", i*2+2, i*2+3)
+			sql += value
+			args = append(args, v.KeyId, v.ValueId)
 		}
-		value := fmt.Sprintf("($1, $%d, $%d)", i*2+2, i*2+3)
-		sql += value
-		args = append(args, v.KeyId, v.ValueId)
-	}
 
-	_, err = tx.Exec(sql, args...)
+		_, err = tx.Exec(sql, args...)
+
+	}
 	if err != nil {
 		err = tx.Rollback()
 	} else {
