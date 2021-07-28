@@ -692,17 +692,19 @@ func (fp *fileProcessor) runRules() error {
 			logrus.Debugf("document %s matches rule %d, run actions", fp.document.Id, rule.Id)
 			err = runner.RunActions()
 			if err != nil {
-				logrus.Errorf("run rule (%d) actions: %v", rule.Id, err)
+				logrus.Errorf("rule (%d) actions: %v", rule.Id, err)
 			}
 		}
 	}
 
-	metadataValues, err := fp.db.MetadataStore.GetUserValuesWithMatching(fp.document.UserId)
-	if err != nil {
-		logrus.Errorf("get metadata values with matching for user %d: %v", fp.document.UserId, err)
-	} else if len(*metadataValues) != 0 {
-		//err = matchMetadata(fp.document, metadataValues)
-	}
+	/*
+		metadataValues, err := fp.db.MetadataStore.GetUserValuesWithMatching(fp.document.UserId)
+		if err != nil {
+			logrus.Errorf("get metadata values with matching for user %d: %v", fp.document.UserId, err)
+		} else if len(*metadataValues) != 0 {
+			//err = matchMetadata(fp.document, metadataValues)
+		}
+	*/
 
 	if err != nil {
 		logrus.Errorf("run user rules: %v", err)

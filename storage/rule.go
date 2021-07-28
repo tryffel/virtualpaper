@@ -175,9 +175,9 @@ SELECT
     metadata_key,
     metadata_value
 FROM rule_actions
-         LEFT JOIN rules ON rule_actions.rule_id = rules.id
+	LEFT JOIN rules ON rule_actions.rule_id = rules.id
 WHERE rules.user_id = $1
-  AND rule_actions.enabled = TRUE
+	AND rule_actions.enabled = TRUE
 ORDER BY rule_id, rule_actions.id ASC;
 `
 

@@ -160,6 +160,8 @@ LIMIT $3;
 
 // UpdateDocumentKeyValues updates key-values for document.
 func (s *MetadataStore) UpdateDocumentKeyValues(userId int, documentId string, metadata []*models.Metadata) error {
+	logrus.Debugf("update document %s metadata, key-values: %d", documentId, len(metadata))
+
 	var sql string
 	var err error
 

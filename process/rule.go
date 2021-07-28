@@ -46,13 +46,11 @@ func NewDocumentRule(document *models.Document, rule *models.Rule) DocumentRule 
 func (d *DocumentRule) Match() (bool, error) {
 	hasMatch := false
 
-	logrus.Debugf("(documentRule) match document: %s, rule: %d", d.Document.Id, d.Rule.Id)
+	logrus.Debugf("match document: %s, rule: %d", d.Document.Id, d.Rule.Id)
 	for _, condition := range d.Rule.Conditions {
 
-		logrus.Debugf("(documentRule) match condition: %d", condition.Id)
+		logrus.Debugf("evaluate rule condition: %d", condition.Id)
 		condText := string(condition.ConditionType)
-		fmt.Printf("match %s\n", condition.ConditionType)
-
 		var ok = false
 		var err error
 		if strings.HasPrefix(condText, "name") {
@@ -227,13 +225,13 @@ func (d *DocumentRule) extractDates(condition *models.RuleCondition) (bool, erro
 }
 
 func (d *DocumentRule) RunActions() error {
-	logrus.Debugf("(documentRule) run actions, document: %s, rule: %d", d.Document.Id, d.Rule.Id)
+	logrus.Debugf("execute rule %d actions for document: %s", d.Rule.Id, d.Document.Id)
 
 	var err error
 	var actionError error
 
 	for _, action := range d.Rule.Actions {
-		logrus.Debugf("(documentRule) run action: %d", action.Id)
+		logrus.Debugf("run action: %d, type: %s", action.Id, action.Action)
 		switch action.Action {
 		case models.RuleActionSetName:
 			actionError = d.setName(action)
@@ -265,7 +263,9 @@ func (d *DocumentRule) setName(action *models.RuleAction) error {
 }
 
 func (d *DocumentRule) appendName(action *models.RuleAction) error {
-	d.Document.Name += action.Value
+	if !strings.HasSuffix(d.Document.Name, action.Value) {
+		d.Document.Name += action.Value
+	}
 	return nil
 }
 
@@ -275,7 +275,9 @@ func (d *DocumentRule) setDescription(action *models.RuleAction) error {
 }
 
 func (d *DocumentRule) appendDescription(action *models.RuleAction) error {
-	d.Document.Description += action.Value
+	if !strings.HasSuffix(d.Document.Description, action.Value) {
+		d.Document.Description += action.Value
+	}
 	return nil
 }
 

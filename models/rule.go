@@ -89,6 +89,10 @@ type RuleCondition struct {
 
 type RuleActionType string
 
+func (r RuleActionType) String() string {
+	return string(r)
+}
+
 const (
 	RuleActionSetName           RuleActionType = "name_set"
 	RuleActionAppendName        RuleActionType = "name_append"
