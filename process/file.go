@@ -687,6 +687,17 @@ func (fp *fileProcessor) runRules() error {
 
 	for i, rule := range rules {
 		logrus.Debugf("(%d.) run user rule %d", i, rule.Id)
+
+		if len(rule.Actions) == 0 {
+			logrus.Debugf("rule %d does not have actions, skip rule", rule.Id)
+			continue
+		}
+
+		if len(rule.Conditions) == 0 {
+			logrus.Debugf("rule %d does not have conditions, skip rule", rule.Id)
+			continue
+		}
+
 		runner := NewDocumentRule(fp.document, rule)
 		match, err := runner.Match()
 		if err != nil {
