@@ -28,7 +28,7 @@ CREATE TABLE rules (
 	rule_order INT NOT NULL,
 	mode INT NOT NULL,
 	created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ DEFAULT now(),
 
 	CONSTRAINT fk_user FOREIGN KEY(user_id)
         REFERENCES users(id),
@@ -50,7 +50,7 @@ CREATE TABLE rule_conditions (
 	metadata_value INT,
 
 	CONSTRAINT fk_rule FOREIGN KEY(rule_id)
-        REFERENCES rules(id),
+        REFERENCES rules(id) ON DELETE CASCADE,
 	CONSTRAINT fk_metadata_key FOREIGN KEY(metadata_key)
         REFERENCES metadata_keys(id),
 	CONSTRAINT fk_metadata_value FOREIGN KEY(metadata_value)
@@ -69,7 +69,7 @@ CREATE TABLE rule_actions (
 	metadata_value INT,
 
 	CONSTRAINT fk_rule FOREIGN KEY(rule_id)
-        REFERENCES rules(id),
+        REFERENCES rules(id) ON DELETE CASCADE,
 	CONSTRAINT fk_metadata_key FOREIGN KEY(metadata_key)
         REFERENCES metadata_keys(id),
 	CONSTRAINT fk_metadata_value FOREIGN KEY(metadata_value)
