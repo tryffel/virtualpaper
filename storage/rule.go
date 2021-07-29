@@ -361,6 +361,30 @@ func (s *RuleStore) UpdateRule(userId int, rule *models.Rule) error {
 	return nil
 }
 
+func (s *RuleStore) DeleteRule(userId, ruleId int) error {
+	sql := `
+	DELETE FROM rules 
+	WHERE user_id = $1
+	AND id = $2
+	`
+
+	res, err := s.db.Exec(sql, userId, ruleId)
+	if err != nil {
+		return getDatabaseError(err, s, "delete")
+	}
+
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("get rows affected: %v", err)
+	}
+	if affected == 0 {
+		err := errors.ErrRecordNotFound
+		err.ErrMsg = "rule not found"
+		return err
+	}
+	return nil
+}
+
 func (s *RuleStore) validateRule(userId int, rule *models.Rule) error {
 	err := rule.Validate()
 	if err != nil {

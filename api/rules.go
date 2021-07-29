@@ -312,3 +312,29 @@ func (a *Api) updateUserRule(resp http.ResponseWriter, req *http.Request) {
 	}
 	respOk(resp, ruleToResp(rule))
 }
+
+func (a *Api) deleteUserRule(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route DELETE /api/v1/processing/rules/{id} Processing DeleteRule
+	// Delete rule
+	// responses:
+	//   200:
+	handler := "api.deleteUserRule"
+	userId, ok := getUserId(req)
+	if !ok {
+		respError(resp, errors.New("no user_id in request context"), handler)
+		return
+	}
+
+	id, err := getParamIntId(req)
+	if err != nil {
+		respBadRequest(resp, "no id specified", nil)
+		return
+	}
+
+	err = a.db.RuleStore.DeleteRule(userId, id)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+	respOk(resp, nil)
+}
