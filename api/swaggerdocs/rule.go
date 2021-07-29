@@ -25,5 +25,5 @@ import (
 // swagger:response ProcessingRuleArrayResponse
 type ruleResponse struct {
 	// in:body
-	Body []api.ProcessingRuleResp
+	Body []api.Rule
 }

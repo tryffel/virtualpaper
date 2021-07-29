@@ -20,6 +20,7 @@ package storage
 
 import (
 	"fmt"
+	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 	"strings"
@@ -31,6 +32,14 @@ import (
 
 type MetadataStore struct {
 	db *sqlx.DB
+	sq squirrel.StatementBuilderType
+}
+
+func NewMetadataStore(db *sqlx.DB) *MetadataStore {
+	return &MetadataStore{
+		db: db,
+		sq: squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+	}
 }
 
 func (s MetadataStore) Name() string {
@@ -453,4 +462,34 @@ func (s *MetadataStore) UpdateValue(value *models.MetadataValue) error {
 
 	_, err := s.db.Exec(sql, value.Value, value.MatchDocuments, value.MatchType, value.MatchFilter, value.Id)
 	return s.parseError(err, "update value")
+}
+
+// CheckKeyValuesExist verifies key-value pairs exist and user owns them.
+func (s *MetadataStore) CheckKeyValuesExist(userId int, values []models.Metadata) error {
+	array := make(squirrel.Or, len(values))
+	for i, key := range values {
+		array[i] = squirrel.And{squirrel.Eq{"key_id": key.KeyId}, squirrel.Eq{"id": key.ValueId}}
+	}
+
+	query := s.sq.Select("count(id)").From("metadata_values").
+		Where(squirrel.And{squirrel.Eq{"user_id": userId}, array})
+	sql, args, err := query.ToSql()
+	if err != nil {
+		err := errors.ErrInternalError
+		err.Err = err
+		return err
+	}
+	var count int
+	err = s.db.Get(&count, sql, args...)
+	if err != nil {
+		return getDatabaseError(err, s, "verify metadata exists")
+	}
+
+	if count == len(values) {
+		return nil
+	}
+
+	userErr := errors.ErrInvalid
+	userErr.ErrMsg = "metadata does not exist"
+	return userErr
 }

@@ -19,6 +19,9 @@
 package models
 
 import (
+	"fmt"
+	"regexp"
+	"strings"
 	"tryffel.net/go/virtualpaper/errors"
 )
 
@@ -70,6 +73,22 @@ type Rule struct {
 	Actions    []*RuleAction
 }
 
+func (r *Rule) Validate() error {
+	for i, v := range r.Conditions {
+		err := v.Validate()
+		if err != nil {
+			if isErr, ok := err.(errors.Error); ok {
+				isErr.ErrMsg = fmt.Sprintf("condition %d: %s", i+1, isErr.ErrMsg)
+				return isErr
+			} else {
+				err = fmt.Errorf("condition %d: %v", i, err)
+			}
+			return err
+		}
+	}
+	return nil
+}
+
 type RuleConditionType string
 
 func (r RuleConditionType) String() string {
@@ -100,6 +119,30 @@ const (
 	RuleConditionMetadataCountMoreThan RuleConditionType = "metadata_count_more_than"
 )
 
+var AllConditionTypes = []RuleConditionType{
+	RuleConditionNameIs,
+	RuleConditionNameStarts,
+	RuleConditionNameContains,
+
+	RuleConditionDescriptionIs,
+	RuleConditionDescriptionStarts,
+	RuleConditionDescriptionContains,
+
+	RuleConditionContentIs,
+	RuleConditionContentStarts,
+	RuleConditionContentContains,
+
+	RuleConditionDateIs,
+	RuleConditionDateAfter,
+	RuleConditionDateBefore,
+
+	RuleConditionMetadataHasKey,
+	RuleConditionMetadataHasKeyValue,
+	RuleConditionMetadataCount,
+	RuleConditionMetadataCountLessThan,
+	RuleConditionMetadataCountMoreThan,
+}
+
 type RuleCondition struct {
 	Id              int  `db:"id"`
 	RuleId          int  `db:"rule_id"`
@@ -118,6 +161,74 @@ type RuleCondition struct {
 	// Metadata to operate with
 	MetadataKey   IntId `db:"metadata_key"`
 	MetadataValue IntId `db:"metadata_value"`
+}
+
+func (r *RuleCondition) Validate() error {
+	err := errors.ErrInvalid
+
+	validType := false
+	for _, v := range AllConditionTypes {
+		if r.ConditionType == v {
+			validType = true
+			break
+		}
+	}
+
+	if !validType {
+		err.ErrMsg = fmt.Sprintf("invalid condition type: %s", r.ConditionType)
+		return err
+	}
+
+	if r.IsRegex {
+		_, regexErr := regexp.Compile(r.Value)
+		if regexErr != nil {
+			err.ErrMsg = "invalid regex"
+			err.Err = regexErr
+			return err
+		}
+	}
+
+	condText := r.ConditionType.String()
+	if strings.Contains(condText, "name") ||
+		strings.Contains(condText, "description") ||
+		strings.Contains(condText, "content") {
+		if r.HasMetadata() {
+			err.ErrMsg = condText + " cannot match metadata"
+			return err
+		}
+		if r.Value == "" {
+			err.ErrMsg = "matching value is empty"
+			return err
+		}
+	}
+
+	if r.ConditionType == RuleConditionMetadataHasKey {
+		if r.MetadataKey == 0 {
+			err.ErrMsg = "must have metadata key defined"
+			return err
+		}
+	}
+	if r.ConditionType == RuleConditionMetadataHasKeyValue {
+		if r.MetadataKey == 0 {
+			err.ErrMsg = "must have metadata key and value defined"
+			return err
+		}
+	}
+
+	if r.MetadataKey == 0 && r.MetadataValue == 0 {
+		// no metadata
+		return nil
+	}
+	if r.MetadataKey > 0 && r.MetadataValue > 0 {
+		// illegal metadata
+		return nil
+	}
+	err.ErrMsg = "invalid metadata"
+	return err
+}
+
+func (r *RuleCondition) HasMetadata() bool {
+	return r.MetadataKey > 0 && r.MetadataValue > 0
 }
 
 type RuleActionType string

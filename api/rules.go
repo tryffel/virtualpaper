@@ -24,47 +24,58 @@ import (
 	"tryffel.net/go/virtualpaper/models"
 )
 
-type RuleResp struct {
-	Id          int    `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Enabled     bool   `json:"enabled"`
-	Order       int    `json:"order"`
-	Mode        string `json:"mode"`
-	CreatedAt   int64  `json:"created_at"`
-	UpdatedAt   int64  `json:"updated_at"`
+type Rule struct {
+	Id          int    `json:"id" valid:"-"`
+	Name        string `json:"name" valid:"-"`
+	Description string `json:"description" valid:"-"`
+	Enabled     bool   `json:"enabled" valid:"-"`
+	Order       int    `json:"order" valid:"-"`
+	Mode        string `json:"mode" valid:"-"`
+	CreatedAt   int64  `json:"created_at" valid:"-"`
+	UpdatedAt   int64  `json:"updated_at" valid:"-"`
 
-	Conditions []RuleConditionResp `json:"conditions"`
-	Actions    []RuleActionResp    `json:"actions"`
+	Conditions []RuleCondition `json:"conditions" valid:"-"`
+	Actions    []RuleAction    `json:"actions" valid:"-"`
 }
 
-type RuleConditionResp struct {
-	Id              int          `json:"id"`
-	RuleId          int          `json:"rule_id"`
-	Enabled         bool         `json:"enabled"`
-	CaseInsensitive bool         `json:"case_insensitive"`
-	Inverted        bool         `json:"inverted_match"`
-	ConditionType   string       `json:"condition_type"`
-	IsRegex         bool         `json:"is_regex"`
-	Value           string       `json:"value"`
-	DateFmt         string       `json:"date_fmt"`
-	MetadataKey     models.IntId `json:"metadata_key"`
-	MetadataValue   models.IntId `json:"metadata_value"`
+type RuleCondition struct {
+	Id              int          `json:"id" valid:"-"`
+	RuleId          int          `json:"rule_id" valid:"-"`
+	Enabled         bool         `json:"enabled" valid:"-"`
+	CaseInsensitive bool         `json:"case_insensitive" valid:"-"`
+	Inverted        bool         `json:"inverted_match" valid:"-"`
+	ConditionType   string       `json:"condition_type" valid:"-"`
+	IsRegex         bool         `json:"is_regex" valid:"-"`
+	Value           string       `json:"value" valid:"-"`
+	DateFmt         string       `json:"date_fmt" valid:"-"`
+	MetadataKey     models.IntId `json:"metadata_key" valid:"-"`
+	MetadataValue   models.IntId `json:"metadata_value" valid:"-"`
 }
 
-type RuleActionResp struct {
-	Id            int          `json:"id"`
-	RuleId        int          `json:"rule_id"`
-	Enabled       bool         `json:"enabled"`
-	OnCondition   bool         `json:"on_condition"`
-	Action        string       `json:"action"`
-	Value         string       `json:"value"`
-	MetadataKey   models.IntId `json:"metadata_key"`
-	MetadataValue models.IntId `json:"metadata_value"`
+type RuleAction struct {
+	Id            int          `json:"id" valid:"-"`
+	RuleId        int          `json:"rule_id" valid:"-"`
+	Enabled       bool         `json:"enabled" valid:"-"`
+	OnCondition   bool         `json:"on_condition" valid:"-"`
+	Action        string       `json:"action" valid:"-"`
+	Value         string       `json:"value" valid:"-"`
+	MetadataKey   models.IntId `json:"metadata_key" valid:"-"`
+	MetadataValue models.IntId `json:"metadata_value" valid:"-"`
 }
 
-func actionToResp(action *models.RuleAction) RuleActionResp {
-	return RuleActionResp{
+func (r *RuleAction) ToAction() *models.RuleAction {
+	return &models.RuleAction{
+		Enabled:       r.Enabled,
+		OnCondition:   r.OnCondition,
+		Action:        models.RuleActionType(r.Action),
+		Value:         r.Value,
+		MetadataKey:   r.MetadataKey,
+		MetadataValue: r.MetadataValue,
+	}
+}
+
+func actionToResp(action *models.RuleAction) RuleAction {
+	return RuleAction{
 		Id:            action.Id,
 		RuleId:        action.RuleId,
 		Enabled:       action.Enabled,
@@ -76,8 +87,22 @@ func actionToResp(action *models.RuleAction) RuleActionResp {
 	}
 }
 
-func conditionToResp(cond *models.RuleCondition) RuleConditionResp {
-	return RuleConditionResp{
+func (r *RuleCondition) ToCondition() *models.RuleCondition {
+	return &models.RuleCondition{
+		Enabled:         r.Enabled,
+		CaseInsensitive: r.CaseInsensitive,
+		Inverted:        r.Inverted,
+		ConditionType:   models.RuleConditionType(r.ConditionType),
+		IsRegex:         r.IsRegex,
+		Value:           r.Value,
+		DateFmt:         r.DateFmt,
+		MetadataKey:     r.MetadataKey,
+		MetadataValue:   r.MetadataValue,
+	}
+}
+
+func conditionToResp(cond *models.RuleCondition) RuleCondition {
+	return RuleCondition{
 		Id:              cond.Id,
 		RuleId:          cond.RuleId,
 		Enabled:         cond.Enabled,
@@ -92,8 +117,8 @@ func conditionToResp(cond *models.RuleCondition) RuleConditionResp {
 	}
 }
 
-func ruleToResp(rule *models.Rule) *RuleResp {
-	resp := &RuleResp{
+func ruleToResp(rule *models.Rule) *Rule {
+	resp := &Rule{
 		Id:          rule.Id,
 		Name:        rule.Name,
 		Description: rule.Description,
@@ -104,8 +129,8 @@ func ruleToResp(rule *models.Rule) *RuleResp {
 		UpdatedAt:   rule.UpdatedAt.Unix(),
 	}
 
-	resp.Conditions = make([]RuleConditionResp, len(rule.Conditions))
-	resp.Actions = make([]RuleActionResp, len(rule.Actions))
+	resp.Conditions = make([]RuleCondition, len(rule.Conditions))
+	resp.Actions = make([]RuleAction, len(rule.Actions))
 
 	for i, v := range rule.Conditions {
 		resp.Conditions[i] = conditionToResp(v)
@@ -116,84 +141,32 @@ func ruleToResp(rule *models.Rule) *RuleResp {
 	return resp
 }
 
-type ProcessingRuleResp struct {
-	Id        int                  `json:"id" valid:"-"`
-	Type      string               `json:"type" valid:"in(regex,exact)"`
-	Filter    string               `json:"filter" valid:"-"`
-	Comment   string               `json:"comment" valid:"-"`
-	Active    bool                 `json:"active" valid:"-"`
-	Action    processingRuleAction `json:"action" valid:"-"`
-	CreatedAd int64                `json:"created_at" valid:"-"`
-	UpdatedAt int64                `json:"updated_at" valid:"-"`
-}
-
-type processingRuleAction struct {
-	MetadataKey   int    `json:"metadata_key_id" valid:"-"`
-	MetadataValue int    `json:"metadata_value_id" valid:"-"`
-	Tag           int    `json:"tag_id" valid:"-"`
-	DateFmt       string `json:"date_fmt" valid:"-"`
-	DateSeparator string `json:"date_separator" valid:"-"`
-	Description   string `json:"description" valid:"-"`
-}
-
-// swagger:response ProcessingRuleRequest
-type ProcessingRuleReq struct {
-	// in:body
-	Type    string               `json:"type" valid:"in(regex,exact)"`
-	Filter  string               `json:"filter" valid:"-"`
-	Comment string               `json:"comment" valid:"-"`
-	Active  bool                 `json:"active" valid:"-"`
-	Action  processingRuleAction `json:"action" valid:"-"`
-}
-
-/*
-func (p *ProcessingRuleReq) toRule() *models.Match {
-	rule := &models.Match{
-		Filter:  p.Filter,
-		Comment: p.Comment,
-		Active:  p.Active,
-		Action: models.RuleActionConfig{
-			Action:          0,
-			MetadataKeyId:   p.Action.MetadataKey,
-			MetadataValueId: p.Action.MetadataValue,
-			Tag:             p.Action.Tag,
-			DateFmt:         p.Action.DateFmt,
-			DateSeparator:   p.Action.DateSeparator,
-			Description:     p.Action.Description,
-		},
+func (r *Rule) ToRule() (*models.Rule, error) {
+	mode := models.RuleMatchAll
+	err := mode.FromString(r.Mode)
+	if err != nil {
+		return nil, err
 	}
 
-	if p.Type == string(models.RegexRule) {
-		rule.Type = models.RegexRule
-	} else if p.Type == string(models.ExactRule) {
-		rule.Type = models.ExactRule
+	rule := &models.Rule{
+		Name:        r.Name,
+		Description: r.Description,
+		Enabled:     r.Enabled,
+		Order:       r.Order,
+		Mode:        mode,
+		Conditions:  make([]*models.RuleCondition, len(r.Conditions)),
+		Actions:     make([]*models.RuleAction, len(r.Actions)),
 	}
 
-	return rule
-}
-
-func ruleToResp(rule *models.Match) *ProcessingRuleResp {
-	pr := &ProcessingRuleResp{
-		CreatedAd: rule.CreatedAt.Unix() * 1000,
-		UpdatedAt: rule.UpdatedAt.Unix() * 1000,
-		Id:        rule.Id,
-		Type:      string(rule.Type),
-		Filter:    rule.Filter,
-		Comment:   rule.Comment,
-		Active:    rule.Active,
-		Action: processingRuleAction{
-			MetadataKey:   rule.Action.MetadataKeyId,
-			MetadataValue: rule.Action.MetadataValueId,
-			Tag:           rule.Action.Tag,
-			DateFmt:       rule.Action.DateFmt,
-			DateSeparator: rule.Action.DateSeparator,
-			Description:   rule.Action.Description,
-		},
+	for i, v := range r.Conditions {
+		rule.Conditions[i] = v.ToCondition()
 	}
-	return pr
-}
 
-*/
+	for i, v := range r.Actions {
+		rule.Actions[i] = v.ToAction()
+	}
+	return rule, nil
+}
 
 func (a *Api) addUserRule(resp http.ResponseWriter, req *http.Request) {
 	// swagger:route POST /api/v1/processing/rules Processing AddRule
@@ -206,40 +179,39 @@ func (a *Api) addUserRule(resp http.ResponseWriter, req *http.Request) {
 	//   403: RespNotFound
 	//   500: RespInternalError
 
-	/*
-		handler := "api.addUserRule"
+	handler := "api.addUserRule"
 
-		userId, ok := getUserId(req)
-		if !ok {
-			respError(resp, errors.New("no user_id in request context"), handler)
-			return
-		}
+	userId, ok := getUserId(req)
+	if !ok {
+		respError(resp, errors.New("no user_id in request context"), handler)
+		return
+	}
 
-		processingRule := &ProcessingRuleReq{}
-		err := unMarshalBody(req, processingRule)
-		if err != nil {
-			respError(resp, err, handler)
-			return
-		}
+	processingRule := &Rule{}
+	err := unMarshalBody(req, processingRule)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
 
+	rule, err := processingRule.ToRule()
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
 
-		rule := processingRule.toRule()
-		err = rule.Validate()
-		if err != nil {
-			e := errors.ErrInvalid
-			e.ErrMsg = err.Error()
-			respError(resp, e, handler)
-			return
-		}
+	err = a.db.RuleStore.AddRule(userId, rule)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
 
-		err = a.db.RuleStore.AddRule(userId, rule)
-		if err != nil {
-			respError(resp, err, handler)
-			return
-		}
-		respOk(resp, ruleToResp(rule))
-
-	*/
+	rule, err = a.db.RuleStore.GetUserRule(userId, rule.Id)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+	respOk(resp, ruleToResp(rule))
 }
 
 func (a *Api) getUserRules(resp http.ResponseWriter, req *http.Request) {
@@ -266,7 +238,7 @@ func (a *Api) getUserRules(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	processingRules := make([]*RuleResp, len(rules))
+	processingRules := make([]*Rule, len(rules))
 	for i, v := range rules {
 		processingRules[i] = ruleToResp(v)
 	}

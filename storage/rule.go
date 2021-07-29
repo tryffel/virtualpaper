@@ -20,6 +20,7 @@ package storage
 
 import (
 	"fmt"
+	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
 	"time"
@@ -31,6 +32,9 @@ import (
 type RuleStore struct {
 	db    *sqlx.DB
 	cache *cache.Cache
+
+	metadata *MetadataStore
+	sq       squirrel.StatementBuilderType
 }
 
 func (s *RuleStore) Name() string {
@@ -41,10 +45,12 @@ func (s *RuleStore) parseError(e error, action string) error {
 	return getDatabaseError(e, s, action)
 }
 
-func newRuleStore(db *sqlx.DB) *RuleStore {
+func newRuleStore(db *sqlx.DB, metadata *MetadataStore) *RuleStore {
 	store := &RuleStore{
-		db:    db,
-		cache: cache.New(5*time.Minute, time.Minute),
+		db:       db,
+		cache:    cache.New(5*time.Minute, time.Minute),
+		metadata: metadata,
+		sq:       squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
 	}
 	return store
 }
@@ -121,35 +127,125 @@ AND id = $2;`
 	return rule, nil
 }
 
-/*
+func (s *RuleStore) AddRule(userId int, rule *models.Rule) error {
+	err := rule.Validate()
+	if err != nil {
+		return err
+	}
 
-func (s *RuleStore) AddRule(userId int, rule *models.Match) error {
-	sql := `
-INSERT INTO process_rules
-(user_id, rule_type, filter, comment, action, active)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id;
+	metadata := make([]models.Metadata, 0, 5)
+	for _, v := range rule.Conditions {
+		if v.MetadataValue > 0 && v.MetadataKey > 0 {
+			m := models.Metadata{
+				KeyId:   int(v.MetadataKey),
+				ValueId: int(v.MetadataValue),
+			}
+			metadata = append(metadata, m)
+		}
+	}
+	for _, v := range rule.Actions {
+		if v.MetadataValue > 0 && v.MetadataKey > 0 {
+			m := models.Metadata{
+				KeyId:   int(v.MetadataKey),
+				ValueId: int(v.MetadataValue),
+			}
+			metadata = append(metadata, m)
+		}
+	}
+
+	if len(metadata) > 0 {
+		err := s.metadata.CheckKeyValuesExist(userId, metadata)
+		if err != nil {
+			return err
+		}
+	}
+
+	tx, err := s.db.Beginx()
+	if err != nil {
+		return fmt.Errorf("begin tx: %v", err)
+	}
+
+	// Increase remaining rules rule_order by on.
+	// Due to unique constraint a temporary value will need to be first set.
+	updateSql := `
+				UPDATE rules
+				SET rule_order = -rule_order
+				WHERE user_id = $1 AND rule_order >= $2;
 `
-
-	rule.Update()
-	action, err := rule.Action.Value()
+	_, err = tx.Exec(updateSql, userId, rule.Order)
 	if err != nil {
-		return fmt.Errorf("serialize action: %v", err)
+		tx.Rollback()
+		return getDatabaseError(err, s, "increase rule order")
 	}
-	rows, err := s.db.Query(sql, userId, string(rule.Type), rule.Filter, rule.Comment, action, rule.Active)
+
+	updateSql = `UPDATE rules
+				SET rule_order = -rule_order +1
+				WHERE user_id = $1 AND -rule_order >= $2;`
+
+	_, err = tx.Exec(updateSql, userId, rule.Order)
 	if err != nil {
-		return s.parseError(err, "add user rule")
+		tx.Rollback()
+		return getDatabaseError(err, s, "increase rule order")
 	}
 
-	if rows.Next() {
-		err = rows.Scan(&rule.Id)
+	// insert rule
+	query := s.sq.Insert("rules").
+		Columns("user_id", "name", "description", "enabled", "rule_order", "mode").
+		Values(userId, rule.Name, rule.Description, rule.Enabled, rule.Order, rule.Mode).
+		Suffix("RETURNING \"id\"")
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return fmt.Errorf("build insert rule sql: %v", err)
 	}
 
-	return s.parseError(err, "add rule, scan rows")
+	var id int
+	err = tx.Get(&id, sql, args...)
+	if err != nil {
+		tx.Rollback()
+		return getDatabaseError(err, s, "insert rule")
+	}
+
+	rule.Id = id
+	query = s.sq.Insert("rule_conditions").
+		Columns("rule_id", "enabled", "case_insensitive", "inverted_match", "condition_type",
+			"is_regex", "value", "metadata_key", "metadata_value")
+
+	for _, v := range rule.Conditions {
+		query = query.Values(rule.Id, v.Enabled, v.CaseInsensitive, v.Inverted, v.ConditionType, v.IsRegex, v.Value,
+			v.MetadataKey, v.MetadataValue)
+	}
+
+	sql, args, err = query.ToSql()
+	if err != nil {
+		return fmt.Errorf("construct insert conditions sql: %v", err)
+	}
+
+	_, err = tx.Exec(sql, args...)
+	if err != nil {
+		tx.Rollback()
+		return getDatabaseError(err, s, "insert rule conditions")
+	}
+
+	query = s.sq.Insert("rule_actions").
+		Columns("rule_id", "enabled", "on_condition", "action", "value", "metadata_key", "metadata_value")
+
+	for _, v := range rule.Actions {
+		query = query.Values(rule.Id, v.Enabled, v.OnCondition, v.Action, v.Value, v.MetadataKey, v.MetadataValue)
+	}
+
+	sql, args, err = query.ToSql()
+	if err != nil {
+		return fmt.Errorf("construct insert actions sql: %v", err)
+	}
+
+	_, err = tx.Exec(sql, args...)
+	if err != nil {
+		tx.Rollback()
+		return getDatabaseError(err, s, "insert rule actions")
+	}
+	return tx.Commit()
 }
 
-
-*/
 // GetActiveUresRules returns all active rules (with some limit) for given user.
 func (s *RuleStore) GetActiveUserRules(userId int) ([]*models.Rule, error) {
 
