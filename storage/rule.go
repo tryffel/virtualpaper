@@ -186,14 +186,15 @@ func (s *RuleStore) AddRule(userId int, rule *models.Rule) error {
 	return nil
 }
 
-// GetActiveUresRules returns all active rules (with some limit) for given user.
+// GetActiveUresRules returns all enabled rules (with some limit) for given user.
 func (s *RuleStore) GetActiveUserRules(userId int) ([]*models.Rule, error) {
 
 	sql := `
-select *
-from rules
-where user_id = $1
-order by rule_order asc
+SELECT *
+FROM rules
+WHERE user_id = $1
+AND enabled=TRUE
+ORDER BY rule_order ASC
 limit $2;`
 
 	rules := &[]models.Rule{}
