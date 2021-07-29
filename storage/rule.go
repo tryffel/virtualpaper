@@ -30,15 +30,11 @@ import (
 
 // RuleStore is storage for user-defined processing rules.
 type RuleStore struct {
-	db    *sqlx.DB
+	*resource
 	cache *cache.Cache
 
 	metadata *MetadataStore
 	sq       squirrel.StatementBuilderType
-}
-
-func (s *RuleStore) Name() string {
-	return "Rules"
 }
 
 func (s *RuleStore) parseError(e error, action string) error {
@@ -47,7 +43,7 @@ func (s *RuleStore) parseError(e error, action string) error {
 
 func newRuleStore(db *sqlx.DB, metadata *MetadataStore) *RuleStore {
 	store := &RuleStore{
-		db:       db,
+		resource: &resource{name: "Rule", db: db},
 		cache:    cache.New(5*time.Minute, time.Minute),
 		metadata: metadata,
 		sq:       squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
@@ -153,14 +149,8 @@ func (s *RuleStore) AddRule(userId int, rule *models.Rule) error {
 		}
 	}
 
-	if len(metadata) > 0 {
-		err := s.metadata.CheckKeyValuesExist(userId, metadata)
-		if err != nil {
-			return err
-		}
-	}
-
-	tx, err := s.db.Beginx()
+	tx, err := s.beginTx()
+	defer tx.Close()
 	if err != nil {
 		return fmt.Errorf("begin tx: %v", err)
 	}
@@ -172,9 +162,8 @@ func (s *RuleStore) AddRule(userId int, rule *models.Rule) error {
 				SET rule_order = -rule_order
 				WHERE user_id = $1 AND rule_order >= $2;
 `
-	_, err = tx.Exec(updateSql, userId, rule.Order)
+	_, err = tx.tx.Exec(updateSql, userId, rule.Order)
 	if err != nil {
-		tx.Rollback()
 		return getDatabaseError(err, s, "increase rule order")
 	}
 
@@ -182,9 +171,8 @@ func (s *RuleStore) AddRule(userId int, rule *models.Rule) error {
 				SET rule_order = -rule_order +1
 				WHERE user_id = $1 AND -rule_order >= $2;`
 
-	_, err = tx.Exec(updateSql, userId, rule.Order)
+	_, err = tx.tx.Exec(updateSql, userId, rule.Order)
 	if err != nil {
-		tx.Rollback()
 		return getDatabaseError(err, s, "increase rule order")
 	}
 
@@ -199,9 +187,8 @@ func (s *RuleStore) AddRule(userId int, rule *models.Rule) error {
 	}
 
 	var id int
-	err = tx.Get(&id, sql, args...)
+	err = tx.tx.Get(&id, sql, args...)
 	if err != nil {
-		tx.Rollback()
 		return getDatabaseError(err, s, "insert rule")
 	}
 
@@ -220,9 +207,8 @@ func (s *RuleStore) AddRule(userId int, rule *models.Rule) error {
 		return fmt.Errorf("construct insert conditions sql: %v", err)
 	}
 
-	_, err = tx.Exec(sql, args...)
+	_, err = tx.tx.Exec(sql, args...)
 	if err != nil {
-		tx.Rollback()
 		return getDatabaseError(err, s, "insert rule conditions")
 	}
 
@@ -238,12 +224,12 @@ func (s *RuleStore) AddRule(userId int, rule *models.Rule) error {
 		return fmt.Errorf("construct insert actions sql: %v", err)
 	}
 
-	_, err = tx.Exec(sql, args...)
+	_, err = tx.tx.Exec(sql, args...)
 	if err != nil {
-		tx.Rollback()
 		return getDatabaseError(err, s, "insert rule actions")
 	}
-	return tx.Commit()
+	tx.ok = true
+	return nil
 }
 
 // GetActiveUresRules returns all active rules (with some limit) for given user.
