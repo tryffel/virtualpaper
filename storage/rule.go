@@ -25,6 +25,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
+	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 )
 
@@ -124,29 +125,9 @@ AND id = $2;`
 }
 
 func (s *RuleStore) AddRule(userId int, rule *models.Rule) error {
-	err := rule.Validate()
+	err := s.validateRule(userId, rule)
 	if err != nil {
 		return err
-	}
-
-	metadata := make([]models.Metadata, 0, 5)
-	for _, v := range rule.Conditions {
-		if v.MetadataValue > 0 && v.MetadataKey > 0 {
-			m := models.Metadata{
-				KeyId:   int(v.MetadataKey),
-				ValueId: int(v.MetadataValue),
-			}
-			metadata = append(metadata, m)
-		}
-	}
-	for _, v := range rule.Actions {
-		if v.MetadataValue > 0 && v.MetadataKey > 0 {
-			m := models.Metadata{
-				KeyId:   int(v.MetadataKey),
-				ValueId: int(v.MetadataValue),
-			}
-			metadata = append(metadata, m)
-		}
 	}
 
 	tx, err := s.beginTx()
@@ -191,42 +172,15 @@ func (s *RuleStore) AddRule(userId int, rule *models.Rule) error {
 	if err != nil {
 		return getDatabaseError(err, s, "insert rule")
 	}
-
 	rule.Id = id
-	query = s.sq.Insert("rule_conditions").
-		Columns("rule_id", "enabled", "case_insensitive", "inverted_match", "condition_type",
-			"is_regex", "value", "metadata_key", "metadata_value")
-
-	for _, v := range rule.Conditions {
-		query = query.Values(rule.Id, v.Enabled, v.CaseInsensitive, v.Inverted, v.ConditionType, v.IsRegex, v.Value,
-			v.MetadataKey, v.MetadataValue)
-	}
-
-	sql, args, err = query.ToSql()
+	err = s.addActionsToRule(tx, rule.Id, rule.Actions)
 	if err != nil {
-		return fmt.Errorf("construct insert conditions sql: %v", err)
+		return fmt.Errorf("add actions: %v", err)
 	}
 
-	_, err = tx.tx.Exec(sql, args...)
+	err = s.addConditionsToRule(tx, rule.Id, rule.Conditions)
 	if err != nil {
-		return getDatabaseError(err, s, "insert rule conditions")
-	}
-
-	query = s.sq.Insert("rule_actions").
-		Columns("rule_id", "enabled", "on_condition", "action", "value", "metadata_key", "metadata_value")
-
-	for _, v := range rule.Actions {
-		query = query.Values(rule.Id, v.Enabled, v.OnCondition, v.Action, v.Value, v.MetadataKey, v.MetadataValue)
-	}
-
-	sql, args, err = query.ToSql()
-	if err != nil {
-		return fmt.Errorf("construct insert actions sql: %v", err)
-	}
-
-	_, err = tx.tx.Exec(sql, args...)
-	if err != nil {
-		return getDatabaseError(err, s, "insert rule actions")
+		return fmt.Errorf("add conditions: %v", err)
 	}
 	tx.ok = true
 	return nil
@@ -316,6 +270,180 @@ ORDER BY rule_id, rule_actions.id ASC;
 		return s.parseError(err, "get rule conditions")
 	}
 	mapActionsToRules(rules, actions)
+	return nil
+}
+
+func (s *RuleStore) UserOwnsRule(userId, ruleId int) (bool, error) {
+	sql := `
+	SELECT id 
+	FROM rules
+	WHERE user_id = $1
+	AND id = $2;
+	`
+
+	var id int
+	err := s.db.Get(&id, sql, userId, ruleId)
+	if err != nil {
+		return false, getDatabaseError(err, s, "check user owns rule")
+	}
+	return id == ruleId, nil
+}
+
+// UpdateRule updates rule.
+func (s *RuleStore) UpdateRule(userId int, rule *models.Rule) error {
+	owns, err := s.UserOwnsRule(userId, rule.Id)
+	if err != nil {
+		return err
+	}
+	if !owns {
+		err := errors.ErrRecordNotFound
+		err.ErrMsg = "rule not found"
+		return err
+	}
+
+	err = s.validateRule(userId, rule)
+	if err != nil {
+		return err
+	}
+
+	tx, err := s.beginTx()
+	if err != nil {
+		return err
+	}
+	defer tx.Close()
+
+	rule.Update()
+	query := s.sq.Update("rules").SetMap(map[string]interface{}{
+		"name":        rule.Name,
+		"description": rule.Description,
+		"enabled":     rule.Enabled,
+		"rule_order":  rule.Order,
+		"mode":        rule.Mode,
+		"updated_at":  rule.UpdatedAt,
+	}).Where(squirrel.Eq{"user_id": userId, "id": rule.Id})
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return fmt.Errorf("build sql: %v", err)
+	}
+
+	_, err = tx.tx.Exec(sql, args...)
+	if err != nil {
+		return getDatabaseError(err, s, "update")
+	}
+
+	sql = `DELETE FROM rule_actions WHERE rule_id = $1`
+	_, err = tx.tx.Exec(sql, rule.Id)
+	if err != nil {
+		return fmt.Errorf("delete old actions: %v", err)
+	}
+
+	sql = `DELETE FROM rule_conditions WHERE rule_id = $1`
+	_, err = tx.tx.Exec(sql, rule.Id)
+	if err != nil {
+		return fmt.Errorf("delete old conditions: %v", err)
+	}
+
+	err = s.addActionsToRule(tx, rule.Id, rule.Actions)
+	if err != nil {
+		return fmt.Errorf("add actions: %v", err)
+	}
+
+	err = s.addConditionsToRule(tx, rule.Id, rule.Conditions)
+	if err != nil {
+		return fmt.Errorf("add conditions: %v", err)
+	}
+
+	//TODO: handle changing rule_order
+
+	tx.ok = true
+	return nil
+}
+
+func (s *RuleStore) validateRule(userId int, rule *models.Rule) error {
+	err := rule.Validate()
+	if err != nil {
+		return err
+	}
+
+	metadata := make([]models.Metadata, 0, 5)
+	for _, v := range rule.Conditions {
+		if v.MetadataValue > 0 && v.MetadataKey > 0 {
+			m := models.Metadata{
+				KeyId:   int(v.MetadataKey),
+				ValueId: int(v.MetadataValue),
+			}
+			metadata = append(metadata, m)
+		}
+	}
+	for _, v := range rule.Actions {
+		if v.MetadataValue > 0 && v.MetadataKey > 0 {
+			m := models.Metadata{
+				KeyId:   int(v.MetadataKey),
+				ValueId: int(v.MetadataValue),
+			}
+			metadata = append(metadata, m)
+		}
+	}
+
+	if len(metadata) > 0 {
+		err := s.metadata.CheckKeyValuesExist(userId, metadata)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *RuleStore) addActionsToRule(tx *tx, ruleId int, actions []*models.RuleAction) error {
+	query := s.sq.Insert("rule_actions").
+		Columns("rule_id", "enabled", "on_condition", "action", "value", "metadata_key", "metadata_value")
+
+	for _, v := range actions {
+		query = query.Values(ruleId, v.Enabled, v.OnCondition, v.Action, v.Value, v.MetadataKey, v.MetadataValue)
+	}
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return fmt.Errorf("construct insert actions sql: %v", err)
+	}
+
+	if tx != nil {
+		_, err = tx.tx.Exec(sql, args...)
+	} else {
+		_, err = s.db.Exec(sql, args...)
+	}
+
+	if err != nil {
+		return getDatabaseError(err, s, "insert rule actions")
+	}
+	return nil
+}
+
+func (s *RuleStore) addConditionsToRule(tx *tx, ruleId int, conditions []*models.RuleCondition) error {
+	query := s.sq.Insert("rule_conditions").
+		Columns("rule_id", "enabled", "case_insensitive", "inverted_match", "condition_type",
+			"is_regex", "value", "metadata_key", "metadata_value")
+
+	for _, v := range conditions {
+		query = query.Values(ruleId, v.Enabled, v.CaseInsensitive, v.Inverted, v.ConditionType, v.IsRegex, v.Value,
+			v.MetadataKey, v.MetadataValue)
+	}
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return fmt.Errorf("construct insert conditions sql: %v", err)
+	}
+
+	if tx != nil {
+		_, err = tx.tx.Exec(sql, args...)
+	} else {
+		_, err = s.db.Exec(sql, args...)
+
+	}
+	if err != nil {
+		return getDatabaseError(err, s, "insert rule conditions")
+	}
 	return nil
 }
 

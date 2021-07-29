@@ -272,3 +272,43 @@ func (a *Api) getUserRule(resp http.ResponseWriter, req *http.Request) {
 	r := ruleToResp(rule)
 	respResourceList(resp, r, 1)
 }
+
+func (a *Api) updateUserRule(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route PUT /api/v1/processing/rules/{id} Processing UpdateRule
+	// Update rule contents
+	// responses:
+	//   200:
+	handler := "api.updateUserRule"
+	userId, ok := getUserId(req)
+	if !ok {
+		respError(resp, errors.New("no user_id in request context"), handler)
+		return
+	}
+
+	id, err := getParamIntId(req)
+	if err != nil {
+		respBadRequest(resp, "no id specified", nil)
+		return
+	}
+
+	processingRule := &Rule{}
+	err = unMarshalBody(req, processingRule)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	rule, err := processingRule.ToRule()
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+	rule.Id = id
+	rule.UserId = userId
+	err = a.db.RuleStore.UpdateRule(userId, rule)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+	respOk(resp, ruleToResp(rule))
+}
