@@ -125,8 +125,8 @@ func ruleToResp(rule *models.Rule) *Rule {
 		Enabled:     rule.Enabled,
 		Order:       rule.Order,
 		Mode:        rule.Mode.String(),
-		CreatedAt:   rule.CreatedAt.Unix(),
-		UpdatedAt:   rule.UpdatedAt.Unix(),
+		CreatedAt:   rule.CreatedAt.Unix() * 1000,
+		UpdatedAt:   rule.UpdatedAt.Unix() * 1000,
 	}
 
 	resp.Conditions = make([]RuleCondition, len(rule.Conditions))
