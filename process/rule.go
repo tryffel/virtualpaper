@@ -164,9 +164,7 @@ func (d *DocumentRule) hasMetadataCount(condition *models.RuleCondition) (bool, 
 // 2. a passed date that has most matches
 // 3. any date found from document.
 func (d *DocumentRule) extractDates(condition *models.RuleCondition) (bool, error) {
-	dateFmt := condition.Value
-
-	re, err := regexp.Compile(dateFmt)
+	re, err := regexp.Compile(condition.Value)
 	if err != nil {
 		return false, fmt.Errorf("regex: %v", err)
 	}
@@ -244,6 +242,10 @@ func (d *DocumentRule) RunActions() error {
 			actionError = d.appendDescription(action)
 		case models.RuleActionAddMetadata:
 			actionError = addMetadata(d.Document, int(action.MetadataKey), int(action.MetadataValue))
+		case models.RuleActionRemoveMetadata:
+			removeMetadata(d.Document, int(action.MetadataKey), int(action.MetadataValue))
+		case models.RuleActionSetDate:
+			actionError = d.setDate(action)
 		default:
 			e := errors.ErrInternalError
 			e.ErrMsg = fmt.Sprintf("unknown action type: %v", action.Action)
@@ -305,7 +307,32 @@ func addMetadata(doc *models.Document, key, value int) error {
 	return nil
 }
 
-func (d *DocumentRule) setDate(action models.RuleAction) error {
+// remove metadata. If valueId == 0, delete all metadata that matches the key.
+func removeMetadata(doc *models.Document, keyId, valueId int) {
+	i := 0
+	for {
+		if i > len(doc.Metadata)-1 {
+			// all metadata was deleted
+			break
+		}
+		if doc.Metadata[i].KeyId == keyId && (valueId == 0 || doc.Metadata[i].ValueId == valueId) {
+			if i == len(doc.Metadata)-1 {
+				// last item
+				doc.Metadata = doc.Metadata[:i]
+				break
+			} else if i == 0 {
+				// first item
+				doc.Metadata = doc.Metadata[i+1:]
+			} else {
+				doc.Metadata = append(doc.Metadata[:i], doc.Metadata[i+1:]...)
+			}
+		} else {
+			i += 1
+		}
+	}
+}
+
+func (d *DocumentRule) setDate(action *models.RuleAction) error {
 	if !d.date.IsZero() {
 		d.Document.Date = d.date
 	}

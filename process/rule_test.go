@@ -2,6 +2,7 @@ package process
 
 import (
 	"database/sql"
+	"reflect"
 	"testing"
 	"time"
 	"tryffel.net/go/virtualpaper/models"
@@ -443,5 +444,96 @@ func BenchmarkDocumentRule_matchTextByDistance_longtext(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		_, _ = matchTextByDistance(match, longText, 1, false, false)
+	}
+}
+
+func Test_removeMetadata(t *testing.T) {
+	type args struct {
+		doc     *models.Document
+		keyId   int
+		valueId int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantDoc *models.Document
+	}{
+		{
+			name: "no matching metadata",
+			args: args{
+				doc:     &models.Document{Metadata: []models.Metadata{{KeyId: 1, ValueId: 2}}},
+				keyId:   1,
+				valueId: 5,
+			},
+			wantDoc: &models.Document{Metadata: []models.Metadata{{KeyId: 1, ValueId: 2}}},
+		},
+		{
+			name: "delete one key-value",
+			args: args{
+				doc:     &models.Document{Metadata: []models.Metadata{{KeyId: 1, ValueId: 2}, {KeyId: 1, ValueId: 3}}},
+				keyId:   1,
+				valueId: 2,
+			},
+			wantDoc: &models.Document{Metadata: []models.Metadata{{KeyId: 1, ValueId: 3}}},
+		},
+		{
+			name: "delete by key",
+			args: args{
+				doc: &models.Document{Metadata: []models.Metadata{
+					{KeyId: 1, ValueId: 2},
+					{KeyId: 1, ValueId: 3},
+					{KeyId: 2, ValueId: 2}}},
+				keyId:   1,
+				valueId: 0,
+			},
+			wantDoc: &models.Document{Metadata: []models.Metadata{{KeyId: 2, ValueId: 2}}},
+		},
+		{
+			name: "delete all metadata",
+			args: args{
+				doc: &models.Document{Metadata: []models.Metadata{
+					{KeyId: 1, ValueId: 2},
+					{KeyId: 1, ValueId: 3},
+					{KeyId: 1, ValueId: 4}}},
+				keyId:   1,
+				valueId: 0,
+			},
+			wantDoc: &models.Document{Metadata: []models.Metadata{}},
+		},
+		{
+			name: "no matching metadata",
+			args: args{
+				doc: &models.Document{Metadata: []models.Metadata{
+					{KeyId: 1, ValueId: 2},
+					{KeyId: 1, ValueId: 3},
+					{KeyId: 1, ValueId: 4}}},
+				keyId:   2,
+				valueId: 0,
+			},
+			wantDoc: &models.Document{Metadata: []models.Metadata{
+				{KeyId: 1, ValueId: 2},
+				{KeyId: 1, ValueId: 3},
+				{KeyId: 1, ValueId: 4},
+			},
+			},
+		},
+		{
+			name: "empty document",
+			args: args{
+				doc:     &models.Document{},
+				keyId:   1,
+				valueId: 0,
+			},
+			wantDoc: &models.Document{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			removeMetadata(tt.args.doc, tt.args.keyId, tt.args.valueId)
+			if !reflect.DeepEqual(tt.args.doc, tt.wantDoc) {
+				t.Errorf("doc metadata differs: want %d, got %d",
+					len(tt.wantDoc.Metadata), len(tt.args.doc.Metadata))
+			}
+		})
 	}
 }
