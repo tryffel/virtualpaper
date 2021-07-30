@@ -103,9 +103,9 @@ ORDER BY key ASC;
 }
 
 // GetKeys returns all possible metadata-keys for user.
-func (s *MetadataStore) GetKeys(userId int) (*[]models.MetadataKey, error) {
+func (s *MetadataStore) GetKeys(userId int, ids []int) (*[]models.MetadataKey, error) {
 	limit := config.MaxRows
-	sql := `
+	sqlFmt := `
 SELECT
     mk.id as id,
     mk.key as key,
@@ -115,13 +115,36 @@ SELECT
 FROM metadata_keys mk
 LEFT JOIN document_metadata dm ON mk.id = dm.key_id
 WHERE user_id = $1
+%s
 GROUP BY (mk.id)
 ORDER BY key ASC
-LIMIT $2;
+
 `
 
+	args := make([]interface{}, 1)
+	args[0] = userId
+
+	sql := ""
+
+	if len(ids) > 0 {
+		idQuery := "AND id IN ("
+		for i, v := range ids {
+			if i > 0 {
+				idQuery += ","
+			}
+			idQuery += fmt.Sprintf("$%d", i+2)
+			args = append(args, v)
+		}
+		idQuery += ")"
+		sql = fmt.Sprintf(sqlFmt, idQuery)
+		sql += fmt.Sprintf("LIMIT $%d;", len(ids)+2)
+	} else {
+		sql = fmt.Sprintf(sqlFmt, "")
+		sql += "LIMIT $2"
+	}
+	args = append(args, limit)
 	keys := &[]models.MetadataKey{}
-	err := s.db.Select(keys, sql, userId, limit)
+	err := s.db.Select(keys, sql, args...)
 	return keys, s.parseError(err, "get keys")
 }
 

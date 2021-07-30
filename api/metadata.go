@@ -19,6 +19,7 @@
 package api
 
 import (
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
@@ -106,7 +107,13 @@ func (a *Api) getMetadataKeys(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	keys, err := a.db.MetadataStore.GetKeys(user)
+	filter, err := getMetadataFilter(req)
+	if err != nil {
+		respError(resp, fmt.Errorf("get metadata filter: %v", err), handler)
+		return
+	}
+
+	keys, err := a.db.MetadataStore.GetKeys(user, filter)
 	if err != nil {
 		respError(resp, err, handler)
 	}
