@@ -24,31 +24,106 @@ import {
     RadioButtonGroupInput,
     BooleanInput,
     ReferenceInput,
-    SelectInput,
+    SelectInput, ArrayInput, SimpleFormIterator,
+    useInput, Labeled,
 } from 'react-admin';
 
 import { Typography } from '@material-ui/core';
+import Select from '@material-ui/core/Select';
+import MenuItem from '@material-ui/core/MenuItem';
+
+import MarkDownInputWithField from "ra-input-markdown";
+
 
 
 export const RuleEdit = (props) => (
     <Edit {...props} title={"Edit process rule"}>
         <SimpleForm>
-            <Typography variant="h5">Rule trigger</Typography>
-            <TextInput label="description" source="comment" fullWidth={true} />
-            <RadioButtonGroupInput source="type" fullWidth={true} choices={[
-                { id: 'regex', name: 'Regular expression' },
-                { id: 'exact', name: 'Match' },
-            ]} />
-            <TextInput label="Filter expression" source="filter" fullWidth={true} />
+            <Typography variant="h5">Processing Rule</Typography>
             <BooleanInput label="Enabled" source="active"/>
-            <Typography variant="h5">Action</Typography>
-            <TextInput label="Date format" source="action.date_fmt" fullWidth={true}/>
-            <TextInput label="Date separator" source="action.date_separator" fullWidth={true}/>
-            <TextInput label="Description" source="action.description" fullWidth={true}/>
-            <ReferenceInput source="action.tag_id" reference="tags" allowEmpty label="Tag">
-                <SelectInput optionText="key" />
-            </ReferenceInput>
+            <TextInput source="name" fullWidth={true} />
+            <MarkDownInputWithField source="description" fullWidth={true} />
+
+            <RadioButtonGroupInput label="Match conditions" source="type" fullWidth={true} choices={[
+                { id: 'match_all', name: 'Match all'},
+                { id: 'match_any', name: 'Match any'},
+            ]} />
+            <Typography variant="h5">Rule Conditions</Typography>
+            <ArrayInput source="conditions" label="">
+                <SimpleFormIterator>
+                    <BooleanInput label="Enabled" source="enabled"/>
+                    <BooleanInput label="Inverted" source="inverted"/>
+                    <ConditionTypeInput label="Type" source="condition_type"/>
+                </SimpleFormIterator>
+            </ArrayInput>
+            <Typography variant="h5">Rule Actions</Typography>
+            <ArrayInput source="actions">
+                <SimpleFormIterator>
+                    <BooleanInput label="Enabled" source="enabled"/>
+                    <ActionTypeInput label="Type" source="action"/>
+                </SimpleFormIterator>
+            </ArrayInput>
         </SimpleForm>
     </Edit>
 );
+
+
+const ConditionTypeInput = (props) => {
+    const {
+        input,
+        meta: { touched, error }
+    } = useInput(props);
+
+
+    return (
+        <Labeled label="Condition type">
+            <Select {...input} >
+                <MenuItem value="name_is">Name is</MenuItem>
+                <MenuItem value="name_starts"> Name starts</MenuItem>
+                <MenuItem value="name_contains"> Name contains</MenuItem>
+
+                <MenuItem value="description_is"> Description is</MenuItem>
+                <MenuItem value="description_starts"> Description starts</MenuItem>
+                <MenuItem value="description_contains"> Description contains</MenuItem>
+
+                <MenuItem value="content_is"> Text content is</MenuItem>
+                <MenuItem value="content_starts"> Text content starts</MenuItem>
+                <MenuItem value="content_contains"> Text content contains</MenuItem>
+
+                <MenuItem value="date_is"> Date is</MenuItem>
+                <MenuItem value="date_after"> Date is after</MenuItem>
+                <MenuItem value="date_before"> Date is before</MenuItem>
+
+                <MenuItem value="metadata_has_key"> Metadata contains key</MenuItem>
+                <MenuItem value="metadata_has_key_value"> Metadata contains key-value</MenuItem>
+                <MenuItem value="metadata_count"> Metadata count equals</MenuItem>
+                <MenuItem value="metadata_count_less_than"> Metadata count less than</MenuItem>
+                <MenuItem value="metadata_count_more_than"> Metadata count more than</MenuItem>
+            </Select>
+        </Labeled>
+    )
+}
+
+
+const ActionTypeInput = (props) => {
+    const {
+        input,
+        meta: { touched, error }
+    } = useInput(props);
+
+    return (
+        <Labeled label="Action type">
+            <Select {...input} >
+                <MenuItem value="name_set">Set name</MenuItem>
+                <MenuItem value="name_append">Append name</MenuItem>
+                <MenuItem value="description_set">Set description</MenuItem>
+                <MenuItem value="description_append">Append description</MenuItem>
+                <MenuItem value="metadata_add">Add metadata</MenuItem>
+                <MenuItem value="metadata_remove">Remove metadata</MenuItem>
+                <MenuItem value="date_set">Set date</MenuItem>
+            </Select>
+        </Labeled>
+    )
+}
+
 

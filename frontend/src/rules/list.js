@@ -30,6 +30,7 @@ import {
 } from 'react-admin';
 
 import { Chip, Typography } from '@material-ui/core';
+import {MarkdownField} from "../markdown";
 
 
 export const RuleList = (props) => (
@@ -37,7 +38,7 @@ export const RuleList = (props) => (
         <Datagrid>
             <TextField source="name" />
             <TextField source="id" />
-            <TextField label="Description" source="description" />
+            <MarkdownField label="Description" source="description" />
             <BooleanField label="Enabled" source="enabled" />
             <RuleModeField source="mode" />
             <ChildCounterField source="conditions" />
