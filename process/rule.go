@@ -61,7 +61,7 @@ func (d *DocumentRule) Match() (bool, error) {
 		} else if strings.HasPrefix(condText, "metadata_has_key") {
 			ok = d.hasMetadataKey(condition)
 		} else if strings.HasPrefix(condText, "date") {
-			ok, err = d.extractDates(condition)
+			ok, err = d.extractDates(condition, time.Now())
 		} else if strings.HasPrefix(condText, "metadata_count") {
 			ok, err = d.hasMetadataCount(condition)
 		} else if condition.ConditionType == models.RuleConditionMetadataHasKey {
@@ -163,7 +163,7 @@ func (d *DocumentRule) hasMetadataCount(condition *models.RuleCondition) (bool, 
 // 1. a future date that has most matches
 // 2. a passed date that has most matches
 // 3. any date found from document.
-func (d *DocumentRule) extractDates(condition *models.RuleCondition) (bool, error) {
+func (d *DocumentRule) extractDates(condition *models.RuleCondition, now time.Time) (bool, error) {
 	re, err := regexp.Compile(condition.Value)
 	if err != nil {
 		return false, fmt.Errorf("regex: %v", err)
@@ -173,7 +173,6 @@ func (d *DocumentRule) extractDates(condition *models.RuleCondition) (bool, erro
 	dates := make(map[time.Time]int)
 	datesPassed := make(map[time.Time]int)
 	datesUpcoming := make(map[time.Time]int)
-	now := time.Now()
 
 	putDateToMap := func(date time.Time, m *map[time.Time]int) {
 		if (*m)[date] == 0 {

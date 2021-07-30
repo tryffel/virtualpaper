@@ -537,3 +537,146 @@ func Test_removeMetadata(t *testing.T) {
 		})
 	}
 }
+
+func TestDocumentRule_extractDates(t *testing.T) {
+	now := time.Unix(1627620345, 0)
+
+	type fields struct {
+		Rule     *models.Rule
+		Document *models.Document
+		date     time.Time
+	}
+	type args struct {
+		condition *models.RuleCondition
+	}
+	tests := []struct {
+		name     string
+		fields   fields
+		args     args
+		want     bool
+		wantErr  bool
+		wantDate string
+	}{
+		{
+			name: "three dates",
+			fields: fields{
+				Document: &models.Document{
+					Content: `2021-07-30  2020-07-30 2020-07-30 2020-07-30 Lorem ipsum dolor sit amet, 
+	consectetur adipiscing elit, 2021-07-31 2021-07-30`},
+				date: time.Time{},
+			},
+			args: args{
+				condition: &models.RuleCondition{
+					ConditionType: models.RuleConditionDateIs,
+					Value:         "(\\d{4}-\\d{1,2}-\\d{1,2})",
+					DateFmt:       "2006-01-02",
+				},
+			},
+			want:     true,
+			wantErr:  false,
+			wantDate: "2021-07-31",
+		},
+		{
+			name: "invalid regex",
+			fields: fields{
+				Document: &models.Document{
+					Content: `2021-07-30 Lorem ipsum dolor sit amet, consectetur adipiscing elit, 2021-07-31 
+	2021-07-30`},
+				date: time.Time{},
+			},
+			args: args{
+				condition: &models.RuleCondition{
+					ConditionType: models.RuleConditionDateIs,
+					Value:         "(\\d{4}-\\d{1,2}-\\d{1,2}))))",
+					DateFmt:       "2006-01-02",
+				},
+			},
+			want:     false,
+			wantErr:  true,
+			wantDate: "2021-07-31",
+		},
+		{
+			name: "past date",
+			fields: fields{
+				Document: &models.Document{
+					Content: `2020-07-30 Lorem ipsum dolor sit amet, consectetur adipiscing elit, 2020-07-31 
+	2020-07-30`},
+				date: time.Time{},
+			},
+			args: args{
+				condition: &models.RuleCondition{
+					ConditionType: models.RuleConditionDateIs,
+					Value:         "(\\d{4}-\\d{1,2}-\\d{1,2})",
+					DateFmt:       "2006-01-02",
+				},
+			},
+			want:     true,
+			wantErr:  false,
+			wantDate: "2020-07-30",
+		},
+		{
+			name: "upcoming date overrides past date",
+			fields: fields{
+				Document: &models.Document{
+					Content: `2020-07-30 Lorem ipsum dolor sit amet, consectetur adipiscing elit, 2021-07-31 
+	2020-07-31`},
+				date: time.Time{},
+			},
+			args: args{
+				condition: &models.RuleCondition{
+					ConditionType: models.RuleConditionDateIs,
+					Value:         "(\\d{4}-\\d{1,2}-\\d{1,2})",
+					DateFmt:       "2006-01-02",
+				},
+			},
+			want:     true,
+			wantErr:  false,
+			wantDate: "2021-07-31",
+		},
+		{
+			name: "no date found",
+			fields: fields{
+				Document: &models.Document{
+					Content: ""},
+			},
+			args: args{
+				condition: &models.RuleCondition{
+					ConditionType: models.RuleConditionDateIs,
+					Value:         "(\\d{4}-\\d{1,2}-\\d{1,2})",
+					DateFmt:       "2006-01-02",
+				},
+			},
+			want:     false,
+			wantErr:  false,
+			wantDate: "0001-01-01",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := &DocumentRule{
+				Rule:     tt.fields.Rule,
+				Document: tt.fields.Document,
+				date:     tt.fields.date,
+			}
+			got, err := d.extractDates(tt.args.condition, now)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("extractDates() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("extractDates() got = %v, want %v", got, tt.want)
+			}
+
+			if tt.want {
+				wantDate, err := time.Parse("2006-01-02", tt.wantDate)
+				if err != nil {
+					t.Errorf("invalid date format: %v", err)
+				}
+				if !d.date.Equal(wantDate) {
+					t.Errorf("date does not match, want: %s, got: %s", wantDate.String(), d.date.String())
+				}
+			}
+		})
+	}
+}
