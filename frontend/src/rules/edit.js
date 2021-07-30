@@ -25,7 +25,7 @@ import {
     BooleanInput,
     ReferenceInput,
     SelectInput, ArrayInput, SimpleFormIterator,
-    useInput, Labeled,
+    useInput, Labeled, FormDataConsumer, useRecordContext,
 } from 'react-admin';
 
 import { Typography } from '@material-ui/core';
@@ -40,7 +40,7 @@ export const RuleEdit = (props) => (
     <Edit {...props} title={"Edit process rule"}>
         <SimpleForm>
             <Typography variant="h5">Processing Rule</Typography>
-            <BooleanInput label="Enabled" source="active"/>
+            <BooleanInput label="Enabled" source="enabled"/>
             <TextInput source="name" fullWidth={true} />
             <MarkDownInputWithField source="description" fullWidth={true} />
 
@@ -50,18 +50,11 @@ export const RuleEdit = (props) => (
             ]} />
             <Typography variant="h5">Rule Conditions</Typography>
             <ArrayInput source="conditions" label="">
-                <SimpleFormIterator>
-                    <BooleanInput label="Enabled" source="enabled"/>
-                    <BooleanInput label="Inverted" source="inverted"/>
-                    <ConditionTypeInput label="Type" source="condition_type"/>
-                </SimpleFormIterator>
+                <ConditionEdit/>
             </ArrayInput>
             <Typography variant="h5">Rule Actions</Typography>
             <ArrayInput source="actions">
-                <SimpleFormIterator>
-                    <BooleanInput label="Enabled" source="enabled"/>
-                    <ActionTypeInput label="Type" source="action"/>
-                </SimpleFormIterator>
+                <ActionEdit/>
             </ArrayInput>
         </SimpleForm>
     </Edit>
@@ -127,3 +120,33 @@ const ActionTypeInput = (props) => {
 }
 
 
+const ConditionEdit = (props) => {
+    //const record = useRecordContext(props);
+
+    return (
+        <SimpleFormIterator {...props}>
+            <BooleanInput label="Enabled" source="enabled"/>
+            <BooleanInput label="Inverted" source="inverted"/>
+            <BooleanInput label="Case insensitive" source="case_insensitive"/>
+            <ConditionTypeInput label="Type" source="condition_type"/>
+            <BooleanInput label="Regex" source="is_regex"/>
+            <TextInput label="Filter" source="value"/>
+            <TextInput label="Date format" source="date_fmt"/>
+
+        </SimpleFormIterator>
+    )
+}
+
+
+const ActionEdit = (props) => {
+    //const record = useRecordContext(props);
+
+    return (
+        <SimpleFormIterator {...props}>
+            <BooleanInput label="Enabled" source="enabled"/>
+            <BooleanInput label="On condition" source="on_condition"/>
+            <ActionTypeInput label="Type" source="action"/>
+            <TextInput label="Format" source="value"/>
+        </SimpleFormIterator>
+    )
+}
