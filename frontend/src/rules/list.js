@@ -18,36 +18,30 @@
 
 import * as React from "react"
 
-import { List, Datagrid, TextField, EditButton, DateField, ChipField, BooleanField, Show, SimpleShowLayout} from 'react-admin';
+import get from 'lodash/get';
+import {
+    List,
+    Datagrid,
+    TextField,
+    EditButton,
+    DateField,
+    BooleanField,
+    useRecordContext
+} from 'react-admin';
 
+import { Chip, Typography } from '@material-ui/core';
 
-const InfoPanel = props => (
-    <Show
-        {...props}
-        title=" "
-    >
-        { props.record ?
-            <SimpleShowLayout>
-                <TextField source="filter"/>
-                {props.record.action.date_fmt !== "" && <TextField label="Date format" source="action.date_fmt"/>}
-                {props.record.action.date_separator !== "" && <TextField label="Date separator" source="action.date_separator" />}
-                {props.record.action.description !== "" && <TextField label="Description" source="action.description" />}
-                {props.record.action.metadata_key_id !== 0 && <TextField label="Metadata key" source="action.metadata_key_id" />}
-                {props.record.action.metadata_key_value  !== 0 && <TextField label="Metadata value" source="action.metadata_value_id" />}
-                }:
-            </SimpleShowLayout>
-            : null
-        }
-    </Show>
-);
 
 export const RuleList = (props) => (
     <List {...props}>
-        <Datagrid expand={<InfoPanel />}>
+        <Datagrid>
+            <TextField source="name" />
             <TextField source="id" />
-            <ChipField source="type" />
-            <TextField label="Description" source="comment" />
-            <BooleanField label="Enabled" source="active" />
+            <TextField label="Description" source="description" />
+            <BooleanField label="Enabled" source="enabled" />
+            <RuleModeField source="mode" />
+            <ChildCounterField source="conditions" />
+            <ChildCounterField source="actions" />
             <DateField source="created_at" />
             <DateField source="updated_at" />
             <EditButton />
@@ -55,6 +49,24 @@ export const RuleList = (props) => (
     </List>
 );
 
+const RuleModeField = (props) => {
+    const {source } = props;
+    const record = useRecordContext(props);
+    const value = get(record, source);
+
+    return <Chip label={value === "match_all" ? "Match all": "Match any"}/>
+}
+
+const ChildCounterField = (props) => {
+    const {source } = props;
+    const record = useRecordContext(props);
+    const value = get(record, source);
+
+    return record ?
+        <Typography component="span" variant="body2">
+            {value ? value.length : ""}
+        </Typography> : null
+}
 
 
 
