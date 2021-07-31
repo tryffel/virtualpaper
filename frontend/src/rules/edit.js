@@ -26,9 +26,10 @@ import {
     ReferenceInput,
     SelectInput, ArrayInput, SimpleFormIterator,
     useInput, Labeled, FormDataConsumer, useRecordContext,
+    FormWithRedirect, SaveButton, DeleteButton
 } from 'react-admin';
 
-import { Typography } from '@material-ui/core';
+import { Typography, Box, Grid, Toolbar } from '@material-ui/core';
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
 
@@ -53,7 +54,7 @@ export const RuleEdit = (props) => (
                 <ConditionEdit/>
             </ArrayInput>
             <Typography variant="h5">Rule Actions</Typography>
-            <ArrayInput source="actions">
+            <ArrayInput source="actions" label="">
                 <ActionEdit/>
             </ArrayInput>
         </SimpleForm>
@@ -69,32 +70,29 @@ const ConditionTypeInput = (props) => {
 
 
     return (
-        <Labeled label="Condition type">
-            <Select {...input} >
-                <MenuItem value="name_is">Name is</MenuItem>
-                <MenuItem value="name_starts"> Name starts</MenuItem>
-                <MenuItem value="name_contains"> Name contains</MenuItem>
+        <SelectInput {...props} choices={[
+            {id: "name_is", name:"Name is" },
+            {id: "name_starts", name:" Name starts" },
+            {id: "name_contains", name:" Name contains" },
 
-                <MenuItem value="description_is"> Description is</MenuItem>
-                <MenuItem value="description_starts"> Description starts</MenuItem>
-                <MenuItem value="description_contains"> Description contains</MenuItem>
+            {id: "description_is", name:" Description is" },
+            {id: "description_starts", name:" Description starts" },
+            {id: "description_contains", name:" Description contains" },
 
-                <MenuItem value="content_is"> Text content is</MenuItem>
-                <MenuItem value="content_starts"> Text content starts</MenuItem>
-                <MenuItem value="content_contains"> Text content contains</MenuItem>
+            {id: "content_is", name:" Text content" },
+            {id: "content_starts", name:" Text content" },
+            {id: "content_contains", name:" Text content" },
 
-                <MenuItem value="date_is"> Date is</MenuItem>
-                <MenuItem value="date_after"> Date is after</MenuItem>
-                <MenuItem value="date_before"> Date is before</MenuItem>
+            {id: "date_is", name:" Date is" },
+            {id: "date_after", name:" Date is" },
+            {id: "date_before", name:" Date is" },
 
-                <MenuItem value="metadata_has_key"> Metadata contains key</MenuItem>
-                <MenuItem value="metadata_has_key_value"> Metadata contains key-value</MenuItem>
-                <MenuItem value="metadata_count"> Metadata count equals</MenuItem>
-                <MenuItem value="metadata_count_less_than"> Metadata count less than</MenuItem>
-                <MenuItem value="metadata_count_more_than"> Metadata count more than</MenuItem>
-            </Select>
-        </Labeled>
-    )
+            {id: "metadata_has_key", name:" Metadata contains" },
+            {id: "metadata_has_key_value", name:" Metadata contains key-value" },
+            {id: "metadata_count", name:" Metadata count equals" },
+            {id: "metadata_count_less_than", name:" Metadata count less than" },
+            {id: "metadata_count_more_than", name:" Metadata count more than" },
+        ]}/> )
 }
 
 
@@ -105,34 +103,62 @@ const ActionTypeInput = (props) => {
     } = useInput(props);
 
     return (
-        <Labeled label="Action type">
-            <Select {...input} >
-                <MenuItem value="name_set">Set name</MenuItem>
-                <MenuItem value="name_append">Append name</MenuItem>
-                <MenuItem value="description_set">Set description</MenuItem>
-                <MenuItem value="description_append">Append description</MenuItem>
-                <MenuItem value="metadata_add">Add metadata</MenuItem>
-                <MenuItem value="metadata_remove">Remove metadata</MenuItem>
-                <MenuItem value="date_set">Set date</MenuItem>
-            </Select>
-        </Labeled>
+        <SelectInput {...props} choices={[
+            {id: "name_set", name:"Set name" },
+            {id: "name_append", name:"Append name" },
+            {id: "description_set", name:"Set description" },
+            {id: "description_append", name:"Append description" },
+            {id: "metadata_add", name:"Add metadata" },
+            {id: "metadata_remove", name:"Remove metadata" },
+            {id: "date_set", name:"Set date" },
+        ]}
+        />
     )
 }
 
 
+DeleteButton.propTypes = {};
 const ConditionEdit = (props) => {
     //const record = useRecordContext(props);
 
     return (
-        <SimpleFormIterator {...props}>
-            <BooleanInput label="Enabled" source="enabled"/>
-            <BooleanInput label="Inverted" source="inverted"/>
-            <BooleanInput label="Case insensitive" source="case_insensitive"/>
-            <ConditionTypeInput label="Type" source="condition_type"/>
-            <BooleanInput label="Regex" source="is_regex"/>
-            <TextInput label="Filter" source="value"/>
-            <TextInput label="Date format" source="date_fmt"/>
+        <SimpleFormIterator {...props} >
+            <FormWithRedirect {...props} render={formProps => (
+                <form>
+                    <Box p="1em">
+                        <Box display="flex">
+                            <Box flex={1} mr="1em">
+                                <Grid container display="flex" spacing={1} >
+                                    <Grid item flex={1} ml="0.5em">
+                                        <ConditionTypeInput label="Type" source="condition_type"/>
+                                    </Grid>
+                                    <Grid item flex={1} mr="0.5em">
+                                        <BooleanInput label="Enabled" source="enabled"/>
+                                    </Grid>
+                                    <Grid item flex={1} ml="0.5em">
+                                        <BooleanInput label="Inverted" source="inverted"/>
+                                    </Grid>
+                                    <Grid item flex={1} ml="0.5em">
+                                        <BooleanInput label="Case insensitive" source="case_insensitive"/>
+                                    </Grid>
+                                    <Grid item flex={1} ml="0.5em">
+                                        <BooleanInput label="Regex" source="is_regex"/>
+                                    </Grid>
+                                </Grid>
+                                <Grid container display="flex" spacing={2}>
+                                    <Grid item flex={1} ml="0.5em">
+                                        <TextInput label="Filter" source="value" fullWidth resettable/>
+                                    </Grid>
+                                    <Grid item flex={1} ml="0.5em">
+                                        <TextInput label="Date format" source="date_fmt" fullWidth resettable/>
+                                    </Grid>
+                                </Grid>
 
+                            </Box>
+                        </Box>
+                    </Box>
+                </form>
+            )} />
         </SimpleFormIterator>
     )
 }
@@ -142,11 +168,34 @@ const ActionEdit = (props) => {
     //const record = useRecordContext(props);
 
     return (
-        <SimpleFormIterator {...props}>
-            <BooleanInput label="Enabled" source="enabled"/>
-            <BooleanInput label="On condition" source="on_condition"/>
-            <ActionTypeInput label="Type" source="action"/>
-            <TextInput label="Format" source="value"/>
+        <SimpleFormIterator {...props}  >
+            <FormWithRedirect {...props} render={formProps => (
+                <form>
+                    <Box p="1em">
+                        <Box display="flex">
+                            <Box flex={1} mr="1em">
+                                <Grid container display="flex" spacing={2}>
+                                    <Grid item flex={1} ml="0.5em">
+                                        <ActionTypeInput label="Type" source="action"/>
+                                    </Grid>
+                                    <Grid item flex={1} ml="0.5em">
+                                        <BooleanInput label="Enabled" source="enabled"/>
+                                    </Grid>
+                                    <Grid item flex={1} mr="0.5em">
+                                        <BooleanInput label="On condition" source="on_condition"/>
+                                    </Grid>
+                                </Grid>
+                                <Grid container display="flex" spacing={2}>
+                                    <Grid item flex={1} ml="0.5em">
+                                        <TextInput label="Format" source="value"/>
+                                    </Grid>
+                                </Grid>
+
+                            </Box>
+                        </Box>
+                    </Box>
+                </form>
+            )} />
         </SimpleFormIterator>
     )
 }
