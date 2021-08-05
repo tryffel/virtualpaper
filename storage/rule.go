@@ -229,11 +229,15 @@ SELECT
     inverted_match,
     condition_type,
     is_regex,
-    value,
+	rule_conditions.value as value,
     metadata_key,
-    metadata_value
+    metadata_value,
+    mk.key as metadata_key_name,
+    mv.value as metadata_value_name
 FROM rule_conditions
 	LEFT JOIN rules ON rule_conditions.rule_id = rules.id
+	LEFT join metadata_keys mk on rule_conditions.metadata_key = mk.id
+	LEFT JOIN metadata_values mv on rule_conditions.metadata_value = mv.id
 WHERE rules.user_id = $1
 	AND rule_conditions.enabled = TRUE
 ORDER BY rule_id, rule_conditions.id ASC;
@@ -259,9 +263,13 @@ SELECT
     rule_actions.value AS value,
     rule_actions.action AS action,
     metadata_key,
-    metadata_value
+    metadata_value,
+	mk.key as metadata_key_name,
+    mv.value as metadata_value_name
 FROM rule_actions
 	LEFT JOIN rules ON rule_actions.rule_id = rules.id
+	LEFT join metadata_keys mk on rule_actions.metadata_key = mk.id
+    LEFT JOIN metadata_values mv on rule_actions.metadata_value = mv.id
 WHERE rules.user_id = $1
 	AND rule_actions.enabled = TRUE
 ORDER BY rule_id, rule_actions.id ASC;

@@ -159,8 +159,10 @@ type RuleCondition struct {
 	DateFmt string `db:"date_fmt"`
 
 	// Metadata to operate with
-	MetadataKey   IntId `db:"metadata_key"`
-	MetadataValue IntId `db:"metadata_value"`
+	MetadataKey       IntId `db:"metadata_key"`
+	MetadataValue     IntId `db:"metadata_value"`
+	MetadataKeyName   Text  `db:"metadata_key_name"`
+	MetadataValueName Text  `db:"metadata_value_name"`
 }
 
 func (r *RuleCondition) Validate() error {
@@ -254,10 +256,12 @@ type RuleAction struct {
 	// OnCondition, if vs else
 	OnCondition bool `db:"on_condition"`
 
-	Action        RuleActionType `db:"action"`
-	Value         string         `db:"value"`
-	MetadataKey   IntId          `db:"metadata_key"`
-	MetadataValue IntId          `db:"metadata_value"`
+	Action            RuleActionType `db:"action"`
+	Value             string         `db:"value"`
+	MetadataKey       IntId          `db:"metadata_key"`
+	MetadataValue     IntId          `db:"metadata_value"`
+	MetadataKeyName   Text           `db:"metadata_key_name"`
+	MetadataValueName Text           `db:"metadata_value_name"`
 }
 
 type MetadataRuleType string

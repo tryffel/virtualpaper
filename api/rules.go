@@ -39,28 +39,26 @@ type Rule struct {
 }
 
 type RuleCondition struct {
-	Id              int          `json:"id" valid:"-"`
-	RuleId          int          `json:"rule_id" valid:"-"`
-	Enabled         bool         `json:"enabled" valid:"-"`
-	CaseInsensitive bool         `json:"case_insensitive" valid:"-"`
-	Inverted        bool         `json:"inverted_match" valid:"-"`
-	ConditionType   string       `json:"condition_type" valid:"-"`
-	IsRegex         bool         `json:"is_regex" valid:"-"`
-	Value           string       `json:"value" valid:"-"`
-	DateFmt         string       `json:"date_fmt" valid:"-"`
-	MetadataKey     models.IntId `json:"metadata_key" valid:"-"`
-	MetadataValue   models.IntId `json:"metadata_value" valid:"-"`
+	Id              int             `json:"id" valid:"-"`
+	RuleId          int             `json:"rule_id" valid:"-"`
+	Enabled         bool            `json:"enabled" valid:"-"`
+	CaseInsensitive bool            `json:"case_insensitive" valid:"-"`
+	Inverted        bool            `json:"inverted_match" valid:"-"`
+	ConditionType   string          `json:"condition_type" valid:"-"`
+	IsRegex         bool            `json:"is_regex" valid:"-"`
+	Value           string          `json:"value" valid:"-"`
+	DateFmt         string          `json:"date_fmt" valid:"-"`
+	Metadata        models.Metadata `json:"metadata" valid:"-"`
 }
 
 type RuleAction struct {
-	Id            int          `json:"id" valid:"-"`
-	RuleId        int          `json:"rule_id" valid:"-"`
-	Enabled       bool         `json:"enabled" valid:"-"`
-	OnCondition   bool         `json:"on_condition" valid:"-"`
-	Action        string       `json:"action" valid:"-"`
-	Value         string       `json:"value" valid:"-"`
-	MetadataKey   models.IntId `json:"metadata_key" valid:"-"`
-	MetadataValue models.IntId `json:"metadata_value" valid:"-"`
+	Id          int             `json:"id" valid:"-"`
+	RuleId      int             `json:"rule_id" valid:"-"`
+	Enabled     bool            `json:"enabled" valid:"-"`
+	OnCondition bool            `json:"on_condition" valid:"-"`
+	Action      string          `json:"action" valid:"-"`
+	Value       string          `json:"value" valid:"-"`
+	Metadata    models.Metadata `json:"metadata" valid:"-"`
 }
 
 func (r *RuleAction) ToAction() *models.RuleAction {
@@ -69,21 +67,25 @@ func (r *RuleAction) ToAction() *models.RuleAction {
 		OnCondition:   r.OnCondition,
 		Action:        models.RuleActionType(r.Action),
 		Value:         r.Value,
-		MetadataKey:   r.MetadataKey,
-		MetadataValue: r.MetadataValue,
+		MetadataKey:   models.IntId(r.Metadata.KeyId),
+		MetadataValue: models.IntId(r.Metadata.ValueId),
 	}
 }
 
 func actionToResp(action *models.RuleAction) RuleAction {
 	return RuleAction{
-		Id:            action.Id,
-		RuleId:        action.RuleId,
-		Enabled:       action.Enabled,
-		OnCondition:   action.OnCondition,
-		Action:        action.Action.String(),
-		Value:         action.Value,
-		MetadataKey:   action.MetadataKey,
-		MetadataValue: action.MetadataValue,
+		Id:          action.Id,
+		RuleId:      action.RuleId,
+		Enabled:     action.Enabled,
+		OnCondition: action.OnCondition,
+		Action:      action.Action.String(),
+		Value:       action.Value,
+		Metadata: models.Metadata{
+			KeyId:   int(action.MetadataKey),
+			Key:     action.MetadataKeyName.String(),
+			ValueId: int(action.MetadataValue),
+			Value:   action.MetadataValueName.String(),
+		},
 	}
 }
 
@@ -96,8 +98,8 @@ func (r *RuleCondition) ToCondition() *models.RuleCondition {
 		IsRegex:         r.IsRegex,
 		Value:           r.Value,
 		DateFmt:         r.DateFmt,
-		MetadataKey:     r.MetadataKey,
-		MetadataValue:   r.MetadataValue,
+		MetadataKey:     models.IntId(r.Metadata.KeyId),
+		MetadataValue:   models.IntId(r.Metadata.ValueId),
 	}
 }
 
@@ -112,8 +114,13 @@ func conditionToResp(cond *models.RuleCondition) RuleCondition {
 		IsRegex:         cond.IsRegex,
 		Value:           cond.Value,
 		DateFmt:         cond.DateFmt,
-		MetadataKey:     cond.MetadataKey,
-		MetadataValue:   cond.MetadataValue,
+
+		Metadata: models.Metadata{
+			KeyId:   int(cond.MetadataKey),
+			Key:     cond.MetadataKeyName.String(),
+			ValueId: int(cond.MetadataValue),
+			Value:   cond.MetadataValueName.String(),
+		},
 	}
 }
 

@@ -69,3 +69,28 @@ func (i *IntId) Scan(src interface{}) error {
 	}
 	return fmt.Errorf("unknown type: %v", src)
 }
+
+type Text string
+
+func (t Text) Value() (driver.Value, error) {
+	return string(t), nil
+}
+
+func (t Text) String() string {
+	return string(t)
+}
+
+func (t *Text) Scan(src interface{}) error {
+	if src == nil {
+		*t = ""
+		return nil
+	}
+
+	isStr, ok := src.(string)
+	if ok {
+		*t = Text(isStr)
+		return nil
+	}
+
+	return fmt.Errorf("unknown type: %v", src)
+}
