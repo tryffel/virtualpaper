@@ -40,20 +40,17 @@ type DocumentFilter struct {
 
 func (d *DocumentFilter) buildRequest(paging storage.Paging) *meilisearch.SearchRequest {
 	request := &meilisearch.SearchRequest{
-		Query:                 d.Query,
 		Offset:                int64(paging.Offset),
 		Limit:                 int64(paging.Limit),
 		AttributesToRetrieve:  []string{"document_id", "name", "content", "description", "date"},
 		AttributesToCrop:      []string{"content"},
 		CropLength:            1000,
 		AttributesToHighlight: []string{"content", "name", "description"},
-		Filters:               "",
 		Matches:               false,
 		FacetsDistribution:    nil,
-		FacetFilters:          nil,
 		PlaceholderSearch:     false,
 	}
-
+	filter := ""
 	if d.Query == "" {
 		request.PlaceholderSearch = true
 	}
@@ -63,26 +60,24 @@ func (d *DocumentFilter) buildRequest(paging storage.Paging) *meilisearch.Search
 		facets = append(facets, fmt.Sprintf(`tags:%s`, d.Tag))
 	}
 	if !d.After.IsZero() {
-		request.Filters += fmt.Sprintf("date > %d", d.After.Add(-time.Hour*24).Unix())
+		filter += fmt.Sprintf("date > %d", d.After.Add(-time.Hour*24).Unix())
 	}
 	if !d.Before.IsZero() {
-		if request.Filters != "" {
-			request.Filters += " AND "
+		if filter != "" {
+			filter += " AND "
 		}
-		request.Filters += fmt.Sprintf("date < %d", d.Before.Add(time.Hour*24).Unix())
+		filter += fmt.Sprintf("date < %d", d.Before.Add(time.Hour*24).Unix())
 	}
-
-	if len(facets) != 0 {
-		request.FacetFilters = facets
-	}
-
 	if d.Metadata != "" {
 		metadata := parseFilter(d.Metadata)
-
-		if request.Filters != "" {
-			request.Filters += " AND "
+		if filter != "" {
+			filter += " AND "
 		}
-		request.Filters += metadata
+		filter += metadata
+	}
+	if filter != "" {
+		request.Filter = filter
+
 	}
 	return request
 }
@@ -96,14 +91,17 @@ func (e *Engine) SearchDocuments(userId int, query *DocumentFilter, paging stora
 
 	docs := make([]*models.Document, 0)
 
-	res, err := e.client.Search(indexName(userId)).Search(*request)
+	res, err := e.client.Index(indexName(userId)).Search(query.Query, request)
 	if err != nil {
 		if meiliError, ok := err.(*meilisearch.Error); ok {
 			if meiliError.StatusCode == 400 {
+				logrus.Debugf("meilisearch invalid query: %v", meiliError)
 				// invalid query
 				userError := errors.ErrInvalid
 				userError.ErrMsg = "Invalid query"
 				return nil, 0, userError
+			} else {
+				logrus.Errorf("meilisearch error: %v", meiliError)
 			}
 		}
 		return docs, 0, err
