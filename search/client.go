@@ -86,7 +86,7 @@ func (e *Engine) ensureIndexExists() error {
 				PrimaryKey: "document_id",
 			})
 
-			_, err = e.client.Index(indices[i]).UpdateFilterableAttributes(&[]string{
+			fields := &[]string{
 				"document_id",
 				"user_id",
 				"name",
@@ -102,9 +102,19 @@ func (e *Engine) ensureIndexExists() error {
 				"tags",
 				"metadata_key",
 				"metadata_value",
-			})
+			}
+			_, err = e.client.Index(indices[i]).UpdateFilterableAttributes(fields)
 			if err != nil {
-				logrus.Errorf("meilisearch set faceted search attributes: %v", err)
+				logrus.Errorf("meilisearch set filterable attributes: %v", err)
+			}
+
+			_, err = e.client.Index(indices[i]).UpdateSortableAttributes(fields)
+			if err != nil {
+				logrus.Errorf("meilisearch set sortable attributes: %v", err)
+			}
+			_, err = e.client.Index(indices[i]).UpdateSearchableAttributes(fields)
+			if err != nil {
+				logrus.Errorf("meilisearch set searchable attributes: %v", err)
 			}
 		}
 		if err != nil {

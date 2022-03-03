@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
@@ -575,6 +576,17 @@ func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, resp ht
 		logrus.Warningf("invalid paging: %v", err)
 		paging.Limit = 100
 		paging.Offset = 0
+	}
+
+	sort, err := getSortParams(req, &models.Document{})
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	if len(sort) == 1 {
+		filter.Sort = sort[0].Key
+		filter.SortMode = strings.ToLower(sort[0].SortOrder())
 	}
 
 	res, n, err := a.search.SearchDocuments(userId, filter, paging)

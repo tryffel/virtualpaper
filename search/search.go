@@ -36,6 +36,8 @@ type DocumentFilter struct {
 	After    time.Time `json:"after"`
 	Before   time.Time `json:"before"`
 	Metadata string    `json:"metadata"`
+	Sort     string    `json:"sort"`
+	SortMode string    `json:"sort_mode"`
 }
 
 func (d *DocumentFilter) buildRequest(paging storage.Paging) *meilisearch.SearchRequest {
@@ -77,7 +79,13 @@ func (d *DocumentFilter) buildRequest(paging storage.Paging) *meilisearch.Search
 	}
 	if filter != "" {
 		request.Filter = filter
+	}
 
+	if d.Sort != "" {
+		if d.SortMode == "" {
+			d.SortMode = "desc"
+		}
+		request.Sort = []string{d.Sort + ":" + d.SortMode}
 	}
 	return request
 }
