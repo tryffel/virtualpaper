@@ -45,7 +45,7 @@ export const RuleEdit = (props) => (
             <TextInput source="name" fullWidth={true} />
             <MarkDownInputWithField source="description" fullWidth={true} />
 
-            <RadioButtonGroupInput label="Match conditions" source="type" fullWidth={true} choices={[
+            <RadioButtonGroupInput label="Match conditions" source="mode" fullWidth={true} choices={[
                 { id: 'match_all', name: 'Match all'},
                 { id: 'match_any', name: 'Match any'},
             ]} />
@@ -63,12 +63,6 @@ export const RuleEdit = (props) => (
 
 
 const ConditionTypeInput = (props) => {
-    const {
-        input,
-        meta: { touched, error }
-    } = useInput(props);
-
-
     return (
         <SelectInput {...props} choices={[
             {id: "name_is", name:"Name is" },
@@ -92,16 +86,11 @@ const ConditionTypeInput = (props) => {
             {id: "metadata_count", name:" Metadata count equals" },
             {id: "metadata_count_less_than", name:" Metadata count less than" },
             {id: "metadata_count_more_than", name:" Metadata count more than" },
-        ]}/> )
+        ]} /> )
 }
 
 
 const ActionTypeInput = (props) => {
-    const {
-        input,
-        meta: { touched, error }
-    } = useInput(props);
-
     return (
         <SelectInput {...props} choices={[
             {id: "name_set", name:"Set name" },
@@ -119,11 +108,11 @@ const ActionTypeInput = (props) => {
 
 DeleteButton.propTypes = {};
 const ConditionEdit = (props) => {
-    //const record = useRecordContext(props);
 
     return (
-        <SimpleFormIterator {...props} >
-            <FormWithRedirect {...props} render={formProps => (
+        props.record ?
+        <SimpleFormIterator {...props}>
+            <FormWithRedirect render={formProps => (
                 <form>
                     <Box p="1em">
                         <Box display="flex">
@@ -159,17 +148,16 @@ const ConditionEdit = (props) => {
                     </Box>
                 </form>
             )} />
-        </SimpleFormIterator>
+        </SimpleFormIterator>: null
     )
 }
 
 
 const ActionEdit = (props) => {
-    //const record = useRecordContext(props);
 
     return (
         <SimpleFormIterator {...props}  >
-            <FormWithRedirect {...props} render={formProps => (
+            <FormWithRedirect render={formProps => (
                 <form>
                     <Box p="1em">
                         <Box display="flex">
@@ -187,7 +175,7 @@ const ActionEdit = (props) => {
                                 </Grid>
                                 <Grid container display="flex" spacing={2}>
                                     <Grid item flex={1} ml="0.5em">
-                                        <TextInput label="Format" source="value"/>
+                                        <TextInput label="Value" source="value"/>
                                     </Grid>
                                 </Grid>
 
