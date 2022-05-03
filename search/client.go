@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/meilisearch/meilisearch-go"
 	"github.com/sirupsen/logrus"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -35,15 +34,9 @@ func NewEngine(db *storage.Database) (*Engine, error) {
 // connect creates a connection to meilisearch instance and initializes index if neccessary.
 func (e *Engine) connect() error {
 	logrus.Infof("connect to meilisearch at %s", e.Url)
-	e.client = meilisearch.NewClient(meilisearch.Config{
-		Host:   e.Url,
-		APIKey: e.ApiKey,
-	})
-
-	e.client = meilisearch.NewClientWithCustomHTTPClient(meilisearch.Config{
-		Host:   e.Url,
-		APIKey: e.ApiKey,
-	}, http.Client{
+	e.client = meilisearch.NewClient(meilisearch.ClientConfig{
+		Host:    e.Url,
+		APIKey:  e.ApiKey,
 		Timeout: 10 * time.Second,
 	})
 
@@ -71,7 +64,7 @@ func (e *Engine) ensureIndexExists() error {
 		indexExists := false
 		logrus.Debugf("ensure meilisearch index %s exists", indices[i])
 		var err error
-		_, err = e.client.Indexes().Get(indices[i])
+		_, err = e.client.GetIndex(indices[i])
 		if err != nil {
 			if e, ok := err.(*meilisearch.Error); ok {
 				if e.StatusCode == 404 {
@@ -88,19 +81,40 @@ func (e *Engine) ensureIndexExists() error {
 
 		if !indexExists {
 			logrus.Warningf("Creating new meilisearch index '%s'", indices[i])
-			_, err = e.client.Indexes().Create(meilisearch.CreateIndexRequest{
-				UID:        indices[i],
+			_, err = e.client.CreateIndex(&meilisearch.IndexConfig{
+				Uid:        indices[i],
 				PrimaryKey: "document_id",
 			})
 
-			_, err = e.client.Settings(indices[i]).UpdateAttributesForFaceting([]string{
+			fields := &[]string{
+				"document_id",
+				"user_id",
+				"name",
+				"file_name",
+				"content",
+				"hash",
+				"created_at",
+				"updated_at",
+				"tags",
+				"metadata",
+				"date",
+				"description",
 				"tags",
 				"metadata_key",
 				"metadata_value",
-			})
+			}
+			_, err = e.client.Index(indices[i]).UpdateFilterableAttributes(fields)
 			if err != nil {
-				logrus.Errorf("meilisearch set faceted search attributes: %v", err)
+				logrus.Errorf("meilisearch set filterable attributes: %v", err)
+			}
 
+			_, err = e.client.Index(indices[i]).UpdateSortableAttributes(fields)
+			if err != nil {
+				logrus.Errorf("meilisearch set sortable attributes: %v", err)
+			}
+			_, err = e.client.Index(indices[i]).UpdateSearchableAttributes(fields)
+			if err != nil {
+				logrus.Errorf("meilisearch set searchable attributes: %v", err)
 			}
 		}
 		if err != nil {
@@ -118,13 +132,13 @@ func (e *Engine) UpdateUserPreferences(userId int) error {
 	}
 	index := indexName(userId)
 
-	_, err = e.client.Settings(index).UpdateStopWords(preferences.StopWords)
+	_, err = e.client.Index(index).UpdateStopWords(&preferences.StopWords)
 	if err != nil {
 		return fmt.Errorf("update stopwords: %v", err)
 	}
 
 	synonyms := buildSynonyms(preferences.Synonyms)
-	_, err = e.client.Settings(index).UpdateSynonyms(synonyms)
+	_, err = e.client.Index(index).UpdateSynonyms(&synonyms)
 	if err != nil {
 		return fmt.Errorf("update synonyms: %v", err)
 	}
@@ -132,7 +146,7 @@ func (e *Engine) UpdateUserPreferences(userId int) error {
 }
 
 func (e *Engine) ping() error {
-	v, err := e.client.Version().Get()
+	v, err := e.client.GetVersion()
 	if err != nil {
 		if strings.Contains(err.Error(), "connection refused") {
 			return fmt.Errorf("cannot connect to meilisearch server: %v", err)
@@ -176,7 +190,7 @@ func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 		}
 	}
 
-	_, err := e.client.Documents(indexName(userId)).AddOrReplace(data)
+	_, err := e.client.Index(indexName(userId)).UpdateDocuments(data)
 	if err != nil {
 		return fmt.Errorf("index documents: %v", err)
 	}
