@@ -29,7 +29,7 @@ import {
     FormWithRedirect, SaveButton, DeleteButton
 } from 'react-admin';
 
-import { Typography, Box, Grid, Toolbar } from '@material-ui/core';
+import { Typography, Box, Grid, Toolbar} from '@material-ui/core';
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
 
@@ -111,44 +111,35 @@ const ConditionEdit = (props) => {
 
     return (
         props.record ?
-        <SimpleFormIterator {...props}>
-            <FormWithRedirect render={formProps => (
-                <form>
-                    <Box p="1em">
-                        <Box display="flex">
-                            <Box flex={1} mr="1em">
-                                <Grid container display="flex" spacing={1} >
-                                    <Grid item flex={1} ml="0.5em">
-                                        <ConditionTypeInput label="Type" source="condition_type"/>
-                                    </Grid>
-                                    <Grid item flex={1} mr="0.5em">
-                                        <BooleanInput label="Enabled" source="enabled"/>
-                                    </Grid>
-                                    <Grid item flex={1} ml="0.5em">
-                                        <BooleanInput label="Inverted" source="inverted"/>
-                                    </Grid>
-                                    <Grid item flex={1} ml="0.5em">
-                                        <BooleanInput label="Case insensitive" source="case_insensitive"/>
-                                    </Grid>
-                                    <Grid item flex={1} ml="0.5em">
-                                        <BooleanInput label="Regex" source="is_regex"/>
-                                    </Grid>
-                                </Grid>
-                                <Grid container display="flex" spacing={2}>
-                                    <Grid item flex={1} ml="0.5em">
-                                        <TextInput label="Filter" source="value" fullWidth resettable/>
-                                    </Grid>
-                                    <Grid item flex={1} ml="0.5em">
-                                        <TextInput label="Date format" source="date_fmt" fullWidth resettable/>
-                                    </Grid>
-                                </Grid>
-
-                            </Box>
-                        </Box>
-                    </Box>
-                </form>
-            )} />
-        </SimpleFormIterator>: null
+            <SimpleFormIterator {...props}>
+                <Grid container spacing={2}>
+                    <Grid container spacing={2}>
+                        <Grid item xs={3} md={6}>
+                            <BooleanInput label="Enabled" source="enabled"/>
+                        </Grid>
+                        <Grid item xs={3} md={6}>
+                            <BooleanInput label="Case insensitive" source="case_insensitive"/>
+                        </Grid>
+                        <Grid item xs={3} md={6}>
+                            <BooleanInput label="Inverted" source="inverted"/>
+                        </Grid>
+                        <Grid item xs={3} md={6}>
+                            <BooleanInput label="Regex" source="is_regex"/>
+                        </Grid>
+                    </Grid>
+                    <Grid container spacing={1}>
+                        <Grid item xs={6} md={8}>
+                            <ConditionTypeInput label="Type" source="condition_type"/>
+                        </Grid>
+                        <Grid item xs={6} md={8}>
+                            <TextInput label="Filter" source="value" fullWidth resettable/>
+                        </Grid>
+                        <Grid item xs={6} md={8}>
+                            <TextInput label="Date format" source="date_fmt" fullWidth resettable/>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </SimpleFormIterator>: null
     )
 }
 
@@ -156,34 +147,28 @@ const ConditionEdit = (props) => {
 const ActionEdit = (props) => {
 
     return (
-        <SimpleFormIterator {...props}  >
-            <FormWithRedirect render={formProps => (
-                <form>
-                    <Box p="1em">
-                        <Box display="flex">
-                            <Box flex={1} mr="1em">
-                                <Grid container display="flex" spacing={2}>
-                                    <Grid item flex={1} ml="0.5em">
-                                        <ActionTypeInput label="Type" source="action"/>
-                                    </Grid>
-                                    <Grid item flex={1} ml="0.5em">
-                                        <BooleanInput label="Enabled" source="enabled"/>
-                                    </Grid>
-                                    <Grid item flex={1} mr="0.5em">
-                                        <BooleanInput label="On condition" source="on_condition"/>
-                                    </Grid>
-                                </Grid>
-                                <Grid container display="flex" spacing={2}>
-                                    <Grid item flex={1} ml="0.5em">
-                                        <TextInput label="Value" source="value"/>
-                                    </Grid>
-                                </Grid>
-
-                            </Box>
-                        </Box>
-                    </Box>
-                </form>
-            )} />
-        </SimpleFormIterator>
+        props.record ?
+            <SimpleFormIterator {...props}>
+                <Grid container spacing={2}>
+                    <Grid container spacing={2}>
+                        <Grid container display="flex" spacing={2}>
+                            <Grid item flex={1} ml="0.5em">
+                                <ActionTypeInput label="Type" source="action"/>
+                            </Grid>
+                            <Grid item flex={1} ml="0.5em">
+                                <BooleanInput label="Enabled" source="enabled"/>
+                            </Grid>
+                            <Grid item flex={1} mr="0.5em">
+                                <BooleanInput label="On condition" source="on_condition"/>
+                            </Grid>
+                        </Grid>
+                        <Grid container display="flex" spacing={2}>
+                            <Grid item flex={1} ml="0.5em">
+                                <TextInput label="Value" source="value"/>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </SimpleFormIterator>: null
     )
 }
