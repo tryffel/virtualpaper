@@ -51,6 +51,7 @@ type Database struct {
 	Username string
 	Password string
 	Database string
+	NoSSL    bool
 }
 
 // Processing contains document-processing settings
@@ -127,6 +128,7 @@ func ConfigFromViper() error {
 			Username: viper.GetString("database.username"),
 			Password: viper.GetString("database.password"),
 			Database: viper.GetString("database.database"),
+			NoSSL:    viper.GetBool("database.no_ssl"),
 		},
 		Processing: Processing{
 			InputDir:     viper.GetString("processing.input_dir"),

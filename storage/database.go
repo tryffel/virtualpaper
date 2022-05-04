@@ -29,6 +29,11 @@ func NewDatabase() (*Database, error) {
 
 	url := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s",
 		conf.Host, conf.Port, conf.Username, conf.Password, conf.Database)
+
+	if conf.NoSSL {
+		url += " sslmode=disable"
+	}
+
 	var err error
 	db.conn, err = sqlx.Connect("postgres", url)
 

@@ -1,0 +1,40 @@
+version: "3"
+services:
+  server:
+    build:
+      context: .
+    ports: 
+      - "8000:8000"
+    expose: 
+      - "8000"
+    depends_on:
+      - meilisearch
+      - postgres
+    networks:
+      - virtualpaper
+    environment:
+      - VIRTUALPAPER_MEILISEARCH_URL="http://meilisearch:7700"
+      - VIRTUALPAPER_DATABASE_HOST=postgres
+      - VIRTUALPAPER_DATABASE_PASSWORD=virtualpaper
+      - VIRTUALPAPER_DATABASE_DATABASE=virtualpaper
+      - VIRTUALPAPER_DATABASE_USERNAME=virtualpaper
+      - VIRTUALPAPER_DATABASE_NO_SSL=true
+
+  meilisearch:
+    image: getmeili/meilisearch:v0.25.2
+    networks:
+      - virtualpaper
+
+  postgres:
+    image: postgres:14.2-alpine3.15
+    environment:
+      - POSTGRES_USER=virtualpaper
+      - POSTGRES_PASSWORD=virtualpaper
+      - POSTGRES_DB=virtualpaper
+    networks:
+      - virtualpaper
+
+networks:
+  virtualpaper:
+    driver: bridge
+

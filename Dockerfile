@@ -56,5 +56,5 @@ ENV VIRTUALPAPER_PROCESSING_DATA_DIR="/data"
 ENV VIRTUALPAPER_PROCESSING_INPUT_DIR="/input"
 ENV VIRTUALPAPER_LOGGING_DIRECTORY="/log"
 
-ENTRYPOINT ["/app/virtualpaper", "--config", "/config/config.toml"]
+ENTRYPOINT ["/app/virtualpaper", "--config", "/config/config.toml", "serve"]
 
