@@ -127,3 +127,23 @@ func getDocumentFilter(req *http.Request) (*search.DocumentFilter, error) {
 
 	return filter, err
 }
+
+func getMetadataFilter(req *http.Request) ([]int, error) {
+	type MetadataFilter struct {
+		Id []int
+	}
+
+	query := req.FormValue("filter")
+	if query == "" || query == "{}" {
+		return nil, nil
+	}
+	body := &MetadataFilter{}
+	err := json.Unmarshal([]byte(query), body)
+	if err != nil {
+		e := errors.ErrInvalid
+		e.ErrMsg = "invalid json in search params"
+		return nil, e
+	}
+
+	return body.Id, nil
+}

@@ -57,6 +57,11 @@ var Migrations = []Migrator{
 		Level:  6,
 		Schema: schemaV6,
 	},
+	&Migration{
+		Name:   "add rules v2",
+		Level:  7,
+		Schema: schemaV7,
+	},
 }
 
 type Schema struct {

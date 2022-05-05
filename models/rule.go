@@ -1,6 +1,6 @@
 /*
  * Virtualpaper is a service to manage users paper documents in virtual format.
- * Copyright (C) 2020  Tero Vierimaa
+ * Copyright (C) 2021  Tero Vierimaa
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,130 +19,254 @@
 package models
 
 import (
-	"database/sql/driver"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"regexp"
+	"strings"
+	"tryffel.net/go/virtualpaper/errors"
 )
 
-type RuleType string
+type RuleConditionMatchType int
 
-const (
-	// RegexRule matches filter with regex
-	RegexRule RuleType = "regex"
-	// Exact must match exactly.
-	ExactRule RuleType = "exact"
-)
-
-// RuleAction defines what to do when rule has fired.
-// RuleActions are not exclusive, meaning multiple actions can be defined for single rule.
-// E.g. add metadata and tag + set description
-type RuleAction uint16
-
-func (r RuleAction) AddMetadata() bool {
-	return r&RuleActionAddMetadata != 0
-}
-
-func (r RuleAction) Rename() bool {
-	return r&RuleActionRename != 0
-}
-
-func (r RuleAction) Date() bool {
-	return r&RuleActionSetDate != 0
-}
-
-func (r RuleAction) Tag() bool {
-	return r&RuleActionAddTag != 0
-}
-
-func (r RuleAction) Description() bool {
-	return r&RuleActionSetDescription != 0
-}
-
-const (
-	RuleActionAddMetadata    RuleAction = 1 << 0
-	RuleActionRename         RuleAction = 1 << 1
-	RuleActionSetDate        RuleAction = 1 << 2
-	RuleActionAddTag         RuleAction = 1 << 3
-	RuleActionSetDescription RuleAction = 1 << 4
-)
-
-// RuleActionConfig defines action to perform when rule has fired.
-// Fields and their content depends on Action, and specific key only applies if
-// it's defined in Action.
-// RuleActionConfig is serialized as json in database.
-type RuleActionConfig struct {
-	Action          RuleAction
-	MetadataKeyId   int
-	MetadataValueId int
-	Tag             int
-	// DateFmt is format to try to parse time with
-	DateFmt string
-	// DateSeparator in format. This is to try to ensure and in some cases fix minor errors
-	// in invalid formats, e.g. 2020-5-01 -> 2020-05-01.
-	DateSeparator string
-	Description   string
-}
-
-func (r *RuleActionConfig) Scan(src interface{}) error {
-	buf := []byte{}
-	if b, ok := src.([]byte); ok {
-		buf = b
-	} else if str, ok := src.(string); ok {
-		buf = []byte(str)
+func (r RuleConditionMatchType) String() string {
+	switch r {
+	case RuleMatchAll:
+		return "match_all"
+	case RuleMatchAny:
+		return "match_any"
+	default:
+		return ""
 	}
-	err := json.Unmarshal(buf, r)
-	return err
 }
 
-func (r *RuleActionConfig) Value() (driver.Value, error) {
-	buf, err := json.Marshal(r)
-	return string(buf), err
-}
-
-// Validate ensures rule configuration is valid. If valid, return nil, else return
-// exact reason for why rule is invalid.
-func (r *Rule) Validate() error {
-	if r.Filter == "" {
-		return errors.New("filter cannot be empty")
-	}
-
-	if r.Type == RegexRule {
-		_, err := regexp.Compile(r.Filter)
-		if err != nil {
-			return fmt.Errorf("invalid regex: %v", err.Error())
-		}
-	}
-
-	if r.Action.MetadataKeyId != 0 && r.Action.MetadataValueId != 0 {
-		r.Action.Action |= RuleActionAddMetadata
-	}
-	if r.Action.Tag != 0 {
-		r.Action.Action |= RuleActionAddTag
-	}
-	if r.Action.DateFmt != "" {
-		r.Action.Action |= RuleActionSetDate
-	}
-	if r.Action.Description != "" {
-		r.Action.Action |= RuleActionSetDescription
-	}
-
-	if r.Action.Action == 0 {
-		return errors.New("no action set")
+func (r *RuleConditionMatchType) FromString(str string) error {
+	switch str {
+	case "match_all":
+		*r = RuleMatchAll
+	case "match_any":
+		*r = RuleMatchAny
+	default:
+		e := errors.ErrInvalid
+		e.ErrMsg = "invalid match type: " + str
+		return errors.ErrInvalid
 	}
 	return nil
 }
 
-// Rule defines single rule, which has filter (either exact or regex) and action to perform when filter
-// fires.
+const (
+	// RuleMatchAll requires all conditions must be matched
+	RuleMatchAll RuleConditionMatchType = 1
+	//RuleMatchAny allows any condition to match
+	RuleMatchAny RuleConditionMatchType = 2
+)
+
 type Rule struct {
+	Id          int                    `db:"id"`
+	UserId      int                    `db:"user_id"`
+	Name        string                 `db:"name"`
+	Description string                 `db:"description"`
+	Enabled     bool                   `db:"enabled"`
+	Order       int                    `db:"rule_order"`
+	Mode        RuleConditionMatchType `db:"mode"`
 	Timestamp
-	Id      int              `db:"id"`
-	Userid  int              `db:"user_id"`
-	Type    RuleType         `db:"rule_type" json:"rule_type"`
-	Filter  string           `db:"filter"`
-	Comment string           `db:"comment"`
-	Action  RuleActionConfig `db:"action"`
-	Active  bool             `db:"active"`
+
+	Conditions []*RuleCondition
+	Actions    []*RuleAction
 }
+
+func (r *Rule) Validate() error {
+	for i, v := range r.Conditions {
+		err := v.Validate()
+		if err != nil {
+			if isErr, ok := err.(errors.Error); ok {
+				isErr.ErrMsg = fmt.Sprintf("condition %d: %s", i+1, isErr.ErrMsg)
+				return isErr
+			} else {
+				err = fmt.Errorf("condition %d: %v", i, err)
+			}
+			return err
+		}
+	}
+	return nil
+}
+
+type RuleConditionType string
+
+func (r RuleConditionType) String() string {
+	return string(r)
+}
+
+const (
+	RuleConditionNameIs       RuleConditionType = "name_is"
+	RuleConditionNameStarts   RuleConditionType = "name_starts"
+	RuleConditionNameContains RuleConditionType = "name_contains"
+
+	RuleConditionDescriptionIs       RuleConditionType = "description_is"
+	RuleConditionDescriptionStarts   RuleConditionType = "description_starts"
+	RuleConditionDescriptionContains RuleConditionType = "description_contains"
+
+	RuleConditionContentIs       RuleConditionType = "content_is"
+	RuleConditionContentStarts   RuleConditionType = "content_starts"
+	RuleConditionContentContains RuleConditionType = "content_contains"
+
+	RuleConditionDateIs     RuleConditionType = "date_is"
+	RuleConditionDateAfter  RuleConditionType = "date_after"
+	RuleConditionDateBefore RuleConditionType = "date_before"
+
+	RuleConditionMetadataHasKey        RuleConditionType = "metadata_has_key"
+	RuleConditionMetadataHasKeyValue   RuleConditionType = "metadata_has_key_value"
+	RuleConditionMetadataCount         RuleConditionType = "metadata_count"
+	RuleConditionMetadataCountLessThan RuleConditionType = "metadata_count_less_than"
+	RuleConditionMetadataCountMoreThan RuleConditionType = "metadata_count_more_than"
+)
+
+var AllConditionTypes = []RuleConditionType{
+	RuleConditionNameIs,
+	RuleConditionNameStarts,
+	RuleConditionNameContains,
+
+	RuleConditionDescriptionIs,
+	RuleConditionDescriptionStarts,
+	RuleConditionDescriptionContains,
+
+	RuleConditionContentIs,
+	RuleConditionContentStarts,
+	RuleConditionContentContains,
+
+	RuleConditionDateIs,
+	RuleConditionDateAfter,
+	RuleConditionDateBefore,
+
+	RuleConditionMetadataHasKey,
+	RuleConditionMetadataHasKeyValue,
+	RuleConditionMetadataCount,
+	RuleConditionMetadataCountLessThan,
+	RuleConditionMetadataCountMoreThan,
+}
+
+type RuleCondition struct {
+	Id              int  `db:"id"`
+	RuleId          int  `db:"rule_id"`
+	Enabled         bool `db:"enabled"`
+	CaseInsensitive bool `db:"case_insensitive"`
+	// Inverted inverts the match result
+	Inverted      bool              `db:"inverted_match"`
+	ConditionType RuleConditionType `db:"condition_type"`
+
+	// IsRegex defines whether to apply regex pattern
+	IsRegex bool `db:"is_regex"`
+	// Value to compare against, if text field
+	Value   string `db:"value"`
+	DateFmt string `db:"date_fmt"`
+
+	// Metadata to operate with
+	MetadataKey       IntId `db:"metadata_key"`
+	MetadataValue     IntId `db:"metadata_value"`
+	MetadataKeyName   Text  `db:"metadata_key_name"`
+	MetadataValueName Text  `db:"metadata_value_name"`
+}
+
+func (r *RuleCondition) Validate() error {
+	err := errors.ErrInvalid
+
+	validType := false
+	for _, v := range AllConditionTypes {
+		if r.ConditionType == v {
+			validType = true
+			break
+		}
+	}
+
+	if !validType {
+		err.ErrMsg = fmt.Sprintf("invalid condition type: %s", r.ConditionType)
+		return err
+	}
+
+	if r.IsRegex {
+		_, regexErr := regexp.Compile(r.Value)
+		if regexErr != nil {
+			err.ErrMsg = "invalid regex"
+			err.Err = regexErr
+			return err
+		}
+	}
+
+	condText := r.ConditionType.String()
+	if strings.Contains(condText, "name") ||
+		strings.Contains(condText, "description") ||
+		strings.Contains(condText, "content") {
+		if r.HasMetadata() {
+			err.ErrMsg = condText + " cannot match metadata"
+			return err
+		}
+		if r.Value == "" {
+			err.ErrMsg = "matching value is empty"
+			return err
+		}
+	}
+
+	if r.ConditionType == RuleConditionMetadataHasKey {
+		if r.MetadataKey == 0 {
+			err.ErrMsg = "must have metadata key defined"
+			return err
+		}
+	}
+	if r.ConditionType == RuleConditionMetadataHasKeyValue {
+		if r.MetadataKey == 0 {
+			err.ErrMsg = "must have metadata key and value defined"
+			return err
+		}
+	}
+
+	if r.MetadataKey == 0 && r.MetadataValue == 0 {
+		// no metadata
+		return nil
+	}
+	if r.MetadataKey > 0 && r.MetadataValue > 0 {
+		// illegal metadata
+		return nil
+	}
+	err.ErrMsg = "invalid metadata"
+	return err
+}
+
+func (r *RuleCondition) HasMetadata() bool {
+	return r.MetadataKey > 0 && r.MetadataValue > 0
+}
+
+type RuleActionType string
+
+func (r RuleActionType) String() string {
+	return string(r)
+}
+
+const (
+	RuleActionSetName           RuleActionType = "name_set"
+	RuleActionAppendName        RuleActionType = "name_append"
+	RuleActionSetDescription    RuleActionType = "description_set"
+	RuleActionAppendDescription RuleActionType = "description_append"
+	RuleActionAddMetadata       RuleActionType = "metadata_add"
+	RuleActionRemoveMetadata    RuleActionType = "metadata_remove"
+	RuleActionSetDate           RuleActionType = "date_set"
+)
+
+type RuleAction struct {
+	Id      int  `db:"id"`
+	RuleId  int  `db:"rule_id"`
+	Enabled bool `db:"enabled"`
+	// OnCondition, if vs else
+	OnCondition bool `db:"on_condition"`
+
+	Action            RuleActionType `db:"action"`
+	Value             string         `db:"value"`
+	MetadataKey       IntId          `db:"metadata_key"`
+	MetadataValue     IntId          `db:"metadata_value"`
+	MetadataKeyName   Text           `db:"metadata_key_name"`
+	MetadataValueName Text           `db:"metadata_value_name"`
+}
+
+type MetadataRuleType string
+
+const (
+	MetadataMatchExact MetadataRuleType = "exact"
+	MetadataMatchRegex MetadataRuleType = "regex"
+)

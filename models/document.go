@@ -100,6 +100,26 @@ func (d *Document) SortAttributes() []string {
 	return d.FilterAttributes()
 }
 
+// HasMetadataKey returns true if document has given metadata key.
+func (d *Document) HasMetadataKey(keyId int) bool {
+	for _, v := range d.Metadata {
+		if v.KeyId == keyId {
+			return true
+		}
+	}
+	return false
+}
+
+// HasMetadataKeyValue returns true if document has given metadata key and value.
+func (d *Document) HasMetadataKeyValue(keyId, valueId int) bool {
+	for _, v := range d.Metadata {
+		if v.KeyId == keyId && v.ValueId == valueId {
+			return true
+		}
+	}
+	return false
+}
+
 // Metadata is metadata key-value pair assigned to document
 type Metadata struct {
 	KeyId   int    `db:"key_id" json:"key_id"`
@@ -128,7 +148,7 @@ type MetadataValue struct {
 	NumDocuments int       `db:"documents_count" json:"documents_count"`
 
 	// MatchDocuments instructs to try to automatically match MetadataValue inside documents
-	MatchDocuments bool     `db:"match_documents" json:"match_documents"`
-	MatchType      RuleType `db:"match_type" json:"match_type"`
-	MatchFilter    string   `db:"match_filter" json:"match_filter"`
+	MatchDocuments bool           `db:"match_documents" json:"match_documents"`
+	MatchType      RuleActionType `db:"match_type" json:"match_type"`
+	MatchFilter    string         `db:"match_filter" json:"match_filter"`
 }

@@ -19,6 +19,7 @@
 package models
 
 import (
+	"database/sql/driver"
 	"fmt"
 	"strconv"
 )
@@ -43,4 +44,53 @@ func GetPrettySize(bytes int64) string {
 	}
 	return fmt.Sprintf("%f B", size)
 
+}
+
+type IntId uint64
+
+func (i IntId) Value() (driver.Value, error) {
+	if i == 0 {
+		return nil, nil
+	}
+	return int64(i), nil
+}
+
+// Scan scans duration from postgres string: (00:00:00). Only hours-minutes-seconds are supported.
+func (i *IntId) Scan(src interface{}) error {
+	if src == nil {
+		*i = 0
+		return nil
+	}
+
+	isInt64, ok := src.(int64)
+	if ok {
+		*i = IntId(isInt64)
+		return nil
+	}
+	return fmt.Errorf("unknown type: %v", src)
+}
+
+type Text string
+
+func (t Text) Value() (driver.Value, error) {
+	return string(t), nil
+}
+
+func (t Text) String() string {
+	return string(t)
+}
+
+func (t *Text) Scan(src interface{}) error {
+	if src == nil {
+		*t = ""
+		return nil
+	}
+
+	isStr, ok := src.(string)
+	if ok {
+		*t = Text(isStr)
+		return nil
+	}
+
+	return fmt.Errorf("unknown type: %v", src)
 }

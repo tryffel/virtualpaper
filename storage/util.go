@@ -19,6 +19,8 @@
 package storage
 
 import (
+	"fmt"
+	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 	"regexp"
 )
@@ -71,4 +73,54 @@ type Resource interface {
 	Name() string
 
 	parseError(e error, action string) error
+}
+
+type resource struct {
+	name string
+	db   *sqlx.DB
+}
+
+func (r *resource) Name() string {
+	return r.name
+}
+
+func (r *resource) parseError(e error, action string) error {
+	return getDatabaseError(e, r, action)
+}
+
+type tx struct {
+	tx       *sqlx.Tx
+	ok       bool
+	resource Resource
+}
+
+func (r *resource) beginTx() (*tx, error) {
+	xTx, err := r.db.Beginx()
+	if err != nil {
+		return nil, fmt.Errorf("begin tx: %v", err)
+	}
+	tx := &tx{
+		tx:       xTx,
+		ok:       false,
+		resource: r,
+	}
+	return tx, nil
+}
+
+func (tx *tx) Close() {
+	var err error
+	if tx.ok {
+		err = tx.tx.Commit()
+		if err != nil {
+			err = getDatabaseError(err, tx.resource, "commit")
+		}
+	} else {
+		err := tx.tx.Rollback()
+		if err != nil {
+			err = getDatabaseError(err, tx.resource, "rollback")
+		}
+	}
+	if err != nil {
+		logrus.Errorf("close transaction: %v", err)
+	}
 }

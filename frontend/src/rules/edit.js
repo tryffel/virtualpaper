@@ -24,31 +24,151 @@ import {
     RadioButtonGroupInput,
     BooleanInput,
     ReferenceInput,
-    SelectInput,
+    SelectInput, ArrayInput, SimpleFormIterator,
+    useInput, Labeled, FormDataConsumer, useRecordContext,
+    FormWithRedirect, SaveButton, DeleteButton
 } from 'react-admin';
 
-import { Typography } from '@material-ui/core';
+import { Typography, Box, Grid, Toolbar} from '@material-ui/core';
+import Select from '@material-ui/core/Select';
+import MenuItem from '@material-ui/core/MenuItem';
+
+import MarkDownInputWithField from "ra-input-markdown";
+
 
 
 export const RuleEdit = (props) => (
     <Edit {...props} title={"Edit process rule"}>
         <SimpleForm>
-            <Typography variant="h5">Rule trigger</Typography>
-            <TextInput label="description" source="comment" fullWidth={true} />
-            <RadioButtonGroupInput source="type" fullWidth={true} choices={[
-                { id: 'regex', name: 'Regular expression' },
-                { id: 'exact', name: 'Match' },
+            <Typography variant="h5">Processing Rule</Typography>
+            <BooleanInput label="Enabled" source="enabled"/>
+            <TextInput source="name" fullWidth={true} />
+            <MarkDownInputWithField source="description" fullWidth={true} />
+
+            <RadioButtonGroupInput label="Match conditions" source="mode" fullWidth={true} choices={[
+                { id: 'match_all', name: 'Match all'},
+                { id: 'match_any', name: 'Match any'},
             ]} />
-            <TextInput label="Filter expression" source="filter" fullWidth={true} />
-            <BooleanInput label="Enabled" source="active"/>
-            <Typography variant="h5">Action</Typography>
-            <TextInput label="Date format" source="action.date_fmt" fullWidth={true}/>
-            <TextInput label="Date separator" source="action.date_separator" fullWidth={true}/>
-            <TextInput label="Description" source="action.description" fullWidth={true}/>
-            <ReferenceInput source="action.tag_id" reference="tags" allowEmpty label="Tag">
-                <SelectInput optionText="key" />
-            </ReferenceInput>
+            <Typography variant="h5">Rule Conditions</Typography>
+            <ArrayInput source="conditions" label="">
+                <ConditionEdit/>
+            </ArrayInput>
+            <Typography variant="h5">Rule Actions</Typography>
+            <ArrayInput source="actions" label="">
+                <ActionEdit/>
+            </ArrayInput>
         </SimpleForm>
     </Edit>
 );
 
+
+const ConditionTypeInput = (props) => {
+    return (
+        <SelectInput {...props} choices={[
+            {id: "name_is", name:"Name is" },
+            {id: "name_starts", name:" Name starts" },
+            {id: "name_contains", name:" Name contains" },
+
+            {id: "description_is", name:" Description is" },
+            {id: "description_starts", name:" Description starts" },
+            {id: "description_contains", name:" Description contains" },
+
+            {id: "content_is", name:" Text content" },
+            {id: "content_starts", name:" Text content" },
+            {id: "content_contains", name:" Text content" },
+
+            {id: "date_is", name:" Date is" },
+            {id: "date_after", name:" Date is" },
+            {id: "date_before", name:" Date is" },
+
+            {id: "metadata_has_key", name:" Metadata contains" },
+            {id: "metadata_has_key_value", name:" Metadata contains key-value" },
+            {id: "metadata_count", name:" Metadata count equals" },
+            {id: "metadata_count_less_than", name:" Metadata count less than" },
+            {id: "metadata_count_more_than", name:" Metadata count more than" },
+        ]} /> )
+}
+
+
+const ActionTypeInput = (props) => {
+    return (
+        <SelectInput {...props} choices={[
+            {id: "name_set", name:"Set name" },
+            {id: "name_append", name:"Append name" },
+            {id: "description_set", name:"Set description" },
+            {id: "description_append", name:"Append description" },
+            {id: "metadata_add", name:"Add metadata" },
+            {id: "metadata_remove", name:"Remove metadata" },
+            {id: "date_set", name:"Set date" },
+        ]}
+        />
+    )
+}
+
+
+DeleteButton.propTypes = {};
+const ConditionEdit = (props) => {
+
+    return (
+        props.record ?
+            <SimpleFormIterator {...props}>
+                <Grid container spacing={2}>
+                    <Grid container spacing={2}>
+                        <Grid item xs={3} md={6}>
+                            <BooleanInput label="Enabled" source="enabled"/>
+                        </Grid>
+                        <Grid item xs={3} md={6}>
+                            <BooleanInput label="Case insensitive" source="case_insensitive"/>
+                        </Grid>
+                        <Grid item xs={3} md={6}>
+                            <BooleanInput label="Inverted" source="inverted"/>
+                        </Grid>
+                        <Grid item xs={3} md={6}>
+                            <BooleanInput label="Regex" source="is_regex"/>
+                        </Grid>
+                    </Grid>
+                    <Grid container spacing={1}>
+                        <Grid item xs={6} md={8}>
+                            <ConditionTypeInput label="Type" source="condition_type"/>
+                        </Grid>
+                        <Grid item xs={6} md={8}>
+                            <TextInput label="Filter" source="value" fullWidth resettable/>
+                        </Grid>
+                        <Grid item xs={6} md={8}>
+                            <TextInput label="Date format" source="date_fmt" fullWidth resettable/>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </SimpleFormIterator>: null
+    )
+}
+
+
+const ActionEdit = (props) => {
+
+    return (
+        props.record ?
+            <SimpleFormIterator {...props}>
+                <Grid container spacing={2}>
+                    <Grid container spacing={2}>
+                        <Grid container display="flex" spacing={2}>
+                            <Grid item flex={1} ml="0.5em">
+                                <ActionTypeInput label="Type" source="action"/>
+                            </Grid>
+                            <Grid item flex={1} ml="0.5em">
+                                <BooleanInput label="Enabled" source="enabled"/>
+                            </Grid>
+                            <Grid item flex={1} mr="0.5em">
+                                <BooleanInput label="On condition" source="on_condition"/>
+                            </Grid>
+                        </Grid>
+                        <Grid container display="flex" spacing={2}>
+                            <Grid item flex={1} ml="0.5em">
+                                <TextInput label="Value" source="value"/>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </SimpleFormIterator>: null
+    )
+}

@@ -20,6 +20,7 @@ package storage
 
 import (
 	"fmt"
+	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 	"strings"
@@ -31,6 +32,14 @@ import (
 
 type MetadataStore struct {
 	db *sqlx.DB
+	sq squirrel.StatementBuilderType
+}
+
+func NewMetadataStore(db *sqlx.DB) *MetadataStore {
+	return &MetadataStore{
+		db: db,
+		sq: squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+	}
 }
 
 func (s MetadataStore) Name() string {
@@ -94,9 +103,9 @@ ORDER BY key ASC;
 }
 
 // GetKeys returns all possible metadata-keys for user.
-func (s *MetadataStore) GetKeys(userId int) (*[]models.MetadataKey, error) {
+func (s *MetadataStore) GetKeys(userId int, ids []int) (*[]models.MetadataKey, error) {
 	limit := config.MaxRows
-	sql := `
+	sqlFmt := `
 SELECT
     mk.id as id,
     mk.key as key,
@@ -106,13 +115,36 @@ SELECT
 FROM metadata_keys mk
 LEFT JOIN document_metadata dm ON mk.id = dm.key_id
 WHERE user_id = $1
+%s
 GROUP BY (mk.id)
 ORDER BY key ASC
-LIMIT $2;
+
 `
 
+	args := make([]interface{}, 1)
+	args[0] = userId
+
+	sql := ""
+
+	if len(ids) > 0 {
+		idQuery := "AND id IN ("
+		for i, v := range ids {
+			if i > 0 {
+				idQuery += ","
+			}
+			idQuery += fmt.Sprintf("$%d", i+2)
+			args = append(args, v)
+		}
+		idQuery += ")"
+		sql = fmt.Sprintf(sqlFmt, idQuery)
+		sql += fmt.Sprintf("LIMIT $%d;", len(ids)+2)
+	} else {
+		sql = fmt.Sprintf(sqlFmt, "")
+		sql += "LIMIT $2"
+	}
+	args = append(args, limit)
 	keys := &[]models.MetadataKey{}
-	err := s.db.Select(keys, sql, userId, limit)
+	err := s.db.Select(keys, sql, args...)
 	return keys, s.parseError(err, "get keys")
 }
 
@@ -160,11 +192,15 @@ LIMIT $3;
 
 // UpdateDocumentKeyValues updates key-values for document.
 func (s *MetadataStore) UpdateDocumentKeyValues(userId int, documentId string, metadata []*models.Metadata) error {
+	logrus.Debugf("update document %s metadata, key-values: %d", documentId, len(metadata))
+
 	var sql string
 	var err error
 
-	if userId != 0 {
-		sql = `
+	if len(metadata) > 0 {
+
+		if userId != 0 {
+			sql = `
 SELECT CASE WHEN EXISTS
     (
         SELECT id
@@ -177,13 +213,14 @@ SELECT CASE WHEN EXISTS
 END;
 `
 
-		var ownership bool
-		err = s.db.Get(&ownership, sql, documentId, userId)
-		if err != nil {
-			return s.parseError(err, "update key-values, check ownership")
-		}
-		if !ownership {
-			return errors.ErrRecordNotFound
+			var ownership bool
+			err = s.db.Get(&ownership, sql, documentId, userId)
+			if err != nil {
+				return s.parseError(err, "update key-values, check ownership")
+			}
+			if !ownership {
+				return errors.ErrRecordNotFound
+			}
 		}
 	}
 
@@ -204,22 +241,26 @@ END;
 		return s.parseError(tx.Rollback(), "rollback tx")
 	}
 
-	sql = `	
+	if len(metadata) > 0 {
+
+		sql = `	
 	INSERT INTO document_metadata (document_id, key_id, value_id)
 	VALUES `
 
-	var args []interface{}
-	args = append(args, documentId)
-	for i, v := range metadata {
-		if i > 0 {
-			sql += ", "
+		var args []interface{}
+		args = append(args, documentId)
+		for i, v := range metadata {
+			if i > 0 {
+				sql += ", "
+			}
+			value := fmt.Sprintf("($1, $%d, $%d)", i*2+2, i*2+3)
+			sql += value
+			args = append(args, v.KeyId, v.ValueId)
 		}
-		value := fmt.Sprintf("($1, $%d, $%d)", i*2+2, i*2+3)
-		sql += value
-		args = append(args, v.KeyId, v.ValueId)
-	}
 
-	_, err = tx.Exec(sql, args...)
+		_, err = tx.Exec(sql, args...)
+
+	}
 	if err != nil {
 		err = tx.Rollback()
 	} else {
@@ -444,4 +485,34 @@ func (s *MetadataStore) UpdateValue(value *models.MetadataValue) error {
 
 	_, err := s.db.Exec(sql, value.Value, value.MatchDocuments, value.MatchType, value.MatchFilter, value.Id)
 	return s.parseError(err, "update value")
+}
+
+// CheckKeyValuesExist verifies key-value pairs exist and user owns them.
+func (s *MetadataStore) CheckKeyValuesExist(userId int, values []models.Metadata) error {
+	array := make(squirrel.Or, len(values))
+	for i, key := range values {
+		array[i] = squirrel.And{squirrel.Eq{"key_id": key.KeyId}, squirrel.Eq{"id": key.ValueId}}
+	}
+
+	query := s.sq.Select("count(id)").From("metadata_values").
+		Where(squirrel.And{squirrel.Eq{"user_id": userId}, array})
+	sql, args, err := query.ToSql()
+	if err != nil {
+		err := errors.ErrInternalError
+		err.Err = err
+		return err
+	}
+	var count int
+	err = s.db.Get(&count, sql, args...)
+	if err != nil {
+		return getDatabaseError(err, s, "verify metadata exists")
+	}
+
+	if count == len(values) {
+		return nil
+	}
+
+	userErr := errors.ErrInvalid
+	userErr.ErrMsg = "metadata does not exist"
+	return userErr
 }

@@ -84,6 +84,11 @@ func checkCorrectSchemaVersion(db *storage.Database) (err error, current int) {
 
 	current = version.Level
 
+	if version.Level == 0 && version.Success == 0 {
+		err = errors.New("database needs initializing. Please run 'migrate' first.")
+		return
+	}
+
 	if version.Success == 0 {
 		err = errors.New("last migration has failed")
 		return
