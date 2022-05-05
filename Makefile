@@ -53,7 +53,7 @@ test-cleanup:
 	docker volume rm virtualpaper_postgres
 	docker volume rm virtualpaper_meilisearch
 
-test: test-start test-e2e test-stop
+test: test-unit test-start test-e2e test-stop
 
 
 run-frontend: 
