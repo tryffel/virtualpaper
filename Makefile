@@ -21,8 +21,40 @@ set-commit:
 run: 
 	go run main.go
 
-test: 
+test-unit: 
+	# skip e2e tests
+	go test ./... -short
+
+test-e2e:
 	go test ./...
+
+test-start: export TEST_VOLUME_ID=-test
+test-start:
+	docker-compose up -d
+	# wait for db to start
+	sleep 3
+	docker-compose run --rm --entrypoint "/app/virtualpaper --config /config/config.toml" server migrate
+	docker-compose run --rm --entrypoint "/app/virtualpaper --config /config/config.toml" server manage add-user -U user -P user -a false
+	docker-compose start server
+
+
+#test-start:
+#	export TEST_VOLUME_ID=test
+#	docker-compose up -d 
+#
+
+test-stop: export TEST_VOLUME_ID=-test
+test-stop:
+	docker-compose down -v
+
+test-cleanup: export TEST_VOLUME_ID=-test
+test-cleanup:
+	docker volume rm virtualpaper_data
+	docker volume rm virtualpaper_postgres
+	docker volume rm virtualpaper_meilisearch
+
+test: test-start test-e2e test-stop
+
 
 run-frontend: 
 	cd frontend; yarn start

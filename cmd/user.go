@@ -73,36 +73,50 @@ var addUserCmd = &cobra.Command{
 		}
 		defer db.Close()
 
-		userName, err := readUserInput("username", false)
 		if userName == "" {
-			logrus.Fatalf("username cannot be empty")
+			userName, err = readUserInput("username", false)
+			if userName == "" {
+				logrus.Fatalf("username cannot be empty")
+			}
 		}
-		firstPw, err := readUserInput("password", true)
-		secondPw, err := readUserInput("repeat password", true)
-		if firstPw != secondPw {
-			logrus.Fatalf("passwords do not match.")
+
+		if password == "" {
+			var firstPw string
+			var secondPw string
+			firstPw, err = readUserInput("password", true)
+			secondPw, err = readUserInput("repeat password", true)
+			if firstPw != secondPw {
+				logrus.Fatalf("passwords do not match.")
+			}
+			password = password
 		}
 
 		var admin bool
-		for {
-			isAdmin, err := readUserInput("user is administrator (y/n)", false)
-			if err != nil {
-				logrus.Errorf("error reading input: %v", err)
-			}
-			if isAdmin == "" || isAdmin == "n" {
-				admin = false
-				break
-			} else if isAdmin == "y" {
-				admin = true
-				break
-			} else {
-				logrus.Errorf("enter either y or n")
+		if strings.ToLower(optAdmin) == "true" {
+			admin = true
+		} else if strings.ToLower(optAdmin) == "false" {
+			admin = false
+		} else {
+			for {
+				isAdmin, err := readUserInput("user is administrator (y/n)", false)
+				if err != nil {
+					logrus.Errorf("error reading input: %v", err)
+				}
+				if isAdmin == "" || isAdmin == "n" {
+					admin = false
+					break
+				} else if isAdmin == "y" {
+					admin = true
+					break
+				} else {
+					logrus.Errorf("enter either y or n")
+				}
 			}
 		}
 
 		user := &models.User{}
 		user.Name = userName
-		err = user.SetPassword(firstPw)
+		err = user.SetPassword(password)
 		if err != nil {
 			logrus.Errorf("set password: %v", err)
 		}
@@ -165,8 +179,22 @@ var resetPwCMd = &cobra.Command{
 	},
 }
 
+var userName = ""
+var password = ""
+var optAdmin = ""
+
 func init() {
 	manageCmd.AddCommand(addUserCmd)
 	manageCmd.AddCommand(resetPwCMd)
+
+	addUserCmd.PersistentFlags().StringVarP(&optAdmin, "admin", "a", "false",
+		"Make user an administrator")
+	addUserCmd.PersistentFlags().StringVarP(&userName, "username", "U", "",
+		"New username")
+	addUserCmd.PersistentFlags().StringVarP(&password, "password", "P", "",
+		"New password")
+}
+
+func init() {
 
 }

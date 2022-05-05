@@ -1,5 +1,5 @@
-# Build env
-FROM golang:1.16.4-alpine3.13 as builder
+# Backend build
+FROM golang:1.16.4-alpine3.13 as backend
 
 RUN apk update
 RUN apk --no-cache add \
@@ -11,7 +11,25 @@ RUN apk --no-cache add \
     tesseract-ocr \
     tesseract-ocr-dev \
     imagemagick \
-    imagemagick-dev \
+    imagemagick-dev
+
+WORKDIR /virtualpaper
+COPY . /virtualpaper
+
+RUN go mod download
+RUN make build
+
+
+### Frontend build
+FROM golang:1.16.4-alpine3.13 as frontend
+
+RUN apk update
+RUN apk --no-cache add \
+    git \
+    make \
+    gcc \
+    g++ \
+    musl-dev \
     nodejs \
     npm 
 
@@ -20,9 +38,6 @@ RUN yarn add react-scripts
 
 WORKDIR /virtualpaper
 COPY . /virtualpaper
-
-RUN go mod download
-RUN make build
 
 RUN ls frontend
 RUN cd frontend; yarn install
@@ -47,9 +62,9 @@ VOLUME ["/config"]
 VOLUME ["/input"]
 VOLUME ["/usr/share/tessdata/"]
 
-COPY --from=builder /virtualpaper/virtualpaper /app/virtualpaper
-COPY --from=builder /virtualpaper/frontend/build /app/frontend
-COPY --from=builder /virtualpaper/config.sample.toml /config/config.toml
+COPY --from=backend /virtualpaper/virtualpaper /app/virtualpaper
+COPY --from=frontend /virtualpaper/frontend/build /app/frontend
+COPY --from=backend /virtualpaper/config.sample.toml /config/config.toml
 
 ENV VIRTUALPAPER_API_STATIC_CONTENT_PATH="/app/frontend"
 ENV VIRTUALPAPER_PROCESSING_DATA_DIR="/data"

@@ -88,6 +88,8 @@ func (m *Manager) Start() error {
 		return errors.New("already running")
 	}
 
+	logrus.Info("Start background worker")
+
 	logrus.Infof("Watch directory %s", config.C.Processing.InputDir)
 
 	if config.C.Processing.InputDir != "" {

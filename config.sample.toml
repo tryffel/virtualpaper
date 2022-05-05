@@ -25,7 +25,7 @@ port = 5432
 username = "virtualpaper"
 password = "very-secret-password"
 database = "virtualpaper"
-
+no_ssl = false
 
 
 # Meilisearch search-engine. A new meilisearch-index is created for each user-id.

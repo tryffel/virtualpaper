@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"strings"
 	"tryffel.net/go/virtualpaper/api"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/process"
@@ -36,8 +35,7 @@ var serveCmd = &cobra.Command{
 
 		schemaErr, _ := checkCorrectSchemaVersion(db)
 		if schemaErr != nil {
-			e := schemaErr.Error()
-			if strings.Contains(e, "schema needs migrating") && !noAutoMigrateDb {
+			if migrationNeeded && !noAutoMigrateDb {
 				logrus.Warningf("Start migrating database")
 				err := migration.Migrate(db.Engine(), migration.Migrations)
 				if err != nil {
@@ -66,6 +64,7 @@ var serveCmd = &cobra.Command{
 }
 
 var noAutoMigrateDb = false
+var migrationNeeded = false
 
 func init() {
 	serveCmd.PersistentFlags().BoolVarP(&noAutoMigrateDb, "no-migrate", "m", false,
@@ -86,6 +85,7 @@ func checkCorrectSchemaVersion(db *storage.Database) (err error, current int) {
 
 	if version.Level == 0 && version.Success == 0 {
 		err = errors.New("database needs initializing. Please run 'migrate' first.")
+		migrationNeeded = true
 		return
 	}
 
@@ -108,6 +108,7 @@ func checkCorrectSchemaVersion(db *storage.Database) (err error, current int) {
 
 	if version.Level < config.SchemaVersion {
 		err = fmt.Errorf("database schema needs migrating to version %d", config.SchemaVersion)
+		migrationNeeded = true
 		return
 	}
 	err = nil

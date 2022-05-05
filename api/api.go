@@ -155,6 +155,8 @@ func (a *Api) Serve() error {
 	if err != nil {
 		return err
 	}
+
+	logrus.Infof("listen http on %s", a.server.Addr)
 	return a.server.ListenAndServe()
 }
 

@@ -13,17 +13,24 @@ services:
     networks:
       - virtualpaper
     environment:
-      - VIRTUALPAPER_MEILISEARCH_URL="http://meilisearch:7700"
+      - VIRTUALPAPER_MEILISEARCH_URL=http://meilisearch:7700
       - VIRTUALPAPER_DATABASE_HOST=postgres
       - VIRTUALPAPER_DATABASE_PASSWORD=virtualpaper
       - VIRTUALPAPER_DATABASE_DATABASE=virtualpaper
       - VIRTUALPAPER_DATABASE_USERNAME=virtualpaper
       - VIRTUALPAPER_DATABASE_NO_SSL=true
+      - VIRTUALPAPER_API_HOST=0.0.0.0
+      - VIRTUALPAPER_LOG_LEVEL=debug
+    volumes:
+      - virtualpaper:/data
 
   meilisearch:
     image: getmeili/meilisearch:v0.25.2
     networks:
       - virtualpaper
+    volumes:
+      - meilisearch:/data
+
 
   postgres:
     image: postgres:14.2-alpine3.15
@@ -33,8 +40,20 @@ services:
       - POSTGRES_DB=virtualpaper
     networks:
       - virtualpaper
+    volumes:
+      - postgres:/var/lib/postgres
 
 networks:
   virtualpaper:
     driver: bridge
+
+
+volumes:
+  meilisearch:
+    name: virtualpaper_meilisearch${TEST_VOLUME_ID}
+  postgres:
+    name: virtualpaper_postgres${TEST_VOLUME_ID}
+  virtualpaper:
+    name: virtualpaper_data${TEST_VOLUME_ID}
+
 

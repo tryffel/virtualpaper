@@ -175,12 +175,12 @@ func validateToken(tokenString string, privateKey string) (string, error) {
 	return "", fmt.Errorf("invalid token")
 }
 
-type loginBody struct {
+type LoginRequest struct {
 	Username string `valid:"alphanum,required"`
 	Password string `valid:"required"`
 }
 
-type loginResponse struct {
+type LoginResponse struct {
 	UserId int
 	Token  string
 }
@@ -198,7 +198,7 @@ func (a *Api) login(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	dto := &loginBody{}
+	dto := &LoginRequest{}
 	err := unMarshalBody(req, dto)
 	if err != nil {
 		respBadRequest(resp, err.Error(), nil)
@@ -242,7 +242,7 @@ user agent: %s,
 		}
 	}
 
-	respBody := &loginResponse{
+	respBody := &LoginResponse{
 		UserId: userId,
 		Token:  token,
 	}
