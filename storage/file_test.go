@@ -73,7 +73,7 @@ func TestPreviewPath(t *testing.T) {
 	}{
 		{
 			args: args{documentId: "3f24f12f-7977-4bae-8a22-3a304397b979"},
-			want: "/data/previews/3/f/24f12f-7977-4bae-8a22-3a304397b979",
+			want: "/data/previews/3/f/24f12f-7977-4bae-8a22-3a304397b979.png",
 		},
 		{
 			args: args{documentId: ""},

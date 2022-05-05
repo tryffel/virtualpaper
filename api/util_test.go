@@ -75,9 +75,9 @@ func Test_getSortParams(t *testing.T) {
 	}
 
 	emptyReq, _ := http.NewRequest(http.MethodGet, "http://localhost", nil)
-	simpleReq, _ := http.NewRequest(http.MethodGet, "http://localhost?id=asc&name=desc", nil)
-	altReq, _ := http.NewRequest(http.MethodGet, "http://localhost?name=desc&id=ASC", nil)
-	skipReq, _ := http.NewRequest(http.MethodGet, "http://localhost?id=asc&name=desc&created_at=%a", nil)
+	simpleReq, _ := http.NewRequest(http.MethodGet, "http://localhost?sort=id&order=desc", nil)
+	altReq, _ := http.NewRequest(http.MethodGet, "http://localhost?sort=name&order=asc", nil)
+	skipReq, _ := http.NewRequest(http.MethodGet, "http://localhost?id=asc&name=desc&created_at=ab", nil)
 
 	tests := []struct {
 		name    string
@@ -99,8 +99,7 @@ func Test_getSortParams(t *testing.T) {
 				model: &TestStruct{},
 			},
 			want: []storage.SortKey{
-				{Key: "id", Order: false},
-				{Key: "name", Order: true},
+				{Key: "id", Order: true},
 			},
 			wantErr: false,
 		},
@@ -110,8 +109,7 @@ func Test_getSortParams(t *testing.T) {
 				model: &TestStruct{},
 			},
 			want: []storage.SortKey{
-				{Key: "id", Order: false},
-				{Key: "name", Order: true},
+				{Key: "name", Order: false},
 			},
 			wantErr: false,
 		},
@@ -121,7 +119,7 @@ func Test_getSortParams(t *testing.T) {
 				model: &TestStruct{},
 			},
 			want:    []storage.SortKey{},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {

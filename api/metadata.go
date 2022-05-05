@@ -48,32 +48,6 @@ type metadataValueRequest struct {
 	MatchFilter    string `json:"match_filter" valid:"-"`
 }
 
-func (m *metadataValueRequest) validate() error {
-	/*
-		invalidErr := errors.ErrInvalid
-
-		if m.MatchDocuments {
-			if models.RuleType(m.MatchType) == models.RegexRule {
-				_, err := regexp.Compile(m.MatchFilter)
-				if err != nil {
-					invalidErr.ErrMsg = fmt.Sprintf("invalid regex: %v", err.Error())
-					return invalidErr
-				}
-			} else if models.RuleType(m.MatchType) == models.ExactRule {
-				if len(m.MatchFilter) < 3 {
-					invalidErr.ErrMsg = "too short filter. Must be >=3 characters"
-					return invalidErr
-				}
-			} else {
-				invalidErr.ErrMsg = "unknown rule_type"
-				return invalidErr
-			}
-		}
-
-	*/
-	return nil
-}
-
 type metadataUpdateRequest struct {
 	Metadata []metadataRequest `valid:"required" json:"metadata"`
 }
@@ -267,11 +241,6 @@ func (a *Api) addMetadataValue(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = dto.validate()
-	if err != nil {
-		respError(resp, err, handler)
-		return
-	}
 	value := &models.MetadataValue{
 		UserId:         user,
 		KeyId:          keyId,
@@ -324,11 +293,6 @@ func (a *Api) updateMetadataValue(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = dto.validate()
-	if err != nil {
-		respError(resp, err, handler)
-		return
-	}
 	value := &models.MetadataValue{
 		Id:             valueId,
 		UserId:         user,
