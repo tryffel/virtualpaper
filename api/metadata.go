@@ -27,17 +27,17 @@ import (
 	"tryffel.net/go/virtualpaper/models"
 )
 
-type metadataRequest struct {
+type MetadataRequest struct {
 	KeyId   int `valid:"required" json:"key_id"`
 	ValueId int `valid:"required" json:"value_id"`
 }
 
-type metadataKeyRequest struct {
+type MetadataKeyRequest struct {
 	Key     string `json:"key" valid:"required"`
 	Comment string `json:"comment" valid:"-"`
 }
 
-type metadataValueRequest struct {
+type MetadataValueRequest struct {
 	// Value of new metadata
 	Value string `json:"value" valid:"required"`
 	// Optional comment
@@ -49,7 +49,7 @@ type metadataValueRequest struct {
 }
 
 type metadataUpdateRequest struct {
-	Metadata []metadataRequest `valid:"required" json:"metadata"`
+	Metadata []MetadataRequest `valid:"required" json:"metadata"`
 }
 
 func (m *metadataUpdateRequest) toMetadataArray() []*models.Metadata {
@@ -61,7 +61,7 @@ func (m *metadataUpdateRequest) toMetadataArray() []*models.Metadata {
 	return metadata
 }
 
-func (m metadataRequest) toMetadata() *models.Metadata {
+func (m MetadataRequest) toMetadata() *models.Metadata {
 	return &models.Metadata{
 		KeyId:   m.KeyId,
 		ValueId: m.ValueId,
@@ -192,7 +192,7 @@ func (a *Api) addMetadataKey(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	dto := &metadataKeyRequest{}
+	dto := &MetadataKeyRequest{}
 	err := unMarshalBody(req, dto)
 	if err != nil {
 		respError(resp, err, handler)
@@ -234,7 +234,7 @@ func (a *Api) addMetadataValue(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	dto := &metadataValueRequest{}
+	dto := &MetadataValueRequest{}
 	err = unMarshalBody(req, dto)
 	if err != nil {
 		respError(resp, err, handler)
@@ -286,7 +286,7 @@ func (a *Api) updateMetadataValue(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	dto := &metadataValueRequest{}
+	dto := &MetadataValueRequest{}
 	err = unMarshalBody(req, dto)
 	if err != nil {
 		respError(resp, err, handler)

@@ -87,7 +87,7 @@ type DocumentUpdateRequest struct {
 	Description string            `json:"description" valid:"-"`
 	Filename    string            `json:"filename" valid:"-"`
 	Date        int64             `json:"date" valid:"-"`
-	Metadata    []metadataRequest `json:"metadata" valid:"-"`
+	Metadata    []MetadataRequest `json:"metadata" valid:"-"`
 }
 
 func (a *Api) getDocuments(resp http.ResponseWriter, req *http.Request) {

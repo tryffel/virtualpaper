@@ -12,7 +12,11 @@ import (
 func TestLogin(t *testing.T) {
 	apiTest(t)
 
-	assertToken := func(wantCode int, wantToken bool) func(res *http.Response, req *http.Request) error {
+	if userToken != "" {
+		return
+	}
+
+	assertToken := func(wantCode int, wantToken bool, saveToken bool) func(res *http.Response, req *http.Request) error {
 		return func(res *http.Response, req *http.Request) error {
 			if res.StatusCode != wantCode {
 				return fmt.Errorf("invalid status code: %d != %d", res.StatusCode, wantCode)
@@ -30,16 +34,19 @@ func TestLogin(t *testing.T) {
 			if data.Token != "" && !wantToken {
 				return errors.New("Access token != ''")
 			}
+
+			if saveToken {
+				userToken = data.Token
+			}
 			return nil
 		}
 	}
 
-	test.Post("/api/v1/auth/login").BodyString(fmt.Sprintf(`{"Username": "%s", "Password": "%s"}`,
-		userName, userPassword)).SetHeader("Content-Type", "application/json").
-		Expect(t).Type("json").AssertFunc(assertToken(200, true)).Done()
+	test.IsJson().client.Post("/api/v1/auth/login").
+		BodyString(fmt.Sprintf(`{"Username": "%s", "Password": "%s"}`, userName, userPassword)).
+		Expect(t).Type("json").AssertFunc(assertToken(200, true, true)).Done()
 
-	test.Post("/api/v1/auth/login").BodyString(fmt.Sprintf(`{"Username": "%s", "Password": "%s"}`,
-		userName, "empty")).SetHeader("Content-Type", "application/json").
-		Expect(t).Type("json").AssertFunc(assertToken(401, false)).Done()
-
+	test.IsJson().client.Post("/api/v1/auth/login").
+		BodyString(fmt.Sprintf(`{"Username": "%s", "Password": "%s"}`, userName, "empty")).
+		Expect(t).Type("json").AssertFunc(assertToken(401, false, false)).Done()
 }

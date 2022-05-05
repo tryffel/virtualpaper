@@ -26,7 +26,7 @@ test-unit:
 	go test ./... -short
 
 test-e2e:
-	go test ./...
+	go test ./e2e
 
 test-start: export TEST_VOLUME_ID=-test
 test-start:
