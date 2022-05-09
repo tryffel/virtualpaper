@@ -334,16 +334,28 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 	}
 	var err error
 	err = req.ParseMultipartForm(1024 * 1024 * 500)
+	if err != nil {
+		userError := errors.ErrInvalid
+		userError.ErrMsg = fmt.Sprintf("invalid form: %v", err)
+		userError.Err = err
+		respError(resp, userError, handler)
+		return
+	}
 	reader, header, err := req.FormFile("file")
 	if err != nil {
 		userError := errors.ErrInvalid
-		userError.ErrMsg = err.Error()
+		userError.ErrMsg = fmt.Sprintf("invalid file: %v", err)
 		userError.Err = err
 		respError(resp, userError, handler)
 		return
 	}
 
 	mimetype := header.Header.Get("Content-Type")
+
+	if mimetype == "application/octet-stream" {
+		mimetype = "text/plain"
+	}
+
 	defer reader.Close()
 
 	tempHash := config.RandomString(10)
@@ -362,7 +374,7 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 
 	if !process.MimeTypeIsSupported(mimetype, header.Filename) {
 		e := errors.ErrInvalid
-		e.ErrMsg = "unsupported file type"
+		e.ErrMsg = fmt.Sprintf("unsupported file type: %v", header.Filename)
 		respError(resp, e, handler)
 		req.Body.Close()
 		return

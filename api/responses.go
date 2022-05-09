@@ -118,7 +118,7 @@ func respForbidden(resp http.ResponseWriter) {
 func respError(resp http.ResponseWriter, err error, handler string) {
 	var statuscode int
 	var reason string
-
+	logrus.WithField("handler", handler).Debugf("bad request: %v", err)
 	appError, ok := err.(errors.Error)
 	if ok {
 
