@@ -20,7 +20,9 @@ services:
       - VIRTUALPAPER_DATABASE_USERNAME=virtualpaper
       - VIRTUALPAPER_DATABASE_NO_SSL=true
       - VIRTUALPAPER_API_HOST=0.0.0.0
-      - VIRTUALPAPER_LOG_LEVEL=debug
+      - VIRTUALPAPER_LOGGING_LOG_LEVEL=DEBUG
+      - VIRTUALPAPER_PROCESSING_PANDOC_BIN=/usr/bin/pandoc
+
     volumes:
       - virtualpaper:/data
 
