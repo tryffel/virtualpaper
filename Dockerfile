@@ -54,6 +54,10 @@ RUN apk add \
     imagemagick-dev \
     poppler-utils
 
+RUN wget https://github.com/jgm/pandoc/releases/download/2.18/pandoc-2.18-linux-amd64.tar.gz
+RUN tar -xvf pandoc-2.18-linux-amd64.tar.gz
+
+
 RUN addgroup -S -g 1000 virtualpaper && \
     adduser -S -H -D -h /data -u 1000 -G virtualpaper virtualpaper
 
