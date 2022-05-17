@@ -119,6 +119,11 @@ func MimeTypeIsSupported(mimetype, filename string) bool {
 	mimetype = strings.ToLower(mimetype)
 	fileEnding := fileEndingFromName(filename)
 
+	if fileEnding == "jpg" && mimetype == "image/jpeg" {
+		// even if user uploads jpg, mimetype is still jpeg
+		fileEnding = "jpeg"
+	}
+
 	if mimetype != "" && fileEnding != "" {
 		for _, v := range mimeTypeToFileExtension[mimetype] {
 			if v == fileEnding {
