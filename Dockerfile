@@ -70,10 +70,18 @@ COPY --from=backend /virtualpaper/virtualpaper /app/virtualpaper
 COPY --from=frontend /virtualpaper/frontend/build /app/frontend
 COPY --from=backend /virtualpaper/config.sample.toml /config/config.toml
 
+COPY --from=backend /virtualpaper/docker/imagemagick-7-policy.xml /etc/ImageMagick-7/policy.xml
+COPY --from=backend /virtualpaper/docker/start.sh /app/start.sh
+
 ENV VIRTUALPAPER_API_STATIC_CONTENT_PATH="/app/frontend"
 ENV VIRTUALPAPER_PROCESSING_DATA_DIR="/data"
 ENV VIRTUALPAPER_PROCESSING_INPUT_DIR="/input"
 ENV VIRTUALPAPER_LOGGING_DIRECTORY="/log"
 
-ENTRYPOINT ["/app/virtualpaper", "--config", "/config/config.toml", "serve"]
+ENV VIRTUALPAPER_PROCESSING_PANDOC_BIN="/pandoc-2.18/bin/pandoc"
+ENV VIRTUALPAPER_PROCESSING_PDFTOTEXT_BIN="/usr/bin/pdftotext"
+ENV VIRTUALPAPER_PROCESSING_IMAGICK_BIN="/usr/bin/convert"
+
+
+ENTRYPOINT ["app/start.sh"]
 
