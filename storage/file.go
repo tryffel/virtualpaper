@@ -46,7 +46,7 @@ func DocumentPath(documentId string) string {
 // CreateDocumentDir creates (if not yet existing) directory for document.
 func CreateDocumentDir(documentId string) error {
 	path := path.Dir(DocumentPath(documentId))
-	err := os.MkdirAll(path, os.ModeDir)
+	err := os.MkdirAll(path, 0755|os.ModeSetgid|os.ModeSetuid)
 	if err != nil {
 		if errors.Is(err, os.ErrExist) {
 			return nil
@@ -74,7 +74,7 @@ func PreviewPath(documentId string) string {
 // CreatePreviewDir creates (if not yet existing) directory for preview.
 func CreatePreviewDir(documentId string) error {
 	path := path.Dir(PreviewPath(documentId))
-	err := os.MkdirAll(path, os.ModeDir)
+	err := os.MkdirAll(path, 0755|os.ModeSetgid|os.ModeSetuid)
 	if err != nil {
 		if errors.Is(err, os.ErrExist) {
 			return nil

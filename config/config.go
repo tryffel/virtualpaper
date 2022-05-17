@@ -253,7 +253,7 @@ func InitConfig() error {
 		}
 	}
 
-	err = os.Mkdir(C.Processing.DocumentsDir, 777)
+	err = os.Mkdir(C.Processing.DocumentsDir, os.ModePerm)
 	if err != nil {
 		if !errors.Is(err, os.ErrExist) {
 			logrus.Errorf("create documents directory: %v", err)
