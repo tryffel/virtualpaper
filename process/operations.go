@@ -20,35 +20,33 @@ package process
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"golang.org/x/image/font"
-	"golang.org/x/image/font/basicfont"
-	"golang.org/x/image/math/fixed"
-	"gopkg.in/gographics/imagick.v3/imagick"
 	"image"
 	"image/color"
 	"image/png"
 	"os"
+	"os/exec"
 	"strings"
+
+	"github.com/sirupsen/logrus"
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/basicfont"
+	"golang.org/x/image/math/fixed"
+	"tryffel.net/go/virtualpaper/config"
 )
 
 func generateThumbnail(rawFile string, previewFile string, page int, size int, mimetype string) error {
-
 	if mimetype == "text/plain" {
 		return generateThumbnailPlainText(rawFile, previewFile, size)
 	}
-
-	imagick.Initialize()
-	defer imagick.Terminate()
-
 	logrus.Debugf("run 'convert -thumbnail'")
 
 	args := []string{
-		"convert",
 		"-thumbnail", fmt.Sprintf("x%d", size),
 		"-background", "white",
-		"-alpha", "remove",
+		//"-alpha", "remove",
+		"-colorspace", "RGB",
 		rawFile + fmt.Sprintf("[%d]", page),
 		previewFile,
 	}
@@ -57,18 +55,24 @@ func generateThumbnail(rawFile string, previewFile string, page int, size int, m
 		logrus.Debugf("generate thumbnail: '%s'", strings.Join(args, " "))
 	}
 
-	msg, err := imagick.ConvertImageCommand(args)
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+
+	cmd := exec.Command(config.C.Processing.ImagickBin, args...)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	err := cmd.Run()
 	if err != nil {
-		logrus.Errorf("imagick msg: %v", msg)
-		return fmt.Errorf("imagick: %v", err)
+		logrus.Debugf("run %v: %v", args, err)
+		return fmt.Errorf("execute convert: %v", err)
+	}
+
+	stdErr := stderr.String()
+	if stdErr != "" {
+		logrus.Warningf("Imagemagick failed, stderr: %v", err)
+		return err
 	}
 	return nil
-
-}
-
-func GetImagickVersion() string {
-	ver, _ := imagick.GetVersion()
-	return ver
 }
 
 func generateThumbnailPlainText(rawFile string, previewFile string, size int) error {

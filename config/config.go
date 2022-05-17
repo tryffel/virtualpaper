@@ -63,6 +63,7 @@ type Processing struct {
 	OcrLanguages []string
 	PdfToTextBin string
 	PandocBin    string
+	ImagickBin   string
 
 	// application directories. Stored by default in ./media/{previews, documents}.
 	PreviewsDir  string
@@ -138,6 +139,7 @@ func ConfigFromViper() error {
 			OcrLanguages: viper.GetStringSlice("processing.ocr_languages"),
 			PdfToTextBin: viper.GetString("processing.pdftotext_bin"),
 			PandocBin:    viper.GetString("processing.pandoc_bin"),
+			ImagickBin:   viper.GetString("processing.imagick_bin"),
 		},
 		Meilisearch: Meilisearch{
 			Url:    viper.GetString("meilisearch.url"),
