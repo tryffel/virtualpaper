@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/otiai10/gosseract"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/gographics/imagick.v3/imagick"
 	"os"
 	"path"
 	"strings"
@@ -308,9 +307,7 @@ func (fp *fileProcessor) updateThumbnail(doc *models.Document, file *os.File) er
 	}
 
 	logrus.Infof("generate thumbnail for document %s", fp.document.Id)
-	_, err = imagick.ConvertImageCommand([]string{
-		"convert", "-thumbnail", "x500", "-background", "white", "-alpha", "remove", file.Name() + "[0]", output,
-	})
+	err = generateThumbnail(file.Name(), output, 0, 500, process.Document.Mimetype)
 
 	err = fp.db.DocumentStore.Update(doc)
 	if err != nil {

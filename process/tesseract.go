@@ -20,12 +20,13 @@ package process
 
 import (
 	"fmt"
-	"github.com/otiai10/gosseract"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/gographics/imagick.v3/imagick"
 	"os"
 	"path"
 	"path/filepath"
+	"time"
+
+	"github.com/otiai10/gosseract"
+	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/storage"
 )
@@ -41,10 +42,11 @@ func runOcr(inputImage, id string) (string, error) {
 		return text, fmt.Errorf("create tmp dir: %v", err)
 	}
 
+	logrus.Infof("Extract content for file %s with OCR", id)
+	logrus.Debugf("convert pdf to images")
+
 	imageFile := path.Join(dir, "preview.png")
-	_, err = imagick.ConvertImageCommand([]string{
-		"convert", "-density", "300", inputImage, "-depth", "8", imageFile,
-	})
+	err = generatePicture(inputImage, imageFile)
 	if err != nil {
 		return text, fmt.Errorf("generate pictures from pdf pages: %v", err)
 	}
@@ -62,15 +64,18 @@ func runOcr(inputImage, id string) (string, error) {
 			// root fileName
 			return nil
 		}
-		logrus.Debugf("OCR %s", fileName)
+		start := time.Now()
+		logrus.Infof("OCR file %s", fileName)
 		err = client.SetImage(fileName)
 		if err != nil {
 			return fmt.Errorf("set ocr image source: %v", err)
 		}
 		pageText, err := client.Text()
 		if err != nil {
-			return err
+			return fmt.Errorf("tesseract extract text: %v", err)
 		}
+		took := time.Now().Sub(start)
+		logrus.Infof("Extracted %s, took %.2f s, content length: %d", fileName, took.Seconds(), len(pageText))
 		*pages = append(*pages, pageText)
 		return nil
 	}

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/gographics/imagick.v3/imagick"
 	"math/rand"
 	"os"
 	"path"
@@ -235,14 +234,4 @@ func (m *Manager) scheduleNewOp(file string, doc *models.Document) {
 		id := rand.Intn(m.numtasks)
 		m.tasks[id].input <- op
 	}
-}
-
-func Init() {
-	logrus.Debugf("Initialize imagick instance")
-	imagick.Initialize()
-}
-
-func Deinit() {
-	logrus.Debugf("Release imagick instance")
-	imagick.Terminate()
 }

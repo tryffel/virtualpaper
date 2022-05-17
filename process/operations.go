@@ -20,60 +20,18 @@ package process
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"image"
 	"image/color"
 	"image/png"
 	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/basicfont"
 	"golang.org/x/image/math/fixed"
-	"tryffel.net/go/virtualpaper/config"
 )
-
-func generateThumbnail(rawFile string, previewFile string, page int, size int, mimetype string) error {
-	if mimetype == "text/plain" {
-		return generateThumbnailPlainText(rawFile, previewFile, size)
-	}
-	logrus.Debugf("run 'convert -thumbnail'")
-
-	args := []string{
-		"-thumbnail", fmt.Sprintf("x%d", size),
-		"-background", "white",
-		//"-alpha", "remove",
-		"-colorspace", "RGB",
-		rawFile + fmt.Sprintf("[%d]", page),
-		previewFile,
-	}
-
-	if logrus.IsLevelEnabled(logrus.DebugLevel) {
-		logrus.Debugf("generate thumbnail: '%s'", strings.Join(args, " "))
-	}
-
-	stdout := &bytes.Buffer{}
-	stderr := &bytes.Buffer{}
-
-	cmd := exec.Command(config.C.Processing.ImagickBin, args...)
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-	err := cmd.Run()
-	if err != nil {
-		logrus.Debugf("run %v: %v", args, err)
-		return fmt.Errorf("execute convert: %v", err)
-	}
-
-	stdErr := stderr.String()
-	if stdErr != "" {
-		logrus.Warningf("Imagemagick failed, stderr: %v", err)
-		return err
-	}
-	return nil
-}
 
 func generateThumbnailPlainText(rawFile string, previewFile string, size int) error {
 	logrus.Debugf("generate thumbnail for text file")

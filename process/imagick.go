@@ -19,6 +19,7 @@ package process
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"os/exec"
 	"regexp"
@@ -50,4 +51,53 @@ func GetImagickVersion() string {
 	ver := regex.FindString(stdout.String())
 	logrus.Infof("found imagemagick version %s", ver)
 	return ver
+}
+
+func callImagick(args ...string) error {
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+
+	logrus.Debugf("call imagick: %s, %v", config.C.Processing.ImagickBin, args)
+	cmd := exec.Command(config.C.Processing.ImagickBin, args...)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	err := cmd.Run()
+	stdErr := stderr.String()
+	if stdErr != "" {
+		logrus.Warningf("Imagemagick failed, stderr: %v", err)
+		return err
+	}
+	if err != nil {
+		logrus.Warningf("run %v: %v", args, err)
+		return fmt.Errorf("execute convert: %v", err)
+	}
+	return nil
+}
+
+func generateThumbnail(rawFile string, previewFile string, page int, size int, mimetype string) error {
+	if mimetype == "text/plain" {
+		return generateThumbnailPlainText(rawFile, previewFile, size)
+	}
+	logrus.Debugf("run 'convert -thumbnail'")
+
+	args := []string{
+		"-thumbnail", fmt.Sprintf("x%d", size),
+		"-background", "white",
+		//"-alpha", "remove",
+		"-colorspace", "RGB",
+		rawFile + fmt.Sprintf("[%d]", page),
+		previewFile,
+	}
+	return callImagick(args...)
+}
+
+func generatePicture(rawFile string, pictureFile string) error {
+	logrus.Debugf("run 'convert -thumbnail'")
+	args := []string{
+		"-density", "300",
+		rawFile,
+		"-depth", "8",
+		pictureFile,
+	}
+	return callImagick(args...)
 }

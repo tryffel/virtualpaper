@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	"tryffel.net/go/virtualpaper/api"
 	"tryffel.net/go/virtualpaper/config"
-	"tryffel.net/go/virtualpaper/process"
 	"tryffel.net/go/virtualpaper/storage"
 	"tryffel.net/go/virtualpaper/storage/migration"
 )
@@ -52,9 +51,6 @@ var serveCmd = &cobra.Command{
 			logrus.Fatalf("init server: %v", err)
 			return
 		}
-
-		process.Init()
-		defer process.Deinit()
 
 		err = server.Serve()
 		if err != nil {
