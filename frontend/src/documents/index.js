@@ -21,10 +21,12 @@ import { DocumentEdit} from "./edit";
 import { DocumentList} from "./list";
 import { DocumentCreate} from "./create";
 
-export default {
+const doc = {
     create: DocumentCreate,
     edit: DocumentEdit,
     list: DocumentList,
     show: DocumentShow,
 
 }
+
+export default doc;

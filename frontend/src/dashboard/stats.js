@@ -17,7 +17,7 @@
  */
 
 import * as React from "react";
-import {Card, Typography, Box, CardContent, Grid} from '@material-ui/core';
+import {Card, Typography, CardContent, Grid} from '@material-ui/core';
 
 
 export const SingleStat = (props) => {

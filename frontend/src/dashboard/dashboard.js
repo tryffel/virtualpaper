@@ -18,8 +18,7 @@
 
 
 import * as React from "react";
-import Card from '@material-ui/core/Card';
-import {Box, Grid, useMediaQuery} from '@material-ui/core';
+import {Grid} from '@material-ui/core';
 import {Error, Loading, useQueryWithStore} from 'react-admin';
 
 import { Stats } from "./stats";
