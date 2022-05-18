@@ -49,12 +49,11 @@ are not fully searchable by their content.
 ## Server
 You need Go 1.15 or later installed and configured.
 
-In addition, you need Tesseract with headers and Imagemagick-v7 with headers installed. 
+In addition, you need Tesseract with headers and Imagemagick-v7. 
 See Dockerfile for more info. Some distributions (e.g. Debian) ship Imagemagick-v6 by default. 
-Virtualpaper can use Imagemagick v6 as well, but you need to apply the provided imagick6.patch
-with ```git apply imagick6.patch``` and then try to compile.
-
 It is recommended to install ```poppler-utils``` for getting reliable results on pdfs that contain text (and not images).
+Also ```pandoc``` is recommended.
+Please configure the locations for these executables in the configuration file. 
 
 Build server with:
 ```make build```
@@ -83,9 +82,16 @@ All configuration variable can be overridden with environment variables, e.g.:
 
 
 # Run
-virtualpaper --config config.toml serve
+Virtualpaper can be run directly or with docker. 
+Docker is easiest to get started with.
 
-# Docker
+## Docker
+
+The easiest way to get started is by using the provided docker-compose file:
+```
+docker-compose up
+```
+
 copy config.sample.toml to e.g. config-dir/config.toml.
 
 By default, docker file includes only English-dataset for tesseract OCR engine. To use other languages,
@@ -122,6 +128,9 @@ docker run -it \
     tryffel/virtualpaper:latest manage reset-password
 ```
 
+## Manually
+```virtualpaper --config config.toml serve```
+
 # Usage
 
 1. Create user with command 'manage add-user'.
@@ -138,5 +147,26 @@ Start frontend in development mode:
 Start backend:
 ```make run```
 
-Run unit-tests with: 
-```make tests```
+Spin up a development stack:
+```make test-start```
+
+Stop development stack:
+```make test-stop```
+
+## Tests (backend):
+
+Unit tests:
+```make test-unit```
+
+Integration tests:
+```make test-integration```
+
+End-to-end tests (requires running server instance):
+```make test-e2e```
+e2e-tests communicate with the actual server and thus needs a working connection.
+Before running e2e tests, start the server with ```make test-start```.
+Also be sure the cleanup the server environment before running the e2e tests: ```make test-stop```.
+
+All tests:
+```make test```
+
