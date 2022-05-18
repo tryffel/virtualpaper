@@ -20,14 +20,15 @@ package api
 
 import (
 	"fmt"
-	"github.com/asaskevich/govalidator"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/asaskevich/govalidator"
+	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
@@ -657,6 +658,52 @@ func (a *Api) requestDocumentProcessing(resp http.ResponseWriter, req *http.Requ
 		if err != nil {
 			logrus.Errorf("schedule document processing: %v", err)
 		}
+	}
+	respOk(resp, nil)
+}
+
+func (a *Api) deleteDocument(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route DELETE /api/v1/documents/:id Documents DeleteDocument
+	// Delete document
+	// Responses:
+	//   200: RespOk
+	//   400: RespBadRequest
+	//   401: RespForbidden
+	//   403: RespNotFound
+	//   500: RespInternalError
+
+	handler := "Api.deleteDocument"
+	user, ok := getUserId(req)
+	if !ok {
+		logrus.Errorf("no user in context")
+		respInternalError(resp)
+		return
+	}
+	id := getParamId(req)
+	owns, err := a.db.DocumentStore.UserOwnsDocument(id, user)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	if !owns {
+		respForbidden(resp)
+		return
+	}
+
+	logrus.Infof("Request user %d removing document %d", user, id)
+
+	err = a.search.DeleteDocument(id, user)
+	if err != nil {
+		logrus.Errorf("delete document from search index: %v", err)
+		respInternalError(resp)
+	}
+
+	process.DeleteDocument(id)
+	err = a.db.DocumentStore.DeleteDocument(user, id)
+	if err != nil {
+		respError(resp, err, handler)
+		return
 	}
 	respOk(resp, nil)
 }

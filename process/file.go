@@ -2,12 +2,13 @@ package process
 
 import (
 	"fmt"
-	"github.com/otiai10/gosseract"
-	"github.com/sirupsen/logrus"
 	"os"
 	"path"
 	"strings"
 	"time"
+
+	"github.com/otiai10/gosseract"
+	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
@@ -830,4 +831,22 @@ func (fp *fileProcessor) completeProcessingStep(process *models.ProcessItem, job
 	if err != nil {
 		logrus.Errorf("save job to database: %v", err)
 	}
+}
+
+//DeleteDocument deletes original document and its preview file.
+func DeleteDocument(docId string) error {
+	previewPath := storage.PreviewPath(docId)
+	docPath := storage.DocumentPath(docId)
+
+	logrus.Debugf("delete preview file %s", previewPath)
+	err := os.Remove(previewPath)
+	if err != nil {
+		return fmt.Errorf("remove thumbnail: %v", err)
+	}
+	logrus.Debugf("delete document file %s", previewPath)
+	err = os.Remove(docPath)
+	if err != nil {
+		return fmt.Errorf("remove document file: %v", err)
+	}
+	return nil
 }

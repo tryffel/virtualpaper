@@ -20,8 +20,9 @@ package storage
 
 import (
 	"fmt"
-	"github.com/jmoiron/sqlx"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 )
@@ -249,5 +250,17 @@ WHERE id=$1
 
 	_, err := s.db.Exec(sql, doc.Id, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
 		doc.Date, doc.UpdatedAt, doc.Description)
+	return s.parseError(err, "update")
+}
+
+func (s *DocumentStore) DeleteDocument(userId int, docId string) error {
+	sql := `
+	DELETE FROM 
+	documents 
+	WHERE
+	user_id = $1 AND id = $2
+	`
+
+	_, err := s.db.Exec(sql, userId, docId)
 	return s.parseError(err, "update")
 }

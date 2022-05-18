@@ -2,11 +2,12 @@ package search
 
 import (
 	"fmt"
-	"github.com/meilisearch/meilisearch-go"
-	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/meilisearch/meilisearch-go"
+	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/storage"
@@ -195,6 +196,15 @@ func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 		return fmt.Errorf("index documents: %v", err)
 	}
 
+	return nil
+}
+
+func (e *Engine) DeleteDocument(docId string, userId int) error {
+
+	_, err := e.client.Index(indexName(userId)).DeleteDocument(docId)
+	if err != nil {
+		return fmt.Errorf("delete documents: %v", err)
+	}
 	return nil
 }
 
