@@ -148,7 +148,7 @@ type MetadataValue struct {
 	NumDocuments int       `db:"documents_count" json:"documents_count"`
 
 	// MatchDocuments instructs to try to automatically match MetadataValue inside documents
-	MatchDocuments bool           `db:"match_documents" json:"match_documents"`
-	MatchType      RuleActionType `db:"match_type" json:"match_type"`
-	MatchFilter    string         `db:"match_filter" json:"match_filter"`
+	MatchDocuments bool             `db:"match_documents" json:"match_documents"`
+	MatchType      MetadataRuleType `db:"match_type" json:"match_type"`
+	MatchFilter    string           `db:"match_filter" json:"match_filter"`
 }

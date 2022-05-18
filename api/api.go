@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"path"
 	"time"
+	"tryffel.net/go/virtualpaper/models"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/gorilla/mux"
@@ -264,4 +265,8 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 
 func init() {
 	govalidator.SetFieldsRequiredByDefault(true)
+	govalidator.TagMap["metadata_rule_type"] = func(str string) bool {
+		m := models.MetadataRuleType(str)
+		return m == models.MetadataMatchExact || m == models.MetadataMatchRegex
+	}
 }

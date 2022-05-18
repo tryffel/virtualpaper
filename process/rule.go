@@ -448,8 +448,8 @@ func matchMetadata(document *models.Document, values *[]models.MetadataValue) er
 
 var reRegexHasSubMatch = regexp.MustCompile("\\(.+\\)")
 
-func documentMatchesFilter(document *models.Document, ruleType models.RuleActionType, filter string) (string, error) {
-	if ruleType == models.RuleActionType(models.MetadataMatchExact) {
+func documentMatchesFilter(document *models.Document, ruleType models.MetadataRuleType, filter string) (string, error) {
+	if ruleType == models.MetadataMatchExact {
 		lowerContent := strings.ToLower(document.Content)
 		lowerRule := strings.ToLower(filter)
 		contains, err := matchTextAllowTypo(lowerRule, lowerContent, false, false)
@@ -458,7 +458,7 @@ func documentMatchesFilter(document *models.Document, ruleType models.RuleAction
 		} else {
 			return "", err
 		}
-	} else if ruleType == models.RuleActionType(models.MetadataMatchRegex) {
+	} else if ruleType == models.MetadataMatchRegex {
 		// if regex captures submatch, return first submatch (not the match itself),
 		// else return regex match
 		re, err := regexp.Compile(filter)

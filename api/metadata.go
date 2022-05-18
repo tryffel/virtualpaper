@@ -44,7 +44,7 @@ type MetadataValueRequest struct {
 	Comment string `json:"comment" valid:"-"`
 	// MatchDocuments instructs to try to match documents for this value.
 	MatchDocuments bool   `json:"match_documents" valid:"-"`
-	MatchType      string `json:"match_type" valid:"-"`
+	MatchType      string `json:"match_type" valid:"metadata_rule_type"`
 	MatchFilter    string `json:"match_filter" valid:"-"`
 }
 
@@ -220,6 +220,7 @@ func (a *Api) addMetadataValue(resp http.ResponseWriter, req *http.Request) {
 	// Add metadata key values
 	// Responses:
 	//  200: MetadataKeyValueResponse
+	//  400: String
 	handler := "Api.addMetadataValue"
 	user, ok := getUserId(req)
 	if !ok {
@@ -248,8 +249,18 @@ func (a *Api) addMetadataValue(resp http.ResponseWriter, req *http.Request) {
 		CreatedAt:      time.Now(),
 		Comment:        dto.Comment,
 		MatchDocuments: dto.MatchDocuments,
-		//MatchType:      models.RuleType(dto.MatchType),
-		MatchFilter: dto.MatchFilter,
+		MatchType:      models.MetadataRuleType(dto.MatchType),
+		MatchFilter:    dto.MatchFilter,
+	}
+
+	if value.MatchType == "" {
+		value.MatchType = models.MetadataMatchExact
+	}
+	if value.MatchType != models.MetadataMatchRegex && value.MatchType != models.MetadataMatchExact {
+		err := errors.ErrInvalid
+		err.ErrMsg = "match type must be either exact or regex"
+		respError(resp, err, handler)
+		return
 	}
 
 	err = a.db.MetadataStore.CreateValue(user, value)
@@ -300,8 +311,8 @@ func (a *Api) updateMetadataValue(resp http.ResponseWriter, req *http.Request) {
 		Value:          dto.Value,
 		Comment:        dto.Comment,
 		MatchDocuments: dto.MatchDocuments,
-		//MatchType:      models.RuleType(dto.MatchType),
-		MatchFilter: dto.MatchFilter,
+		MatchType:      models.MetadataRuleType(dto.MatchType),
+		MatchFilter:    dto.MatchFilter,
 	}
 
 	ownerShip, err := a.db.MetadataStore.UserHasKeyValue(user, keyId, valueId)

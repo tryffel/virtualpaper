@@ -16,112 +16,117 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
-    required,
-    Button,
-    SaveButton,
-    TextInput,
-    BooleanInput,
-    useCreate,
-    useNotify,
-    FormWithRedirect,
-    useRefresh, RadioButtonGroupInput
-} from 'react-admin';
-import IconContentAdd from '@material-ui/icons/Add';
-import IconCancel from '@material-ui/icons/Cancel';
+  required,
+  Button,
+  SaveButton,
+  TextInput,
+  BooleanInput,
+  useCreate,
+  useNotify,
+  FormWithRedirect,
+  useRefresh,
+  RadioButtonGroupInput,
+} from "react-admin";
+import IconContentAdd from "@material-ui/icons/Add";
+import IconCancel from "@material-ui/icons/Cancel";
 
-import Dialog from '@material-ui/core/Dialog';
-import DialogTitle from '@material-ui/core/DialogTitle';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogActions from '@material-ui/core/DialogActions';
-
+import Dialog from "@material-ui/core/Dialog";
+import DialogTitle from "@material-ui/core/DialogTitle";
+import DialogContent from "@material-ui/core/DialogContent";
+import DialogActions from "@material-ui/core/DialogActions";
 
 function MetadataValueCreateButton({ onChange, record }) {
-    const [showDialog, setShowDialog] = useState(false);
-    const [create, { loading }] = useCreate('metadata/values', {value:""});
-    const notify = useNotify();
-    const refresh = useRefresh();
+  const [showDialog, setShowDialog] = useState(false);
+  const [create, { loading }] = useCreate("metadata/values", { value: "" });
+  const notify = useNotify();
+  const refresh = useRefresh();
 
-    const handleClick = () => {
-        setShowDialog(true);
-    };
+  const handleClick = () => {
+    setShowDialog(true);
+  };
 
-    const handleCloseClick = () => {
-        setShowDialog(false);
-    };
+  const handleCloseClick = () => {
+    setShowDialog(false);
+  };
 
-    const handleSubmit = async values => {
-        create(
-            { payload: { data: values, key_id: record.id} },
-            {
-                onSuccess: () => {
-                    setShowDialog(false);
-                    refresh();
-                },
-                onFailure: ({ error }) => {
-                    notify(error.message, 'error');
-                }
-            }
-        );
-    };
-
-    return (
-        <>
-            <Button onClick={handleClick} label="ra.action.create">
-                <IconContentAdd />
-            </Button>
-            <Dialog
-                fullWidth
-                open={showDialog}
-                onClose={handleCloseClick}
-                aria-label="Create new metadata value"
-            >
-                <DialogTitle>Add new metadata</DialogTitle>
-
-                <FormWithRedirect
-                    resource="metadata/keys"
-                    save={handleSubmit}
-                    render={({
-                                 handleSubmitWithRedirect,
-                                 pristine,
-                                 saving
-                             }) => (
-                        <>
-                            <DialogContent>
-                                <TextInput source="value" validate={required()} fullWidth />
-                                <TextInput label="description" source="comment" fullWidth />
-                                <BooleanInput label="Automatic matching" source="match_documents"/>
-                                <RadioButtonGroupInput source="match_type" fullWidth={true} choices={[
-                                    { id: 'regex', name: 'Regular expression' },
-                                    { id: 'exact', name: 'Match' },
-                                ]} />
-                                <TextInput label="Filter expression" source="match_filter" fullWidth={true} />
-                            </DialogContent>
-                            <DialogActions>
-                                <Button
-                                    label="ra.action.cancel"
-                                    onClick={handleCloseClick}
-                                    disabled={loading}
-                                >
-                                    <IconCancel />
-                                </Button>
-                                <SaveButton
-                                    handleSubmitWithRedirect={
-                                        handleSubmitWithRedirect
-                                    }
-                                    pristine={pristine}
-                                    saving={saving}
-                                    disabled={loading}
-                                />
-                            </DialogActions>
-                        </>
-                    )}
-                />
-            </Dialog>
-        </>
+  const handleSubmit = async (values) => {
+    create(
+      { payload: { data: values, key_id: record.id } },
+      {
+        onSuccess: () => {
+          setShowDialog(false);
+          refresh();
+        },
+        onFailure: ({ error }) => {
+          notify(error.message, "error");
+        },
+      }
     );
+  };
+
+  return (
+    <>
+      <Button onClick={handleClick} label="ra.action.create">
+        <IconContentAdd />
+      </Button>
+      <Dialog
+        fullWidth
+        open={showDialog}
+        onClose={handleCloseClick}
+        aria-label="Create new metadata value"
+      >
+        <DialogTitle>Add new metadata</DialogTitle>
+
+        <FormWithRedirect
+          resource="metadata/keys"
+          save={handleSubmit}
+          render={({ handleSubmitWithRedirect, pristine, saving }) => (
+            <>
+              <DialogContent>
+                <TextInput source="value" validate={required()} fullWidth />
+                <BooleanInput
+                  label="Automatic matching"
+                  source="match_documents"
+                />
+                <RadioButtonGroupInput
+                  source="match_type"
+                  fullWidth={true}
+                  isRequired={true}
+                  defaultValue={"exact"}
+                  choices={[
+                    { id: "exact", name: "Exact match" },
+                    { id: "regex", name: "Regular expression" },
+                  ]}
+                />
+                <TextInput
+                  label="Filter expression"
+                  source="match_filter"
+                  fullWidth={true}
+                />
+              </DialogContent>
+              <DialogActions>
+                <Button
+                  label="ra.action.cancel"
+                  onClick={handleCloseClick}
+                  disabled={loading}
+                >
+                  <IconCancel />
+                </Button>
+                <SaveButton
+                  handleSubmitWithRedirect={handleSubmitWithRedirect}
+                  pristine={pristine}
+                  saving={saving}
+                  disabled={loading}
+                />
+              </DialogActions>
+            </>
+          )}
+        />
+      </Dialog>
+    </>
+  );
 }
 
 export default MetadataValueCreateButton;
