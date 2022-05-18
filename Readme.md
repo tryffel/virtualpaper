@@ -1,5 +1,7 @@
 # Virtualpaper
 
+![Screenshot](screenshot-document-search.png)
+
 Virtualpaper is a text document management solution, featuring automatic content extraction and 
 powerful search for all content. Documents are not stored in hierarchical directories, instead it relies
 on completely user-editable key-value metadata. Think of it as not having a single hierarchy, but as many views to 
