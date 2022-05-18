@@ -41,6 +41,7 @@ func runOcr(inputImage, id string) (string, error) {
 	if err != nil {
 		return text, fmt.Errorf("create tmp dir: %v", err)
 	}
+	defer os.RemoveAll(dir)
 
 	logrus.Infof("Extract content for file %s with OCR", id)
 	logrus.Debugf("convert pdf to images")
