@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import React, { useState } from "react";
+import React from "react";
 import {
   required,
   Button,
@@ -40,10 +40,6 @@ const MetadataValueUpdateDialog = (props) => {
   const [update, { loading, loaded, error }] = useUpdate("metadata/values");
   const notify = useNotify();
   const refresh = useRefresh();
-
-  const handleClick = () => {
-    props.setShowDialog(true);
-  };
 
   const handleCloseClick = () => {
     props.setShowDialog(false);
