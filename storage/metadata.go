@@ -25,7 +25,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
-	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 )
@@ -103,48 +102,28 @@ ORDER BY key ASC;
 }
 
 // GetKeys returns all possible metadata-keys for user.
-func (s *MetadataStore) GetKeys(userId int, ids []int) (*[]models.MetadataKey, error) {
-	limit := config.MaxRows
-	sqlFmt := `
-SELECT
-    mk.id as id,
-    mk.key as key,
-    mk.comment as comment,
-    mk.created_at as created_at,
-    COUNT(dm.document_id) as documents_count
-FROM metadata_keys mk
-LEFT JOIN document_metadata dm ON mk.id = dm.key_id
-WHERE user_id = $1
-%s
-GROUP BY (mk.id)
-ORDER BY key ASC
-
-`
-
-	args := make([]interface{}, 1)
-	args[0] = userId
-
-	sql := ""
+func (s *MetadataStore) GetKeys(userId int, ids []int, sort SortKey, paging Paging) (*[]models.MetadataKey, error) {
+	paging.Validate()
+	sort.Validate("id")
+	query := s.sq.Select("mk.id as id", "mk.key as key", "mk.comment as comment",
+		"mk.created_at as created_at", "COUNT(dm.document_id) as documents_count").
+		From("metadata_keys mk").LeftJoin("document_metadata dm ON mk.id = dm.key_id").
+		Where(squirrel.Eq{"user_id": userId}).GroupBy("mk.id")
 
 	if len(ids) > 0 {
-		idQuery := "AND id IN ("
-		for i, v := range ids {
-			if i > 0 {
-				idQuery += ","
-			}
-			idQuery += fmt.Sprintf("$%d", i+2)
-			args = append(args, v)
-		}
-		idQuery += ")"
-		sql = fmt.Sprintf(sqlFmt, idQuery)
-		sql += fmt.Sprintf("LIMIT $%d;", len(ids)+2)
-	} else {
-		sql = fmt.Sprintf(sqlFmt, "")
-		sql += "LIMIT $2"
+		query = query.Where(squirrel.Eq{"id": ids})
 	}
-	args = append(args, limit)
+
+	query = query.Limit(uint64(paging.Limit)).Offset(uint64(paging.Offset))
+	query = query.OrderBy(sort.Key + " " + sort.SortOrder())
 	keys := &[]models.MetadataKey{}
-	err := s.db.Select(keys, sql, args...)
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("construct sql: %v", err)
+	}
+	logrus.Info(sql, args)
+	err = s.db.Select(keys, sql, args...)
 	return keys, s.parseError(err, "get keys")
 }
 
@@ -164,29 +143,30 @@ AND id = $2;
 }
 
 // GetValues returns all values to given key.
-func (s *MetadataStore) GetValues(userId int, keyId int) (*[]models.MetadataValue, error) {
-	limit := config.MaxRows
+func (s *MetadataStore) GetValues(userId int, keyId int, sort SortKey, paging Paging) (*[]models.MetadataValue, error) {
+	paging.Validate()
+	sort.Validate("id")
+	query := s.sq.Select(
+		"mv.id as id",
+		"mv.value as value",
+		"mv.created_at as created_at",
+		"match_documents",
+		"match_type",
+		"match_filter",
+		"count(dm.document_id) as documents_count").
+		From("metadata_values mv").
+		LeftJoin("document_metadata dm on mv.id = dm.value_id").
+		Where(squirrel.Eq{"mv.user_id": userId}).
+		Where(squirrel.Eq{"mv.key_id": keyId}).GroupBy("mv.id", "mv.value").
+		OrderBy(sort.Key + " " + sort.SortOrder()).Limit(uint64(paging.Limit)).Offset(uint64(paging.Offset))
 
-	sql := `
-SELECT
-    mv.id as id,
-    mv.value as value,
-    mv.created_at as created_at,
-    match_documents,
-    match_type,
-    match_filter,
-    count(dm.document_id) as documents_count
-FROM metadata_values mv
-LEFT JOIN document_metadata dm on mv.id = dm.value_id
-WHERE  mv.user_id = $1
-  AND mv.key_id = $2
-GROUP BY (mv.id, mv.value)
-ORDER BY mv.value ASC
-LIMIT $3;
-`
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("construct sql: %v", err)
+	}
 
 	values := &[]models.MetadataValue{}
-	err := s.db.Select(values, sql, userId, keyId, limit)
+	err = s.db.Select(values, sql, args...)
 	return values, s.parseError(err, "get key values")
 }
 

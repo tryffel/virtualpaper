@@ -137,6 +137,16 @@ type MetadataKey struct {
 	NumDocuments int       `db:"documents_count" json:"documents_count"`
 }
 
+func (m *MetadataKey) Update() {}
+
+func (m *MetadataKey) FilterAttributes() []string {
+	return []string{"id", "key", "created_at", "comment", "documents_count"}
+}
+
+func (m *MetadataKey) SortAttributes() []string {
+	return m.FilterAttributes()
+}
+
 type MetadataValue struct {
 	Id           int       `db:"id" json:"id"`
 	UserId       int       `db:"user_id" json:"-"`
@@ -151,4 +161,15 @@ type MetadataValue struct {
 	MatchDocuments bool             `db:"match_documents" json:"match_documents"`
 	MatchType      MetadataRuleType `db:"match_type" json:"match_type"`
 	MatchFilter    string           `db:"match_filter" json:"match_filter"`
+}
+
+func (m *MetadataValue) Update() {}
+
+func (m *MetadataValue) FilterAttributes() []string {
+	return []string{"id", "key", "value", "created_at", "comment", "documents_count",
+		"match_documents", "match_type", "match_filter"}
+}
+
+func (m *MetadataValue) SortAttributes() []string {
+	return m.FilterAttributes()
 }

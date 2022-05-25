@@ -25,6 +25,7 @@ import (
 	"time"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/storage"
 )
 
 type MetadataRequest struct {
@@ -81,13 +82,35 @@ func (a *Api) getMetadataKeys(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	paging, err := getPaging(req)
+	if err != nil {
+		logrus.Warningf("invalid paging: %v", err)
+		paging.Limit = 100
+		paging.Offset = 0
+	}
+
+	sort, err := getSortParams(req, &models.MetadataKey{})
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	var sortfield = "name"
+	var sortOrder = true
+
+	if len(sort) > 0 {
+		sortfield = sort[0].Key
+		sortOrder = sort[0].Order
+	}
+
 	filter, err := getMetadataFilter(req)
 	if err != nil {
 		respError(resp, fmt.Errorf("get metadata filter: %v", err), handler)
 		return
 	}
 
-	keys, err := a.db.MetadataStore.GetKeys(user, filter)
+	keys, err := a.db.MetadataStore.GetKeys(user, filter, storage.NewSortKey(sortfield, "name", sortOrder),
+		paging)
 	if err != nil {
 		respError(resp, err, handler)
 	}
@@ -141,7 +164,28 @@ func (a *Api) getMetadataKeyValues(resp http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	keys, err := a.db.MetadataStore.GetValues(user, key)
+	paging, err := getPaging(req)
+	if err != nil {
+		logrus.Warningf("invalid paging: %v", err)
+		paging.Limit = 100
+		paging.Offset = 0
+	}
+
+	sort, err := getSortParams(req, &models.MetadataValue{})
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	var sortfield = "name"
+	var sortOrder = true
+
+	if len(sort) > 0 {
+		sortfield = sort[0].Key
+		sortOrder = sort[0].Order
+	}
+
+	keys, err := a.db.MetadataStore.GetValues(user, key, storage.NewSortKey(sortfield, "name", sortOrder), paging)
 	if err != nil {
 		respError(resp, err, handler)
 	}
