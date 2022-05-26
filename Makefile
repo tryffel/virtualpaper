@@ -28,6 +28,9 @@ test-unit:
 test-e2e:
 	go test ./e2e
 
+test-browser:
+	cd frontend; node_modules/.bin/cypress run
+
 test-start: export TEST_VOLUME_ID=-test
 test-start:
 	docker-compose up -d
