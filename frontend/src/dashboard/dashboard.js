@@ -23,7 +23,7 @@ import {Error, Loading, useQueryWithStore} from 'react-admin';
 
 import { Stats } from "./stats";
 import { DocumentTimeline } from "./timeline";
-import {LatestDocumentsList} from "../documents/list";
+import {LastUpdatedDocumentsList, LatestDocumentsList} from "../documents/list";
 
 
 export default (props) => {
@@ -43,6 +43,10 @@ export default (props) => {
                 <Grid item xl={6} lg={6} sm={12} md={10} xs={12}>
                     <LatestDocumentsList{...props}/>
                 </Grid>
+                <Grid item xl={6} lg={6} sm={12} md={10} xs={12}>
+                    <LastUpdatedDocumentsList{...props}/>
+                </Grid>
+ 
                 <Grid item xl={2} lg={5} xs={12} sm={10} md={8}>
                     <DocumentTimeline stats={data.yearly_stats}/>
                 </Grid>
