@@ -95,7 +95,7 @@ func (a *Api) getMetadataKeys(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var sortfield = "name"
+	var sortfield = "key"
 	var sortOrder = true
 
 	if len(sort) > 0 {
@@ -109,7 +109,7 @@ func (a *Api) getMetadataKeys(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	keys, err := a.db.MetadataStore.GetKeys(user, filter, storage.NewSortKey(sortfield, "name", sortOrder),
+	keys, err := a.db.MetadataStore.GetKeys(user, filter, storage.NewSortKey(sortfield, "key", sortOrder),
 		paging)
 	if err != nil {
 		respError(resp, err, handler)
@@ -177,7 +177,7 @@ func (a *Api) getMetadataKeyValues(resp http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	var sortfield = "name"
+	var sortfield = "value"
 	var sortOrder = true
 
 	if len(sort) > 0 {
@@ -185,7 +185,7 @@ func (a *Api) getMetadataKeyValues(resp http.ResponseWriter, req *http.Request) 
 		sortOrder = sort[0].Order
 	}
 
-	keys, err := a.db.MetadataStore.GetValues(user, key, storage.NewSortKey(sortfield, "name", sortOrder), paging)
+	keys, err := a.db.MetadataStore.GetValues(user, key, storage.NewSortKey(sortfield, "value", sortOrder), paging)
 	if err != nil {
 		respError(resp, err, handler)
 	}
