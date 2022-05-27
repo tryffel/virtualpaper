@@ -6,15 +6,36 @@
 // https://on.cypress.io/writing-first-test
 
 
-describe("Auth test", () => {
-    it('should login', () => {
-        expect(true).to.equal(true)
 
+
+describe("Auth test", () => {
+
+    before(() => {
+        Cypress.Commands.add('login', () => {
+            cy.session(["user"], () => {
+                cy.visit('/login')
+                cy.get('#username').should('be.visible').type('user')
+                cy.get('#password').should('be.visible').type('user')
+                cy.get('button[type="submit"]').should('be.visible').click()
+                cy.get('main h5:contains("Latest documents")')
+            })
+        })
+    })
+
+
+    it('should login', () => {
+
+        cy.login()
+
+       /*
         cy.visit('/login')
         cy.get('#username').should('be.visible').type('user')
         cy.get('#password').should('be.visible').type('user')
         cy.get('button[type="submit"]').should('be.visible').click()
 
         cy.get('main h5:contains("Latest documents")')
+
+        */
     })
 })
+
