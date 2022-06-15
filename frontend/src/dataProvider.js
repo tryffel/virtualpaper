@@ -184,6 +184,8 @@ export const dataProvider = {
         const query = {
             sort: JSON.stringify([field, order]),
             range: JSON.stringify([(page - 1) * perPage, page * perPage - 1]),
+            page: page,
+            page_size: perPage,
             filter: JSON.stringify({
                 ...params.filter,
                 [params.target]: params.id,

@@ -62,7 +62,7 @@ export const MetadataKeyEdit = (props) => {
                 <MarkdownField source="description"/>
             </Labeled>
 
-            <ReferenceManyField  label="Values" reference={"metadata/values"} target={"key_id"}>
+            <ReferenceManyField  label="Values" reference={"metadata/values"} target={"key_id"} perPage={500}>
                 <Datagrid rowClick={onClickValue}>
                     <TextField source="value"/>
                     <BooleanField label="Automatic matching" source="match_documents"/>

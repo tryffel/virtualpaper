@@ -25,32 +25,44 @@ import {
     TextInput,
     RadioButtonGroupInput,
     BooleanInput,
-    ReferenceInput,
-    SelectInput,
 } from 'react-admin';
 
 import { Typography } from '@material-ui/core';
+import MarkDownInputWithField from "ra-input-markdown";
 
 
-export const RuleCreate = (props) => (
-    <Create {...props} title={"Edit process rule"}>
-        <SimpleForm>
-            <Typography variant="h5">Rule trigger</Typography>
-            <TextInput label="description" source="comment" fullWidth={true} />
-            <RadioButtonGroupInput source="type" fullWidth={true} choices={[
-                { id: 'regex', name: 'Regular expression' },
-                { id: 'exact', name: 'Match' },
+const defaultValue = {
+    name: "new rule",
+    description: "rule",
+    enabled: true,
+    mode: "match_all",
+    conditions: [{
+        enabled: false,
+        condition_type: "content_contains",
+        value: "empty"
+    }],
+    actions: [{
+        enabled: false,
+        action: "name_append",
+        value: ""
+    }]
+};
+
+export const RuleCreate = (props) => {
+    return(
+    <Create {...props} title={"Create rule"} redirect="list">
+        <SimpleForm initialValues={defaultValue}>
+            <Typography variant="h5">Processing Rule</Typography>
+            <BooleanInput label="Enabled" source="enabled"/>
+            <TextInput source="name" fullWidth={true} />
+            <MarkDownInputWithField source="description" fullWidth={true} />
+
+            <RadioButtonGroupInput label="Match conditions" source="mode" fullWidth={true} choices={[
+                { id: 'match_all', name: 'Match all'},
+                { id: 'match_any', name: 'Match any'},
             ]} />
-            <TextInput label="Filter expression" source="filter" fullWidth={true} />
-            <BooleanInput label="Enabled" source="active"/>
-            <Typography variant="h5">Action</Typography>
-            <TextInput label="Date format" source="action.date_fmt" fullWidth={true}/>
-            <TextInput label="Date separator" source="action.date_separator" fullWidth={true}/>
-            <TextInput label="Description" source="action.description" fullWidth={true}/>
-            <ReferenceInput source="action.tag_id" reference="tags" allowEmpty label="Tag">
-                <SelectInput optionText="key" />
-            </ReferenceInput>
         </SimpleForm>
     </Create>
-);
+    )
+}
 

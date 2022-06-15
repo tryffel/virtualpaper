@@ -86,7 +86,7 @@ export const DocumentEdit = (props) => {
     );
 }
 
-const MetadataValueInput = props => {
+const MetadataValueInput = (props) => {
     let keyId = 0;
     if (props.record) {
         keyId = get(props.record, "key_id");
@@ -96,9 +96,17 @@ const MetadataValueInput = props => {
         type: 'getList',
         resource: 'metadata/values',
         payload: { target:"metadata/values", id: keyId!==0 ? keyId : -1,
-            pagination: {page:1}, perPage: 200,
-            sort:"id", order:"asc"}
+            pagination: {page:1, perPage: 500},
+            sort: {
+                field: "value",
+                order: "ASC",
+            },
+        }
     });
+
+    if (!props.record) {
+        return null;
+    }
 
     if (loading) return <Loading />;
     if (error) return <Error error={error}/>;

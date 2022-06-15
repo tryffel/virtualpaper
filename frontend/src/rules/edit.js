@@ -25,22 +25,19 @@ import {
     BooleanInput,
     ReferenceInput,
     SelectInput, ArrayInput, SimpleFormIterator,
-    useInput, Labeled, FormDataConsumer, useRecordContext,
-    FormWithRedirect, SaveButton, DeleteButton
+    FormDataConsumer,
+    useQueryWithStore, Loading, Error, AutocompleteInput
 } from 'react-admin';
+import get from 'lodash/get';
 
-import { Typography, Box, Grid, Toolbar} from '@material-ui/core';
-import Select from '@material-ui/core/Select';
-import MenuItem from '@material-ui/core/MenuItem';
-
+import { Typography, Grid} from '@material-ui/core';
 import MarkDownInputWithField from "ra-input-markdown";
-
 
 
 export const RuleEdit = (props) => (
     <Edit {...props} title={"Edit process rule"}>
         <SimpleForm>
-            <Typography variant="h5">Processing Rule</Typography>
+            <Typography variant="h5">Processing Rule edit</Typography>
             <BooleanInput label="Enabled" source="enabled"/>
             <TextInput source="name" fullWidth={true} />
             <MarkDownInputWithField source="description" fullWidth={true} />
@@ -62,9 +59,9 @@ export const RuleEdit = (props) => (
 );
 
 
-const ConditionTypeInput = (props) => {
+export const ConditionTypeInput = (props) => {
     return (
-        <SelectInput {...props} choices={[
+        <SelectInput {...props} onChange={props.onChange} choices={[
             {id: "name_is", name:"Name is" },
             {id: "name_starts", name:" Name starts" },
             {id: "name_contains", name:" Name contains" },
@@ -73,13 +70,13 @@ const ConditionTypeInput = (props) => {
             {id: "description_starts", name:" Description starts" },
             {id: "description_contains", name:" Description contains" },
 
-            {id: "content_is", name:" Text content" },
-            {id: "content_starts", name:" Text content" },
-            {id: "content_contains", name:" Text content" },
+            {id: "content_is", name:" Text content matches" },
+            {id: "content_starts", name:" Text content starts with" },
+            {id: "content_contains", name:" Text content contains" },
 
             {id: "date_is", name:" Date is" },
-            {id: "date_after", name:" Date is" },
-            {id: "date_before", name:" Date is" },
+            {id: "date_after", name:" Date is after" },
+            {id: "date_before", name:" Date is before" },
 
             {id: "metadata_has_key", name:" Metadata contains" },
             {id: "metadata_has_key_value", name:" Metadata contains key-value" },
@@ -90,7 +87,7 @@ const ConditionTypeInput = (props) => {
 }
 
 
-const ActionTypeInput = (props) => {
+export const ActionTypeInput = (props) => {
     return (
         <SelectInput {...props} choices={[
             {id: "name_set", name:"Set name" },
@@ -105,70 +102,172 @@ const ActionTypeInput = (props) => {
     )
 }
 
-
-DeleteButton.propTypes = {};
-const ConditionEdit = (props) => {
+export const ConditionEdit = (props) => {
 
     return (
         props.record ?
-            <SimpleFormIterator {...props}>
-                <Grid container spacing={2}>
-                    <Grid container spacing={2}>
-                        <Grid item xs={3} md={6}>
-                            <BooleanInput label="Enabled" source="enabled"/>
-                        </Grid>
-                        <Grid item xs={3} md={6}>
-                            <BooleanInput label="Case insensitive" source="case_insensitive"/>
-                        </Grid>
-                        <Grid item xs={3} md={6}>
-                            <BooleanInput label="Inverted" source="inverted"/>
-                        </Grid>
-                        <Grid item xs={3} md={6}>
-                            <BooleanInput label="Regex" source="is_regex"/>
-                        </Grid>
-                    </Grid>
-                    <Grid container spacing={1}>
-                        <Grid item xs={6} md={8}>
-                            <ConditionTypeInput label="Type" source="condition_type"/>
-                        </Grid>
-                        <Grid item xs={6} md={8}>
-                            <TextInput label="Filter" source="value" fullWidth resettable/>
-                        </Grid>
-                        <Grid item xs={6} md={8}>
-                            <TextInput label="Date format" source="date_fmt" fullWidth resettable/>
-                        </Grid>
-                    </Grid>
-                </Grid>
+            <SimpleFormIterator source={props.source} defaultValue={{enabled: false,
+                condition_type: "content_contains",
+                value: "empty"}}>
+                <FormDataConsumer>
+                    {({getSource, scopedFormData}) => {
+                        return (
+                            <Grid container spacing={1}>
+                                <Grid container spacing={1}>
+                                    <Grid item xs={6} md={3} lg={2}>
+                                        <BooleanInput label="Enabled" source={getSource("enabled")} record={scopedFormData} initialValue={true}/>
+                                    </Grid>
+                                    <Grid item xs={6} md={3} lg={2}>
+                                        <BooleanInput label="Case insensitive" source={getSource("case_insensitive")} record={scopedFormData}/>
+                                    </Grid>
+                                    <Grid item xs={6} md={3} lg={2}>
+                                        <BooleanInput label="Inverted" source={getSource("inverted")} record={scopedFormData}/>
+                                    </Grid>
+                                    <Grid item xs={6} md={3} lg={2}>
+                                        <BooleanInput label="Regex" source={getSource("is_regex")} record={scopedFormData}/>
+                                    </Grid>
+                                </Grid>
+                                <Grid container spacing={1}>
+                                    <Grid item xs={8} md={5} lg={3}>
+                                        <ConditionTypeInput label="Type" source={getSource("condition_type")} record={scopedFormData}/>
+                                    </Grid>
+                                    {scopedFormData && scopedFormData.condition_type && !scopedFormData.condition_type.startsWith('date') &&
+                                    !scopedFormData.condition_type.startsWith('metadata_has_key') ?
+                                        <Grid item xs={8} md={5} lg={3}>
+                                            <TextInput label="Filter" source={getSource("value")}
+                                                       record={scopedFormData} fullWidth resettable/>
+                                        </Grid> : null
+                                    }
+                                    {scopedFormData && scopedFormData.condition_type && scopedFormData.condition_type.startsWith('date') ?
+                                        <Grid item xs={8} md={4} lg={3}>
+                                            <TextInput label="Date format" source={getSource("date_fmt")}
+                                                       record={{scopedFormData}} fullWidth resettable/>
+                                        </Grid>: null
+                                    }
+                                    {scopedFormData && scopedFormData.condition_type && scopedFormData.condition_type.startsWith('metadata_has_key') ?
+                                        <Grid item xs={8} md={4} lg={3}>
+                                            <ReferenceInput label="Key" source={getSource("metadata.key_id")}
+                                                            record={scopedFormData} reference="metadata/keys" fullWidth>
+                                                <SelectInput optionText="key" fullWidth/>
+                                            </ReferenceInput>
+                                        </Grid>: null
+                                    }
+                                    {scopedFormData && scopedFormData.condition_type && scopedFormData.condition_type === 'metadata_has_key_value' ?
+                                        <Grid item xs={8} md={4} lg={3}>
+                                            <MetadataValueInput
+                                                source={getSource('metadata.value_id')}
+                                                keySource={'metadata.key_id'}
+                                                record={scopedFormData}
+                                                label={"Value"}
+                                                fullWidth
+                                            />
+                                        </Grid>: null
+                                    }
+
+                                </Grid>
+                            </Grid>
+                        )
+                    }}
+                </FormDataConsumer>
             </SimpleFormIterator>: null
     )
 }
 
 
-const ActionEdit = (props) => {
-
+export const ActionEdit = (props) => {
     return (
         props.record ?
-            <SimpleFormIterator {...props}>
-                <Grid container spacing={2}>
-                    <Grid container spacing={2}>
-                        <Grid container display="flex" spacing={2}>
-                            <Grid item flex={1} ml="0.5em">
-                                <ActionTypeInput label="Type" source="action"/>
-                            </Grid>
-                            <Grid item flex={1} ml="0.5em">
-                                <BooleanInput label="Enabled" source="enabled"/>
-                            </Grid>
-                            <Grid item flex={1} mr="0.5em">
-                                <BooleanInput label="On condition" source="on_condition"/>
-                            </Grid>
-                        </Grid>
-                        <Grid container display="flex" spacing={2}>
-                            <Grid item flex={1} ml="0.5em">
-                                <TextInput label="Value" source="value"/>
-                            </Grid>
-                        </Grid>
-                    </Grid>
-                </Grid>
-            </SimpleFormIterator>: null
-    )
+            <SimpleFormIterator source={props.source} defaultValue={{enabled: false,
+                action: "name_append",
+                value: ""}}>
+                <FormDataConsumer>
+                    {({getSource, scopedFormData}) => {
+                        return (
+                                <Grid container spacing={2}>
+                                    <Grid container spacing={2}>
+                                        <Grid container display="flex" spacing={2}>
+                                            <Grid item flex={1} ml="0.5em">
+                                                <ActionTypeInput
+                                                    label="Type"
+                                                    source={getSource("action")}
+                                                    record={scopedFormData}/>
+                                            </Grid>
+                                            <Grid item flex={1} ml="0.5em">
+                                                <BooleanInput
+                                                    label="Enabled"
+                                                    source={getSource("enabled")}
+                                                    record={scopedFormData}/>
+                                            </Grid>
+                                            <Grid item flex={1} mr="0.5em">
+                                                <BooleanInput
+                                                    label="On condition"
+                                                    source={getSource("on_condition")}
+                                                    record={scopedFormData}/>
+                                            </Grid>
+                                        </Grid>
+                                        {scopedFormData && scopedFormData.action && !scopedFormData.action.startsWith('metadata') ?
+                                            <Grid container display="flex" spacing={2}>
+                                                <Grid item flex={1} ml="0.5em">
+                                                    <TextInput label="Value" source="value"/>
+                                                </Grid>
+                                            </Grid>: null
+                                        }
+                                        {scopedFormData && scopedFormData.action && scopedFormData.action.startsWith('metadata') ?
+                                            <Grid container display="flex" spacing={2}>
+                                                <Grid item xs={8} md={4} lg={3}>
+                                                    <ReferenceInput label="Key" source={getSource("metadata.key_id")}
+                                                                    record={scopedFormData} reference="metadata/keys" fullWidth>
+                                                        <SelectInput optionText="key" fullWidth/>
+                                                    </ReferenceInput>
+                                                </Grid>
+                                                <Grid item xs={8} md={4} lg={3}>
+                                                    <MetadataValueInput
+                                                        source={getSource('metadata.value_id')}
+                                                        keySource={'metadata.key_id'}
+                                                        record={scopedFormData}
+                                                        label={"Value"}
+                                                        fullWidth
+                                                    />
+                                                </Grid>
+                                            </Grid>: null
+                                        }
+                                    </Grid>
+                                </Grid>
+                        )}}
+                </FormDataConsumer>
+                            </SimpleFormIterator>: null
+                    )
 }
+
+const MetadataValueInput = (props) => {
+    let keyId = 0;
+    if (props.record) {
+        keyId = get(props.record, props.keySource);
+    }
+
+    const {data, loading, error } = useQueryWithStore({
+        type: 'getList',
+        resource: 'metadata/values',
+        payload: { target:"metadata/values", id: keyId!==0 ? keyId : -1,
+            pagination: {page:1, perPage: 500},
+            sort: {
+                field: "value",
+                order: "ASC",
+            },
+        }
+    });
+
+    if (!props.record) {
+        return null;
+    }
+
+    if (loading) return <Loading />;
+    if (error) return <Error error={error}/>;
+    if (data) {
+        return (
+            <AutocompleteInput{...props} choices={data} optionText="value" />
+
+        )} else {
+        return <Loading />;
+    }
+};

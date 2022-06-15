@@ -211,22 +211,12 @@ func (r *RuleCondition) Validate() error {
 		}
 	}
 	if r.ConditionType == RuleConditionMetadataHasKeyValue {
-		if r.MetadataKey == 0 {
+		if r.MetadataKey == 0 || r.MetadataValue == 0 {
 			err.ErrMsg = "must have metadata key and value defined"
 			return err
 		}
 	}
-
-	if r.MetadataKey == 0 && r.MetadataValue == 0 {
-		// no metadata
-		return nil
-	}
-	if r.MetadataKey > 0 && r.MetadataValue > 0 {
-		// illegal metadata
-		return nil
-	}
-	err.ErrMsg = "invalid metadata"
-	return err
+	return nil
 }
 
 func (r *RuleCondition) HasMetadata() bool {
