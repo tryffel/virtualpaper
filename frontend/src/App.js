@@ -66,6 +66,7 @@ const App = () => (
         <Resource name="tags" {...tags} icon={ LabelOutlinedIcon } />
         <Resource name="metadata/keys" options={{label: "Metadata"}} {...metadata_keys} icon={ MessageOutLinedIcon } />
         <Resource name="metadata/values"  label={"metadata values"} />
+        <Resource name="documents/jobs"/>
         <Resource name="jobs" list={JobList} />
         <Resource name="user"  />
         <Resource name="documents/stats"  />

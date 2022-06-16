@@ -17,11 +17,20 @@
  */
 
 import React, { useState } from "react";
-import {ArrayField, Datagrid, DateField, Show, Tab, TabbedShowLayout, TextField,
-    ChipField, SingleFieldList, Labeled, TopToolbar, EditButton,
+import {
+    ArrayField, Datagrid, DateField, Show, Tab, TabbedShowLayout, TextField,
+    ChipField, SingleFieldList, Labeled, TopToolbar, EditButton, useQueryWithStore, Loading, Error, useList
 } from "react-admin";
 import Button from '@material-ui/core/Button';
 import RepeatIcon from '@material-ui/icons/Repeat';
+
+import Accordion from '@material-ui/core/Accordion';
+import AccordionSummary from '@material-ui/core/AccordionSummary';
+import AccordionDetails from '@material-ui/core/AccordionDetails';
+import Typography from '@material-ui/core/Typography';
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+
+import { get } from "lodash";
 
 import { ThumbnailField, EmbedFile} from "./file";
 import { MarkdownField } from '../markdown'
@@ -41,7 +50,6 @@ export const DocumentShow = (props) => {
     }
 
     return (
-
         <Show {...props} title="Document" actions={<DocumentShowActions/>} >
             <TabbedShowLayout>
                 <Tab label="general">
@@ -68,14 +76,20 @@ export const DocumentShow = (props) => {
                     <DateField source="updated_at" label="Last updated" showTime={true}/>
                 </Tab>
                 <Tab label="Content">
-                    <Button label={enableFormatting?"Enable formatting":"Disable formatting"} onClick={toggleFormatting}/>
-                    {enableFormatting?<TextField source="content" label="Raw parsed text content"/>:
-                    <MarkdownField source="content" label="Raw parsed text content"/>}
+                    <Button color="primary" size="medium" variant="contained" onClick={toggleFormatting}>
+                        {enableFormatting?"Enable formatting":"Disable formatting"}
+                    </Button>
+                    {enableFormatting ?
+                        <TextField source="content" label="Raw parsed text content"/>:
+                        <MarkdownField source="content" label="Raw parsed text content"/>
+                    }
                 </Tab>
                 <Tab label="preview">
                     <EmbedFile source="download_url"/>
                 </Tab>
-
+                <Tab label="history">
+                    <DocumentJobsHistory/>
+                </Tab>
             </TabbedShowLayout>
         </Show>
     );
@@ -96,3 +110,58 @@ const DocumentShowActions = ({ basePath, data, resource }) => {
     );
 }
 
+const DocumentJobsHistory = (props) => {
+    const id = get(props.record, "id");
+    const {data, total, loading, error } = useQueryWithStore({
+        type: 'getManyReference',
+        resource: 'document/jobs',
+        payload: {
+            id: id,
+            pagination: {page:1, perPage: 500},
+            sort: {
+                field: "timestamp",
+                order: "ASC",
+            },
+        }
+    });
+
+    if (loading) { return <Loading/> }
+    if (error) { return <Error/> }
+
+    if (data !== undefined) {
+        return (
+            <div>
+                {data.map((index) => (
+                    <DocumentJobListItem record={index}/>
+                )
+            )}
+            </div>
+        )
+    }
+    return null;
+}
+
+
+const DocumentJobListItem = (props) => {
+    if (!props.record) {
+        return null;
+    }
+    const ok = props.record.status === 'Finished';
+
+    return (
+        <Accordion>
+            <AccordionSummary
+                expandIcon={<ExpandMoreIcon/>}
+                style={!ok ? {color: 'red', fontStyle: 'italic'}: null}
+            >
+                <Typography variant="h7">{(ok ? '': 'Error: ')} {props.record.message}</Typography>
+            </AccordionSummary>
+            <AccordionDetails style={{flexDirection: "column"}}>
+                <Typography>Status: {props.record.status}</Typography>
+                <Typography>Job id: {props.record.id}</Typography>
+                <Typography>Started at: {props.record.started_at}</Typography>
+                <Typography>Stopped at: {props.record.stopped_at}</Typography>
+            </AccordionDetails>
+        </Accordion>
+    );
+}

@@ -192,7 +192,10 @@ export const dataProvider = {
             }),
         };
         let url = `${apiUrl}/${resource}?${stringify(query)}`;
-        if (resource !== 'metadata/values' || params.id) {
+        if (resource === 'document/jobs' && params.id) {
+            url = `${apiUrl}/documents/${params.id}/jobs?${stringify(query)}`;
+        }
+        else if (resource === 'metadata/values' && params.id) {
             url = `${apiUrl}/metadata/keys/${params.id}/values?${stringify(query)}`;
         }
         const options =

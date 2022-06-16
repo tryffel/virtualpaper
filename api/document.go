@@ -243,7 +243,7 @@ func (a *Api) getDocumentLogs(resp http.ResponseWriter, req *http.Request) {
 		respError(resp, err, handler)
 		return
 	}
-	respOk(resp, job)
+	respResourceList(resp, job, len(*job))
 }
 
 func (a *Api) getDocumentPreview(resp http.ResponseWriter, req *http.Request) {
