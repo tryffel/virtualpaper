@@ -77,8 +77,10 @@ func (s *RuleStore) GetUserRules(userId int, paging Paging) ([]*models.Rule, err
 SELECT *
 FROM rules
 WHERE user_id = $1
+ORDER BY rule_order ASC
 OFFSET $2
-LIMIT $3;`
+LIMIT $3
+;`
 
 	rules := &[]models.Rule{}
 	err := s.db.Select(rules, sql, userId, paging.Offset, paging.Limit)
