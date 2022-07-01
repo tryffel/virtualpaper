@@ -44,9 +44,10 @@ type MetadataValueRequest struct {
 	// Optional comment
 	Comment string `json:"comment" valid:"-"`
 	// MatchDocuments instructs to try to match documents for this value.
-	MatchDocuments bool   `json:"match_documents" valid:"-"`
-	MatchType      string `json:"match_type" valid:"metadata_rule_type"`
-	MatchFilter    string `json:"match_filter" valid:"-"`
+	MatchDocuments bool `json:"match_documents" valid:"-"`
+	// validate MatchType when creating, allowing default to be empty string
+	MatchType   string `json:"match_type" valid:"-"`
+	MatchFilter string `json:"match_filter" valid:"-"`
 }
 
 type metadataUpdateRequest struct {

@@ -316,12 +316,12 @@ RETURNING id;
 func (s *MetadataStore) CreateValue(userId int, value *models.MetadataValue) error {
 	sql := `
 INSERT INTO metadata_values
-(user_id, key_id, value)
-VALUES ($1, $2, $3)
+(user_id, key_id, value, match_documents, match_type, match_filter)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id;
 `
 
-	res, err := s.db.Query(sql, userId, value.KeyId, value.Value)
+	res, err := s.db.Query(sql, userId, value.KeyId, value.Value, value.MatchDocuments, value.MatchType, value.MatchFilter)
 	if err != nil {
 		return s.parseError(err, "create value")
 	}
