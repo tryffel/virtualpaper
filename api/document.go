@@ -691,7 +691,7 @@ func (a *Api) deleteDocument(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	logrus.Infof("Request user %d removing document %d", user, id)
+	logrus.Infof("Request user %d removing document %s", user, id)
 
 	err = a.search.DeleteDocument(id, user)
 	if err != nil {

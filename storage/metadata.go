@@ -115,7 +115,7 @@ func (s *MetadataStore) GetKeys(userId int, ids []int, sort SortKey, paging Pagi
 	}
 
 	query = query.Limit(uint64(paging.Limit)).Offset(uint64(paging.Offset))
-	query = query.OrderBy(sort.Key + " " + sort.SortOrder())
+	query = query.OrderBy(sort.QueryKey() + " " + sort.SortOrder())
 	keys := &[]models.MetadataKey{}
 
 	sql, args, err := query.ToSql()
@@ -158,7 +158,7 @@ func (s *MetadataStore) GetValues(userId int, keyId int, sort SortKey, paging Pa
 		LeftJoin("document_metadata dm on mv.id = dm.value_id").
 		Where(squirrel.Eq{"mv.user_id": userId}).
 		Where(squirrel.Eq{"mv.key_id": keyId}).GroupBy("mv.id", "mv.value").
-		OrderBy(sort.Key + " " + sort.SortOrder()).Limit(uint64(paging.Limit)).Offset(uint64(paging.Offset))
+		OrderBy(sort.QueryKey() + " " + sort.SortOrder()).Limit(uint64(paging.Limit)).Offset(uint64(paging.Offset))
 
 	sql, args, err := query.ToSql()
 	if err != nil {

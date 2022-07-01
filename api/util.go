@@ -125,15 +125,23 @@ func getSortParams(req *http.Request, model models.Modeler) ([]storage.SortKey, 
 
 	for _, v := range model.SortAttributes() {
 		if sortVar == v {
+			caseInsensitive := false
+			for _, sortKey := range model.SortNoCase() {
+				if v == sortKey {
+					caseInsensitive = true
+					break
+				}
+			}
+
 			switch strings.ToUpper(sortOrder) {
 			case "ASC":
-				sort := storage.NewSortKey(v, "id", false)
+				sort := storage.NewSortKey(v, "id", false, caseInsensitive)
 				sortKeys = append(sortKeys, sort)
 			case "DESC":
-				sort := storage.NewSortKey(v, "id", true)
+				sort := storage.NewSortKey(v, "id", true, caseInsensitive)
 				sortKeys = append(sortKeys, sort)
 			default:
-				sort := storage.NewSortKey(v, "id", false)
+				sort := storage.NewSortKey(v, "id", false, caseInsensitive)
 				sortKeys = append(sortKeys, sort)
 			}
 		}

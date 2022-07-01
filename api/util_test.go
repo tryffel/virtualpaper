@@ -99,7 +99,7 @@ func Test_getSortParams(t *testing.T) {
 				model: &TestStruct{},
 			},
 			want: []storage.SortKey{
-				{Key: "id", Order: true},
+				{Key: "id", Order: true, CaseInsensitive: false},
 			},
 			wantErr: false,
 		},
@@ -109,7 +109,7 @@ func Test_getSortParams(t *testing.T) {
 				model: &TestStruct{},
 			},
 			want: []storage.SortKey{
-				{Key: "name", Order: false},
+				{Key: "name", Order: false, CaseInsensitive: true},
 			},
 			wantErr: false,
 		},
@@ -149,4 +149,8 @@ func (t *TestStruct) FilterAttributes() []string {
 
 func (t *TestStruct) SortAttributes() []string {
 	return t.FilterAttributes()
+}
+
+func (t *TestStruct) SortNoCase() []string {
+	return []string{"name"}
 }

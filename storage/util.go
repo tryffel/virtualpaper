@@ -27,14 +27,16 @@ import (
 
 // SortKey contains sortable key and order. Order 'false' = ASC, 'true' = DESC.
 type SortKey struct {
-	Key   string
-	Order bool
+	Key             string
+	Order           bool
+	CaseInsensitive bool
 }
 
-func NewSortKey(key string, defaultKey string, order bool) SortKey {
+func NewSortKey(key string, defaultKey string, order bool, caseInsensitive bool) SortKey {
 	sort := SortKey{
-		Key:   key,
-		Order: order,
+		Key:             key,
+		Order:           order,
+		CaseInsensitive: caseInsensitive,
 	}
 
 	sort.Validate(defaultKey)
@@ -53,6 +55,13 @@ func (s SortKey) SortOrder() string {
 		return "DESC"
 	}
 	return "ASC"
+}
+
+func (s SortKey) QueryKey() string {
+	if s.CaseInsensitive {
+		return fmt.Sprintf("lower(%s)", s.Key)
+	}
+	return s.Key
 }
 
 var legalSortKey = regexp.MustCompile("([a-z_.]{0,100})")

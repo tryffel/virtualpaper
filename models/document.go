@@ -100,6 +100,10 @@ func (d *Document) SortAttributes() []string {
 	return d.FilterAttributes()
 }
 
+func (d *Document) SortNoCase() []string {
+	return []string{"name", "content", "description", "filename", "hash", "mimetype"}
+}
+
 // HasMetadataKey returns true if document has given metadata key.
 func (d *Document) HasMetadataKey(keyId int) bool {
 	for _, v := range d.Metadata {
@@ -143,6 +147,10 @@ func (m *MetadataKey) FilterAttributes() []string {
 	return []string{"id", "key", "created_at", "comment", "documents_count"}
 }
 
+func (m *MetadataKey) SortNoCase() []string {
+	return []string{"key", "comment"}
+}
+
 func (m *MetadataKey) SortAttributes() []string {
 	return m.FilterAttributes()
 }
@@ -172,4 +180,8 @@ func (m *MetadataValue) FilterAttributes() []string {
 
 func (m *MetadataValue) SortAttributes() []string {
 	return m.FilterAttributes()
+}
+
+func (m *MetadataValue) SortNoCase() []string {
+	return []string{"key", "value", "comment", "match_filter"}
 }

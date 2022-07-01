@@ -55,7 +55,7 @@ SELECT id, name, ` + contenSelect + `, filename, created_at, updated_at
 hash, mimetype, size, date, description
 FROM documents
 WHERE user_id = $1
-ORDER BY ` + sort.Key + " " + sort.SortOrder() + `
+ORDER BY ` + sort.QueryKey() + " " + sort.SortOrder() + `
 OFFSET $2
 LIMIT $3;
 `

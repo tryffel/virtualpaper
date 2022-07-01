@@ -31,8 +31,11 @@ type Modeler interface {
 	Update()
 	// FilterAttributes returns list of attributes that can be used for filtering.
 	FilterAttributes() []string
+
 	// SortAttributes returns list of attributes that can be used for sorting.
 	SortAttributes() []string
+
+	SortNoCase() []string
 }
 
 type Timestamp struct {
@@ -50,6 +53,10 @@ func (t *Timestamp) FilterAttributes() []string {
 
 func (t *Timestamp) SortAttributes() []string {
 	return t.FilterAttributes()
+}
+
+func (t *Timestamp) SortNoCase() []string {
+	return []string{}
 }
 
 // Int as an integer that accepts null values from database.
