@@ -268,7 +268,6 @@ export const dataProvider: DataProvider = {
     }
     // @ts-ignore
     if (resource === "metadata/values" && params.data) {
-      // @ts-ignore
       return httpClient(`${apiUrl}/metadata/keys/${params.data.id}/values`, {
         method: "POST",
         body: JSON.stringify(params.data),
@@ -276,11 +275,11 @@ export const dataProvider: DataProvider = {
         data: json,
       }));
     } else {
-      httpClient(`${apiUrl}/${resource}`, {
+      return httpClient(`${apiUrl}/${resource}`, {
         method: "POST",
         body: JSON.stringify(params.data),
       }).then(({ json }) => ({
-        data: { ...params.data, id: json.id },
+        data: { ...params.data, ...json },
       }));
     }
   },
