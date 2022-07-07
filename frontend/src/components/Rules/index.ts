@@ -16,10 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import { RuleCreate } from "./Create";
 import { RuleEdit } from "./Edit";
 import { RuleList } from "./List";
 
 export default {
   list: RuleList,
   edit: RuleEdit,
+  create: RuleCreate,
 };
