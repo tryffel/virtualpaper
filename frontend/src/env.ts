@@ -17,11 +17,13 @@
  */
 
 const dev = {
-    url: "http://localhost:8000/api/v1"
+    url: "http://localhost:8000/api/v1",
+    queryDevtools: false,
 }
 
 const prod = {
-    url: "/api/v1"
+    url: "/api/v1",
+    queryDevtools: false,
 }
 
 // Default to dev if not set

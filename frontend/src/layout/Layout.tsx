@@ -19,9 +19,19 @@
 import React from "react";
 import { Layout, LayoutProps, Menu } from "react-admin";
 import AppBar from "./AppBar";
+import { ReactQueryDevtools } from 'react-query/devtools';
+import { config } from "../env";
 
 const myLayout = (props: LayoutProps) => {
-  return <Layout {...props} appBar={AppBar} menu={Menu} />;
+  
+  return <>
+    <Layout 
+  {...props} 
+  appBar={AppBar} 
+  menu={Menu} />
+  <ReactQueryDevtools initialIsOpen={config.queryDevtools} />
+  </>
+
 };
 
 export default myLayout;
