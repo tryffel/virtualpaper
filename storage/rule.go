@@ -236,7 +236,8 @@ SELECT
     metadata_key,
     metadata_value,
     mk.key as metadata_key_name,
-    mv.value as metadata_value_name
+    mv.value as metadata_value_name,
+	date_fmt
 FROM rule_conditions
 	LEFT JOIN rules ON rule_conditions.rule_id = rules.id
 	LEFT join metadata_keys mk on rule_conditions.metadata_key = mk.id
