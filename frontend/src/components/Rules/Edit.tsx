@@ -52,9 +52,12 @@ import {
 import { Help as HelpIcon } from "@mui/icons-material";
 import { MarkdownInput } from "../Markdown";
 import { MetadataValueInputProps } from "../Documents/Edit";
+import Test from "./Test";
+import TestButton from "./Test";
 
 export const RuleEdit = () => {
   const theme = useTheme();
+  const record = useRecordContext();
 
   return (
     <Edit title={"Edit process rule"}>
@@ -65,6 +68,7 @@ export const RuleEdit = () => {
               <Box display={{ xs: "block", sm: "flex" }}>
                 <Typography variant="h5">Edit Processing Rule</Typography>
                 <HelpButton />
+                <TestButton record={record} />
               </Box>
               <Box display={{ xs: "block", sm: "flex" }}>
                 <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>

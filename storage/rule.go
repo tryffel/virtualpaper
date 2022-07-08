@@ -20,10 +20,11 @@ package storage
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
-	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
@@ -241,7 +242,6 @@ FROM rule_conditions
 	LEFT join metadata_keys mk on rule_conditions.metadata_key = mk.id
 	LEFT JOIN metadata_values mv on rule_conditions.metadata_value = mv.id
 WHERE rules.user_id = $1
-	AND rule_conditions.enabled = TRUE
 ORDER BY rule_id, rule_conditions.id ASC;
 `
 
@@ -273,7 +273,6 @@ FROM rule_actions
 	LEFT join metadata_keys mk on rule_actions.metadata_key = mk.id
     LEFT JOIN metadata_values mv on rule_actions.metadata_value = mv.id
 WHERE rules.user_id = $1
-	AND rule_actions.enabled = TRUE
 ORDER BY rule_id, rule_actions.id ASC;
 `
 	err := s.db.Select(actions, sql, userId)

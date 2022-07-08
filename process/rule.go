@@ -19,12 +19,14 @@
 package process
 
 import (
+	"bytes"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 )
@@ -33,6 +35,20 @@ type DocumentRule struct {
 	Rule     *models.Rule
 	Document *models.Document
 	date     time.Time
+}
+
+type RuleTestResult struct {
+	Conditions []struct {
+		ConditionId int  `json:"condition_id"`
+		Matched     bool `json:"matched"`
+	} `json:"conditions"`
+	RuleId    int    `json:"rule_id"`
+	Match     bool   `json:"matched"`
+	TookMs    int    `json:"took_ms"`
+	Log       string `json:"log"`
+	Error     string `json:"error"`
+	StartedAt int    `json:"started_at"`
+	StoppedAt int    `json:"stopped_at"`
 }
 
 func NewDocumentRule(document *models.Document, rule *models.Rule) DocumentRule {
@@ -46,9 +62,13 @@ func (d *DocumentRule) Match() (bool, error) {
 	hasMatch := false
 
 	logrus.Debugf("match document: %s, rule: %d", d.Document.Id, d.Rule.Id)
-	for _, condition := range d.Rule.Conditions {
+	for i, condition := range d.Rule.Conditions {
+		if !condition.Enabled {
+			logrus.Debugf("rule %d - condition: %d (id:%d), %s is disabled", d.Rule.Id, condition.Id, i+1, condition.ConditionType)
+			continue
+		}
 
-		logrus.Debugf("evaluate rule condition: %d", condition.Id)
+		logrus.Debugf("evaluate rule %d - condition: %d (id:%d), %s", d.Rule.Id, condition.Id, i+1, condition.ConditionType)
 		condText := string(condition.ConditionType)
 		var ok = false
 		var err error
@@ -96,6 +116,119 @@ func (d *DocumentRule) Match() (bool, error) {
 		}
 	}
 	return hasMatch, nil
+}
+
+type formatter struct{}
+
+func (f *formatter) Format(entry *logrus.Entry) ([]byte, error) {
+
+	if entry.Level == logrus.InfoLevel {
+		return []byte(entry.Message + "\n"), nil
+	} else {
+		return []byte(fmt.Sprintf("%s - %s\n", entry.Level.String(), entry.Message)), nil
+	}
+}
+
+func (d *DocumentRule) MatchTest() *RuleTestResult {
+	logBuf := &bytes.Buffer{}
+
+	logger := logrus.New()
+	logger.SetOutput(logBuf)
+	logger.SetFormatter(&formatter{})
+	format, ok := logger.Formatter.(*logrus.TextFormatter)
+	if ok {
+		format.FullTimestamp = false
+		format.DisableTimestamp = true
+
+	}
+
+	hasMatch := false
+
+	result := &RuleTestResult{
+		StartedAt: int(time.Now().UnixNano() / 1000000),
+		RuleId:    d.Rule.Id,
+		Conditions: []struct {
+			ConditionId int  "json:\"condition_id\""
+			Matched     bool "json:\"matched\""
+		}{},
+	}
+
+	logger.Infof("Try to match document: %s, rule: id: %d, name: %s", d.Document.Id, d.Rule.Id, d.Rule.Name)
+	for i, condition := range d.Rule.Conditions {
+		if !condition.Enabled {
+			logger.Warnf("rule %d - condition: %d (id:%d), %s is disabled, skipping condition", d.Rule.Id, condition.Id, i+1, condition.ConditionType)
+			continue
+		}
+
+		logger.Infof("evaluate rule %d - condition: %d (id:%d), type: '%s'", d.Rule.Id, condition.Id, i+1, condition.ConditionType)
+		condText := string(condition.ConditionType)
+		var ok = false
+		var err error
+		if strings.HasPrefix(condText, "name") {
+			ok, err = d.matchText(condition, d.Document.Name)
+		} else if strings.HasPrefix(condText, "description") {
+			ok, err = d.matchText(condition, d.Document.Description)
+		} else if strings.HasPrefix(condText, "content") {
+			ok, err = d.matchText(condition, d.Document.Content)
+		} else if strings.HasPrefix(condText, "metadata_has_key") {
+			ok = d.hasMetadataKey(condition)
+		} else if strings.HasPrefix(condText, "date") {
+			ok, err = d.extractDates(condition, time.Now())
+
+			if ok {
+				y, m, d := d.date.Date()
+				logger.Infof("found date %d-%d-%d", y, m, d)
+			}
+
+		} else if strings.HasPrefix(condText, "metadata_count") {
+			ok, err = d.hasMetadataCount(condition)
+		} else if condition.ConditionType == models.RuleConditionMetadataHasKey {
+			ok = d.hasMetadataKey(condition)
+		} else if condition.ConditionType == models.RuleConditionMetadataHasKeyValue {
+			ok = d.hasMetadataKeyValue(condition)
+		} else {
+			err := errors.ErrInternalError
+			err.ErrMsg = "unknown condition type: " + condText
+			result.Error = err.Error()
+			break
+		}
+		if err != nil {
+			e := errors.ErrInternalError
+			e.ErrMsg = fmt.Errorf("evaluate condition: %v", err).Error()
+			result.Error = e.Error()
+			break
+		}
+
+		if ok {
+			if condition.Inverted {
+				hasMatch = false
+			} else {
+				hasMatch = true
+			}
+		} else {
+			if d.Rule.Mode == models.RuleMatchAll && !condition.Inverted {
+				logger.Infof("condition %d matched but is inverted, no match", d.Rule.Id)
+			} else {
+
+			}
+		}
+		if hasMatch && d.Rule.Mode == models.RuleMatchAny {
+			// already found a match, skip rest of the conditions
+			logger.Infof("documents matches and mode is set to 'match any', skip rest conditions")
+			break
+		}
+		result.Conditions = append(result.Conditions, struct {
+			ConditionId int  "json:\"condition_id\""
+			Matched     bool "json:\"matched\""
+		}{condition.Id, ok})
+	}
+
+	result.StoppedAt = int(time.Now().UnixNano() / 1000000)
+	result.TookMs = result.StoppedAt - result.StartedAt
+	result.Match = hasMatch
+
+	result.Log = logBuf.String()
+	return result
 }
 
 func (d *DocumentRule) matchText(condition *models.RuleCondition, text string) (bool, error) {
@@ -228,8 +361,12 @@ func (d *DocumentRule) RunActions() error {
 	var err error
 	var actionError error
 
-	for _, action := range d.Rule.Actions {
-		logrus.Debugf("run action: %d, type: %s", action.Id, action.Action)
+	for i, action := range d.Rule.Actions {
+		if !action.Enabled {
+			logrus.Infof("rule %d action: %d (id:%d), type: %s disabled", d.Rule.Id, i, action.Id, action.Action)
+			continue
+		}
+		logrus.Infof("run rule %d action: %d (id:%d), type: %s", d.Rule.Id, i, action.Id, action.Action)
 		switch action.Action {
 		case models.RuleActionSetName:
 			actionError = d.setName(action)

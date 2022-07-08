@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
 	"tryffel.net/go/virtualpaper/models"
 )
 
@@ -43,6 +44,7 @@ func TestDocumentRule_matchText(t *testing.T) {
 		Timestamp:   models.Timestamp{},
 		Conditions: []*models.RuleCondition{
 			{
+				Enabled:         true,
 				CaseInsensitive: true,
 				Inverted:        false,
 				ConditionType:   models.RuleConditionNameIs,
@@ -50,6 +52,7 @@ func TestDocumentRule_matchText(t *testing.T) {
 				Value:           "a Test Document.5",
 			},
 			{
+				Enabled:         true,
 				CaseInsensitive: true,
 				Inverted:        false,
 				ConditionType:   models.RuleConditionNameStarts,
@@ -57,6 +60,7 @@ func TestDocumentRule_matchText(t *testing.T) {
 				Value:           "a test",
 			},
 			{
+				Enabled:         true,
 				CaseInsensitive: true,
 				Inverted:        false,
 				ConditionType:   models.RuleConditionNameContains,
@@ -64,6 +68,7 @@ func TestDocumentRule_matchText(t *testing.T) {
 				Value:           "document",
 			},
 			{
+				Enabled:         true,
 				CaseInsensitive: true,
 				Inverted:        false,
 				ConditionType:   models.RuleConditionDescriptionIs,
@@ -71,6 +76,7 @@ func TestDocumentRule_matchText(t *testing.T) {
 				Value:           "This is a test document",
 			},
 			{
+				Enabled:         true,
 				CaseInsensitive: true,
 				Inverted:        true,
 				ConditionType:   models.RuleConditionDescriptionIs,
@@ -78,6 +84,7 @@ func TestDocumentRule_matchText(t *testing.T) {
 				Value:           "aThis is a test document",
 			},
 			{
+				Enabled:         true,
 				CaseInsensitive: true,
 				Inverted:        false,
 				ConditionType:   models.RuleConditionDescriptionStarts,
@@ -85,6 +92,7 @@ func TestDocumentRule_matchText(t *testing.T) {
 				Value:           "this is",
 			},
 			{
+				Enabled:         true,
 				CaseInsensitive: true,
 				Inverted:        false,
 				ConditionType:   models.RuleConditionDescriptionContains,
@@ -92,6 +100,7 @@ func TestDocumentRule_matchText(t *testing.T) {
 				Value:           "test",
 			},
 			{
+				Enabled:         true,
 				CaseInsensitive: true,
 				Inverted:        true,
 				ConditionType:   models.RuleConditionDescriptionStarts,
@@ -101,6 +110,7 @@ func TestDocumentRule_matchText(t *testing.T) {
 		},
 		Actions: []*models.RuleAction{
 			{
+				Enabled:     true,
 				OnCondition: true,
 				Action:      models.RuleActionSetName,
 				Value:       "test",
@@ -132,12 +142,14 @@ func TestDocumentRule_RunActions(t *testing.T) {
 			"consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat " +
 			"nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui " +
 			"officia deserunt mollit anim id est laborum.",
-		Filename:  "",
-		Hash:      "",
-		Mimetype:  "",
-		Size:      0,
-		Date:      time.Time{},
-		Metadata:  nil,
+		Filename: "",
+		Hash:     "",
+		Mimetype: "",
+		Size:     0,
+		Date:     time.Time{},
+		Metadata: []models.Metadata{
+			{KeyId: 10, ValueId: 15},
+		},
 		Tags:      nil,
 		DeletedAt: sql.NullTime{},
 	}
@@ -153,20 +165,37 @@ func TestDocumentRule_RunActions(t *testing.T) {
 		Timestamp:   models.Timestamp{},
 		Actions: []*models.RuleAction{
 			{
+				Enabled:     true,
 				OnCondition: true,
 				Action:      models.RuleActionSetName,
 				Value:       "test",
 			},
 			{
+				Enabled:     true,
 				OnCondition: true,
 				Action:      models.RuleActionAppendName,
 				Value:       ", suffix",
 			},
 			{
+				Enabled:       true,
 				OnCondition:   true,
 				Action:        models.RuleActionAddMetadata,
 				MetadataKey:   1,
 				MetadataValue: 2,
+			},
+			{
+				Enabled:       true,
+				OnCondition:   true,
+				Action:        models.RuleActionAddMetadata,
+				MetadataKey:   2,
+				MetadataValue: 3,
+			},
+			{
+				Enabled:       true,
+				OnCondition:   true,
+				Action:        models.RuleActionRemoveMetadata,
+				MetadataKey:   10,
+				MetadataValue: 15,
 			},
 		},
 	}
@@ -185,6 +214,10 @@ func TestDocumentRule_RunActions(t *testing.T) {
 
 	if !doc.HasMetadataKeyValue(1, 2) {
 		t.Errorf("runActions(), missing metadata key value")
+	}
+
+	if doc.HasMetadataKeyValue(10, 15) {
+		t.Errorf("runActions(), metadata not removed")
 	}
 
 }

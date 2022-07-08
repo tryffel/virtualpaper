@@ -331,6 +331,15 @@ export const dataProvider: DataProvider = {
         })
       )
     ).then((responses) => ({ data: responses.map(({ json }) => json.id) })),
+
+  testRule: (resource: any, params: any) => 
+    httpClient(`${apiUrl}/${resource}/${params.id}/test`, {
+      method: "PUT",
+      body: JSON.stringify(params.data),
+    }).then(({ json }) => ({
+      data: { ...params.data, ...json },
+    })),
+  
 };
 
 export const requestDocumentProcessing = (documentId: string) => {
