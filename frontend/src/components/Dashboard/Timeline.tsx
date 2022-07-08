@@ -18,6 +18,7 @@
 
 import * as React from "react";
 
+/*
 import { Timeline } from '@mui/lab';
 import TimelineItem from '@mui/lab/TimelineItem';
 import TimelineSeparator from '@mui/lab/TimelineSeparator';
@@ -78,3 +79,7 @@ export const DocumentTimeline = (stats: any) => {
     );
 }
 
+
+*/
+
+export default {};
