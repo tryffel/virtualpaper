@@ -21,7 +21,7 @@ RUN make build
 
 
 ### Frontend build
-FROM golang:1.16.4-alpine3.13 as frontend
+FROM node:18.4.0-alpine3.16 as frontend
 
 RUN apk update
 RUN apk --no-cache add \
@@ -33,13 +33,12 @@ RUN apk --no-cache add \
     nodejs \
     npm 
 
-RUN npm install -g yarn
+#RUN npm install -g yarn
 RUN yarn add react-scripts
 
 WORKDIR /virtualpaper
 COPY . /virtualpaper
 
-RUN ls frontend
 RUN cd frontend; yarn install
 RUN make build-frontend
 
@@ -67,6 +66,7 @@ VOLUME ["/input"]
 VOLUME ["/usr/share/tessdata/"]
 
 COPY --from=backend /virtualpaper/virtualpaper /app/virtualpaper
+
 COPY --from=frontend /virtualpaper/frontend/build /app/frontend
 COPY --from=backend /virtualpaper/config.sample.toml /config/config.toml
 
