@@ -20,8 +20,11 @@ package api
 
 import (
 	"net/http"
+
+	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/process"
 )
 
 type Rule struct {
@@ -59,6 +62,10 @@ type RuleAction struct {
 	Action      string          `json:"action" valid:"-"`
 	Value       string          `json:"value" valid:"-"`
 	Metadata    models.Metadata `json:"metadata" valid:"-"`
+}
+
+type RuleTest struct {
+	DocumentId string `json:"document_id" valid:"required"`
 }
 
 func (r *RuleAction) ToAction() *models.RuleAction {
@@ -344,4 +351,55 @@ func (a *Api) deleteUserRule(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 	respOk(resp, nil)
+}
+
+func (a *Api) testRule(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route PUT /api/v1/processing/rules/{id}/test Processing TestRule
+	// Test rule execution
+	// responses:
+	//   200: process.RuleTestResult
+	//   403:
+
+	handler := "api.testUserRule"
+	userId, ok := getUserId(req)
+	if !ok {
+		respError(resp, errors.New("no user_id in request context"), handler)
+		return
+	}
+
+	id, err := getParamIntId(req)
+	if err != nil {
+		respBadRequest(resp, "no id specified", nil)
+		return
+	}
+
+	processingRule := &RuleTest{}
+	err = unMarshalBody(req, processingRule)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+
+	}
+
+	rule, err := a.db.RuleStore.GetUserRule(userId, id)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	doc, err := a.db.DocumentStore.GetDocument(userId, processingRule.DocumentId)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	logrus.Infof("User %d tests processing rule %d on document %s", userId, id, processingRule.DocumentId)
+
+	processRule := process.NewDocumentRule(doc, rule)
+	status := processRule.MatchTest()
+
+	logrus.Infof("processing rule test finished: %v", status.Match)
+
+	respOk(resp, status)
+
 }

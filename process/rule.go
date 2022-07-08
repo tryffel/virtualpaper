@@ -97,19 +97,16 @@ func (d *DocumentRule) Match() (bool, error) {
 			return false, fmt.Errorf("evaluate condition: %v", err)
 		}
 
-		if ok {
-			if condition.Inverted {
-				hasMatch = true
-			} else {
-				hasMatch = true
-			}
-		} else {
-			if d.Rule.Mode == models.RuleMatchAll && !condition.Inverted {
-				return false, nil
-			} else {
-
-			}
+		if condition.Inverted {
+			ok = !ok
 		}
+
+		if ok {
+			hasMatch = true
+		} else if d.Rule.Mode == models.RuleMatchAll {
+			return false, nil
+		}
+
 		if hasMatch && d.Rule.Mode == models.RuleMatchAny {
 			// already found a match, skip rest of the conditions
 			break
@@ -199,23 +196,24 @@ func (d *DocumentRule) MatchTest() *RuleTestResult {
 			break
 		}
 
-		if ok {
-			if condition.Inverted {
-				hasMatch = false
-			} else {
-				hasMatch = true
-			}
-		} else {
-			if d.Rule.Mode == models.RuleMatchAll && !condition.Inverted {
-				logger.Infof("condition %d matched but is inverted, no match", d.Rule.Id)
-			} else {
-
-			}
+		if condition.Inverted {
+			ok = !ok
 		}
-		if hasMatch && d.Rule.Mode == models.RuleMatchAny {
-			// already found a match, skip rest of the conditions
-			logger.Infof("documents matches and mode is set to 'match any', skip rest conditions")
+
+		if ok {
+			hasMatch = true
+			logger.Infof("condition %d matched", condition.Id)
+			if d.Rule.Mode == models.RuleMatchAny {
+				// already found a match, skip rest of the conditions
+				logger.Infof("document matches and mode is set to 'match any', skip rest conditions")
+				break
+			}
+
+		} else if d.Rule.Mode == models.RuleMatchAll {
+			logger.Infof("condition %d didn't match, skip rest", condition.Id)
 			break
+		} else {
+			logger.Infof("condition %d didn't match, continuing", condition.Id)
 		}
 		result.Conditions = append(result.Conditions, struct {
 			ConditionId int  "json:\"condition_id\""

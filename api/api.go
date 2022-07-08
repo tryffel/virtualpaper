@@ -20,13 +20,14 @@ package api
 
 import (
 	"fmt"
+	"net/http"
+	"path"
+	"time"
+
 	"github.com/asaskevich/govalidator"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"path"
-	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/process"
 	"tryffel.net/go/virtualpaper/search"
@@ -130,6 +131,7 @@ func (a *Api) addRoutes() {
 	a.privateRouter.HandleFunc("/processing/rules/{id}", a.deleteUserRule).Methods(http.MethodDelete)
 	a.privateRouter.HandleFunc("/processing/rules", a.getUserRules).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/processing/rules/{id}", a.getUserRule).Methods(http.MethodGet)
+	a.privateRouter.HandleFunc("/processing/rules/{id}/test", a.testRule).Methods(http.MethodPut)
 
 	a.privateRouter.HandleFunc("/preferences/user", a.getUserPreferences).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/preferences/user", a.updateUserPreferences).Methods(http.MethodPut)
