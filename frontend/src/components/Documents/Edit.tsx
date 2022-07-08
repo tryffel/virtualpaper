@@ -41,7 +41,7 @@ import {
 
 import { MarkdownInput } from "../Markdown";
 import { Typography, Grid, Box } from "@mui/material";
-import get from "lodash/get";
+import get from "lodash";
 import "./Edit.css";
 
 export const DocumentEdit = () => {
@@ -134,6 +134,7 @@ export interface MetadataValueInputProps {
 const MetadataValueInput = (props: MetadataValueInputProps) => {
   let keyId = 0;
   if (props.record) {
+    // @ts-ignore
     keyId = get(props.record, "key_id");
   }
   const { data, isLoading, error } = useGetManyReference("metadata/values", {
