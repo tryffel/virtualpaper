@@ -20,7 +20,7 @@ import { useGetOne, Loading } from "react-admin";
 import { Grid } from "@mui/material";
 
 import { Stats } from "./Stats";
-import { DocumentTimeline } from "./Timeline";
+//import { DocumentTimeline } from "./Timeline";
 
 
 const Dashboard = () => {
@@ -47,9 +47,9 @@ const Dashboard = () => {
                 
     */} 
  
-                <Grid item xl={2} lg={5} xs={12} sm={10}>
+                {/* <Grid item xl={2} lg={5} xs={12} sm={10}>
                     <DocumentTimeline stats={data.yearly_stats}/>
-                </Grid>
+                </Grid> */}
                 <Grid item xs={12} sm={10} md={8} lg={3}>
                     <Stats {...data}/>
                 </Grid>
