@@ -41,7 +41,7 @@ import {
 
 import { MarkdownInput } from "../Markdown";
 import { Typography, Grid, Box } from "@mui/material";
-import get from "lodash";
+import get from "lodash/get";
 import "./Edit.css";
 
 export const DocumentEdit = () => {
