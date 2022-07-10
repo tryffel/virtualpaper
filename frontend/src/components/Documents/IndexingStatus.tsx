@@ -17,7 +17,7 @@
  */
 
 import React from "react";
-import { useRecordContext } from "react-admin";
+import { Labeled, useRecordContext } from "react-admin";
 import { Box, CircularProgress, Typography } from "@mui/material";
 
 export const IndexingStatusField = (props: any) => {
@@ -30,22 +30,31 @@ export const IndexingStatusField = (props: any) => {
     const status = props.record[props.source];
     if (status === "indexing" && value !== status) {
       setValue(status);
-      setLabel("Indexing document");
+      setLabel("Processing ongoing");
     } else if (status === "pending" && value !== status) {
       setValue(status);
-      setLabel("Indexing pending");
+      setLabel("Waiting for processing to start");
     } else if (status === "ready" && value !== status) {
       setValue(status);
-      setLabel("Ready");
+      setLabel("Document processed successfully");
     }
   }
 
   return value === "ready" ? null : (
-    <Box>
-      <CircularProgress variant="indeterminate" size={25} {...props} />
-      <Typography variant="caption" component="div" color="textSecondary">
-        {label}
-      </Typography>
+    <Box flex={0} mr={{ xs: 0, sm: "0.5em" }}>
+      <Labeled label="Document processing status">
+        <>
+          <CircularProgress
+            variant="indeterminate"
+            size={25}
+            color="secondary"
+            {...props}
+          />
+          <Typography variant="caption" component="div" color="textSecondary">
+            {label}
+          </Typography>
+        </>
+      </Labeled>
     </Box>
   );
 };

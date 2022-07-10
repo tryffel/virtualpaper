@@ -37,12 +37,14 @@ import {
   useRecordContext,
   useGetList,
   useGetManyReference,
+  Labeled,
 } from "react-admin";
 
 import { MarkdownInput } from "../Markdown";
 import { Typography, Grid, Box } from "@mui/material";
 import get from "lodash/get";
 import "./Edit.css";
+import { IndexingStatusField } from "./IndexingStatus";
 
 export const DocumentEdit = () => {
   const transform = (data: any) => ({
@@ -51,13 +53,15 @@ export const DocumentEdit = () => {
   });
 
   return (
-    <Edit transform={transform}>
-      <SimpleForm redirect="show">
+    <Edit transform={transform} title="Edit document">
+      <SimpleForm redirect="show" warnWhenUnsavedChanges>
         <div>
           <Grid container spacing={2}>
             <Grid item xs={12} md={8} lg={12}>
-              <Typography variant="h6">Basic info</Typography>
-              <TextField label="Id" source="id" />
+              <Typography variant="h6">Basic Info</Typography>
+              <Labeled label="Document id">
+                <TextField label="Id" source="id" id="document-id" />
+              </Labeled>
               <Box display={{ xs: "block", sm: "flex" }}>
                 <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
                   <TextInput source="name" fullWidth />
@@ -65,6 +69,7 @@ export const DocumentEdit = () => {
                 <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
                   <DateInput source="date" />
                 </Box>
+                <IndexingStatusField source="status" />
               </Box>
               <Box display={{ xs: "block", sm: "flex" }}>
                 <MarkdownInput source="description" label="Description" />
@@ -113,8 +118,12 @@ export const DocumentEdit = () => {
                 </ArrayInput>
               </Box>
               <Box display={{ xs: "block", sm: "block" }}>
-                <DateField source="created_at" />
-                <DateField source="updated_at" />
+                <Labeled label="Created at">
+                  <DateField source="created_at" />
+                </Labeled>
+                <Labeled label="Updated at">
+                  <DateField source="updated_at" />
+                </Labeled>
               </Box>
             </Grid>
           </Grid>
@@ -136,6 +145,7 @@ const MetadataValueInput = (props: MetadataValueInputProps) => {
   if (props.record) {
     // @ts-ignore
     keyId = get(props.record, "key_id");
+    console.log("key ", keyId);
   }
   const { data, isLoading, error } = useGetManyReference("metadata/values", {
     target: "id",
