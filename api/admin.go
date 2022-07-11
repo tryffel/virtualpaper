@@ -131,6 +131,8 @@ func (a *Api) forceDocumentProcessing(resp http.ResponseWriter, req *http.Reques
 				logrus.Errorf("schedule document processing: %v", err)
 			}
 		}
+	} else {
+		a.process.PullDocumentsToProcess()
 	}
 	respOk(resp, nil)
 }

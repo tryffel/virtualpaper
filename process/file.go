@@ -41,7 +41,7 @@ type fileProcessor struct {
 func newFileProcessor(conf *fpConfig) *fileProcessor {
 	fp := &fileProcessor{
 		Task:  newTask(conf.id, conf.db, conf.search),
-		input: make(chan fileOp, 10),
+		input: make(chan fileOp, 100),
 
 		usePdfToText: conf.usePdfToText,
 		useOcr:       conf.useOcr,
@@ -817,6 +817,8 @@ func (fp *fileProcessor) completeProcessingStep(process *models.ProcessItem, job
 
 	if job.Status == models.JobFailure && removeStep {
 		logrus.Infof("failure in processing document %s, skipping step %s", job.DocumentId, job.Step.String())
+		// prevent 100% cpu utilization if step fails
+		time.Sleep(1)
 	}
 
 	err := fp.db.JobStore.MarkProcessingDone(process, removeStep)

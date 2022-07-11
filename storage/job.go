@@ -2,9 +2,10 @@ package storage
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
-	"time"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 )
@@ -128,7 +129,7 @@ from (
      ) as d
 group by d.document_id
 order by created_at
-limit 20;
+limit 50;
 `
 
 	dto := &[]models.ProcessItem{}

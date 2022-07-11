@@ -3,19 +3,22 @@ package process
 import (
 	"errors"
 	"fmt"
-	"github.com/fsnotify/fsnotify"
-	"github.com/sirupsen/logrus"
 	"math/rand"
 	"os"
 	"path"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/sirupsen/logrus"
 	config "tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
+
+const idleCheckDocumentsForProcessingSec = time.Second * 5
 
 // processing file operation. Either fill file or document.
 // Fill file to mark file without document record.
@@ -37,14 +40,19 @@ type Manager struct {
 	numtasks int
 
 	inputWatch *fsnotify.Watcher
+
+	checkJobstimer *time.Timer
+	runFunctimer   *time.Timer
 }
 
 func NewManager(database *storage.Database, search *search.Engine) (*Manager, error) {
 	manager := &Manager{
-		lock:       &sync.RWMutex{},
-		reportChan: make(chan TaskReport, 10),
-		db:         database,
-		search:     search,
+		lock:           &sync.RWMutex{},
+		reportChan:     make(chan TaskReport, 10),
+		db:             database,
+		search:         search,
+		checkJobstimer: time.NewTimer(idleCheckDocumentsForProcessingSec),
+		runFunctimer:   time.NewTimer(time.Millisecond * 100),
 	}
 
 	useOcr := true
@@ -88,7 +96,6 @@ func (m *Manager) Start() error {
 	}
 
 	logrus.Info("Start background worker")
-
 	logrus.Infof("Watch directory %s", config.C.Processing.InputDir)
 
 	if config.C.Processing.InputDir != "" {
@@ -119,31 +126,11 @@ func (m *Manager) Start() error {
 		logrus.Debug("start background task manager")
 
 		err := m.db.JobStore.CancelRunningProcesses()
-		time.Sleep(time.Millisecond * 3000)
-
-		docs := map[string]*models.Document{}
-		processes, _, err := m.db.JobStore.GetPendingProcessing()
 		if err != nil {
-			logrus.Errorf("get pending processing: %v", err)
-		} else {
-			for _, v := range *processes {
-				if docs[v.DocumentId] == nil {
-					doc, err := m.db.DocumentStore.GetDocument(0, v.DocumentId)
-					if err != nil {
-						logrus.Errorf("get document: %v", err)
-					} else {
-						docs[v.DocumentId] = doc
-					}
-				}
-			}
-
-			for _, v := range docs {
-				err = m.AddDocumentForProcessing(v)
-				if err != nil {
-					logrus.Errorf("add document for processing: %v", err)
-				}
-			}
+			logrus.Errorf("cancel old processes: %v", err)
 		}
+		time.Sleep(time.Millisecond * 5000)
+		m.PullDocumentsToProcess()
 
 		for m.isRunning() {
 			m.runFunc()
@@ -161,6 +148,8 @@ func (m *Manager) Stop() error {
 		return errors.New("not running")
 	}
 
+	logrus.Info("Stop process manager")
+
 	for _, task := range m.tasks {
 		task.Stop()
 	}
@@ -169,6 +158,37 @@ func (m *Manager) Stop() error {
 	m.running = false
 	m.lock.Unlock()
 	return nil
+}
+
+func (m *Manager) PullDocumentsToProcess() {
+	docs := make(map[string]*models.Document)
+	processes, _, err := m.db.JobStore.GetPendingProcessing()
+
+	if len(*processes) > 0 {
+		logrus.Infof("%d more document(s) are waiting for processing, push steps to runners", len(*processes))
+	}
+
+	if err != nil {
+		logrus.Errorf("get pending processing: %v", err)
+	} else {
+		for _, v := range *processes {
+			if docs[v.DocumentId] == nil {
+				doc, err := m.db.DocumentStore.GetDocument(0, v.DocumentId)
+				if err != nil {
+					logrus.Errorf("get document: %v", err)
+				} else {
+					docs[v.DocumentId] = doc
+				}
+			}
+		}
+
+		for _, v := range docs {
+			err = m.AddDocumentForProcessing(v)
+			if err != nil {
+				logrus.Errorf("add document for processing: %v", err)
+			}
+		}
+	}
 }
 
 // AddDocumentForProcessing marks document as available for processing.
@@ -186,11 +206,14 @@ func (m *Manager) isRunning() bool {
 
 // async function loop to wait for events and launch tasks.
 func (m *Manager) runFunc() {
-	timer := time.NewTimer(time.Millisecond * 100)
 
 	select {
-	case <-timer.C:
-		// pass
+	case <-m.runFunctimer.C:
+		m.runFunctimer.Reset(time.Millisecond * 100)
+
+	case <-m.checkJobstimer.C:
+		m.PullDocumentsToProcess()
+		m.checkJobstimer.Reset(idleCheckDocumentsForProcessingSec)
 
 	case event, ok := <-m.inputWatch.Events:
 		if ok {
@@ -201,9 +224,7 @@ func (m *Manager) runFunc() {
 			logrus.Infof("Schedule processing for file %s", event.Name)
 			m.scheduleNewOp(event.Name, nil)
 		}
-
-		//pass
-
+		m.PullDocumentsToProcess()
 	case report := <-m.reportChan:
 		logrus.Infof("Got task report: %v", report)
 
