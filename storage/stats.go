@@ -19,13 +19,29 @@
 package storage
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/jmoiron/sqlx"
+	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
+	"tryffel.net/go/virtualpaper/config"
+	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 )
 
 type StatsStore struct {
-	db *sqlx.DB
+	db    *sqlx.DB
+	cache *cache.Cache
+}
+
+func NewStatsStore(db *sqlx.DB) *StatsStore {
+	return &StatsStore{
+		db:    db,
+		cache: cache.New(30*time.Second, time.Minute),
+	}
 }
 
 func (s *StatsStore) Name() string {
@@ -102,12 +118,22 @@ order by updated_at desc limit 10;
 
 func (s *StatsStore) GetSystemStats() (*models.SystemStatistics, error) {
 
+	cacheKey := "system-stats"
+
+	cached, ok := s.cache.Get(cacheKey)
+	if ok {
+		cachedStats, ok := cached.(*models.SystemStatistics)
+		if ok {
+			logrus.Debugf("storage.GetSystemStats() using cached result")
+			return cachedStats, nil
+		} else {
+			s.cache.Delete(cacheKey)
+		}
+	}
+
 	sql := `
 SELECT
     count(distinct(d.id)) AS documents_total,
-    ( 
-        select sum(d.size) from documents d
-    ) as documents_size,
     count(distinct(pq.document_id)) as documents_queued,
     (
         select count(distinct(j.document_id)) as documents_processed_today
@@ -129,8 +155,42 @@ from documents d
          left join process_queue pq on d.id = pq.document_id
          left join jobs j on d.id = j.document_id;
 `
-
 	stats := &models.SystemStatistics{}
+
 	err := s.db.Get(stats, sql)
-	return stats, s.parseError(err, "get system stats")
+	if err != nil {
+		return stats, s.parseError(err, "get system stats")
+	}
+
+	totalSize, err := getStorageTotalSize()
+	if err != nil {
+		e := errors.ErrInternalError
+		e.Err = fmt.Errorf("get total storage size: %v", err)
+	}
+
+	stats.DocumentsTotalSize = int64(totalSize)
+	stats.DocumentsTotalSizeString = models.GetPrettySize(stats.DocumentsTotalSize)
+
+	s.cache.SetDefault(cacheKey, stats)
+	return stats, nil
+}
+
+func getStorageTotalSize() (uint64, error) {
+	logrus.Warningf("start calculating storage total size, this could take a while")
+	path := config.C.Processing.DocumentsDir
+	var size uint64
+
+	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() {
+			size += uint64(info.Size())
+		}
+		return err
+	})
+
+	logrus.Infof("total storage size")
+	return size, err
 }

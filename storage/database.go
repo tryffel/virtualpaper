@@ -45,7 +45,7 @@ func NewDatabase() (*Database, error) {
 	db.DocumentStore = &DocumentStore{db: db.conn}
 	db.JobStore = &JobStore{db: db.conn}
 	db.MetadataStore = NewMetadataStore(db.conn)
-	db.StatsStore = &StatsStore{db: db.conn}
+	db.StatsStore = NewStatsStore(db.conn)
 	db.RuleStore = newRuleStore(db.conn, db.MetadataStore)
 	return db, nil
 }
