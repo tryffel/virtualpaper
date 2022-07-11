@@ -52,6 +52,7 @@ const App = () => (
     <Resource name="user" />
     <Resource name="preferences" />
     <Resource name="admin" />
+    <Resource name="admin/users" />
 
     <CustomRoutes>
       <Route

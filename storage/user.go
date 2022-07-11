@@ -150,6 +150,30 @@ func (s *UserStore) GetUsers() (*[]models.User, error) {
 	return users, s.parseError(err, "get users")
 }
 
+func (s *UserStore) GetUsersInfo() (*[]models.UserInfo, error) {
+
+	sql := `
+	SELECT 
+		u.id as user_id, 
+		u.name as username, 
+		email, 
+		active, 
+		admin, 
+		u.created_at as created_at, 
+		u.updated_at as updated_at, 
+		count(d) as documents_count, 
+		sum(d."size") as documents_size 
+	from users u 
+	left join documents d on u.id = d.user_id 
+	group by u.id
+	order by u.name asc
+	limit 1000;`
+
+	info := &[]models.UserInfo{}
+	err := s.db.Select(info, sql)
+	return info, s.parseError(err, "get detailed user info")
+}
+
 // GetUser returns single user with id.
 func (s *UserStore) GetUser(userid int) (*models.User, error) {
 	user := s.getUserIdCache(userid)

@@ -21,7 +21,7 @@ RUN make build
 
 
 ### Frontend build
-FROM node:18.4.0-alpine3.16 as frontend
+FROM node:16.15.1-alpine3.16 as frontend
 
 RUN apk update
 RUN apk --no-cache add \
@@ -33,7 +33,7 @@ RUN apk --no-cache add \
     nodejs \
     npm 
 
-#RUN npm install -g yarn
+#RUN npm install --location=global yarn
 RUN yarn add react-scripts
 
 WORKDIR /virtualpaper

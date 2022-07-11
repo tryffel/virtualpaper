@@ -21,8 +21,9 @@ package models
 import (
 	"errors"
 	"fmt"
-	"golang.org/x/crypto/bcrypt"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -73,4 +74,17 @@ type UserPreferences struct {
 	IsAdmin       bool       `json:"is_admin" db:"is_admin"`
 	StopWords     []string   `json:"stop_words""`
 	Synonyms      [][]string `json:"synonyms"`
+}
+
+type UserInfo struct {
+	UserId        int       `json:"id" db:"user_id"`
+	UserName      string    `json:"user_name" db:"username"`
+	Email         string    `json:"email" db:"email"`
+	IsActive      bool      `json:"is_active" db:"active"`
+	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
+	CreatedAt     time.Time `json:"created_at" db:"created_at"`
+	DocumentCount Int       `json:"documents_count" db:"documents_count"`
+	DocumentsSize Int       `json:"documents_size" db:"documents_size"`
+	IsAdmin       bool      `json:"is_admin" db:"admin"`
+	LastSeen      time.Time `json:"last_seen" db:"last_seen"`
 }
