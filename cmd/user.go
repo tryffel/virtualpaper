@@ -21,12 +21,13 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-	"golang.org/x/crypto/ssh/terminal"
 	"os"
 	"strings"
 	"syscall"
+
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"golang.org/x/crypto/ssh/terminal"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/storage"
@@ -88,7 +89,7 @@ var addUserCmd = &cobra.Command{
 			if firstPw != secondPw {
 				logrus.Fatalf("passwords do not match.")
 			}
-			password = password
+			password = firstPw
 		}
 
 		var admin bool
@@ -121,6 +122,7 @@ var addUserCmd = &cobra.Command{
 			logrus.Errorf("set password: %v", err)
 		}
 		user.IsAdmin = admin
+		user.IsActive = true
 
 		err = db.UserStore.AddUser(user)
 		if err != nil {
@@ -128,8 +130,9 @@ var addUserCmd = &cobra.Command{
 		} else {
 			if admin {
 				logrus.Infof("Created admin user (id:%d) - %s", user.Id, user.Name)
+			} else {
+				logrus.Infof("Created user (id:%d) %s", user.Id, user.Name)
 			}
-			logrus.Infof("Created user (id:%d) %s", user.Id, user.Name)
 		}
 	},
 }
@@ -187,7 +190,7 @@ func init() {
 	manageCmd.AddCommand(addUserCmd)
 	manageCmd.AddCommand(resetPwCMd)
 
-	addUserCmd.PersistentFlags().StringVarP(&optAdmin, "admin", "a", "false",
+	addUserCmd.PersistentFlags().StringVarP(&optAdmin, "admin", "a", "",
 		"Make user an administrator")
 	addUserCmd.PersistentFlags().StringVarP(&userName, "username", "U", "",
 		"New username")

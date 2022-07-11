@@ -21,9 +21,10 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
-	"time"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 )
@@ -113,11 +114,11 @@ WHERE name = $1;
 func (s *UserStore) AddUser(user *models.User) error {
 
 	sql := `
-INSERT INTO users (name, email, updated_at, password)
-VALUES ($1, $2, $3, $4) RETURNING id;
+INSERT INTO users (name, email, updated_at, password, active, admin)
+VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;
 
 `
-	rows, err := s.db.Query(sql, user.Name, "", time.Now(), user.Password)
+	rows, err := s.db.Query(sql, user.Name, "", time.Now(), user.Password, user.IsActive, user.IsAdmin)
 	if err != nil {
 		return s.parseError(err, "add")
 	}
@@ -241,7 +242,6 @@ SELECT
        sum(d.size) AS documents_size
 FROM users s
 LEFT JOIN documents d ON s.id = d.user_id
-
 WHERE s.id = $1
 GROUP BY(s.id);`
 

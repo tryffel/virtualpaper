@@ -154,17 +154,24 @@ export const dataProvider: DataProvider = {
     });
   },
 
+  // @ts-ignore
   getOne: (resource, params) => {
     if (resource === "documents/stats") {
       return httpClient(`${apiUrl}/${resource}`).then(({ json }) => ({
         data: json,
       }));
     } else if (resource === "preferences") {
-      return httpClient(`${apiUrl}/${resource}/${params.id}`).then(
-        ({ json }) => ({
+      return httpClient(`${apiUrl}/${resource}/${params.id}`).then( ({json}) => {
+        // @ts-ignore
+        const isAdmin = json.is_admin;
+        // @ts-ignore
+        localStorage.setItem("is_admin", isAdmin == true);
+
+        // @ts-ignore
+        return {
           data: { ...json, id: "user" },
-        })
-      );
+        }
+    })
     } else {
       if (params.id === null || params.id === "") {
         return httpClient(`${apiUrl}/${resource}`).then(({ json }) => ({

@@ -52,6 +52,8 @@ const authProvider: AuthProvider = {
   },
   logout: () => {
     localStorage.removeItem("auth");
+    localStorage.removeItem("is_admin");
+    localStorage.removeItem("userId");
     return Promise.resolve();
   },
   checkAuth: () =>
