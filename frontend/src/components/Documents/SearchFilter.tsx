@@ -17,11 +17,7 @@
  */
 
 import { Card, CardContent, Box } from "@mui/material";
-import {
-  FilterList,
-  FilterListItem,
-  TextInput,
-} from "react-admin";
+import { FilterList, FilterListItem, TextInput } from "react-admin";
 import {
   endOfYesterday,
   startOfMonth,
@@ -33,7 +29,13 @@ import { AccessTime } from "@mui/icons-material";
 import * as React from "react";
 
 export const DocumentSearchFilter = [
-  <TextInput source="q" label="Full Text Search" alwaysOn resettable fullWidth />,
+  <TextInput
+    source="q"
+    label="Full Text Search"
+    alwaysOn
+    resettable
+    fullWidth
+  />,
   <TextInput
     label="Metadata filter"
     alwaysOn
