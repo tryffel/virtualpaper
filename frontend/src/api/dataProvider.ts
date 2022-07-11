@@ -161,7 +161,7 @@ export const dataProvider: DataProvider = {
         data: json,
       }));
     } else if (resource === "preferences") {
-      return httpClient(`${apiUrl}/${resource}/${params.id}`).then( ({json}) => {
+      return httpClient(`${apiUrl}/${resource}/${params.id}`).then(({ json }) => {
         // @ts-ignore
         const isAdmin = json.is_admin;
         // @ts-ignore
@@ -171,7 +171,7 @@ export const dataProvider: DataProvider = {
         return {
           data: { ...json, id: "user" },
         }
-    })
+      })
     } else {
       if (params.id === null || params.id === "") {
         return httpClient(`${apiUrl}/${resource}`).then(({ json }) => ({
@@ -339,14 +339,22 @@ export const dataProvider: DataProvider = {
       )
     ).then((responses) => ({ data: responses.map(({ json }) => json.id) })),
 
-  testRule: (resource: any, params: any) => 
+  testRule: (resource: any, params: any) =>
     httpClient(`${apiUrl}/${resource}/${params.id}/test`, {
       method: "PUT",
       body: JSON.stringify(params.data),
     }).then(({ json }) => ({
       data: { ...params.data, ...json },
     })),
-  
+
+  adminRequestProcessing: (params: any) =>
+    httpClient(`${apiUrl}/admin/documents/process`, {
+      method: "POST",
+      body: JSON.stringify(params.data),
+    }).then(({ json }) => ({
+      data: { ...params.data, ...json },
+    })),
+
 };
 
 export const requestDocumentProcessing = (documentId: string) => {
