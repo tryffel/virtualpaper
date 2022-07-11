@@ -38,13 +38,27 @@ import {
   useGetList,
   useGetManyReference,
   Labeled,
+  Toolbar,
+  SaveButton,
+  DeleteWithConfirmButton,
 } from "react-admin";
 
 import { MarkdownInput } from "../Markdown";
 import { Typography, Grid, Box } from "@mui/material";
 import get from "lodash/get";
-import "./Edit.css";
 import { IndexingStatusField } from "./IndexingStatus";
+
+const EditToolBar = () => {
+  return (
+    <Toolbar>
+      <SaveButton />
+      <DeleteWithConfirmButton
+        confirmTitle="Are you sure you want to delete document?"
+        confirmContent="The document will be permanently deleted."
+      />
+    </Toolbar>
+  );
+};
 
 export const DocumentEdit = () => {
   const transform = (data: any) => ({
@@ -54,7 +68,11 @@ export const DocumentEdit = () => {
 
   return (
     <Edit transform={transform} title="Edit document">
-      <SimpleForm redirect="show" warnWhenUnsavedChanges>
+      <SimpleForm
+        redirect="show"
+        warnWhenUnsavedChanges
+        toolbar={<EditToolBar />}
+      >
         <div>
           <Grid container spacing={2}>
             <Grid item xs={12} md={8} lg={12}>
@@ -99,7 +117,11 @@ export const DocumentEdit = () => {
                       fullWidth
                       className="MuiBox"
                     >
-                      <SelectInput optionText="key" fullWidth />
+                      <SelectInput
+                        optionText="key"
+                        fullWidth
+                        data-testid="metadata-key"
+                      />
                     </ReferenceInput>
 
                     <FormDataConsumer>

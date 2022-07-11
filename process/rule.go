@@ -81,7 +81,7 @@ func (d *DocumentRule) Match() (bool, error) {
 		} else if strings.HasPrefix(condText, "metadata_has_key") {
 			ok = d.hasMetadataKey(condition)
 		} else if strings.HasPrefix(condText, "date") {
-			ok, err = d.extractDates(condition, time.Now())
+			ok, err = d.extractDates(condition, time.Now(), nil)
 		} else if strings.HasPrefix(condText, "metadata_count") {
 			ok, err = d.hasMetadataCount(condition)
 		} else if condition.ConditionType == models.RuleConditionMetadataHasKey {
@@ -170,7 +170,7 @@ func (d *DocumentRule) MatchTest() *RuleTestResult {
 		} else if strings.HasPrefix(condText, "metadata_has_key") {
 			ok = d.hasMetadataKey(condition)
 		} else if strings.HasPrefix(condText, "date") {
-			ok, err = d.extractDates(condition, time.Now())
+			ok, err = d.extractDates(condition, time.Now(), logger)
 
 			if ok {
 				y, m, d := d.date.Date()
@@ -294,13 +294,25 @@ func (d *DocumentRule) hasMetadataCount(condition *models.RuleCondition) (bool, 
 // 1. a future date that has most matches
 // 2. a passed date that has most matches
 // 3. any date found from document.
-func (d *DocumentRule) extractDates(condition *models.RuleCondition, now time.Time) (bool, error) {
+func (d *DocumentRule) extractDates(condition *models.RuleCondition, now time.Time, logger *logrus.Logger) (bool, error) {
 	re, err := regexp.Compile(condition.Value)
 	if err != nil {
 		return false, fmt.Errorf("regex: %v", err)
 	}
 
 	matches := re.FindAllString(d.Document.Content, -1)
+
+	if logger != nil {
+		logger.Infof("Regex resulted in total of %d matches", len(matches))
+
+		if len(matches) > 10 {
+			logger.Infof("regex matches (first 10): %v", matches[0:9])
+		} else {
+			logger.Infof("regex matches: %v", matches)
+		}
+
+	}
+
 	dates := make(map[time.Time]int)
 	datesPassed := make(map[time.Time]int)
 	datesUpcoming := make(map[time.Time]int)
@@ -316,7 +328,10 @@ func (d *DocumentRule) extractDates(condition *models.RuleCondition, now time.Ti
 	for _, v := range matches {
 		date, err := time.Parse(condition.DateFmt, v)
 		if err != nil {
-			logrus.Tracef("text %s does not match date fmt %s", v, condition.DateFmt)
+			logrus.Debugf("text %s does not match date fmt %s", v, condition.DateFmt)
+			if logger != nil {
+				logger.Warnf("matched text '%s' does not match date format '%s', skipping", v, condition.DateFmt)
+			}
 		} else {
 			putDateToMap(date, &dates)
 			if date.After(now) {
@@ -329,6 +344,10 @@ func (d *DocumentRule) extractDates(condition *models.RuleCondition, now time.Ti
 
 	if len(dates) == 0 {
 		return false, nil
+	}
+
+	if logger != nil {
+		logger.Infof("Found total of %d valid dates", len(dates))
 	}
 
 	pickDate := time.Time{}
@@ -349,6 +368,9 @@ func (d *DocumentRule) extractDates(condition *models.RuleCondition, now time.Ti
 		}
 	}
 
+	if logger != nil {
+		logger.Infof("selected date %s", pickDate.String())
+	}
 	d.date = pickDate
 	return true, nil
 }

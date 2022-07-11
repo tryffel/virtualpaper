@@ -197,11 +197,17 @@ func TestDocumentRule_RunActions(t *testing.T) {
 				MetadataKey:   10,
 				MetadataValue: 15,
 			},
+			{
+				Enabled:     true,
+				OnCondition: true,
+				Action:      models.RuleActionSetDate,
+			},
 		},
 	}
 
 	wantName := "test, suffix"
 	dc := NewDocumentRule(doc, rule)
+	dc.date = time.Unix(1627620345, 0)
 	err := dc.RunActions()
 	if err != nil {
 		t.Errorf("matchText() error = %v", err)
@@ -218,6 +224,10 @@ func TestDocumentRule_RunActions(t *testing.T) {
 
 	if doc.HasMetadataKeyValue(10, 15) {
 		t.Errorf("runActions(), metadata not removed")
+	}
+
+	if doc.Date.Unix() != dc.date.Unix() {
+		t.Errorf("runActions(), date not set")
 	}
 
 }
@@ -692,7 +702,7 @@ func TestDocumentRule_extractDates(t *testing.T) {
 				Document: tt.fields.Document,
 				date:     tt.fields.date,
 			}
-			got, err := d.extractDates(tt.args.condition, now)
+			got, err := d.extractDates(tt.args.condition, now, nil)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("extractDates() error = %v, wantErr %v", err, tt.wantErr)
 				return

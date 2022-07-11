@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
 	"tryffel.net/go/virtualpaper/errors"
 )
 
@@ -214,6 +215,17 @@ func (r *RuleCondition) Validate() error {
 		if r.MetadataKey == 0 || r.MetadataValue == 0 {
 			err.ErrMsg = "must have metadata key and value defined"
 			return err
+		}
+	}
+
+	if r.ConditionType == RuleConditionDateIs {
+		if r.DateFmt == "" {
+			err.ErrMsg = "date format (date_fmt) cannot be empty"
+			return err
+		}
+
+		if !r.IsRegex {
+			err.ErrMsg = "regex must be enabled when parsing date"
 		}
 	}
 	return nil

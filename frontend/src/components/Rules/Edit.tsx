@@ -184,7 +184,8 @@ export const ConditionEdit = () => {
       defaultValue={{
         enabled: true,
         condition_type: "content_contains",
-        value: "empty",
+        value: "",
+        date_fmt: "",
       }}
     >
       <FormDataConsumer>
@@ -238,10 +239,10 @@ export const ConditionEdit = () => {
                     </Box>
                     {scopedFormData &&
                     scopedFormData.condition_type &&
-                    !scopedFormData.condition_type.startsWith("date") &&
-                    !scopedFormData.condition_type.startsWith(
-                      "metadata_has_key"
-                    ) ? (
+                    (scopedFormData.condition_type.startsWith("date") ||
+                      !scopedFormData.condition_type.startsWith(
+                        "metadata_has_key"
+                      )) ? (
                       <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
                         <TextInput
                           label="Filter"
@@ -261,9 +262,9 @@ export const ConditionEdit = () => {
                           label="Date format"
                           source={getSource("date_fmt")}
                           // @ts-ignore
-                          record={{ scopedFormData }}
+                          record={scopedFormData}
+
                           fullWidth
-                          resettable
                         />
                       </Box>
                     ) : null}
@@ -343,9 +344,6 @@ export const ActionEdit = () => {
                     <BooleanInput
                       label="On condition"
                       source={getSource("on_condition")}
-                      // @ts-ignore
-
-                      record={scopedFormData}
                     />
                   </Grid>
                 </Grid>
@@ -354,7 +352,10 @@ export const ActionEdit = () => {
                 !scopedFormData.action.startsWith("metadata") ? (
                   <Grid container display="flex" spacing={2}>
                     <Grid item flex={1} ml="0.5em">
-                      <TextInput label="Value" source="value" />
+                      <TextInput
+                        label="Value"
+                        source={getSource("value")}
+                      />
                     </Grid>
                   </Grid>
                 ) : null}
@@ -479,6 +480,8 @@ const HelpDialog = (props: any) => {
   const handleClose = () => {
     onClose();
   };
+  
+  const dateRegexExample = `(\d{4}-\d{1,2}-\d{1,2})`;
 
   return (
     <Dialog
@@ -552,7 +555,6 @@ const HelpDialog = (props: any) => {
               </li>
             </ul>
           </p>
-
           <p>
             Action settings
             <ul>
@@ -566,6 +568,44 @@ const HelpDialog = (props: any) => {
               </li>
             </ul>
           </p>
+          
+          <Typography variant="h6">Extracting date</Typography>
+          <p>
+
+                      Matching a date from the document is a special case of condition. 
+            By setting condition type to 'date is' the automation searches for dates inside the document.
+            The automation searches for the given regular expressions to match date. 
+            If date is found, then the date time is extracted using the date format. 
+            Thus regular expression controls finding the date time text inside the document 
+            and date format controls how the matched date string is converted to date time.
+            For more info on possible time formats, see Golang's documentation on time formats: 
+            <a href="https://pkg.go.dev/time#pkg-constants">pkg.go.dev/time</a>
+</p>
+<p>Fox configuring date extraction set following settings:
+<ol>
+<li>Set regex to true</li>
+<li>Enter regular expression</li>
+<li>Enter valid date time format</li>
+</ol>
+
+Example values could be: 
+<ol>
+  <li>filter: '{dateRegexExample}' would match date 2022-07-15</li>
+  <li>Date format would thus be '2006-01-02'</li>
+  </ol>
+
+
+</p>
+
+            
+            
+            
+            
+            
+            
+            In this case the user must set the 'filter' as a valid regular expression to match the date. 
+            E.g. 
+              
 
           <Typography variant="h6" color="textPrimary">
             Tips
@@ -577,6 +617,7 @@ const HelpDialog = (props: any) => {
               documents than intended. Specific email address or bank account
               might limit the results down.
             </li>
+            
           </ul>
         </DialogContentText>
       </DialogContent>

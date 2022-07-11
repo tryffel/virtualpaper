@@ -458,10 +458,10 @@ func (s *RuleStore) addActionsToRule(tx *tx, ruleId int, actions []*models.RuleA
 func (s *RuleStore) addConditionsToRule(tx *tx, ruleId int, conditions []*models.RuleCondition) error {
 	query := s.sq.Insert("rule_conditions").
 		Columns("rule_id", "enabled", "case_insensitive", "inverted_match", "condition_type",
-			"is_regex", "value", "metadata_key", "metadata_value")
+			"is_regex", "value", "date_fmt", "metadata_key", "metadata_value")
 
 	for _, v := range conditions {
-		query = query.Values(ruleId, v.Enabled, v.CaseInsensitive, v.Inverted, v.ConditionType, v.IsRegex, v.Value,
+		query = query.Values(ruleId, v.Enabled, v.CaseInsensitive, v.Inverted, v.ConditionType, v.IsRegex, v.Value, v.DateFmt,
 			v.MetadataKey, v.MetadataValue)
 	}
 
