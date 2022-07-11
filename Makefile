@@ -38,6 +38,7 @@ test-start:
 	sleep 3
 	docker-compose run --rm --entrypoint "/app/virtualpaper --config /config/config.toml" server migrate
 	docker-compose run --rm --entrypoint "/app/virtualpaper --config /config/config.toml" server manage add-user -U user -P user -a false
+	docker-compose run --rm --entrypoint "/app/virtualpaper --config /config/config.toml" server manage add-user -U admin -P admin -a true
 	docker-compose start server
 
 

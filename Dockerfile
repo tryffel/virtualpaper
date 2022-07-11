@@ -1,5 +1,5 @@
 # Backend build
-FROM golang:1.16.4-alpine3.13 as backend
+FROM golang:1.18.3-alpine3.15 as backend
 
 RUN apk update
 RUN apk --no-cache add \
@@ -33,7 +33,6 @@ RUN apk --no-cache add \
     nodejs \
     npm 
 
-#RUN npm install --location=global yarn
 RUN yarn add react-scripts
 
 WORKDIR /virtualpaper
@@ -44,7 +43,8 @@ RUN make build-frontend
 
 
 # Runtime
-FROM alpine:3.13.5
+FROM alpine:3.14.6
+
 EXPOSE 8000:8000
 
 RUN apk add \
@@ -66,12 +66,12 @@ VOLUME ["/input"]
 VOLUME ["/usr/share/tessdata/"]
 
 COPY --from=backend /virtualpaper/virtualpaper /app/virtualpaper
-
-COPY --from=frontend /virtualpaper/frontend/build /app/frontend
 COPY --from=backend /virtualpaper/config.sample.toml /config/config.toml
-
 COPY --from=backend /virtualpaper/docker/imagemagick-7-policy.xml /etc/ImageMagick-7/policy.xml
 COPY --from=backend /virtualpaper/docker/start.sh /app/start.sh
+
+COPY --from=frontend /virtualpaper/frontend/build /app/frontend
+
 
 ENV VIRTUALPAPER_API_STATIC_CONTENT_PATH="/app/frontend"
 ENV VIRTUALPAPER_PROCESSING_DATA_DIR="/data"
