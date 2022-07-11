@@ -263,7 +263,6 @@ export const ConditionEdit = () => {
                           source={getSource("date_fmt")}
                           // @ts-ignore
                           record={scopedFormData}
-
                           fullWidth
                         />
                       </Box>
@@ -352,10 +351,7 @@ export const ActionEdit = () => {
                 !scopedFormData.action.startsWith("metadata") ? (
                   <Grid container display="flex" spacing={2}>
                     <Grid item flex={1} ml="0.5em">
-                      <TextInput
-                        label="Value"
-                        source={getSource("value")}
-                      />
+                      <TextInput label="Value" source={getSource("value")} />
                     </Grid>
                   </Grid>
                 ) : null}
@@ -480,7 +476,7 @@ const HelpDialog = (props: any) => {
   const handleClose = () => {
     onClose();
   };
-  
+
   const dateRegexExample = `(\d{4}-\d{1,2}-\d{1,2})`;
 
   return (
@@ -521,11 +517,9 @@ const HelpDialog = (props: any) => {
               <li>Add metadata 'company:google'</li>
             </ol>
           </p>
-
           <Typography variant="h5" color="textPrimary">
             Instructions
           </Typography>
-
           <p>
             Match conditions:
             <ul>
@@ -533,7 +527,6 @@ const HelpDialog = (props: any) => {
               <li>Match any: any condition must match</li>
             </ul>
           </p>
-
           <p>
             Condition settings
             <ul>
@@ -568,45 +561,34 @@ const HelpDialog = (props: any) => {
               </li>
             </ul>
           </p>
-          
           <Typography variant="h6">Extracting date</Typography>
           <p>
-
-                      Matching a date from the document is a special case of condition. 
-            By setting condition type to 'date is' the automation searches for dates inside the document.
-            The automation searches for the given regular expressions to match date. 
-            If date is found, then the date time is extracted using the date format. 
-            Thus regular expression controls finding the date time text inside the document 
-            and date format controls how the matched date string is converted to date time.
-            For more info on possible time formats, see Golang's documentation on time formats: 
+            Matching a date from the document is a special case of condition. By
+            setting condition type to 'date is' the automation searches for
+            dates inside the document. The automation searches for the given
+            regular expressions to match date. If date is found, then the date
+            time is extracted using the date format. Thus regular expression
+            controls finding the date time text inside the document and date
+            format controls how the matched date string is converted to date
+            time. For more info on possible time formats, see Golang's
+            documentation on time formats:
             <a href="https://pkg.go.dev/time#pkg-constants">pkg.go.dev/time</a>
-</p>
-<p>Fox configuring date extraction set following settings:
-<ol>
-<li>Set regex to true</li>
-<li>Enter regular expression</li>
-<li>Enter valid date time format</li>
-</ol>
-
-Example values could be: 
-<ol>
-  <li>filter: '{dateRegexExample}' would match date 2022-07-15</li>
-  <li>Date format would thus be '2006-01-02'</li>
-  </ol>
-
-
-</p>
-
-            
-            
-            
-            
-            
-            
-            In this case the user must set the 'filter' as a valid regular expression to match the date. 
-            E.g. 
-              
-
+          </p>
+          <p>
+            Fox configuring date extraction set following settings:
+            <ol>
+              <li>Set regex to true</li>
+              <li>Enter regular expression</li>
+              <li>Enter a valid date time format as per Golang time parsing formats. </li>
+            </ol>
+            Example values could be:
+            <ol>
+              <li>filter: '{dateRegexExample}' would match date 2022-07-15</li>
+              <li>Date format would thus be '2006-1-2'</li>
+            </ol>
+          </p>
+          In this case the user must set the 'filter' as a valid regular
+          expression to match the date. E.g.
           <Typography variant="h6" color="textPrimary">
             Tips
           </Typography>
@@ -617,7 +599,6 @@ Example values could be:
               documents than intended. Specific email address or bank account
               might limit the results down.
             </li>
-            
           </ul>
         </DialogContentText>
       </DialogContent>
