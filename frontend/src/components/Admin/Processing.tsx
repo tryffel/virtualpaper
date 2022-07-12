@@ -17,7 +17,7 @@
  */
 
 import React, { useState } from "react";
-import { useDataProvider, useNotify } from "react-admin";
+import { Confirm, useDataProvider, useNotify } from "react-admin";
 
 import {
   Typography,
@@ -28,6 +28,13 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  TableContainer,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Paper,
 } from "@mui/material";
 import { fstat } from "fs";
 
@@ -40,10 +47,22 @@ const Processing = () => {
 };
 
 const steps = [
-  { id: "thumbnail", name: "Thumbnail" },
-  { id: "content", name: "Extract content" },
-  { id: "rules", name: "UserRules" },
-  { id: "fts", name: "Index" },
+  { id: "thumbnail", name: "Thumbnail", description: "Generate new thumbnail" },
+  {
+    id: "content",
+    name: "Extract content",
+    description: "Extract content from raw document",
+  },
+  {
+    id: "rules",
+    name: "UserRules",
+    description: "Execute user defined rules and metadata matching",
+  },
+  {
+    id: "fts",
+    name: "Index",
+    description: "Reindex document in full-text-search engine",
+  },
 ];
 //}
 
@@ -54,12 +73,28 @@ const RequestSingleDocumentProcessing = () => {
   const [stepOk, setStepOk] = useState(true);
   const [userId, setUserId] = useState("");
 
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const onClickExec = () => {
+    setConfirmOpen(true);
+  };
+
+  const onCancel = () => {
+    setConfirmOpen(false);
+  };
+
+  const onConfirm = () => {
+    setConfirmOpen(false);
+    exec();
+  };
+
   const notify = useNotify();
 
   const onChangeStep = (e: any) => {
     setStep(e.target.value);
     let ok = false;
     steps.map((step) => {
+      // @ts-ignore
       if (step.id == e.target.value) {
         ok = true;
       }
@@ -93,15 +128,67 @@ const RequestSingleDocumentProcessing = () => {
 
   return (
     <Box>
-      <Typography variant="h6">
-        Force processing of one or more documents from given step
-      </Typography>
+      <Confirm
+        isOpen={confirmOpen}
+        title={
+          userId
+            ? "Request processing all documents for a user"
+            : "Request processing for a single document"
+        }
+        content={
+          userId
+            ? "Are you sure you want to request processing?" +
+              " This operation may take a while if the user has great number of documents."
+            : "Are you sure you want to request processing?"
+        }
+        onConfirm={onConfirm}
+        onClose={onCancel}
+      />
+      <Typography variant="h6">Instructions</Typography>
       <Typography variant="body1">
-        Please fill either document id or user id. If user id is set, all
-        documents of that user are processed starting from the given step.
+        <ul>
+          <li>Force processing single or multiple documents</li>
+          <li>
+            Please fill either document id or user id. If user id (numeric) is
+            passed, all the documetns for the user are processed starting from
+            the given step.
+          </li>
+          <li>
+            Allowed steps are:
+            <TableContainer component={Paper} elevation={2}>
+              <Table sx={{ minWidth: 300 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>#</TableCell>
+                    <TableCell align="left">Name</TableCell>
+                    <TableCell align="left">Description</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {steps.map((step, index) => (
+                    <TableRow
+                      key={index}
+                      sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+                    >
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell align="left" component="th" scope="row">
+                        {step.name}
+                      </TableCell>
+                      <TableCell align="left">{step.description}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </li>
+          <li>
+            All subsequent steps are always executed. E.g. if step is set to
+            content, rules and then fts are executed as well.
+          </li>
+        </ul>
       </Typography>
 
-      <Typography>Allowed steps: thumbnail|content|rules|fts</Typography>
+      <Typography>Allowed steps: thumbnail, content, rules or fts</Typography>
       <TextField
         id="document_id"
         label="Document id"
@@ -126,7 +213,11 @@ const RequestSingleDocumentProcessing = () => {
         color={stepOk ? "primary" : "secondary"}
       />
 
-      <Button onClick={exec} variant="contained">
+      <Button
+        onClick={onClickExec}
+        variant="contained"
+        disabled={!documentId ? userId === "" : userId !== ""}
+      >
         <Typography>Execute</Typography>
       </Button>
     </Box>

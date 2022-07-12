@@ -35,6 +35,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  useMediaQuery
 } from "@mui/material";
 
 import { ExpandMore } from "@mui/icons-material";
@@ -134,13 +135,14 @@ export const AdminView = (props: any) => {
 
 const AdminShowUsers = (props: any) => {
   const listContext = useListController({ ...props, resource: "admin/users" });
+  const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
 
   return (
     <ListContextProvider value={listContext}>
       <Datagrid expand={ShowExpandedUser}>
         <TextField source="id"></TextField>
         <TextField source="user_name"></TextField>
-        <TextField source="email"></TextField>
+        {!isSmall ? <TextField source="email"></TextField>: null}
         <BooleanField source="is_active"></BooleanField>
       </Datagrid>
     </ListContextProvider>
