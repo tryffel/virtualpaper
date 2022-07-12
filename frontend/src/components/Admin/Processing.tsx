@@ -16,8 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import React, { useState } from "react";
-import { Confirm, useDataProvider, useNotify } from "react-admin";
+import React, { useEffect, useState } from "react";
+import {
+  Confirm,
+  useDataProvider,
+  useNotify,
+  useGetList,
+  Loading,
+} from "react-admin";
 
 import {
   Typography,
@@ -38,10 +44,18 @@ import {
 } from "@mui/material";
 import { fstat } from "fs";
 
-const Processing = () => {
+export const Processing = () => {
   return (
     <Box>
       <RequestSingleDocumentProcessing />
+    </Box>
+  );
+};
+
+export const DocumentList = () => {
+  return (
+    <Box>
+      <ShowDocumentsPendingProcessing />
     </Box>
   );
 };
@@ -224,4 +238,68 @@ const RequestSingleDocumentProcessing = () => {
   );
 };
 
-export default Processing;
+const ShowDocumentsPendingProcessing = () => {
+  const { data, total, isLoading, error, refetch } = useGetList(
+    "admin/documents/processing",
+    {}
+  );
+
+  let interval: number = 0;
+
+  useEffect(() => {
+    // @ts-ignore
+    interval = setInterval(() => {
+      if (!isLoading) {
+        refetch();
+      }
+    }, 5000);
+
+    return function cleanup() {
+      clearInterval(interval);
+    };
+  });
+
+  if (isLoading) {
+    return <Loading />;
+  }
+  if (error) {
+    return <p>ERROR</p>;
+  }
+
+  return (
+    <>
+      <Typography variant="body1">
+        Total documents waiting for processing: {total}
+      </Typography>
+      <Typography variant="body2">Processing queue</Typography>
+      <TableContainer component={Paper} elevation={2}>
+        <Table sx={{ minWidth: 300 }}>
+          <TableHead>
+            <TableRow>
+              <TableCell>#</TableCell>
+              <TableCell align="left">Document id</TableCell>
+              <TableCell align="left">Step</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {data
+              ? // @ts-ignore
+                data.map((step, index) => (
+                  <TableRow
+                    key={index}
+                    sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+                  >
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell align="left" component="th" scope="row">
+                      {step.document_id}
+                    </TableCell>
+                    <TableCell align="left">{step.step}</TableCell>
+                  </TableRow>
+                ))
+              : null}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </>
+  );
+};

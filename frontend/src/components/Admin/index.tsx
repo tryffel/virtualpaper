@@ -35,11 +35,11 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  useMediaQuery
+  useMediaQuery,
 } from "@mui/material";
 
 import { ExpandMore } from "@mui/icons-material";
-import Processing from "./Processing";
+import { Processing, DocumentList } from "./Processing";
 
 export const AdminView = (props: any) => {
   const { record } = useShowController({
@@ -123,10 +123,18 @@ export const AdminView = (props: any) => {
       </Accordion>
       <Accordion>
         <AccordionSummary expandIcon={<ExpandMore />}>
-          <Typography variant="h5">Document processing</Typography>
+          <Typography variant="h5">Request Document processing</Typography>
         </AccordionSummary>
         <AccordionDetails style={{ flexDirection: "column" }}>
-        <Processing/>
+          <Processing />
+        </AccordionDetails>
+      </Accordion>
+      <Accordion>
+        <AccordionSummary expandIcon={<ExpandMore />}>
+          <Typography variant="h5">Document processing queue</Typography>
+        </AccordionSummary>
+        <AccordionDetails style={{ flexDirection: "column" }}>
+          <DocumentList />
         </AccordionDetails>
       </Accordion>
     </>
@@ -142,7 +150,7 @@ const AdminShowUsers = (props: any) => {
       <Datagrid expand={ShowExpandedUser}>
         <TextField source="id"></TextField>
         <TextField source="user_name"></TextField>
-        {!isSmall ? <TextField source="email"></TextField>: null}
+        {!isSmall ? <TextField source="email"></TextField> : null}
         <BooleanField source="is_active"></BooleanField>
       </Datagrid>
     </ListContextProvider>

@@ -88,6 +88,8 @@ export const dataProvider: DataProvider = {
       }
       // @ts-ignore
       url = `${apiUrl}/metadata/keys/${params.id}/values?${stringify(query)}`;
+    } else if (resource === "admin/documents/processing") {
+      url = `${apiUrl}/admin/documents/process?${stringify(query)}`;
     }
 
     const options =
