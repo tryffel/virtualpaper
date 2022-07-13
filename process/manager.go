@@ -3,7 +3,6 @@ package process
 import (
 	"errors"
 	"fmt"
-	"math/rand"
 	"os"
 	"path"
 	"path/filepath"
@@ -19,6 +18,7 @@ import (
 )
 
 const idleCheckDocumentsForProcessingSec = time.Second * 5
+const taskQueueSize = 100
 
 // processing file operation. Either fill file or document.
 // Fill file to mark file without document record.
@@ -161,6 +161,11 @@ func (m *Manager) Stop() error {
 }
 
 func (m *Manager) PullDocumentsToProcess() {
+	if m.QueueFull() {
+		logrus.Warn("processing queue is full, don't pull more jobs yet")
+		return
+	}
+
 	docs := make(map[string]*models.Document)
 	processes, _, err := m.db.JobStore.GetPendingProcessing()
 
@@ -191,10 +196,44 @@ func (m *Manager) PullDocumentsToProcess() {
 	}
 }
 
+func (m *Manager) QueueFull() bool {
+	for _, v := range m.tasks {
+		if !v.queueFull() {
+			return false
+		}
+	}
+	return true
+}
+
+type QueueStatus struct {
+	TaskId               int    `json:"task_id"`
+	QueueCapacity        int    `json:"queue_capacity"`
+	Queued               int    `json:"queued"`
+	ProcessingOngoing    bool   `json:"processing_ongoing"`
+	ProcessingDocumentId string `json:"processing_document_id"`
+	Running              bool   `json:"task_running"`
+	DurationMs           int    `json:"duration_ms"`
+}
+
+func (m *Manager) ProcessingStatus() []QueueStatus {
+	status := make([]QueueStatus, m.numtasks)
+	for i, v := range m.tasks {
+		status[i].TaskId = v.id
+		status[i].QueueCapacity = taskQueueSize
+		status[i].Queued = v.queueSize()
+		status[i].ProcessingOngoing, status[i].ProcessingDocumentId = v.GetDocumentBeingProcessed()
+		status[i].Running = v.isRunning()
+		status[i].DurationMs = v.ProcessingDurationMs()
+	}
+	return status
+}
+
 // AddDocumentForProcessing marks document as available for processing.
 func (m *Manager) AddDocumentForProcessing(doc *models.Document) error {
 	filePath := storage.DocumentPath(doc.Id)
-	m.scheduleNewOp(filePath, doc)
+	if !m.QueueFull() {
+		m.scheduleNewOp(filePath, doc)
+	}
 	return nil
 }
 
@@ -241,18 +280,17 @@ func (m *Manager) scheduleNewOp(file string, doc *models.Document) {
 
 	}
 	op := fileOp{file: file, document: doc}
-	scheduled := false
-
-	for _, task := range m.tasks {
-		if task.isIdle() {
-			task.input <- op
-			scheduled = true
+	leastQueuedTask := m.tasks[0]
+	for _, v := range m.tasks {
+		if ok, _ := v.GetDocumentBeingProcessed(); !ok {
+			// idle, pick
+			leastQueuedTask = v
 			break
 		}
-	}
 
-	if !scheduled {
-		id := rand.Intn(m.numtasks)
-		m.tasks[id].input <- op
+		if v.queueSize() < leastQueuedTask.queueSize() {
+			leastQueuedTask = v
+		}
 	}
+	leastQueuedTask.input <- op
 }

@@ -29,6 +29,7 @@ import (
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/process"
+	"tryffel.net/go/virtualpaper/search"
 )
 
 func (a *Api) authorizeAdmin(next http.Handler) http.Handler {
@@ -138,7 +139,7 @@ func (a *Api) forceDocumentProcessing(resp http.ResponseWriter, req *http.Reques
 }
 
 type DocumentProcessStep struct {
-	DocumentId string `json:"document_id"`
+	DocumentId string `json:"id"`
 	Step       string `json:"step"`
 }
 
@@ -190,6 +191,9 @@ type SystemInfo struct {
 	DocumentsTotal              int    `json:"documents_total"`
 	DocumentsTotalSize          int64  `json:"documents_total_size"`
 	DocumentsTotalSizeString    string `json:"documents_total_size_string"`
+
+	ProcessingStatus   []process.QueueStatus `json:"processing_queue"`
+	SearchEngineStatus search.EngineStatus   `json:"search_engine_status"`
 }
 
 func (a *Api) getSystemInfo(resp http.ResponseWriter, req *http.Request) {
@@ -212,6 +216,7 @@ func (a *Api) getSystemInfo(resp http.ResponseWriter, req *http.Request) {
 		GoVersion:          runtime.Version(),
 		Uptime:             config.UptimeString(),
 		PandocInstalled:    process.GetPandocInstalled(),
+		ProcessingStatus:   a.process.ProcessingStatus(),
 	}
 
 	stats, err := a.db.StatsStore.GetSystemStats()
@@ -247,6 +252,12 @@ func (a *Api) getSystemInfo(resp http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	engineStatus, err := a.search.GetStatus()
+	if err != nil {
+		logrus.Errorf("get search engine status: %v", err)
+	} else {
+		info.SearchEngineStatus = *engineStatus
+	}
 	respOk(resp, info)
 }
 

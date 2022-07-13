@@ -16,6 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import { useEffect } from "react";
+
 import {
   Datagrid,
   ListContextProvider,
@@ -31,6 +33,7 @@ import {
   Typography,
   Card,
   CardContent,
+  CardHeader,
   Grid,
   Accordion,
   AccordionSummary,
@@ -39,14 +42,29 @@ import {
 } from "@mui/material";
 
 import { ExpandMore } from "@mui/icons-material";
-import { Processing, DocumentList } from "./Processing";
+import { Processing, DocumentList, Runners, SearchEngineStatus } from "./Processing";
 
 export const AdminView = (props: any) => {
-  const { record } = useShowController({
+  const { record, refetch, isLoading } = useShowController({
     ...props,
     resource: "admin",
     basePath: "/admin",
     id: "systeminfo",
+  });
+
+  let interval: number = 0;
+
+  useEffect(() => {
+    // @ts-ignore
+    interval = setInterval(() => {
+      if (!isLoading) {
+        refetch();
+      }
+    }, 5000);
+
+    return function cleanup() {
+      clearInterval(interval);
+    };
   });
 
   if (!record) return null;
@@ -83,6 +101,7 @@ export const AdminView = (props: any) => {
           <Typography>
             Pandoc installed: {record.pandoc_installed ? "Yes" : "No"}{" "}
           </Typography>
+          <SearchEngineStatus status={record.search_engine_status}/>
         </AccordionDetails>
       </Accordion>
       <Accordion>
@@ -95,6 +114,7 @@ export const AdminView = (props: any) => {
           <Typography>
             Total space used: {record.documents_total_size_string}{" "}
           </Typography>
+          <Runners record={record} />
           <Typography variant="h5" marginTop={"1em"}>
             Documents statistics
           </Typography>

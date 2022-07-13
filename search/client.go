@@ -9,6 +9,7 @@ import (
 	"github.com/meilisearch/meilisearch-go"
 	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/config"
+	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/storage"
 )
@@ -237,4 +238,48 @@ func buildSynonyms(synonyms [][]string) map[string][]string {
 	}
 
 	return output
+}
+
+func (e *Engine) GetHealth() (string, bool, error) {
+	if e.client.IsHealthy() {
+		return "available", true, nil
+	}
+
+	resp, err := e.client.Health()
+	if err != nil {
+		e := errors.ErrInternalError
+		e.Err = err
+		e.ErrMsg = "cannot query meilisearch health"
+		return resp.Status, false, e
+
+	}
+	return resp.Status, false, err
+}
+
+type EngineStatus struct {
+	Ok      bool   `json:"engine_ok"`
+	Status  string `json:"status"`
+	Version string `json:"version"`
+	Name    string `json:"name"`
+}
+
+func (e *Engine) GetStatus() (*EngineStatus, error) {
+	status := &EngineStatus{}
+	status.Name = "Meilisearch"
+
+	version, err := e.client.Version()
+	if err != nil {
+		return status, err
+	}
+
+	status.Version = version.PkgVersion
+	if !e.client.IsHealthy() {
+		status.Ok = false
+		status.Status = "error"
+	} else {
+		status.Ok = true
+		status.Status = "available"
+	}
+	return status, nil
+
 }

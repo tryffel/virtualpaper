@@ -33,15 +33,16 @@ type fileProcessor struct {
 	rawFile  *os.File
 	tempFile *os.File
 
-	usePdfToText bool
-	useOcr       bool
-	usePandoc    bool
+	usePdfToText      bool
+	useOcr            bool
+	usePandoc         bool
+	startedProcessing time.Time
 }
 
 func newFileProcessor(conf *fpConfig) *fileProcessor {
 	fp := &fileProcessor{
 		Task:  newTask(conf.id, conf.db, conf.search),
-		input: make(chan fileOp, 100),
+		input: make(chan fileOp, taskQueueSize),
 
 		usePdfToText: conf.usePdfToText,
 		useOcr:       conf.useOcr,
@@ -50,6 +51,31 @@ func newFileProcessor(conf *fpConfig) *fileProcessor {
 	fp.idle = true
 	fp.runFunc = fp.waitEvent
 	return fp
+}
+
+func (fp *fileProcessor) queueFull() bool {
+	return len(fp.input) == cap(fp.input)
+}
+
+func (fp *fileProcessor) queueSize() int {
+	return len(fp.input)
+}
+
+func (fp *fileProcessor) GetDocumentBeingProcessed() (bool, string) {
+	// this probably needs synchronization for true accuracy,
+	// but it's only for metrics so it's probably okay
+	doc := fp.document
+	if doc == nil {
+		return false, ""
+	}
+	return true, doc.Id
+}
+
+func (fp *fileProcessor) ProcessingDurationMs() int {
+	if fp.startedProcessing.IsZero() {
+		return 0
+	}
+	return int(time.Since(fp.startedProcessing).Milliseconds())
 }
 
 func (fp *fileProcessor) waitEvent() {
@@ -145,7 +171,9 @@ func (fp *fileProcessor) process(op fileOp) {
 		fp.processFile()
 	} else if op.document != nil {
 		fp.document = op.document
+		fp.startedProcessing = time.Now()
 		fp.processDocument()
+		fp.startedProcessing = time.Time{}
 	} else {
 		logrus.Warningf("process task got empty fileop, skipping")
 	}

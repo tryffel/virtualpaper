@@ -23,6 +23,7 @@ import {
   useNotify,
   useGetList,
   Loading,
+  CardContentInner,
 } from "react-admin";
 
 import {
@@ -41,6 +42,11 @@ import {
   TableCell,
   TableBody,
   Paper,
+  Grid,
+  Card,
+  CardContent,
+  CardHeader,
+  useMediaQuery,
 } from "@mui/material";
 import { fstat } from "fs";
 
@@ -269,7 +275,7 @@ const ShowDocumentsPendingProcessing = () => {
   return (
     <>
       <Typography variant="body1">
-        Total documents waiting for processing: {total}
+        Total steps waiting for processing: {total}
       </Typography>
       <Typography variant="body2">Processing queue</Typography>
       <TableContainer component={Paper} elevation={2}>
@@ -291,7 +297,7 @@ const ShowDocumentsPendingProcessing = () => {
                   >
                     <TableCell>{index + 1}</TableCell>
                     <TableCell align="left" component="th" scope="row">
-                      {step.document_id}
+                      {step.id}
                     </TableCell>
                     <TableCell align="left">{step.step}</TableCell>
                   </TableRow>
@@ -301,5 +307,107 @@ const ShowDocumentsPendingProcessing = () => {
         </Table>
       </TableContainer>
     </>
+  );
+};
+
+export const Runners = (props: any) => {
+  const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
+
+  if (!props.record) {
+    return <Loading />;
+  }
+
+  return (
+    <Grid container spacing={2} direction={isSmall ? "column" : "row"}>
+      <Grid item xs={12} md={12}>
+        <Typography variant="body2">Processing runners</Typography>
+      </Grid>
+
+      {props.record.processing_queue.map(
+        // @ts-ignore
+        (runner) => (
+          <Grid item xs={3}>
+            <RunnerStatus runner={runner} />
+          </Grid>
+        )
+      )}
+    </Grid>
+  );
+};
+
+const RunnerStatus = (props: any) => {
+  if (!props.runner) {
+    return null;
+  }
+
+  let runnerStatus = "";
+  let backgroundColor = "";
+  if (!props.runner.task_running) {
+    runnerStatus = "not running";
+    backgroundColor = "red";
+  } else if (props.runner.processing_ongoing) {
+    runnerStatus = "running";
+    backgroundColor = "orange";
+  } else {
+    runnerStatus = "idle";
+  }
+
+  return (
+    <Card key={props.runner.task_id} elevation={3}>
+      <CardHeader
+        title={"Task " + props.runner.task_id + ": " + runnerStatus}
+        sx={{
+          background: backgroundColor,
+        }}
+      />
+      <CardContent>
+        <Typography>
+          Queue: ({props.runner.queued} / {props.runner.queue_capacity} )
+        </Typography>
+        <Typography>
+          Document id: {props.runner.processing_document_id}
+        </Typography>
+        <Typography>
+          Step duration: {Math.floor(props.runner.duration_ms / 1000)} s
+        </Typography>
+      </CardContent>
+    </Card>
+  );
+};
+
+export const SearchEngineStatus = (props: any) => {
+  if (!props.status) {
+    return <p>Loading</p>;
+  }
+
+  let runnerStatus = "";
+  let backgroundColor = "";
+  if (!props.status.engine_ok) {
+    runnerStatus = "Unavailable";
+    backgroundColor = "red";
+  } else {
+    runnerStatus = "running";
+    backgroundColor = "";
+  }
+
+  return (
+    <Card
+      key={"search engine status"}
+      elevation={3}
+      sx={{ margin: "0.5em", display: "inline-block" }}
+    >
+      <CardHeader
+        title={"Search engine status"}
+        sx={{
+          background: backgroundColor,
+        }}
+      />
+      <CardContent>
+        <Typography>
+          {props.status.name} {props.status.version}
+        </Typography>
+        <Typography>Status: {props.status.status}</Typography>
+      </CardContent>
+    </Card>
   );
 };
