@@ -16,8 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { Card, CardContent, Box } from "@mui/material";
-import { FilterList, FilterListItem, TextInput } from "react-admin";
+import {
+  Card,
+  CardContent,
+  Box,
+  TextField,
+  Typography,
+  Button,
+} from "@mui/material";
+import { DesktopDatePicker } from "@mui/x-date-pickers/DesktopDatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import {
+  FilterList,
+  FilterListItem,
+  TextInput,
+  useListFilterContext,
+} from "react-admin";
 import {
   endOfYesterday,
   startOfMonth,
@@ -27,6 +42,7 @@ import {
 } from "date-fns";
 import { AccessTime } from "@mui/icons-material";
 import * as React from "react";
+import { values } from "lodash";
 
 export const DocumentSearchFilter = [
   <TextInput
@@ -60,10 +76,63 @@ export const FilterSidebar = () => (
     <Card style={{ width: "13em", minWidth: "13em" }}>
       <CardContent>
         <LastVisitedFilter />
+        <DatePicker mode="after" />
+        <DatePicker mode="before" />
       </CardContent>
     </Card>
   </Box>
 );
+
+// @ts-ignore
+const DatePicker = (props) => {
+  const { filterValues, setFilters } = useListFilterContext();
+  const [value, setValue] = React.useState<Date | null>(null);
+
+  const handleChange = (newValue: Date | null) => {
+    setValue(newValue);
+    if (newValue) {
+    let values = {...filterValues};
+    if (props.mode === "after") {
+      values = values && {after: newValue? newValue.getTime(): null}
+    } else {
+      values = values && {before: newValue? newValue.getTime(): null}
+    }
+    setFilters({ ...values}, null, false);
+  }
+  };
+
+  const onReset = () => {
+    let values = {}
+    if (props.mode === "after") {
+      values = values && {after: value? value.getTime(): null}
+    } else {
+      values = values && {before: value? value.getTime(): null}
+    }
+    const keysToRemove = Object.keys(values);
+    const filters = Object.keys(filterValues).reduce(
+      (acc, key) =>
+        keysToRemove.includes(key) ? acc : { ...acc, [key]: filterValues[key] },
+      {}
+    );
+    setFilters(filters, null, false);
+    setValue(null);
+  };
+
+  return (
+    <Box>
+      <Typography variant="body1">{props.mode === "after" ? "After": "Before"}</Typography>
+      <LocalizationProvider dateAdapter={AdapterDateFns}>
+        <DesktopDatePicker
+          onChange={handleChange}
+          inputFormat="MM/dd/yyyy"
+          value={value}
+          renderInput={(params) => <TextField {...params} />}
+        />
+      </LocalizationProvider>
+      <Button onClick={onReset}>Reset</Button>
+    </Box>
+  );
+};
 
 const LastVisitedFilter = () => (
   <FilterList label="Document date" icon={<AccessTime />}>
