@@ -30,6 +30,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
@@ -133,7 +134,15 @@ var addUserCmd = &cobra.Command{
 			} else {
 				logrus.Infof("Created user (id:%d) %s", user.Id, user.Name)
 			}
+
 		}
+
+		logrus.Infof("init search engine index for new user")
+		_, err = search.NewEngine(db)
+		if err != nil {
+			logrus.Fatalf("connect to search engine: %v", err)
+		}
+		logrus.Infof("Done")
 	},
 }
 
