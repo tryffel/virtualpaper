@@ -3,14 +3,15 @@ package config
 import (
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"math/rand"
 	"os"
 	"path"
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 // Application config that is loaded upon starting program
@@ -96,12 +97,12 @@ type Mail struct {
 
 // Logging configuration
 type Logging struct {
-	Loglevel     string
-	LogDirectory string
-	LogHttp      bool
-	HttpLogFile  string
-	LogFile      string
-	LogStdout    bool
+	Loglevel      string
+	LogDirectory  string
+	LogHttpStdout bool
+	HttpLogFile   string
+	LogFile       string
+	LogStdout     bool
 
 	httpLog *os.File
 	log     *os.File
@@ -156,12 +157,12 @@ func ConfigFromViper() error {
 			ErrorRecipient: viper.GetString("mail.error_recipient"),
 		},
 		Logging: Logging{
-			Loglevel:     viper.GetString("logging.log_level"),
-			LogDirectory: viper.GetString("logging.directory"),
-			LogHttp:      viper.GetBool("logging.log_http"),
-			HttpLogFile:  viper.GetString("logging.http_log_file"),
-			LogFile:      viper.GetString("logging.log_file"),
-			LogStdout:    viper.GetBool("logging.log_stdout"),
+			Loglevel:      viper.GetString("logging.log_level"),
+			LogDirectory:  viper.GetString("logging.directory"),
+			LogHttpStdout: viper.GetBool("logging.log_http_stdout"),
+			HttpLogFile:   viper.GetString("logging.http_log_file"),
+			LogFile:       viper.GetString("logging.log_file"),
+			LogStdout:     viper.GetBool("logging.log_stdout"),
 		},
 	}
 
@@ -220,7 +221,7 @@ func InitConfig() error {
 
 	viper.Set("logging.log_level", C.Logging.Loglevel)
 	viper.Set("logging.directory", C.Logging.LogDirectory)
-	viper.Set("logging.log_http", C.Logging.LogHttp)
+	viper.Set("logging.log_http_stdout", C.Logging.LogHttpStdout)
 	viper.Set("logging.http_log_file", C.Logging.HttpLogFile)
 	viper.Set("logging.log_file", C.Logging.LogFile)
 

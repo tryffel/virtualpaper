@@ -20,12 +20,13 @@ package config
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
-	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"io"
 	"os"
 	"path"
 	"sync"
+
+	"github.com/sirupsen/logrus"
+	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 )
 
 func InitLogging() error {
@@ -42,7 +43,6 @@ func InitLogging() error {
 		return fmt.Errorf("create log dir: %v", err)
 	}
 
-	httpFilename := path.Join(dir, C.Logging.HttpLogFile)
 	logFilename := path.Join(dir, C.Logging.LogFile)
 
 	formatter := &prefixed.TextFormatter{
@@ -68,22 +68,26 @@ func InitLogging() error {
 	}
 	logrus.SetLevel(logLevel)
 
-	if C.Logging.LogHttp {
+	// http logger
+	C.Logging.HttpLog = logrus.New()
+
+	outputs := []io.Writer{}
+
+	if C.Logging.LogHttpStdout {
+		outputs = append(outputs, os.Stdout)
+	}
+	if C.Logging.HttpLogFile != "" {
+		httpFilename := path.Join(dir, C.Logging.HttpLogFile)
 		httpLogFile, err := os.OpenFile(httpFilename, filemode, fileperm)
 		if err != nil {
 			return fmt.Errorf("open http log file: %v", err)
 		}
 		C.Logging.httpLog = httpLogFile
-		C.Logging.HttpLog = logrus.New()
-
-		if C.Logging.LogStdout {
-			writer := io.MultiWriter(httpLogFile, os.Stdout)
-			C.Logging.HttpLog.SetOutput(writer)
-		} else {
-			C.Logging.HttpLog.SetOutput(httpLogFile)
-		}
-		C.Logging.HttpLog.SetLevel(logrus.InfoLevel)
+		outputs = append(outputs, C.Logging.httpLog)
 	}
+	writer := io.MultiWriter(outputs...)
+	C.Logging.HttpLog.SetOutput(writer)
+	C.Logging.HttpLog.SetLevel(logrus.InfoLevel)
 
 	logFile, err := os.OpenFile(logFilename, filemode, fileperm)
 	if err != nil {
@@ -119,4 +123,8 @@ func DeinitLogging() {
 	}
 
 	logrus.Errorf("log errors: %v, %v", logErr, httpErr)
+}
+
+func devNull(data []byte) (int, error) {
+	return len(data), nil
 }

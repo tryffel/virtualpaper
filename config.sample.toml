@@ -81,9 +81,9 @@ pandoc_bin = ""
 log_level = "INFO"
 # Directory for log files
 directory = "log"
-# Log http requests to separate file
-log_http = true
-# Http log file
+# Log http requests to stdout
+log_http_stdout = true
+# Http log file, no http logs if file name is empty
 http_log_file = "http.log"
 # Application log file
 log_file = "virtualpaper.log"
