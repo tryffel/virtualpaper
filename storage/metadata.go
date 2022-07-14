@@ -149,6 +149,7 @@ func (s *MetadataStore) GetValues(userId int, keyId int, sort SortKey, paging Pa
 	query := s.sq.Select(
 		"mv.id as id",
 		"mv.value as value",
+		"mk.key as key",
 		"mv.created_at as created_at",
 		"match_documents",
 		"match_type",
@@ -156,8 +157,9 @@ func (s *MetadataStore) GetValues(userId int, keyId int, sort SortKey, paging Pa
 		"count(dm.document_id) as documents_count").
 		From("metadata_values mv").
 		LeftJoin("document_metadata dm on mv.id = dm.value_id").
+		LeftJoin("metadata_keys mk on mv.key_id = mk.id").
 		Where(squirrel.Eq{"mv.user_id": userId}).
-		Where(squirrel.Eq{"mv.key_id": keyId}).GroupBy("mv.id", "mv.value").
+		Where(squirrel.Eq{"mv.key_id": keyId}).GroupBy("mv.id", "mv.value", "mk.key").
 		OrderBy(sort.QueryKey() + " " + sort.SortOrder()).Limit(uint64(paging.Limit)).Offset(uint64(paging.Offset))
 
 	sql, args, err := query.ToSql()

@@ -38,6 +38,7 @@ import {
   DialogActions,
 } from "@mui/material";
 import { useFormState } from "react-hook-form";
+import { Link } from "react-router-dom";
 
 const MetadataValueUpdateDialog = (props: any) => {
   const [update, { data, isLoading, error }] = useUpdate("metadata/values", {
@@ -71,6 +72,23 @@ const MetadataValueUpdateDialog = (props: any) => {
     console.info(error);
     // @ts-ignore
     notify(error.message, "error");
+  }
+
+  const linkDocsLabel = `Show documents (${
+    props.record ? props.record.documents_count : ""
+  })`;
+
+  let to: any = {
+    pathname: "/documents",
+  };
+
+  if (props.record) {
+    to = {
+      pathname: "/documents",
+      search: `filter=${JSON.stringify({
+        metadata: props.record.key + ":" + '"' + props.record.value + '"',
+      })}`,
+    };
   }
 
   return (
@@ -110,6 +128,14 @@ const MetadataValueUpdateDialog = (props: any) => {
             />
           </DialogContent>
           <DialogActions>
+            <Button
+              label={linkDocsLabel}
+              disabled={
+                props.record ? props.record.documents_count === 0 : false
+              }
+              component={Link}
+              to={to}
+            />
             <Button
               label="ra.action.cancel"
               onClick={handleCloseClick}
