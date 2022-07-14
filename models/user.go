@@ -87,4 +87,7 @@ type UserInfo struct {
 	DocumentsSize Int       `json:"documents_size" db:"documents_size"`
 	IsAdmin       bool      `json:"is_admin" db:"admin"`
 	LastSeen      time.Time `json:"last_seen" db:"last_seen"`
+
+	Indexing              bool `json:"indexing"`
+	TotalDocumentsIndexed int  `json:"documents_indexed_count"`
 }

@@ -27,6 +27,7 @@ import {
   BooleanField,
   useRecordContext,
   DateField,
+  Labeled,
 } from "react-admin";
 import {
   Box,
@@ -39,10 +40,18 @@ import {
   AccordionSummary,
   AccordionDetails,
   useMediaQuery,
+  TextField as MuiTextField,
 } from "@mui/material";
 
 import { ExpandMore } from "@mui/icons-material";
-import { Processing, DocumentList, Runners, SearchEngineStatus } from "./Processing";
+import {
+  Processing,
+  DocumentList,
+  Runners,
+  SearchEngineStatus,
+} from "./Processing";
+import { ByteToString } from "../util";
+import { BooleanIndexingStatusField } from "../IndexingStatus";
 
 export const AdminView = (props: any) => {
   const { record, refetch, isLoading } = useShowController({
@@ -101,7 +110,7 @@ export const AdminView = (props: any) => {
           <Typography>
             Pandoc installed: {record.pandoc_installed ? "Yes" : "No"}{" "}
           </Typography>
-          <SearchEngineStatus status={record.search_engine_status}/>
+          <SearchEngineStatus status={record.search_engine_status} />
         </AccordionDetails>
       </Accordion>
       <Accordion>
@@ -179,11 +188,15 @@ const AdminShowUsers = (props: any) => {
 
 const ShowExpandedUser = () => {
   const record = useRecordContext();
+  const documentsSize = record ? ByteToString(record.documents_size) : "0";
 
   return (
     <Grid container>
       <Grid item xs={6} md={6} lg={6}>
         <Box display={{ xs: "block", sm: "flex" }}>
+          <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
+          <BooleanIndexingStatusField source="indexing"/>
+          </Box>
           <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
             <Typography variant="body2">Created at</Typography>
             <DateField source="created_at" />
@@ -202,7 +215,7 @@ const ShowExpandedUser = () => {
           </Box>
           <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
             <Typography variant="body2">Storage size</Typography>
-            <TextField source="documents_size" />
+            <Typography variant="body1">{documentsSize}</Typography>
           </Box>
         </Box>
       </Grid>

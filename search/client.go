@@ -2,6 +2,7 @@ package search
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -52,6 +53,8 @@ func (e *Engine) connect() error {
 func indexName(userid int) string {
 	return "virtualpaper-" + strconv.Itoa(userid)
 }
+
+var indexNameToUserIdRegex = regexp.MustCompile("virtualpaper-(.+)")
 
 func (e *Engine) ensureIndexExists() error {
 	logrus.Debugf("ensure meilisearch indices exist")
@@ -282,4 +285,46 @@ func (e *Engine) GetStatus() (*EngineStatus, error) {
 	}
 	return status, nil
 
+}
+
+type UserIndexStatus struct {
+	UserId       int  `json:"user_id"`
+	NumDocuments int  `json:"documents_count"`
+	Indexing     bool `json:"indexing"`
+}
+
+// GetUserIndicesStatus returns list of indices, total db size in bytes and possible error.
+func (e *Engine) GetUserIndicesStatus() (map[int]*UserIndexStatus, int64, error) {
+	var err errors.Error
+	stats, meiliErr := e.client.GetAllStats()
+	if meiliErr != nil {
+		err = errors.ErrInternalError
+		err.Err = meiliErr
+		err.ErrMsg = "get stats"
+
+		return map[int]*UserIndexStatus{}, 0, err
+	}
+
+	indices := make(map[int]*UserIndexStatus, len(stats.Indexes))
+	counter := 0
+	for i, v := range stats.Indexes {
+		logrus.Infof("parse %s %v", i, v)
+		user := indexNameToUserIdRegex.FindStringSubmatch(i)
+		if len(user) != 2 {
+			logrus.Warningf("not virtualpaper index: %s, skipping", user)
+		}
+		userId, err := strconv.Atoi(user[1])
+		if err != nil {
+			logrus.Warningf("not virtualpaper index: %s, skipping", user[1])
+			continue
+		}
+		userStats := &UserIndexStatus{
+			UserId:       userId,
+			Indexing:     v.IsIndexing,
+			NumDocuments: int(v.NumberOfDocuments),
+		}
+		indices[userId] = userStats
+		counter += 1
+	}
+	return indices, stats.DatabaseSize, nil
 }

@@ -20,12 +20,11 @@ package api
 
 import (
 	"bytes"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"os/exec"
 	"runtime"
 	"strings"
-
-	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/process"
@@ -271,7 +270,21 @@ func (a *Api) getUsers(resp http.ResponseWriter, req *http.Request) {
 	info, err := a.db.UserStore.GetUsersInfo()
 	if err != nil {
 		respError(resp, err, "adminGetUsers")
-	} else {
-		respResourceList(resp, info, len(*info))
+		return
 	}
+
+	searchStatus, _, err := a.search.GetUserIndicesStatus()
+	if err != nil {
+		respError(resp, err, "adminGetUsers")
+		return
+	}
+
+	for i, v := range *info {
+		indexStatus := searchStatus[v.UserId]
+		if indexStatus != nil {
+			(*info)[i].Indexing = indexStatus.Indexing
+			(*info)[i].TotalDocumentsIndexed = indexStatus.NumDocuments
+		}
+	}
+	respResourceList(resp, info, len(*info))
 }

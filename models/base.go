@@ -21,7 +21,7 @@ package models
 import (
 	"database/sql/driver"
 	"fmt"
-	"math"
+	"strconv"
 	"time"
 )
 
@@ -71,14 +71,20 @@ func (i *Int) Scan(src interface{}) error {
 	if isInt64, ok := src.(int64); ok {
 		*i = Int(isInt64)
 	} else if intArray, ok := src.([]uint8); ok {
-		var val int64 = 0
+		// src is uint8 array of ascii characters: '50 56 54 53' for number 2865
+		text := ""
 		for i := int64(0); i < int64(len(intArray)); i++ {
 			if intArray[i] < 48 || intArray[i] > 57 {
 				return fmt.Errorf("not ascii number: %d", intArray[i])
 			}
-			val += int64(intArray[i]-48) * int64(math.Pow10(int(i)+1))
+			rVal := rune(intArray[i])
+			text += string(rVal)
 		}
-		*i = Int(val)
+		intVal, err := strconv.Atoi(text)
+		if err != nil {
+			return fmt.Errorf("not numberic: '%s'", text)
+		}
+		*i = Int(intVal)
 	} else {
 		return fmt.Errorf("unknown type: %T", src)
 	}
