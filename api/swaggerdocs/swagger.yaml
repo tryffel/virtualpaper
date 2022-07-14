@@ -3,7 +3,7 @@ consumes:
 definitions:
   DocumentProcessStep:
     properties:
-      document_id:
+      id:
         type: string
         x-go-name: DocumentId
       step:
@@ -91,7 +91,7 @@ definitions:
         x-go-name: Filename
       metadata:
         items:
-          $ref: '#/definitions/metadataRequest'
+          $ref: '#/definitions/MetadataRequest'
         type: array
         x-go-name: Metadata
       name:
@@ -100,6 +100,22 @@ definitions:
     type: object
     x-go-name: DocumentUpdateRequest
     x-go-package: tryffel.net/go/virtualpaper/api
+  EngineStatus:
+    properties:
+      engine_ok:
+        type: boolean
+        x-go-name: Ok
+      name:
+        type: string
+        x-go-name: Name
+      status:
+        type: string
+        x-go-name: Status
+      version:
+        type: string
+        x-go-name: Version
+    type: object
+    x-go-package: tryffel.net/go/virtualpaper/search
   ForceDocumumentsProcessing:
     properties:
       document_id:
@@ -112,10 +128,16 @@ definitions:
         format: int64
         type: integer
         x-go-name: UserId
-    title: ForceDocumentsProcessingRequest describes request to force processing of documents.
+    title: ForceDocumentsProcessingRequest describes request to force processing of
+      documents.
     type: object
     x-go-name: ForceDocumentProcessingRequest
     x-go-package: tryffel.net/go/virtualpaper/api
+  Int:
+    format: int64
+    title: Int as an integer that accepts null values from database.
+    type: integer
+    x-go-package: tryffel.net/go/virtualpaper/models
   Metadata:
     description: Metadata is metadata key-value pair assigned to document
     properties:
@@ -144,6 +166,10 @@ definitions:
         format: date-time
         type: string
         x-go-name: CreatedAt
+      documents_count:
+        format: int64
+        type: integer
+        x-go-name: NumDocuments
       id:
         format: int64
         type: integer
@@ -152,6 +178,21 @@ definitions:
         type: string
         x-go-name: Key
     type: object
+    x-go-package: tryffel.net/go/virtualpaper/models
+  MetadataRequest:
+    properties:
+      key_id:
+        format: int64
+        type: integer
+        x-go-name: KeyId
+      value_id:
+        format: int64
+        type: integer
+        x-go-name: ValueId
+    type: object
+    x-go-package: tryffel.net/go/virtualpaper/api
+  MetadataRuleType:
+    type: string
     x-go-package: tryffel.net/go/virtualpaper/models
   MetadataValue:
     properties:
@@ -162,6 +203,10 @@ definitions:
         format: date-time
         type: string
         x-go-name: CreatedAt
+      documents_count:
+        format: int64
+        type: integer
+        x-go-name: NumDocuments
       id:
         format: int64
         type: integer
@@ -170,52 +215,168 @@ definitions:
         type: string
         x-go-name: Key
       match_documents:
-        description: MatchDocuments instructs to try to automatically match MetadataValue inside documents
+        description: MatchDocuments instructs to try to automatically match MetadataValue
+          inside documents
         type: boolean
         x-go-name: MatchDocuments
       match_filter:
         type: string
         x-go-name: MatchFilter
       match_type:
-        $ref: '#/definitions/RuleType'
+        $ref: '#/definitions/MetadataRuleType'
       value:
         type: string
         x-go-name: Value
     type: object
     x-go-package: tryffel.net/go/virtualpaper/models
-  ProcessingRuleResp:
+  MimeTypesSupportedResponse:
     properties:
-      action:
-        $ref: '#/definitions/processingRuleAction'
-      active:
-        type: boolean
-        x-go-name: Active
-      comment:
+      mimetypes:
+        items:
+          type: string
+        type: array
+        x-go-name: Mimetypes
+      names:
+        items:
+          type: string
+        type: array
+        x-go-name: Names
+    title: MimeTypesSupportedResponse conatains info on mime types that server can
+      extract.
+    type: object
+    x-go-package: tryffel.net/go/virtualpaper/api
+  QueueStatus:
+    properties:
+      duration_ms:
+        format: int64
+        type: integer
+        x-go-name: DurationMs
+      processing_document_id:
         type: string
-        x-go-name: Comment
+        x-go-name: ProcessingDocumentId
+      processing_ongoing:
+        type: boolean
+        x-go-name: ProcessingOngoing
+      queue_capacity:
+        format: int64
+        type: integer
+        x-go-name: QueueCapacity
+      queued:
+        format: int64
+        type: integer
+        x-go-name: Queued
+      task_id:
+        format: int64
+        type: integer
+        x-go-name: TaskId
+      task_running:
+        type: boolean
+        x-go-name: Running
+    type: object
+    x-go-package: tryffel.net/go/virtualpaper/process
+  Rule:
+    properties:
+      actions:
+        items:
+          $ref: '#/definitions/RuleAction'
+        type: array
+        x-go-name: Actions
+      conditions:
+        items:
+          $ref: '#/definitions/RuleCondition'
+        type: array
+        x-go-name: Conditions
       created_at:
         format: int64
         type: integer
-        x-go-name: CreatedAd
-      filter:
+        x-go-name: CreatedAt
+      description:
         type: string
-        x-go-name: Filter
+        x-go-name: Description
+      enabled:
+        type: boolean
+        x-go-name: Enabled
       id:
         format: int64
         type: integer
         x-go-name: Id
-      type:
+      mode:
         type: string
-        x-go-name: Type
+        x-go-name: Mode
+      name:
+        type: string
+        x-go-name: Name
+      order:
+        format: int64
+        type: integer
+        x-go-name: Order
       updated_at:
         format: int64
         type: integer
         x-go-name: UpdatedAt
     type: object
     x-go-package: tryffel.net/go/virtualpaper/api
-  RuleType:
-    type: string
-    x-go-package: tryffel.net/go/virtualpaper/models
+  RuleAction:
+    properties:
+      action:
+        type: string
+        x-go-name: Action
+      enabled:
+        type: boolean
+        x-go-name: Enabled
+      id:
+        format: int64
+        type: integer
+        x-go-name: Id
+      metadata:
+        $ref: '#/definitions/Metadata'
+      on_condition:
+        type: boolean
+        x-go-name: OnCondition
+      rule_id:
+        format: int64
+        type: integer
+        x-go-name: RuleId
+      value:
+        type: string
+        x-go-name: Value
+    type: object
+    x-go-package: tryffel.net/go/virtualpaper/api
+  RuleCondition:
+    properties:
+      case_insensitive:
+        type: boolean
+        x-go-name: CaseInsensitive
+      condition_type:
+        type: string
+        x-go-name: ConditionType
+      date_fmt:
+        type: string
+        x-go-name: DateFmt
+      enabled:
+        type: boolean
+        x-go-name: Enabled
+      id:
+        format: int64
+        type: integer
+        x-go-name: Id
+      inverted_match:
+        type: boolean
+        x-go-name: Inverted
+      is_regex:
+        type: boolean
+        x-go-name: IsRegex
+      metadata:
+        $ref: '#/definitions/Metadata'
+      rule_id:
+        format: int64
+        type: integer
+        x-go-name: RuleId
+      value:
+        type: string
+        x-go-name: Value
+    type: object
+    x-go-package: tryffel.net/go/virtualpaper/api
   SystemInfo:
     properties:
       commit:
@@ -267,6 +428,13 @@ definitions:
       poppler_installed:
         type: boolean
         x-go-name: PopplerInstalled
+      processing_queue:
+        items:
+          $ref: '#/definitions/QueueStatus'
+        type: array
+        x-go-name: ProcessingStatus
+      search_engine_status:
+        $ref: '#/definitions/EngineStatus'
       server_load:
         type: string
         x-go-name: ServerLoad
@@ -301,7 +469,8 @@ definitions:
         format: date-time
         type: string
         x-go-name: UpdatedAt
-    title: Tag is a per-user label to add to documents. It has many-to-many relationship with documents.
+    title: Tag is a per-user label to add to documents. It has many-to-many relationship
+      with documents.
     type: object
     x-go-package: tryffel.net/go/virtualpaper/models
   UserDocumentStatistics:
@@ -357,82 +526,86 @@ definitions:
         x-go-name: YearlyStats
     type: object
     x-go-package: tryffel.net/go/virtualpaper/api
-  UserPreferences:
+  UserInfo:
     properties:
       created_at:
-        format: int64
-        type: integer
+        format: date-time
+        type: string
         x-go-name: CreatedAt
       documents_count:
+        $ref: '#/definitions/Int'
+      documents_indexed_count:
         format: int64
         type: integer
-        x-go-name: DocumentsCount
+        x-go-name: TotalDocumentsIndexed
       documents_size:
-        format: int64
-        type: integer
-        x-go-name: DocumentsSize
-      documents_size_string:
-        type: string
-        x-go-name: DocumentsSizeString
+        $ref: '#/definitions/Int'
       email:
         type: string
         x-go-name: Email
+      id:
+        format: int64
+        type: integer
+        x-go-name: UserId
+      indexing:
+        type: boolean
+        x-go-name: Indexing
+      is_active:
+        type: boolean
+        x-go-name: IsActive
       is_admin:
         type: boolean
         x-go-name: IsAdmin
+      last_seen:
+        format: date-time
+        type: string
+        x-go-name: LastSeen
       updated_at:
-        format: int64
-        type: integer
+        format: date-time
+        type: string
         x-go-name: UpdatedAt
-      user_id:
-        description: user
-        format: int64
-        type: integer
-        x-go-name: Id
       user_name:
         type: string
+        x-go-name: UserName
+    type: object
+    x-go-package: tryffel.net/go/virtualpaper/models
+  UserPreferences:
+    properties:
+      stop_words:
+        items:
+          type: string
+        type: array
+        x-go-name: StopWords
+      synonyms:
+        items:
+          items:
+            type: string
+          type: array
+        type: array
+        x-go-name: Synonyms
+    type: object
+    x-go-name: ReqUserPreferences
+    x-go-package: tryffel.net/go/virtualpaper/api
+  VersionResponse:
+    properties:
+      commit:
+        type: string
+        x-go-name: Commit
+      name:
+        type: string
         x-go-name: Name
+      version:
+        type: string
+        x-go-name: Version
+    title: VersionResponse contains general server info.
     type: object
     x-go-package: tryffel.net/go/virtualpaper/api
-  metadataRequest:
-    properties:
-      key_id:
-        format: int64
-        type: integer
-        x-go-name: KeyId
-      value_id:
-        format: int64
-        type: integer
-        x-go-name: ValueId
-    type: object
-    x-go-package: tryffel.net/go/virtualpaper/api
-  processingRuleAction:
-    properties:
-      date_fmt:
-        type: string
-        x-go-name: DateFmt
-      date_separator:
-        type: string
-        x-go-name: DateSeparator
-      description:
-        type: string
-        x-go-name: Description
-      metadata_key_id:
-        format: int64
-        type: integer
-        x-go-name: MetadataKey
-      metadata_value_id:
-        format: int64
-        type: integer
-        x-go-name: MetadataValue
-      tag_id:
-        format: int64
-        type: integer
-        x-go-name: Tag
-    type: object
-    x-go-package: tryffel.net/go/virtualpaper/api
+host: localhost
 info:
-  description: Documentation for Virtualpaper API.
+  description: Documentation for Virtualpaper API. Virtualpaper is a document storage
+    optimized for searching documents.
+  license:
+    name: AGPL-v3
   title: API documentation.
   version: 0.1.0
 paths:
@@ -500,6 +673,15 @@ paths:
           $ref: '#/responses/RespInternalError'
       tags:
       - Admin
+  /api/v1/admin/users:
+    get:
+      operationId: AdminGetUsers
+      responses:
+        "200":
+          $ref: '#/responses/RespUserInfo'
+      summary: Get detailed users info.
+      tags:
+      - Admin
   /api/v1/documents:
     get:
       description: Get documents
@@ -549,7 +731,25 @@ paths:
       responses:
         "200":
           $ref: '#/responses/DocumentResponse'
-      summary: Upload new document file. New document already contains id, name, filename and timestamps.
+      summary: Upload new document file. New document already contains id, name, filename
+        and timestamps.
+      tags:
+      - Documents
+  /api/v1/documents/:id:
+    delete:
+      description: Delete document
+      operationId: DeleteDocument
+      responses:
+        "200":
+          $ref: '#/responses/RespOk'
+        "400":
+          $ref: '#/responses/RespBadRequest'
+        "401":
+          $ref: '#/responses/RespForbidden'
+        "403":
+          $ref: '#/responses/RespNotFound'
+        "500":
+          $ref: '#/responses/RespInternalError'
       tags:
       - Documents
   /api/v1/documents/{id}:
@@ -626,10 +826,12 @@ paths:
       - Documents
   /api/v1/filetypes:
     get:
-      description: Get supported file types
+      description: Returns a list of valid name endings and a list of mime types.
       operationId: GetFileTypes
       responses:
-        "200": {}
+        "200":
+          $ref: '#/responses/RespFileTypes'
+      summary: Get supported file types.
       tags:
       - Public
   /api/v1/location:
@@ -739,6 +941,14 @@ paths:
       tags:
       - Processing
   /api/v1/processing/rules/{id}:
+    delete:
+      description: Delete rule
+      operationId: DeleteRule
+      responses:
+        "200":
+          description: ""
+      tags:
+      - Processing
     get:
       description: Get processing rule by id
       operationId: GetRule
@@ -747,19 +957,40 @@ paths:
           $ref: '#/responses/ProcessingRuleResponse'
       tags:
       - Processing
+    put:
+      description: Update rule contents
+      operationId: UpdateRule
+      responses:
+        "200":
+          description: ""
+      tags:
+      - Processing
+  /api/v1/processing/rules/{id}/test:
+    put:
+      description: Test rule execution
+      operationId: TestRule
+      responses:
+        "200":
+          $ref: '#/responses/process.RuleTestResult'
+        "403":
+          description: ""
+      tags:
+      - Processing
   /api/v1/version:
     get:
       description: Get server version
       operationId: GetVersion
       responses:
-        "200": {}
+        "200":
+          $ref: '#/responses/RespVersion'
       tags:
       - Public
     post:
       description: Login
       operationId: Login
       responses:
-        "200": {}
+        "200":
+          description: ""
       tags:
       - Authentication
 produces:
@@ -772,26 +1003,17 @@ responses:
         $ref: '#/definitions/DocumentResponse'
       type: array
   MetadataKeyResponse:
+    description: ""
     schema:
       items:
         $ref: '#/definitions/MetadataValue'
       type: array
   ProcessingRuleArrayResponse:
+    description: ""
     schema:
       items:
-        $ref: '#/definitions/ProcessingRuleResp'
+        $ref: '#/definitions/Rule'
       type: array
-  ProcessingRuleRequest:
-    headers:
-      action: {}
-      active:
-        type: boolean
-      comment:
-        type: string
-      filter:
-        type: string
-    schema:
-      $ref: '#/definitions/processingRuleAction'
   RespAdminSystemInfo:
     description: System information
     schema:
@@ -814,6 +1036,12 @@ responses:
     description: Document / usage statistics
     schema:
       $ref: '#/definitions/UserDocumentStatistics'
+  RespFileTypes:
+    description: Supported file types
+    schema:
+      items:
+        $ref: '#/definitions/MimeTypesSupportedResponse'
+      type: array
   RespForbidden:
     description: action forbidden
   RespInternalError:
@@ -824,11 +1052,22 @@ responses:
     description: Content already exists and has not been modified
   RespOk:
     description: Request ok
+  RespUserInfo:
+    description: User info
+    schema:
+      items:
+        $ref: '#/definitions/UserInfo'
+      type: array
   RespUserPreferences:
     description: User preferences
     schema:
       $ref: '#/definitions/UserPreferences'
+  RespVersion:
+    description: Server version
+    schema:
+      $ref: '#/definitions/VersionResponse'
   SystemInfo:
+    description: ""
     headers:
       commit:
         type: string
@@ -865,6 +1104,11 @@ responses:
         type: boolean
       poppler_installed:
         type: boolean
+      processing_queue:
+        items:
+          $ref: '#/definitions/QueueStatus'
+        type: array
+      search_engine_status: {}
       server_load:
         type: string
       tesseract_version:
@@ -873,6 +1117,8 @@ responses:
         type: string
       version:
         type: string
+    schema:
+      $ref: '#/definitions/EngineStatus'
 schemes:
 - http
 - https

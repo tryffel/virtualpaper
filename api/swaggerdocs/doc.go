@@ -18,11 +18,15 @@
 
 // Package Virtualpaper API documentation.
 //
-// Documentation for Virtualpaper API.
+// Documentation for Virtualpaper API. Virtualpaper is a document storage optimized for searching documents.
 //
 // Schemes: http, https
 //
 // Version: 0.1.0
+//
+// License: AGPL-v3
+//
+// Host: localhost
 //
 // Consumes:
 // - application/json

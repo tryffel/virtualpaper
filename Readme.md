@@ -23,7 +23,7 @@ This project is a **work-in-progress**.
 * Save any key-value metadata to documents
     * If configured, try to match key-values automatically from documents
     * Detect document date
-* REST api (swagger documentation is located at api/swaggerdocs/swagger.yaml)
+* REST api (swagger documentation is located at api/swaggerdocs/swagger.json) or at <virtualpaper-instance>/api/v1/swagger.json
 * Full-text-search
 * **Total number of users is limited to 200.** This is because Meilisearch has a limit of 200 indices, and each user
 uses one index. The benefit for own index is that each user can now configure their personal settings: 
@@ -47,7 +47,7 @@ are not fully searchable by their content.
 # Building
 
 ## Server
-You need Go 1.15 or later installed and configured.
+You need Go 1.16 or later installed and configured.
 
 In addition, you need Tesseract with headers and Imagemagick-v7. 
 See Dockerfile for more info. Some distributions (e.g. Debian) ship Imagemagick-v6 by default. 
@@ -140,6 +140,7 @@ docker run -it \
 4. Upload documents on web page, let server index them and search for some documents.
 
 # Development
+
 
 Start frontend in development mode:
 ```make run-frontend```

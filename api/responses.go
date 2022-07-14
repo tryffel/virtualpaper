@@ -20,11 +20,12 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/asaskevich/govalidator"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/asaskevich/govalidator"
+	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/errors"
 )
 
@@ -118,7 +119,6 @@ func respForbidden(resp http.ResponseWriter) {
 func respError(resp http.ResponseWriter, err error, handler string) {
 	var statuscode int
 	var reason string
-	logrus.WithField("handler", handler).Debugf("bad request: %v", err)
 	appError, ok := err.(errors.Error)
 	if ok {
 

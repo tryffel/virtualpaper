@@ -18,7 +18,10 @@
 
 package swaggerdocs
 
-import "tryffel.net/go/virtualpaper/api"
+import (
+	"tryffel.net/go/virtualpaper/api"
+	"tryffel.net/go/virtualpaper/models"
+)
 
 // Request ok
 // swagger:response RespOk
@@ -82,4 +85,25 @@ type AdminSystemInfo struct {
 type AdminForceDocumentsProcessing struct {
 	// in:body
 	Body api.ForceDocumentProcessingRequest
+}
+
+// User info
+// swagger:response RespUserInfo
+type RespUserInfo struct {
+	// in:body
+	Body []models.UserInfo
+}
+
+// Supported file types
+// swagger:response RespFileTypes
+type RespFileTypes struct {
+	// in:body
+	Body []api.MimeTypesSupportedResponse
+}
+
+// Server version
+// swagger:response RespVersion
+type RespVersion struct {
+	//in:body
+	Body api.VersionResponse
 }

@@ -19,6 +19,7 @@
 package api
 
 import (
+	_ "embed"
 	"fmt"
 	"net/http"
 	"path"
@@ -91,6 +92,7 @@ func (a *Api) addRoutes() {
 	a.baseRouter.Use(LoggingMiddleware)
 	a.baseRouter.HandleFunc("/api/v1/auth/login", a.login).Methods(http.MethodPost)
 	a.baseRouter.HandleFunc("/api/v1/version", a.getVersion).Methods(http.MethodGet)
+	a.baseRouter.HandleFunc("/api/v1/swagger.json", serverSwaggerDoc).Methods(http.MethodGet)
 
 	a.privateRouter.Use(a.authorizeUser)
 	a.privateRouter.HandleFunc("/documents", a.getDocuments).Methods(http.MethodGet)
@@ -182,7 +184,7 @@ func (a *Api) getVersion(resp http.ResponseWriter, req *http.Request) {
 	// Get server version
 	//
 	// responses:
-	//   200:
+	//   200: RespVersion
 	v := &VersionResponse{
 		Name:    "VirtualPaper",
 		Version: config.Version,
@@ -193,10 +195,11 @@ func (a *Api) getVersion(resp http.ResponseWriter, req *http.Request) {
 
 func (a *Api) getSupportedFileTypes(resp http.ResponseWriter, req *http.Request) {
 	// swagger:route GET /api/v1/filetypes Public GetFileTypes
-	// Get supported file types
+	// Get supported file types.
+	// Returns a list of valid name endings and a list of mime types.
 	//
 	// responses:
-	//   200:
+	//   200: RespFileTypes
 
 	mimetypes, filetypes := process.SupportedFileTypes()
 
@@ -266,4 +269,12 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 
 func init() {
 	govalidator.SetFieldsRequiredByDefault(true)
+}
+
+//go:embed swaggerdocs/swagger.json
+var swaggerJson string
+
+func serverSwaggerDoc(resp http.ResponseWriter, req *http.Request) {
+	resp.Header().Set("content-type", "application/json")
+	_, _ = resp.Write([]byte(swaggerJson))
 }

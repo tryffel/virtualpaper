@@ -20,11 +20,12 @@ package api
 
 import (
 	"bytes"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"os/exec"
 	"runtime"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/process"
@@ -262,10 +263,10 @@ func (a *Api) getSystemInfo(resp http.ResponseWriter, req *http.Request) {
 
 func (a *Api) getUsers(resp http.ResponseWriter, req *http.Request) {
 	// swagger:route GET /api/v1/admin/users Admin AdminGetUsers
-	// Get users info
+	// Get detailed users info.
 	//
 	// responses:
-	//   200:
+	//   200: RespUserInfo
 
 	info, err := a.db.UserStore.GetUsersInfo()
 	if err != nil {

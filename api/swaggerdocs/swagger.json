@@ -1,0 +1,1559 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "swagger": "2.0",
+  "info": {
+    "description": "Documentation for Virtualpaper API. Virtualpaper is a document storage optimized for searching documents.",
+    "title": "API documentation.",
+    "license": {
+      "name": "AGPL-v3"
+    },
+    "version": "0.1.0"
+  },
+  "host": "localhost",
+  "paths": {
+    "/api/v1/admin/documents/process": {
+      "get": {
+        "description": "Get documents awaiting processing",
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "AdminGetDocumentProcessQueue",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/RespDocumentProcessingSteps"
+          },
+          "401": {
+            "$ref": "#/responses/RespForbidden"
+          },
+          "500": {
+            "$ref": "#/responses/RespInternalError"
+          }
+        }
+      },
+      "post": {
+        "description": "Administrator can force re-processing documents.\nOptions:\n1. Process all documents in the system. Do not provide user_id or document_id\n2. Process documents for a user: provide user_id.\n3. Process one document: provide document_id.\n\nIn addition, step can be configured. Possible steps are:\n1. 'hash' (calculate document hash)\n2. 'thumbnail' (create document thumbnail)\n3. 'content' (extract content with suitable tool)\n4. 'rules' (run metadata-rules)\n5. 'fts' (index document in full-text-search engine)\n\nSteps are in order. Supplying e.g. 'content' will result in executing steps 3, 4 and 5.\nEmpty body will result in all documents being processed from step 1.\nDepending on document content, processing on document takes anywhere from a second to minutes.",
+        "consumes": [
+          "application/json"
+        ],
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Force document processing.",
+        "operationId": "AdminForceDocumentProcessing",
+        "parameters": [
+          {
+            "name": "Body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/ForceDocumumentsProcessing"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/RespOk"
+          },
+          "400": {
+            "$ref": "#/responses/RespBadRequest"
+          },
+          "401": {
+            "$ref": "#/responses/RespForbidden"
+          },
+          "403": {
+            "$ref": "#/responses/RespNotFound"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/systeminfo": {
+      "get": {
+        "description": "Get system information",
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "AdminGetSystemInfo",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/RespAdminSystemInfo"
+          },
+          "401": {
+            "$ref": "#/responses/RespForbidden"
+          },
+          "500": {
+            "$ref": "#/responses/RespInternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get detailed users info.",
+        "operationId": "AdminGetUsers",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/RespUserInfo"
+          }
+        }
+      }
+    },
+    "/api/v1/documents": {
+      "get": {
+        "description": "Get documents",
+        "tags": [
+          "Documents"
+        ],
+        "operationId": "GetDocuments",
+        "parameters": [
+          {
+            "type": "string",
+            "example": "'{\"q\":\"my search\", \"metadata\":\"class:book\"}'",
+            "x-go-name": "Filter",
+            "description": "Json filter containing max two keys: q and metadata.\nQ is full-text-search query.\nMetadata is a metadata filter.\nE.g. 'class:book AND (author:\"agatha christie\" OR author:\"doyle\")'\nFilter is json-formatted and must be url-safe.",
+            "name": "filter",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "x-go-name": "Order",
+            "description": "Order which order results in, either: 'DESC' or 'ASC'.",
+            "name": "order",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "x-go-name": "Sort",
+            "description": "Sort field to sort results.",
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "x-go-name": "Page",
+            "description": "Page number",
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "x-go-name": "PerPage",
+            "description": "Page size.",
+            "name": "perPage",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/DocumentResponse"
+          }
+        }
+      },
+      "post": {
+        "description": "Otherwise document is not processed yet and lacks other fields.",
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Upload new document file. New document already contains id, name, filename and timestamps.",
+        "operationId": "UploadFile",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/DocumentResponse"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/:id": {
+      "delete": {
+        "description": "Delete document",
+        "tags": [
+          "Documents"
+        ],
+        "operationId": "DeleteDocument",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/RespOk"
+          },
+          "400": {
+            "$ref": "#/responses/RespBadRequest"
+          },
+          "401": {
+            "$ref": "#/responses/RespForbidden"
+          },
+          "403": {
+            "$ref": "#/responses/RespNotFound"
+          },
+          "500": {
+            "$ref": "#/responses/RespInternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/stats": {
+      "get": {
+        "description": "Get document statistics",
+        "tags": [
+          "Documents"
+        ],
+        "operationId": "GetUserDocumentStatistics",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/RespDocumentStatistics"
+          },
+          "304": {
+            "$ref": "#/responses/RespNotModified"
+          },
+          "400": {
+            "$ref": "#/responses/RespBadRequest"
+          },
+          "401": {
+            "$ref": "#/responses/RespForbidden"
+          },
+          "403": {
+            "$ref": "#/responses/RespNotFound"
+          },
+          "500": {
+            "$ref": "#/responses/RespInternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}": {
+      "get": {
+        "description": "Downloads original document",
+        "tags": [
+          "Documents"
+        ],
+        "operationId": "DownloadDocument",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/DocumentResponse"
+          }
+        }
+      },
+      "put": {
+        "description": "Updates document",
+        "tags": [
+          "Documents"
+        ],
+        "operationId": "UpdateDocument",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/DocumentResponse"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/content": {
+      "get": {
+        "description": "Get full document parsed content",
+        "tags": [
+          "Documents"
+        ],
+        "operationId": "GetDocumentContent",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/DocumentResponse"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/jobs": {
+      "get": {
+        "description": "Get processing job history related to document",
+        "tags": [
+          "Documents"
+        ],
+        "operationId": "GetDocumentJobs",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/DocumentResponse"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/metadata": {
+      "post": {
+        "description": "Update document metadata",
+        "tags": [
+          "Documents"
+        ],
+        "operationId": "UpdateDocumentMetadata",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/DocumentResponse"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/preview": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Get document preview, a small png image of first page of document.",
+        "operationId": "GetDocumentPreview",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/DocumentResponse"
+          }
+        }
+      }
+    },
+    "/api/v1/filetypes": {
+      "get": {
+        "description": "Returns a list of valid name endings and a list of mime types.",
+        "tags": [
+          "Public"
+        ],
+        "summary": "Get supported file types.",
+        "operationId": "GetFileTypes",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/RespFileTypes"
+          }
+        }
+      }
+    },
+    "/api/v1/location": {
+      "post": {
+        "description": "Request document re-processing",
+        "tags": [
+          "Documents"
+        ],
+        "operationId": "RequestProcessing",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/RespOk"
+          },
+          "400": {
+            "$ref": "#/responses/RespBadRequest"
+          },
+          "401": {
+            "$ref": "#/responses/RespForbidden"
+          },
+          "403": {
+            "$ref": "#/responses/RespNotFound"
+          },
+          "500": {
+            "$ref": "#/responses/RespInternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/metadata/keys": {
+      "get": {
+        "description": "Get metadata keys",
+        "tags": [
+          "Metadata"
+        ],
+        "operationId": "GetMetadataKeys",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/MetadataKeyResponse"
+          }
+        }
+      },
+      "post": {
+        "description": "Add metadata key",
+        "tags": [
+          "Metadata"
+        ],
+        "operationId": "AddMetadataKey",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/MetadataKeyResponse"
+          }
+        }
+      }
+    },
+    "/api/v1/metadata/keys/{id}": {
+      "get": {
+        "description": "Get metadata key",
+        "tags": [
+          "Metadata"
+        ],
+        "operationId": "GetMetadataKey",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/MetadataKeyResponse"
+          }
+        }
+      }
+    },
+    "/api/v1/metadata/keys/{id}/values": {
+      "get": {
+        "description": "Get metadata key values",
+        "tags": [
+          "Metadata"
+        ],
+        "operationId": "GetMetadataKeyValues",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/MetadataKeyValueResponse"
+          }
+        }
+      },
+      "post": {
+        "description": "Add metadata key values",
+        "tags": [
+          "Metadata"
+        ],
+        "operationId": "AddMetadataKeyValues",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/MetadataKeyValueResponse"
+          }
+        }
+      }
+    },
+    "/api/v1/preferences/user": {
+      "get": {
+        "description": "Get user preferences",
+        "tags": [
+          "Preferences"
+        ],
+        "operationId": "GetPreferences",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/RespUserPreferences"
+          },
+          "304": {
+            "$ref": "#/responses/RespNotModified"
+          },
+          "400": {
+            "$ref": "#/responses/RespBadRequest"
+          },
+          "401": {
+            "$ref": "#/responses/RespForbidden"
+          },
+          "403": {
+            "$ref": "#/responses/RespNotFound"
+          },
+          "500": {
+            "$ref": "#/responses/RespInternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/processing/rules": {
+      "get": {
+        "description": "Get processing rules",
+        "tags": [
+          "Processing"
+        ],
+        "operationId": "GetRules",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/ProcessingRuleResponse"
+          }
+        }
+      },
+      "post": {
+        "description": "Add processing rule",
+        "tags": [
+          "Processing"
+        ],
+        "operationId": "AddRule",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/ProcessingRuleResponse"
+          },
+          "304": {
+            "$ref": "#/responses/RespNotModified"
+          },
+          "400": {
+            "$ref": "#/responses/RespBadRequest"
+          },
+          "401": {
+            "$ref": "#/responses/RespForbidden"
+          },
+          "403": {
+            "$ref": "#/responses/RespNotFound"
+          },
+          "500": {
+            "$ref": "#/responses/RespInternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/processing/rules/{id}": {
+      "get": {
+        "description": "Get processing rule by id",
+        "tags": [
+          "Processing"
+        ],
+        "operationId": "GetRule",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/ProcessingRuleResponse"
+          }
+        }
+      },
+      "put": {
+        "description": "Update rule contents",
+        "tags": [
+          "Processing"
+        ],
+        "operationId": "UpdateRule",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "description": "Delete rule",
+        "tags": [
+          "Processing"
+        ],
+        "operationId": "DeleteRule",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/processing/rules/{id}/test": {
+      "put": {
+        "description": "Test rule execution",
+        "tags": [
+          "Processing"
+        ],
+        "operationId": "TestRule",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/process.RuleTestResult"
+          },
+          "403": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/version": {
+      "get": {
+        "description": "Get server version",
+        "tags": [
+          "Public"
+        ],
+        "operationId": "GetVersion",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/RespVersion"
+          }
+        }
+      },
+      "post": {
+        "description": "Login",
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "Login",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "DocumentProcessStep": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-go-name": "DocumentId"
+        },
+        "step": {
+          "type": "string",
+          "x-go-name": "Step"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/api"
+    },
+    "DocumentResponse": {
+      "description": "DocumentResponse",
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string",
+          "x-go-name": "Content"
+        },
+        "created_at": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "CreatedAt"
+        },
+        "date": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Date"
+        },
+        "description": {
+          "type": "string",
+          "x-go-name": "Description"
+        },
+        "download_url": {
+          "type": "string",
+          "x-go-name": "DownloadUrl"
+        },
+        "filename": {
+          "type": "string",
+          "x-go-name": "Filename"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "x-go-name": "Id"
+        },
+        "metadata": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Metadata"
+          },
+          "x-go-name": "Metadata"
+        },
+        "mimetype": {
+          "type": "string",
+          "x-go-name": "Mimetype"
+        },
+        "name": {
+          "type": "string",
+          "x-go-name": "Name"
+        },
+        "pretty_size": {
+          "type": "string",
+          "x-go-name": "PrettySize"
+        },
+        "preview_url": {
+          "type": "string",
+          "x-go-name": "PreviewUrl"
+        },
+        "size": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Size"
+        },
+        "status": {
+          "type": "string",
+          "x-go-name": "Status"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Tag"
+          },
+          "x-go-name": "Tags"
+        },
+        "type": {
+          "type": "string",
+          "x-go-name": "Type"
+        },
+        "updated_at": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "UpdatedAt"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/api"
+    },
+    "DocumentUpdateRequestBody": {
+      "description": "DocumentUpdateRequest",
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Date"
+        },
+        "description": {
+          "type": "string",
+          "x-go-name": "Description"
+        },
+        "filename": {
+          "type": "string",
+          "x-go-name": "Filename"
+        },
+        "metadata": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/MetadataRequest"
+          },
+          "x-go-name": "Metadata"
+        },
+        "name": {
+          "type": "string",
+          "x-go-name": "Name"
+        }
+      },
+      "x-go-name": "DocumentUpdateRequest",
+      "x-go-package": "tryffel.net/go/virtualpaper/api"
+    },
+    "EngineStatus": {
+      "type": "object",
+      "properties": {
+        "engine_ok": {
+          "type": "boolean",
+          "x-go-name": "Ok"
+        },
+        "name": {
+          "type": "string",
+          "x-go-name": "Name"
+        },
+        "status": {
+          "type": "string",
+          "x-go-name": "Status"
+        },
+        "version": {
+          "type": "string",
+          "x-go-name": "Version"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/search"
+    },
+    "ForceDocumumentsProcessing": {
+      "type": "object",
+      "title": "ForceDocumentsProcessingRequest describes request to force processing of documents.",
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "x-go-name": "DocumentId"
+        },
+        "from_step": {
+          "type": "string",
+          "x-go-name": "FromStep"
+        },
+        "user_id": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "UserId"
+        }
+      },
+      "x-go-name": "ForceDocumentProcessingRequest",
+      "x-go-package": "tryffel.net/go/virtualpaper/api"
+    },
+    "Int": {
+      "type": "integer",
+      "format": "int64",
+      "title": "Int as an integer that accepts null values from database.",
+      "x-go-package": "tryffel.net/go/virtualpaper/models"
+    },
+    "Metadata": {
+      "description": "Metadata is metadata key-value pair assigned to document",
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "x-go-name": "Key"
+        },
+        "key_id": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "KeyId"
+        },
+        "value": {
+          "type": "string",
+          "x-go-name": "Value"
+        },
+        "value_id": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "ValueId"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/models"
+    },
+    "MetadataKey": {
+      "type": "object",
+      "properties": {
+        "comment": {
+          "type": "string",
+          "x-go-name": "Comment"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "CreatedAt"
+        },
+        "documents_count": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "NumDocuments"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Id"
+        },
+        "key": {
+          "type": "string",
+          "x-go-name": "Key"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/models"
+    },
+    "MetadataRequest": {
+      "type": "object",
+      "properties": {
+        "key_id": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "KeyId"
+        },
+        "value_id": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "ValueId"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/api"
+    },
+    "MetadataRuleType": {
+      "type": "string",
+      "x-go-package": "tryffel.net/go/virtualpaper/models"
+    },
+    "MetadataValue": {
+      "type": "object",
+      "properties": {
+        "comment": {
+          "type": "string",
+          "x-go-name": "Comment"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "CreatedAt"
+        },
+        "documents_count": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "NumDocuments"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Id"
+        },
+        "key": {
+          "type": "string",
+          "x-go-name": "Key"
+        },
+        "match_documents": {
+          "description": "MatchDocuments instructs to try to automatically match MetadataValue inside documents",
+          "type": "boolean",
+          "x-go-name": "MatchDocuments"
+        },
+        "match_filter": {
+          "type": "string",
+          "x-go-name": "MatchFilter"
+        },
+        "match_type": {
+          "$ref": "#/definitions/MetadataRuleType"
+        },
+        "value": {
+          "type": "string",
+          "x-go-name": "Value"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/models"
+    },
+    "MimeTypesSupportedResponse": {
+      "type": "object",
+      "title": "MimeTypesSupportedResponse conatains info on mime types that server can extract.",
+      "properties": {
+        "mimetypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-go-name": "Mimetypes"
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-go-name": "Names"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/api"
+    },
+    "QueueStatus": {
+      "type": "object",
+      "properties": {
+        "duration_ms": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "DurationMs"
+        },
+        "processing_document_id": {
+          "type": "string",
+          "x-go-name": "ProcessingDocumentId"
+        },
+        "processing_ongoing": {
+          "type": "boolean",
+          "x-go-name": "ProcessingOngoing"
+        },
+        "queue_capacity": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "QueueCapacity"
+        },
+        "queued": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Queued"
+        },
+        "task_id": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "TaskId"
+        },
+        "task_running": {
+          "type": "boolean",
+          "x-go-name": "Running"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/process"
+    },
+    "Rule": {
+      "type": "object",
+      "properties": {
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RuleAction"
+          },
+          "x-go-name": "Actions"
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RuleCondition"
+          },
+          "x-go-name": "Conditions"
+        },
+        "created_at": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "CreatedAt"
+        },
+        "description": {
+          "type": "string",
+          "x-go-name": "Description"
+        },
+        "enabled": {
+          "type": "boolean",
+          "x-go-name": "Enabled"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Id"
+        },
+        "mode": {
+          "type": "string",
+          "x-go-name": "Mode"
+        },
+        "name": {
+          "type": "string",
+          "x-go-name": "Name"
+        },
+        "order": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Order"
+        },
+        "updated_at": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "UpdatedAt"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/api"
+    },
+    "RuleAction": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "x-go-name": "Action"
+        },
+        "enabled": {
+          "type": "boolean",
+          "x-go-name": "Enabled"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Id"
+        },
+        "metadata": {
+          "$ref": "#/definitions/Metadata"
+        },
+        "on_condition": {
+          "type": "boolean",
+          "x-go-name": "OnCondition"
+        },
+        "rule_id": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "RuleId"
+        },
+        "value": {
+          "type": "string",
+          "x-go-name": "Value"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/api"
+    },
+    "RuleCondition": {
+      "type": "object",
+      "properties": {
+        "case_insensitive": {
+          "type": "boolean",
+          "x-go-name": "CaseInsensitive"
+        },
+        "condition_type": {
+          "type": "string",
+          "x-go-name": "ConditionType"
+        },
+        "date_fmt": {
+          "type": "string",
+          "x-go-name": "DateFmt"
+        },
+        "enabled": {
+          "type": "boolean",
+          "x-go-name": "Enabled"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Id"
+        },
+        "inverted_match": {
+          "type": "boolean",
+          "x-go-name": "Inverted"
+        },
+        "is_regex": {
+          "type": "boolean",
+          "x-go-name": "IsRegex"
+        },
+        "metadata": {
+          "$ref": "#/definitions/Metadata"
+        },
+        "rule_id": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "RuleId"
+        },
+        "value": {
+          "type": "string",
+          "x-go-name": "Value"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/api"
+    },
+    "SystemInfo": {
+      "type": "object",
+      "properties": {
+        "commit": {
+          "type": "string",
+          "x-go-name": "Commit"
+        },
+        "documents_processed_past_month": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "DocumentsProcessedLastMonth"
+        },
+        "documents_processed_past_week": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "DocumentsProcessedLastWeek"
+        },
+        "documents_processed_today": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "DocumentsProcessedToday"
+        },
+        "documents_queued": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "DocumentsInQueue"
+        },
+        "documents_total": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "DocumentsTotal"
+        },
+        "documents_total_size": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "DocumentsTotalSize"
+        },
+        "documents_total_size_string": {
+          "type": "string",
+          "x-go-name": "DocumentsTotalSizeString"
+        },
+        "go_version": {
+          "type": "string",
+          "x-go-name": "GoVersion"
+        },
+        "imagemagick_version": {
+          "type": "string",
+          "x-go-name": "ImagemagickVersion"
+        },
+        "name": {
+          "type": "string",
+          "x-go-name": "Name"
+        },
+        "number_cpus": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "NumCpu"
+        },
+        "pandoc_installed": {
+          "type": "boolean",
+          "x-go-name": "PandocInstalled"
+        },
+        "poppler_installed": {
+          "type": "boolean",
+          "x-go-name": "PopplerInstalled"
+        },
+        "processing_queue": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/QueueStatus"
+          },
+          "x-go-name": "ProcessingStatus"
+        },
+        "search_engine_status": {
+          "$ref": "#/definitions/EngineStatus"
+        },
+        "server_load": {
+          "type": "string",
+          "x-go-name": "ServerLoad"
+        },
+        "tesseract_version": {
+          "type": "string",
+          "x-go-name": "TesseractVersion"
+        },
+        "uptime": {
+          "type": "string",
+          "x-go-name": "Uptime"
+        },
+        "version": {
+          "type": "string",
+          "x-go-name": "Version"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/api"
+    },
+    "Tag": {
+      "type": "object",
+      "title": "Tag is a per-user label to add to documents. It has many-to-many relationship with documents.",
+      "properties": {
+        "comment": {
+          "type": "string",
+          "x-go-name": "Comment"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "CreatedAt"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Id"
+        },
+        "key": {
+          "type": "string",
+          "x-go-name": "Key"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "UpdatedAt"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/models"
+    },
+    "UserDocumentStatistics": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "user id",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "UserId"
+        },
+        "last_documents_updated": {
+          "description": "array of last updated document ids",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-go-name": "LastDocumentsUpdated",
+          "example": "[abcd]"
+        },
+        "num_documents": {
+          "description": "total number of documents",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "NumDocuments",
+          "example": 53
+        },
+        "num_metadata_keys": {
+          "description": "total number of metadata keys",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "NumMetadataKeys",
+          "example": 4
+        },
+        "num_metadata_values": {
+          "description": "total number of metadata values",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "NumMetadataValues",
+          "example": 14
+        },
+        "yearly_stats": {
+          "description": "per-year statistics",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "num_documents": {
+                "description": "number of documents",
+                "type": "integer",
+                "format": "int64",
+                "x-go-name": "NumDocuments",
+                "example": 49
+              },
+              "year": {
+                "description": "year",
+                "type": "integer",
+                "format": "int64",
+                "x-go-name": "Year",
+                "example": 2020
+              }
+            }
+          },
+          "x-go-name": "YearlyStats"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/api"
+    },
+    "UserInfo": {
+      "type": "object",
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "CreatedAt"
+        },
+        "documents_count": {
+          "$ref": "#/definitions/Int"
+        },
+        "documents_indexed_count": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "TotalDocumentsIndexed"
+        },
+        "documents_size": {
+          "$ref": "#/definitions/Int"
+        },
+        "email": {
+          "type": "string",
+          "x-go-name": "Email"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "UserId"
+        },
+        "indexing": {
+          "type": "boolean",
+          "x-go-name": "Indexing"
+        },
+        "is_active": {
+          "type": "boolean",
+          "x-go-name": "IsActive"
+        },
+        "is_admin": {
+          "type": "boolean",
+          "x-go-name": "IsAdmin"
+        },
+        "last_seen": {
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "LastSeen"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "UpdatedAt"
+        },
+        "user_name": {
+          "type": "string",
+          "x-go-name": "UserName"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/models"
+    },
+    "UserPreferences": {
+      "type": "object",
+      "properties": {
+        "stop_words": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-go-name": "StopWords"
+        },
+        "synonyms": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "x-go-name": "Synonyms"
+        }
+      },
+      "x-go-name": "ReqUserPreferences",
+      "x-go-package": "tryffel.net/go/virtualpaper/api"
+    },
+    "VersionResponse": {
+      "type": "object",
+      "title": "VersionResponse contains general server info.",
+      "properties": {
+        "commit": {
+          "type": "string",
+          "x-go-name": "Commit"
+        },
+        "name": {
+          "type": "string",
+          "x-go-name": "Name"
+        },
+        "version": {
+          "type": "string",
+          "x-go-name": "Version"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/api"
+    }
+  },
+  "responses": {
+    "DocumentResponse": {
+      "description": "DocumentsResponse contains array of documents",
+      "schema": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/DocumentResponse"
+        }
+      }
+    },
+    "MetadataKeyResponse": {
+      "description": "",
+      "schema": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/MetadataValue"
+        }
+      }
+    },
+    "ProcessingRuleArrayResponse": {
+      "description": "",
+      "schema": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/Rule"
+        }
+      }
+    },
+    "RespAdminSystemInfo": {
+      "description": "System information",
+      "schema": {
+        "$ref": "#/definitions/SystemInfo"
+      }
+    },
+    "RespBadRequest": {
+      "description": "request validation failed",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "x-go-name": "Error"
+          }
+        }
+      }
+    },
+    "RespDocumentProcessingSteps": {
+      "description": "Documents and processing steps pending",
+      "schema": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/DocumentProcessStep"
+        }
+      }
+    },
+    "RespDocumentStatistics": {
+      "description": "Document / usage statistics",
+      "schema": {
+        "$ref": "#/definitions/UserDocumentStatistics"
+      }
+    },
+    "RespFileTypes": {
+      "description": "Supported file types",
+      "schema": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/MimeTypesSupportedResponse"
+        }
+      }
+    },
+    "RespForbidden": {
+      "description": "action forbidden"
+    },
+    "RespInternalError": {
+      "description": "internal error occured and server was unable to complete operation"
+    },
+    "RespNotFound": {
+      "description": "resource not found"
+    },
+    "RespNotModified": {
+      "description": "Content already exists and has not been modified"
+    },
+    "RespOk": {
+      "description": "Request ok"
+    },
+    "RespUserInfo": {
+      "description": "User info",
+      "schema": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/UserInfo"
+        }
+      }
+    },
+    "RespUserPreferences": {
+      "description": "User preferences",
+      "schema": {
+        "$ref": "#/definitions/UserPreferences"
+      }
+    },
+    "RespVersion": {
+      "description": "Server version",
+      "schema": {
+        "$ref": "#/definitions/VersionResponse"
+      }
+    },
+    "SystemInfo": {
+      "description": "",
+      "schema": {
+        "$ref": "#/definitions/EngineStatus"
+      },
+      "headers": {
+        "commit": {
+          "type": "string"
+        },
+        "documents_processed_past_month": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "documents_processed_past_week": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "documents_processed_today": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "documents_queued": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "documents_total": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "documents_total_size": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "documents_total_size_string": {
+          "type": "string"
+        },
+        "go_version": {
+          "type": "string"
+        },
+        "imagemagick_version": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "number_cpus": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "pandoc_installed": {
+          "type": "boolean"
+        },
+        "poppler_installed": {
+          "type": "boolean"
+        },
+        "processing_queue": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/QueueStatus"
+          }
+        },
+        "search_engine_status": {},
+        "server_load": {
+          "type": "string"
+        },
+        "tesseract_version": {
+          "type": "string"
+        },
+        "uptime": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "name": "token",
+      "in": "header"
+    }
+  },
+  "security": [
+    {
+      "api_key": []
+    }
+  ]
+}
