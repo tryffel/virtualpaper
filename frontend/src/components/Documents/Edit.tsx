@@ -28,25 +28,27 @@ import {
   ReferenceInput,
   SelectArrayInput,
   Loading,
-  Error,
   SelectInput,
   ArrayInput,
   SimpleFormIterator,
   FormDataConsumer,
   AutocompleteInput,
-  useRecordContext,
-  useGetList,
   useGetManyReference,
   Labeled,
   Toolbar,
   SaveButton,
   DeleteWithConfirmButton,
+  Button,
+  TopToolbar,
+  ShowButton,
 } from "react-admin";
 
 import { MarkdownInput } from "../Markdown";
-import { Typography, Grid, Box } from "@mui/material";
+import { Typography, Grid, Box, useMediaQuery } from "@mui/material";
+import ArticleIcon from "@mui/icons-material/Article";
 import get from "lodash/get";
 import { IndexingStatusField } from "./IndexingStatus";
+import { EmbedFile } from "./Thumbnail";
 
 const EditToolBar = () => {
   return (
@@ -66,8 +68,17 @@ export const DocumentEdit = () => {
     date: Date.parse(`${data.date}`),
   });
 
+  const [previewOpen, setPreviewOpen] = React.useState(false);
+
   return (
-    <Edit transform={transform} title="Edit document">
+    <Edit
+      transform={transform}
+      title="Edit document"
+      aside={<ToggledEmbedFile source="download_url" shown={previewOpen} />}
+      actions={
+        <DocumentEditActions open={previewOpen} setOpen={setPreviewOpen} />
+      }
+    >
       <SimpleForm
         redirect="show"
         warnWhenUnsavedChanges
@@ -167,7 +178,6 @@ const MetadataValueInput = (props: MetadataValueInputProps) => {
   if (props.record) {
     // @ts-ignore
     keyId = get(props.record, "key_id");
-    console.log("key ", keyId);
   }
   const { data, isLoading, error } = useGetManyReference("metadata/values", {
     target: "id",
@@ -197,4 +207,32 @@ const MetadataValueInput = (props: MetadataValueInputProps) => {
   } else {
     return <Loading />;
   }
+};
+
+const ToggledEmbedFile = (props: any) => {
+  const { shown, source } = props;
+  if (!shown) return null;
+  return <EmbedFile source={source} />;
+};
+
+const DocumentEditActions = (props: { open: any; setOpen: any }) => {
+  const isMedium = useMediaQuery((theme: any) => theme.breakpoints.down("md"));
+  const { open, setOpen } = props;
+  const onClick = (e: any) => {
+    setOpen(!open);
+  };
+
+  return (
+    <TopToolbar>
+      {!isMedium ? (
+        <Button
+          color="primary"
+          label="Toggle preview"
+          startIcon={<ArticleIcon />}
+          onClick={onClick}
+        ></Button>
+      ) : null}
+      <ShowButton />
+    </TopToolbar>
+  );
 };

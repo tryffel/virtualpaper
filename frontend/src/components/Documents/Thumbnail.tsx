@@ -16,14 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import * as React from 'react';
-import get from 'lodash/get';
-import { RaRecord, useRecordContext } from 'react-admin';
+import * as React from "react";
+import get from "lodash/get";
+import { RaRecord, useRecordContext } from "react-admin";
+import { Paper } from "@mui/material";
 
 export function downloadFile(url: string) {
-  const token = localStorage.getItem('auth');
+  const token = localStorage.getItem("auth");
   return fetch(url, {
-    method: 'GET',
+    method: "GET",
     headers: { Authorization: `Bearer ${token}` },
   });
 }
@@ -36,11 +37,11 @@ export interface ThumbnailProps {
 
 export const ThumbnailField = (props: any) => {
   const record = useRecordContext();
-  const url = get(record, props.source || '');
-  const [imgData, setImage] = React.useState('');
+  const url = get(record, props.source || "");
+  const [imgData, setImage] = React.useState("");
 
   React.useEffect(() => {
-    const url = get(record, props.source || '');
+    const url = get(record, props.source || "");
     downloadFile(url)
       .then((response) => {
         response.arrayBuffer().then((buffer) => {
@@ -59,11 +60,11 @@ export const ThumbnailField = (props: any) => {
       <img src={imgData} alt={props.label} />
     </div>
   ) : null;
-}
+};
 
 export function ThumbnailSmall(props: ThumbnailProps) {
   const [imgData, setImage] = React.useState(() => {
-    downloadFile(props.url || '')
+    downloadFile(props.url || "")
       .then((response) => {
         response.arrayBuffer().then((buffer) => {
           const data = window.URL.createObjectURL(new Blob([buffer]));
@@ -73,23 +74,30 @@ export function ThumbnailSmall(props: ThumbnailProps) {
       .catch((response) => {
         console.error(response);
       });
-    return '';
+    return "";
   });
 
   return (
-    <div style={{ overflow: 'hidden', maxHeight: '200px', minHeight: '200px' }}>
-      <img src={imgData} style={{ maxWidth: '250px' }} alt={props.label} />
+    <div style={{ overflow: "hidden", maxHeight: "200px", minHeight: "200px" }}>
+      <img src={imgData} style={{ maxWidth: "250px" }} alt={props.label} />
     </div>
   );
 }
 
-export function EmbedFile({ source = '' }) {
+export function EmbedFile({ source = "" }) {
+  const style = {
+    width: "100%",
+    display: "fill",
+    border: "none",
+    height: "100%",
+  };
+
   const record = useRecordContext();
-  const url = get(record, source || '');
-  const [imgData, setImage] = React.useState('');
+  const url = get(record, source || "");
+  const [imgData, setImage] = React.useState("");
 
   React.useEffect(() => {
-    const url = get(record, source || '');
+    const url = get(record, source || "");
     downloadFile(url)
       .then((response) => {
         response.arrayBuffer().then((buffer) => {
@@ -101,17 +109,18 @@ export function EmbedFile({ source = '' }) {
         console.error(response);
       });
   }, [record]);
+
   if (!record) return null;
 
   return (
-    <div style={{ display: 'block', width: '100%' }}>
-      <iframe
-        style={{
-          width: '100%', display: 'fill', border: 'none', height: '40em',
-        }}
-        title="Preview"
-        src={imgData}
-      />
-    </div>
+    <Paper
+      sx={{
+        width: "100%",
+        margin: "0.5em",
+        height: "40em",
+      }}
+    >
+      <iframe style={style} title="Preview" src={imgData} />
+    </Paper>
   );
 }
