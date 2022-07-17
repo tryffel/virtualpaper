@@ -121,6 +121,7 @@ func (a *Api) addRoutes() {
 
 	a.privateRouter.HandleFunc("/metadata/keys", a.getMetadataKeys).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/metadata/keys", a.addMetadataKey).Methods(http.MethodPost)
+	a.privateRouter.HandleFunc("/metadata/keys/{id}", a.updateMetadataKey).Methods(http.MethodPut)
 	a.privateRouter.HandleFunc("/metadata/keys/{id}", a.getMetadataKey).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/metadata/keys/{id}/values", a.getMetadataKeyValues).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/metadata/keys/{id}/values", a.addMetadataValue).Methods(http.MethodPost)

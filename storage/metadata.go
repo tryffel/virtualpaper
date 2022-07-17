@@ -458,6 +458,21 @@ THEN TRUE ELSE FALSE END AS exists;
 	return ownership, s.parseError(err, "check user has key-value")
 }
 
+func (s *MetadataStore) UserHasKey(userId, keyId int) (bool, error) {
+	sql := `
+SELECT CASE WHEN EXISTS (
+    SELECT mk.id
+    FROM metadata_keys mk 
+    WHERE mk.user_id=$1
+      AND mk.id=$2
+    )  
+THEN TRUE ELSE FALSE END AS exists;
+`
+	var ownership bool
+	err := s.db.Get(&ownership, sql, userId, keyId)
+	return ownership, s.parseError(err, "check user has key")
+}
+
 func (s *MetadataStore) UpdateValue(value *models.MetadataValue) error {
 	sql := `
 	UPDATE metadata_values
@@ -467,6 +482,17 @@ func (s *MetadataStore) UpdateValue(value *models.MetadataValue) error {
 
 	_, err := s.db.Exec(sql, value.Value, value.MatchDocuments, value.MatchType, value.MatchFilter, value.Id)
 	return s.parseError(err, "update value")
+}
+
+func (s *MetadataStore) UpdateKey(key *models.MetadataKey) error {
+	sql := `
+UPDATE metadata_keys 
+SET key=$1, comment=$2
+WHERE id=$3;
+`
+
+	_, err := s.db.Exec(sql, key.Key, key.Comment, key.Id)
+	return s.parseError(err, "update key")
 }
 
 // CheckKeyValuesExist verifies key-value pairs exist and user owns them.

@@ -29,9 +29,10 @@ import {
   NumberField,
   useEditController,
   CreateButton,
+  TextInput
 } from "react-admin";
 
-import { MarkdownField } from "../Markdown";
+import { MarkdownInput } from "../Markdown";
 import { useMediaQuery } from "@mui/material";
 
 import MetadataValueCreateButton from "./ValueCreate";
@@ -73,14 +74,8 @@ export const MetadataKeyEdit = () => {
           resource="metadata/values"
           {...valueToUpdate}
         />
-
-        <Labeled label="Metadata key name">
-          <TextField source="key" />
-        </Labeled>
-        <Labeled label="Description">
-          <MarkdownField source="description" />
-        </Labeled>
-
+          <TextInput source="key" id="key-name" label="metadata key name"/>
+          <MarkdownInput source="comment" />
         <ReferenceManyField
           label="Values"
           reference={"metadata/values"}

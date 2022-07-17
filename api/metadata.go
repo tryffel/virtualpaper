@@ -20,9 +20,10 @@ package api
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
+
+	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/storage"
@@ -324,8 +325,8 @@ func (a *Api) addMetadataValue(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (a *Api) updateMetadataValue(resp http.ResponseWriter, req *http.Request) {
-	// swagger:route POST /api/v1/metadata/keys/{id}/values Metadata AddMetadataKeyValues
-	// Add metadata key values
+	// swagger:route PUT /api/v1/metadata/keys/{id}/values Metadata UpdateMetadataKeyValue
+	// Update metadata key value
 	// Responses:
 	//  200: MetadataKeyValueResponse
 	handler := "Api.updateMetadataValue"
@@ -365,7 +366,6 @@ func (a *Api) updateMetadataValue(resp http.ResponseWriter, req *http.Request) {
 		MatchType:      models.MetadataRuleType(dto.MatchType),
 		MatchFilter:    dto.MatchFilter,
 	}
-
 	ownerShip, err := a.db.MetadataStore.UserHasKeyValue(user, keyId, valueId)
 	if err != nil {
 		respError(resp, err, handler)
@@ -378,10 +378,78 @@ func (a *Api) updateMetadataValue(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// rest should be enclodes in a transaction
 	err = a.db.MetadataStore.UpdateValue(value)
 	if err != nil {
 		respError(resp, err, handler)
 		return
 	}
-	respResourceList(resp, value, 1)
+
+	err = a.db.JobStore.AddDocumentsByMetadata(user, keyId, valueId, models.ProcessFts)
+	if err != nil {
+		respError(resp, err, handler)
+	} else {
+		respResourceList(resp, value, 1)
+	}
+}
+
+func (a *Api) updateMetadataKey(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route PUT /api/v1/metadata/keys/{id} Metadata UpdateMetadataKeyValues
+	// Update metadata key
+	// Responses:
+	//  200: MetadataKeyResponse
+
+	handler := "Api.updateMetadataKey"
+	user, ok := getUserId(req)
+	if !ok {
+		logrus.Errorf("no user in context")
+		respInternalError(resp)
+		return
+	}
+
+	keyId, err := getParamInt(req, "id")
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	dto := &MetadataKeyRequest{}
+	err = unMarshalBody(req, dto)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	ownerShip, err := a.db.MetadataStore.UserHasKey(user, keyId)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	if !ownerShip {
+		err := errors.ErrRecordNotFound
+		respError(resp, err, handler)
+		return
+	}
+
+	key := &models.MetadataKey{
+		Id:      keyId,
+		UserId:  user,
+		Key:     dto.Key,
+		Comment: dto.Comment,
+	}
+
+	// rest should be enclosed in a transaction
+	err = a.db.MetadataStore.UpdateKey(key)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	err = a.db.JobStore.AddDocumentsByMetadata(user, keyId, 0, models.ProcessFts)
+	if err != nil {
+		respError(resp, err, handler)
+	} else {
+		respResourceList(resp, key, 1)
+	}
 }

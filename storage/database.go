@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -43,7 +44,7 @@ func NewDatabase() (*Database, error) {
 
 	db.UserStore = newUserStore(db.conn)
 	db.DocumentStore = &DocumentStore{db: db.conn}
-	db.JobStore = &JobStore{db: db.conn}
+	db.JobStore = newJobStore(db.conn)
 	db.MetadataStore = NewMetadataStore(db.conn)
 	db.StatsStore = NewStatsStore(db.conn)
 	db.RuleStore = newRuleStore(db.conn, db.MetadataStore)
@@ -65,7 +66,7 @@ func NewMockDatabase(matcher sqlmock.QueryMatcher) (*Database, sqlmock.Sqlmock, 
 	}
 	db.UserStore = newUserStore(db.conn)
 	db.DocumentStore = &DocumentStore{db: db.conn}
-	db.JobStore = &JobStore{db: db.conn}
+	db.JobStore = newJobStore(db.conn)
 	db.MetadataStore = NewMetadataStore(db.conn)
 	db.StatsStore = &StatsStore{db: db.conn}
 

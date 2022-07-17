@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/errors"
@@ -12,10 +13,19 @@ import (
 
 type JobStore struct {
 	db *sqlx.DB
+	sq squirrel.StatementBuilderType
 }
 
 func (s JobStore) Name() string {
 	return "Jobs"
+}
+
+func newJobStore(db *sqlx.DB) *JobStore {
+	return &JobStore{
+		db: db,
+		sq: squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+	}
+
 }
 
 func (s JobStore) parseError(err error, action string) error {
@@ -391,4 +401,53 @@ func (s *JobStore) CancelDocumentProcessing(documentId string) error {
 `
 	_, err := s.db.Exec(sql, documentId)
 	return s.parseError(err, "clear document queue")
+}
+
+// AddDocumentsByMetadata adds all documents that match the identifiers.
+// If user != 0, use has to own the document,
+// if keyId != 0, document has to have key,
+// if valueId != 0, document has to have the value.
+// Either key or value must be supplied.
+func (s *JobStore) AddDocumentsByMetadata(userId int, keyId int, valueId int, step models.ProcessStep) error {
+	if valueId == 0 && keyId == 0 {
+		e := errors.ErrInvalid
+		e.ErrMsg = "no key nor value supplied"
+	}
+	steps := models.ProcessStepsAll[step-1:]
+	stepsSql := ""
+	for i, v := range steps {
+		if i != 0 {
+			stepsSql += ", "
+		}
+		val, _ := v.Value()
+		stepsSql += fmt.Sprintf("(%d)", val)
+	}
+
+	selectQuery := s.sq.Select("documents.id as document_id, steps.step").
+		From("documents").
+		LeftJoin("document_metadata dm on documents.id = dm.document_id").
+		Join(fmt.Sprintf("(SELECT DISTINCT * FROM (VALUES %s) AS v) AS steps(step) ON TRUE", stepsSql))
+
+	if userId != 0 {
+		selectQuery = selectQuery.Where("documents.user_id=?", userId)
+	}
+	if keyId != 0 {
+		selectQuery = selectQuery.Where("dm.key_id=?", keyId)
+	}
+	if valueId != 0 {
+		selectQuery = selectQuery.Where("dm.value_id=?", valueId)
+	}
+	query := s.sq.Insert("process_queue").
+		Columns("document_id", "step").
+		Select(selectQuery)
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		e := errors.ErrInternalError
+		e.Err = err
+		return e
+	}
+
+	_, err = s.db.Exec(sql, args...)
+	return getDatabaseError(err, s, "queue documents by metadata")
 }
