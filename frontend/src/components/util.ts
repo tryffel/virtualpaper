@@ -31,3 +31,14 @@ export const ByteToString = (byte: number | string): string => {
     }
     return byte.toString();
 }
+
+
+export const LimitStringLength = (val: string, limit: number): string => {
+    if (limit < 6) {
+        return val;
+    }
+    if (val.length <= limit) {
+        return val;
+    }
+    return val.substring(0, limit - 3).concat("...")
+}

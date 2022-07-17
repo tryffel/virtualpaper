@@ -21,7 +21,6 @@ import {
   DateField,
   EditButton,
   List,
-  RichTextField,
   ShowButton,
   useListContext,
   Pagination,
@@ -53,6 +52,7 @@ import { Help } from "@mui/icons-material";
 
 import { ThumbnailSmall } from "./Thumbnail";
 import { DocumentSearchFilter, FilterSidebar } from "./SearchFilter";
+import { LimitStringLength } from "../util";
 
 const cardStyle = {
   width: 280,
@@ -133,7 +133,16 @@ const DocumentGrid = () => {
           }}
         >
           <CardHeader
-            title={<RichTextField record={record} source="name" />}
+            title={
+              <Typography component="span" variant="body2">
+                <span
+                  className="document-title"
+                  dangerouslySetInnerHTML={{
+                    __html: record ? LimitStringLength(record.name, 50) : "",
+                  }}
+                />
+              </Typography>
+            }
             subheader={
               <Box display={{ xs: "block", sm: "flex" }} sx={{}}>
                 <DateField
