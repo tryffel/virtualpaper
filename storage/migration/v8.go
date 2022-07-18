@@ -59,7 +59,7 @@ ADD CONSTRAINT fk_user
 	
 
 ALTER TABLE user_preferences
-DROP CONSTRAINT fk_user,
+DROP CONSTRAINT fk_user_id,
 ADD CONSTRAINT fk_user 
 	FOREIGN KEY (user_id) 
 	REFERENCES users(id)
