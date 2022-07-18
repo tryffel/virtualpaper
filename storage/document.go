@@ -123,6 +123,32 @@ end;
 
 	err := s.db.Get(&ownership, sql, documentId, userId)
 	return ownership, s.parseError(err, "check ownership")
+
+}
+
+func (s *DocumentStore) UserOwnsDocuments(userId int, documents []string) (bool, error) {
+	sql := `SELECT count(distinct(id)) FROM documents
+	WHERE user_id=$1 AND id IN (
+	`
+
+	args := make([]interface{}, len(documents)+1)
+	args[0] = fmt.Sprintf("%d", userId)
+	for i, v := range documents {
+		if i > 0 {
+			sql += ","
+		}
+		sql += fmt.Sprintf("$%d", i+2)
+		args[i+1] = v
+	}
+	sql += ");"
+	var documentCount int
+	err := s.db.Get(&documentCount, sql, args...)
+
+	if err != nil {
+		return false, s.parseError(err, "check user owns documents")
+	}
+
+	return documentCount == len(documents), s.parseError(err, "check user owns documents")
 }
 
 func (s *DocumentStore) GetByHash(hash string) (*models.Document, error) {

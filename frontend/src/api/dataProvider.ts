@@ -205,6 +205,15 @@ export const dataProvider: DataProvider = {
       )}`;
     }
 
+    if (resource === "documents") {
+      return Promise.all(
+        params.ids.map((id) =>
+          httpClient(`${apiUrl}/${resource}/${id}`, {
+            method: "GET",
+          })
+        )
+      ).then((responses) => ({ data: responses.map(({ json }) => ({...json, id: json.id})) }))
+    };
     return httpClient(url).then(({ json }) => ({ data: json }));
   },
 
@@ -316,6 +325,14 @@ export const dataProvider: DataProvider = {
       }).then(({ json }) => ({
         data: json,
       }));
+    } if (resource === "documents/bulkEdit") {
+    return httpClient(`${apiUrl}/${resource}`, {
+        method: "POST",
+        body: JSON.stringify(params.data),
+      }).then(({ json }) => ({
+        data: { id: 'empty' },
+      }));
+
     } else {
       return httpClient(`${apiUrl}/${resource}`, {
         method: "POST",

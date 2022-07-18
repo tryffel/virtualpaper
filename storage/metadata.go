@@ -473,6 +473,31 @@ THEN TRUE ELSE FALSE END AS exists;
 	return ownership, s.parseError(err, "check user has key")
 }
 
+func (s *MetadataStore) UserHasKeys(userId int, keys []int) (bool, error) {
+
+	sql := `
+SELECT count(distinct(id)) 
+FROM metadata_keys
+WHERE user_id=$1 AND id IN (
+`
+	args := make([]interface{}, len(keys)+1)
+	args[0] = fmt.Sprintf("%d", userId)
+	for i, v := range keys {
+		if i > 0 {
+			sql += ","
+		}
+		sql += fmt.Sprintf("$%d", i+2)
+		args[i+1] = v
+	}
+	sql += ");"
+	var keyCount int
+	err := s.db.Get(&keyCount, sql, args...)
+	if err != nil {
+		return false, s.parseError(err, "check user owns metadata keys")
+	}
+	return keyCount == len(keys), s.parseError(err, "check user owns metadata")
+}
+
 func (s *MetadataStore) UpdateValue(value *models.MetadataValue) error {
 	sql := `
 	UPDATE metadata_values
@@ -523,4 +548,81 @@ func (s *MetadataStore) CheckKeyValuesExist(userId int, values []models.Metadata
 	userErr := errors.ErrInvalid
 	userErr.ErrMsg = "metadata does not exist"
 	return userErr
+}
+
+func (s *MetadataStore) UpsertDocumentMetadata(userId int, documents []string, metadata []*models.Metadata) error {
+	// when checking metadata: need to remove duplicate keys
+
+	sql := `
+INSERT INTO document_metadata (document_id, key_id, value_id) VALUES %s 
+ON CONFLICT (document_id, key_id, value_id) DO NOTHING
+`
+
+	sqlParams := ""
+
+	index := 1
+	args := make([]interface{}, 0, len(documents)*len(metadata))
+	for iDoc, vDoc := range documents {
+		if iDoc > 0 {
+			sqlParams += ","
+		}
+		docIndex := index
+		args = append(args, vDoc)
+		for i, v := range metadata {
+			if i > 0 {
+				sqlParams += ","
+			}
+			sqlParams += fmt.Sprintf("($%d, $%d, $%d)", docIndex, index+1, index+2)
+			args = append(args, v.KeyId, v.ValueId)
+			index += 2
+		}
+		index += 1
+	}
+
+	sql = fmt.Sprintf(sql, sqlParams)
+	_, err := s.db.Exec(sql, args...)
+	return s.parseError(err, "upsert multiple documents metadata")
+}
+
+func (s *MetadataStore) DeleteDocumentsMetadata(userId int, documents []string, metadata []*models.Metadata) error {
+
+	sqlFormat := `
+DELETE FROM document_metadata 
+WHERE 
+	document_id IN (%s) 
+	AND key_id IN (%s) 
+	AND value_id IN (%s);
+		`
+
+	args := make([]interface{}, 0, len(documents)+len(metadata))
+	docArgs := ""
+	keyArgs := ""
+	valueArgs := ""
+
+	index := 0
+
+	for i, v := range documents {
+		if i > 0 {
+			docArgs += ","
+		}
+		docArgs += fmt.Sprintf("$%d", i+1)
+		args = append(args, v)
+	}
+	index = len(documents)
+
+	for i, v := range metadata {
+		if i > 0 {
+			keyArgs += ","
+			valueArgs += ","
+		}
+
+		keyArgs += fmt.Sprintf("$%d", index+1)
+		valueArgs += fmt.Sprintf("$%d", index+2)
+
+		args = append(args, v.KeyId, v.ValueId)
+		index += 2
+	}
+	sql := fmt.Sprintf(sqlFormat, docArgs, keyArgs, valueArgs)
+	_, err := s.db.Exec(sql, args...)
+	return s.parseError(err, "remove multiple documents metadata")
 }

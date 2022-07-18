@@ -707,3 +707,63 @@ func (a *Api) deleteDocument(resp http.ResponseWriter, req *http.Request) {
 	}
 	respOk(resp, nil)
 }
+
+type BulkEditDocumentsRequest struct {
+	Documents      []string              `json:"documents" valid:"required"`
+	AddMetadata    metadataUpdateRequest `json:"add_metadata" valid:"-"`
+	RemoveMetadata metadataUpdateRequest `json:"remove_metadata" valid:"-"`
+}
+
+func (a *Api) bulkEditDocuments(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route POST /api/v1/documents/bulkEdit Documents BulkEditDocuments
+	// Edit multiple documents at once
+	// Responses:
+	//   200: RespOk
+	//   400: RespBadRequest
+	//   401: RespForbidden
+	//   403: RespNotFound
+	//   500: RespInternalError
+
+	handler := "Api.bulkEditDocuments"
+	user, ok := getUserId(req)
+	if !ok {
+		logrus.Errorf("no user in context")
+		respInternalError(resp)
+		return
+	}
+
+	dto := &BulkEditDocumentsRequest{}
+	err := unMarshalBody(req, dto)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	owns, err := a.db.DocumentStore.UserOwnsDocuments(user, dto.Documents)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+	if !owns {
+		respForbidden(resp)
+		return
+	}
+
+	if len(dto.AddMetadata.Metadata) > 0 {
+		addMetadata := dto.AddMetadata.toMetadataArray()
+		err = a.db.MetadataStore.UpsertDocumentMetadata(user, dto.Documents, addMetadata)
+		if err != nil {
+			respError(resp, err, handler)
+			return
+		}
+	}
+	if len(dto.RemoveMetadata.Metadata) > 0 {
+		removeMetadata := dto.RemoveMetadata.toMetadataArray()
+		err = a.db.MetadataStore.DeleteDocumentsMetadata(user, dto.Documents, removeMetadata)
+		if err != nil {
+			respError(resp, err, handler)
+			return
+		}
+	}
+	respResourceList(resp, dto.Documents, len(dto.Documents))
+}

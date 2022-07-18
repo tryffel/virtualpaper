@@ -25,6 +25,7 @@ import Rules from "./components/Rules";
 
 import { ProfileEdit } from "./components/Preferences";
 import AdminView from "./components/Admin";
+import BulkEditDocuments from "./components/Documents/BulkEdit";
 
 const App = () => (
   <Admin
@@ -54,6 +55,7 @@ const App = () => (
     <Resource name="admin" />
     <Resource name="admin/users" />
     <Resource name="admin/documents/processing" />
+    <Resource name="documents/bulkEdit" create={<BulkEditDocuments/>} />
 
 
     <CustomRoutes>
@@ -70,6 +72,13 @@ const App = () => (
         // @ts-ignore
         element={<AdminView />}
       />
+      {/* <Route
+        key="bulkEditDocuments"
+        path={"/documents/bulkEdit/:ids"}
+        // @ts-ignore
+        element={<BulkEditDocuments/>}
+      /> */}
+
     </CustomRoutes>
   </Admin>
 );

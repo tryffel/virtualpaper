@@ -173,7 +173,7 @@ export interface MetadataValueInputProps {
   fullWidth: boolean;
 }
 
-const MetadataValueInput = (props: MetadataValueInputProps) => {
+export const MetadataValueInput = (props: MetadataValueInputProps) => {
   let keyId = 0;
   if (props.record) {
     // @ts-ignore
