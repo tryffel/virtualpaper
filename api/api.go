@@ -22,7 +22,6 @@ import (
 	_ "embed"
 	"fmt"
 	"net/http"
-	"path"
 	"time"
 
 	"github.com/asaskevich/govalidator"
@@ -84,82 +83,6 @@ func NewApi(database *storage.Database) (*Api, error) {
 	return api, err
 }
 
-func (a *Api) addRoutes() {
-	if len(config.C.Api.CorsHosts) > 0 {
-		a.baseRouter.Use(a.corsHeader)
-	}
-
-	a.baseRouter.Use(LoggingMiddleware)
-	a.baseRouter.HandleFunc("/api/v1/auth/login", a.login).Methods(http.MethodPost)
-	a.baseRouter.HandleFunc("/api/v1/version", a.getVersion).Methods(http.MethodGet)
-	a.baseRouter.HandleFunc("/api/v1/swagger.json", serverSwaggerDoc).Methods(http.MethodGet)
-
-	a.privateRouter.Use(a.authorizeUser)
-	a.privateRouter.HandleFunc("/documents", a.getDocuments).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents/undefined", a.getEmptyDocument).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents/{id}/show", a.getDocument).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents/{id:[a-zA-Z0-9-]{30,40}}", a.getDocument).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents/{id}", a.deleteDocument).Methods(http.MethodDelete)
-	a.privateRouter.HandleFunc("/documents/{id}", a.updateDocument).Methods(http.MethodPut)
-	a.privateRouter.HandleFunc("/documents/{id}/preview", a.getDocumentPreview).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents/{id}/jobs", a.getDocumentLogs).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents", a.uploadFile).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/documents/create", a.uploadFile).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/documents/undefined", a.uploadFile).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/documents/create", a.getEmptyDocument).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents/bulkEdit", a.bulkEditDocuments).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/documents/{id}/content", a.getDocumentContent).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents/{id}/download", a.downloadDocument).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents/{id}/metadata", a.updateDocumentMetadata).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/documents/{id}/process", a.requestDocumentProcessing).Methods(http.MethodPost)
-
-	a.privateRouter.HandleFunc("/jobs", a.GetJob).Methods(http.MethodGet)
-
-	a.privateRouter.HandleFunc("/tags", a.getTags).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/tags/{id}", a.getTag).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/tags", a.createTag).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/tags/create", a.createTag).Methods(http.MethodPost)
-
-	a.privateRouter.HandleFunc("/metadata/keys", a.getMetadataKeys).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/metadata/keys", a.addMetadataKey).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/metadata/keys/{id}", a.updateMetadataKey).Methods(http.MethodPut)
-	a.privateRouter.HandleFunc("/metadata/keys/{id}", a.getMetadataKey).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/metadata/keys/{id}", a.deleteMetadataKey).Methods(http.MethodDelete)
-	a.privateRouter.HandleFunc("/metadata/keys/{id}/values", a.getMetadataKeyValues).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/metadata/keys/{id}/values", a.addMetadataValue).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/metadata/keys/{key_id}/values/{value_id}", a.updateMetadataValue).Methods(http.MethodPut)
-	a.privateRouter.HandleFunc("/metadata/keys/{key_id}/values/{value_id}", a.deleteMetadataValue).Methods(http.MethodDelete)
-
-	a.privateRouter.HandleFunc("/documents/stats", a.getUserDocumentStatistics).Methods(http.MethodGet)
-
-	a.privateRouter.HandleFunc("/processing/rules", a.addUserRule).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/processing/rules/{id}", a.updateUserRule).Methods(http.MethodPut)
-	a.privateRouter.HandleFunc("/processing/rules/{id}", a.deleteUserRule).Methods(http.MethodDelete)
-	a.privateRouter.HandleFunc("/processing/rules", a.getUserRules).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/processing/rules/{id}", a.getUserRule).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/processing/rules/{id}/test", a.testRule).Methods(http.MethodPut)
-
-	a.privateRouter.HandleFunc("/preferences/user", a.getUserPreferences).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/preferences/user", a.updateUserPreferences).Methods(http.MethodPut)
-
-	a.privateRouter.HandleFunc("/filetypes", a.getSupportedFileTypes).Methods(http.MethodGet)
-
-	a.adminRouter.Use(a.authorizeUser, a.authorizeAdmin)
-	a.adminRouter.HandleFunc("/documents/process", a.forceDocumentProcessing).Methods(http.MethodPost)
-	a.adminRouter.HandleFunc("/documents/process", a.getDocumentProcessQueue).Methods(http.MethodGet)
-	a.adminRouter.HandleFunc("/users", a.getUsers).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/admin/systeminfo", a.getSystemInfo).Methods(http.MethodGet)
-
-	if config.C.Api.StaticContentPath != "" {
-		logrus.Debugf("Serve static files")
-		a.baseRouter.Handle("/", http.FileServer(http.Dir(config.C.Api.StaticContentPath)))
-		a.baseRouter.PathPrefix("/static").
-			Handler(http.StripPrefix("/static/",
-				http.FileServer(http.Dir(path.Join(config.C.Api.StaticContentPath, "static")))))
-	}
-
-}
-
 func (a *Api) Serve() error {
 	err := a.process.Start()
 	if err != nil {
@@ -219,58 +142,6 @@ func (a *Api) getEmptyResp(resp http.ResponseWriter, req *http.Request) {
 	respOk(resp, nil)
 }
 
-type LoggingWriter struct {
-	resp   http.ResponseWriter
-	status int
-	length int
-}
-
-func (l *LoggingWriter) WriteHeader(status int) {
-	l.length = 0
-	l.status = status
-	l.resp.WriteHeader(status)
-}
-
-func (l *LoggingWriter) Write(b []byte) (int, error) {
-	l.length = len(b)
-	if l.status == 0 {
-		l.status = 200
-	}
-	return l.resp.Write(b)
-}
-
-func (l *LoggingWriter) Header() http.Header {
-	return l.resp.Header()
-}
-
-// LogginMiddlware Provide logging for requests
-func LoggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		logger := &LoggingWriter{
-			resp: w,
-		}
-		next.ServeHTTP(logger, r)
-
-		duration := time.Since(start).String()
-		verb := r.Method
-		url := r.RequestURI
-
-		fields := make(map[string]interface{})
-		fields["verb"] = verb
-		fields["request"] = url
-		fields["duration"] = duration
-		fields["status"] = logger.status
-		fields["length"] = logger.length
-
-		if config.C.Logging.HttpLog != nil {
-			config.C.Logging.HttpLog.WithFields(fields).Infof("http")
-		} else {
-			logrus.WithFields(fields).Infof("http")
-		}
-	})
-}
-
 func init() {
 	govalidator.SetFieldsRequiredByDefault(true)
 }
@@ -281,14 +152,4 @@ var swaggerJson string
 func serverSwaggerDoc(resp http.ResponseWriter, req *http.Request) {
 	resp.Header().Set("content-type", "application/json")
 	_, _ = resp.Write([]byte(swaggerJson))
-}
-
-func logCrudOp(resource string, action string, userId int, success *bool) *logrus.Entry {
-	return logrus.WithFields(logrus.Fields{
-		"module":   "api",
-		"userid":   userId,
-		"resource": resource,
-		"action":   action,
-		"success":  *success,
-	})
 }

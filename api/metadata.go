@@ -29,10 +29,6 @@ import (
 	"tryffel.net/go/virtualpaper/storage"
 )
 
-func logCrudMetadata(userId int, action string, success *bool, fmt string, args ...interface{}) {
-	logCrudOp("metadata", action, userId, success).Infof(fmt, args...)
-}
-
 type MetadataRequest struct {
 	KeyId   int `valid:"required" json:"key_id"`
 	ValueId int `valid:"required" json:"value_id"`
