@@ -29,6 +29,10 @@ import (
 	"tryffel.net/go/virtualpaper/storage"
 )
 
+func logCrudMetadata(userId int, action string, success *bool, fmt string, args ...interface{}) {
+	logCrudOp("metadata", action, userId, success).Infof(fmt, args...)
+}
+
 type MetadataRequest struct {
 	KeyId   int `valid:"required" json:"key_id"`
 	ValueId int `valid:"required" json:"value_id"`
@@ -452,4 +456,114 @@ func (a *Api) updateMetadataKey(resp http.ResponseWriter, req *http.Request) {
 	} else {
 		respResourceList(resp, key, 1)
 	}
+}
+
+func (a *Api) deleteMetadataKey(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route DELETE /api/v1/metadata/keys/{id} Metadata DeleteMetadataKey
+	// Delete metadata key and all its values
+	// Responses:
+	//  200:
+
+	handler := "Api.deleteMetadataKey"
+	user, ok := getUserId(req)
+	if !ok {
+		logrus.Errorf("no user in context")
+		respInternalError(resp)
+		return
+	}
+
+	keyId, err := getParamInt(req, "id")
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	opOk := false
+	defer logCrudMetadata(user, "delete key", &opOk, "key: %d", keyId)
+	ownerShip, err := a.db.MetadataStore.UserHasKey(user, keyId)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	if !ownerShip {
+		err := errors.ErrRecordNotFound
+		respError(resp, err, handler)
+		return
+	}
+
+	// need to add processing when the metadata still exists
+	err = a.db.JobStore.AddDocumentsByMetadata(user, keyId, 0, models.ProcessFts)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	err = a.db.MetadataStore.DeleteKey(user, keyId)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	a.process.PullDocumentsToProcess()
+	opOk = true
+	respOk(resp, "ok")
+}
+
+func (a *Api) deleteMetadataValue(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route DELETE /api/v1/metadata/keys/{key_id}/value{id} Metadata DeleteMetadataValue
+	// Delete metadata value
+	// Responses:
+	//  200:
+
+	handler := "Api.deleteMetadataValue"
+
+	user, ok := getUserId(req)
+	if !ok {
+		logrus.Errorf("no user in context")
+		respInternalError(resp)
+		return
+
+	}
+	keyId, err := getParamInt(req, "key_id")
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+	valueId, err := getParamInt(req, "value_id")
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	opOk := false
+	defer logCrudMetadata(user, "delete value", &opOk, "key: %d, value: %d", keyId, valueId)
+
+	ownerShip, err := a.db.MetadataStore.UserHasKey(user, keyId)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	if !ownerShip {
+		err := errors.ErrRecordNotFound
+		respError(resp, err, handler)
+		return
+	}
+
+	// need to add processing when the metadata still exists
+	err = a.db.JobStore.AddDocumentsByMetadata(user, keyId, valueId, models.ProcessFts)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	err = a.db.MetadataStore.DeleteValue(user, valueId)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+	a.process.PullDocumentsToProcess()
+	opOk = true
+	respOk(resp, "ok")
 }

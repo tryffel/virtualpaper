@@ -28,6 +28,8 @@ import {
   useRefresh,
   RadioButtonGroupInput,
   Form,
+  useDelete,
+  Confirm,
 } from "react-admin";
 
 import { Cancel } from "@mui/icons-material";
@@ -37,6 +39,7 @@ import {
   DialogContent,
   DialogActions,
 } from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { useFormState } from "react-hook-form";
 import { Link } from "react-router-dom";
 
@@ -46,6 +49,13 @@ const MetadataValueUpdateDialog = (props: any) => {
     data: undefined,
     previousData: props.record,
   });
+
+  const [deleteOne, { isLoading: deleteIsLoading, error: deleteError }] =
+    useDelete("metadata/values", {
+      id: props.record?.id,
+      previousData: props.record,
+    });
+
   const notify = useNotify();
   const refresh = useRefresh();
 
@@ -63,6 +73,28 @@ const MetadataValueUpdateDialog = (props: any) => {
     });
   };
 
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+
+  const onCancel = () => {
+    setConfirmOpen(false);
+  };
+
+  const onConfirm = () => {
+    deleteOne("metadata/values", {
+      id: props.record.id,
+      // @ts-ignore
+      key_id: props.key_id,
+      meta: { key_id: props.key_id },
+    });
+    setConfirmOpen(false);
+    handleCloseClick();
+    notify("Metadata value deleted");
+  };
+
+  const handleDelete = async (values: any) => {
+    setConfirmOpen(true);
+  };
+
   if (isLoading) {
     props.setShowDialog(false);
     refresh();
@@ -72,6 +104,12 @@ const MetadataValueUpdateDialog = (props: any) => {
     console.info(error);
     // @ts-ignore
     notify(error.message, "error");
+  }
+
+  if (deleteError) {
+    console.info(deleteError);
+    // @ts-ignore
+    notify(deleteError.message, "error");
   }
 
   const linkDocsLabel = `Show documents (${
@@ -93,6 +131,14 @@ const MetadataValueUpdateDialog = (props: any) => {
 
   return (
     <>
+      <Confirm
+        isOpen={confirmOpen}
+        title={"Confirm deleting metadata value "}
+        content={"This action cannot be undone"}
+        onConfirm={onConfirm}
+        onClose={onCancel}
+      />
+
       <Dialog
         fullWidth
         open={props.showDialog}
@@ -103,6 +149,7 @@ const MetadataValueUpdateDialog = (props: any) => {
         <Form
           resource="metadata/value"
           onSubmit={handleSubmit}
+          onSub
           warnWhenUnsavedChanges={true}
           {...props}
         >
@@ -143,6 +190,13 @@ const MetadataValueUpdateDialog = (props: any) => {
             >
               <Cancel />
             </Button>
+            <Button
+              label="Delete"
+              startIcon={<DeleteIcon />}
+              // @ts-ignore
+              sx={{ color: "secondary" }}
+              onClick={handleDelete}
+            />
             <SaveButton />
           </DialogActions>
         </Form>

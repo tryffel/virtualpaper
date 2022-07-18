@@ -20,11 +20,12 @@ package storage
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
-	"strings"
-	"time"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 )
@@ -122,7 +123,6 @@ func (s *MetadataStore) GetKeys(userId int, ids []int, sort SortKey, paging Pagi
 	if err != nil {
 		return nil, fmt.Errorf("construct sql: %v", err)
 	}
-	logrus.Info(sql, args)
 	err = s.db.Select(keys, sql, args...)
 	return keys, s.parseError(err, "get keys")
 }
@@ -625,4 +625,46 @@ WHERE
 	sql := fmt.Sprintf(sqlFormat, docArgs, keyArgs, valueArgs)
 	_, err := s.db.Exec(sql, args...)
 	return s.parseError(err, "remove multiple documents metadata")
+}
+
+// DeleteKey deletes metadata key.
+// If userId != 0, user has to own the key.
+// This will cascade the deletion to any table that uses metadata keys too: document_metadata, rules.
+func (s *MetadataStore) DeleteKey(userId int, keyId int) error {
+	query := s.sq.Delete("metadata_keys").Where("id=?", keyId)
+	if userId != 0 {
+		query = query.Where("user_id=?", userId)
+	}
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		e := errors.ErrInternalError
+		e.ErrMsg = "bad sql"
+		e.Err = err
+		return e
+	}
+
+	_, err = s.db.Exec(sql, args...)
+	return s.parseError(err, "delete key")
+}
+
+// DeleteValue deletes metadata value from key.
+// If userId != 0, user has to own the value.
+// This will cascade the deletion to any table that uses metadata keys too: document_metadata, rules.
+func (s *MetadataStore) DeleteValue(userId int, valueId int) error {
+	query := s.sq.Delete("metadata_values").Where("id=?", valueId)
+	if userId != 0 {
+		query = query.Where("user_id=?", userId)
+	}
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		e := errors.ErrInternalError
+		e.ErrMsg = "bad sql"
+		e.Err = err
+		return e
+	}
+
+	_, err = s.db.Exec(sql, args...)
+	return s.parseError(err, "delete value")
 }

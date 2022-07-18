@@ -124,9 +124,11 @@ func (a *Api) addRoutes() {
 	a.privateRouter.HandleFunc("/metadata/keys", a.addMetadataKey).Methods(http.MethodPost)
 	a.privateRouter.HandleFunc("/metadata/keys/{id}", a.updateMetadataKey).Methods(http.MethodPut)
 	a.privateRouter.HandleFunc("/metadata/keys/{id}", a.getMetadataKey).Methods(http.MethodGet)
+	a.privateRouter.HandleFunc("/metadata/keys/{id}", a.deleteMetadataKey).Methods(http.MethodDelete)
 	a.privateRouter.HandleFunc("/metadata/keys/{id}/values", a.getMetadataKeyValues).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/metadata/keys/{id}/values", a.addMetadataValue).Methods(http.MethodPost)
 	a.privateRouter.HandleFunc("/metadata/keys/{key_id}/values/{value_id}", a.updateMetadataValue).Methods(http.MethodPut)
+	a.privateRouter.HandleFunc("/metadata/keys/{key_id}/values/{value_id}", a.deleteMetadataValue).Methods(http.MethodDelete)
 
 	a.privateRouter.HandleFunc("/documents/stats", a.getUserDocumentStatistics).Methods(http.MethodGet)
 
@@ -279,4 +281,14 @@ var swaggerJson string
 func serverSwaggerDoc(resp http.ResponseWriter, req *http.Request) {
 	resp.Header().Set("content-type", "application/json")
 	_, _ = resp.Write([]byte(swaggerJson))
+}
+
+func logCrudOp(resource string, action string, userId int, success *bool) *logrus.Entry {
+	return logrus.WithFields(logrus.Fields{
+		"module":   "api",
+		"userid":   userId,
+		"resource": resource,
+		"action":   action,
+		"success":  *success,
+	})
 }

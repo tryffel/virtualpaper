@@ -212,7 +212,7 @@ export const dataProvider: DataProvider = {
             method: "GET",
           })
         )
-      ).then((responses) => ({ data: responses.map(({ json }) => ({...json, id: json.id})) }))
+      ).then((responses) => ({ data: responses.map(({ json }) => ({ ...json, id: json.id })) }))
     };
     return httpClient(url).then(({ json }) => ({ data: json }));
   },
@@ -326,7 +326,7 @@ export const dataProvider: DataProvider = {
         data: json,
       }));
     } if (resource === "documents/bulkEdit") {
-    return httpClient(`${apiUrl}/${resource}`, {
+      return httpClient(`${apiUrl}/${resource}`, {
         method: "POST",
         body: JSON.stringify(params.data),
       }).then(({ json }) => ({
@@ -343,10 +343,15 @@ export const dataProvider: DataProvider = {
     }
   },
 
-  delete: (resource, params) =>
-    httpClient(`${apiUrl}/${resource}/${params.id}`, {
+  delete: (resource, params) => {
+    let url = `${apiUrl}/${resource}/${params.id}`;
+    if (resource === "metadata/values") {
+      url = `${apiUrl}/metadata/keys/${params.meta.key_id}/values/${params.id}`;
+    }
+    return httpClient(url, {
       method: "DELETE",
-    }).then(({ json }) => ({ data: json })),
+    }).then(({ json }) => ({ data: json }));
+  },
 
   // simple-rest doesn't handle filters on DELETE route, so we fallback to calling DELETE n times instead
   deleteMany: (resource, params) =>
