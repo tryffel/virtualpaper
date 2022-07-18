@@ -334,6 +334,13 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 		respError(resp, errors.New("no userId found"), handler)
 	}
 	var err error
+	opOk := false
+	documentId := ""
+
+	defer func() {
+		logCrudMetadata(userId, "upload", &opOk, "document: %s", documentId)
+	}()
+
 	err = req.ParseMultipartForm(1024 * 1024 * 500)
 	if err != nil {
 		userError := errors.ErrInvalid
@@ -436,6 +443,7 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	documentId = document.Id
 	newFile := storage.DocumentPath(document.Id)
 
 	err = storage.CreateDocumentDir(document.Id)
@@ -461,6 +469,7 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 	} else {
 		respOk(resp, responseFromDocument(document))
 	}
+	opOk = true
 	return
 }
 
@@ -480,8 +489,10 @@ func (a *Api) downloadDocument(resp http.ResponseWriter, req *http.Request) {
 		respError(resp, errors.New("no userId found"), handler)
 	}
 	var err error
-
 	id := getParamId(req)
+
+	opOk := false
+	defer logCrudDocument(userId, "download", &opOk, "document: %s", id)
 	doc, err := a.db.DocumentStore.GetDocument(userId, id)
 	if err != nil {
 		respError(resp, err, handler)
@@ -508,6 +519,7 @@ func (a *Api) downloadDocument(resp http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		logrus.Errorf("send file over http: %v", err)
 	}
+	opOk = true
 }
 
 func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
@@ -531,6 +543,9 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 		respError(resp, err, handler)
 		return
 	}
+
+	opOk := false
+	defer logCrudDocument(user, "update", &opOk, "document: %s", id)
 
 	dto.Filename = govalidator.SafeFileName(dto.Filename)
 	doc, err := a.db.DocumentStore.GetDocument(user, id)
@@ -578,6 +593,7 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 			logrus.Warningf("error adding updated document for processing (doc: %s): %v", doc.Id, err)
 		}
 	}
+	opOk = true
 	respResourceList(resp, responseFromDocument(doc), 1)
 }
 
@@ -602,6 +618,9 @@ func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, resp ht
 		filter.SortMode = strings.ToLower(sort[0].SortOrder())
 	}
 
+	opOk := false
+	defer logCrudDocument(userId, "search", &opOk, "metadata: %v, query: %v", filter.Metadata != "", filter.Query != "")
+
 	res, n, err := a.search.SearchDocuments(userId, filter, paging)
 	if err != nil {
 		respError(resp, err, handler)
@@ -612,6 +631,7 @@ func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, resp ht
 	for i, v := range res {
 		docs[i] = responseFromDocument(v)
 	}
+	opOk = true
 	respResourceList(resp, docs, n)
 }
 
@@ -640,6 +660,9 @@ func (a *Api) requestDocumentProcessing(resp http.ResponseWriter, req *http.Requ
 		return
 	}
 
+	opOk := false
+	defer logCrudDocument(user, "schedule processing", &opOk, "document: %s", id)
+
 	if !owns {
 		respForbidden(resp)
 		return
@@ -659,6 +682,7 @@ func (a *Api) requestDocumentProcessing(resp http.ResponseWriter, req *http.Requ
 			logrus.Errorf("schedule document processing: %v", err)
 		}
 	}
+	opOk = true
 	respOk(resp, nil)
 }
 
@@ -679,7 +703,11 @@ func (a *Api) deleteDocument(resp http.ResponseWriter, req *http.Request) {
 		respInternalError(resp)
 		return
 	}
+
 	id := getParamId(req)
+	opOk := false
+	defer logCrudDocument(user, "delete", &opOk, "document: %s", id)
+
 	owns, err := a.db.DocumentStore.UserOwnsDocument(id, user)
 	if err != nil {
 		respError(resp, err, handler)
@@ -705,6 +733,7 @@ func (a *Api) deleteDocument(resp http.ResponseWriter, req *http.Request) {
 		respError(resp, err, handler)
 		return
 	}
+	opOk = true
 	respOk(resp, nil)
 }
 
@@ -738,6 +767,10 @@ func (a *Api) bulkEditDocuments(resp http.ResponseWriter, req *http.Request) {
 		respError(resp, err, handler)
 		return
 	}
+
+	opOk := false
+	defer logCrudDocument(user, "bulk edit", &opOk, "documents: %v, add metadata: %d, remove metadata: %d",
+		len(dto.Documents), len(dto.AddMetadata.Metadata), len(dto.RemoveMetadata.Metadata))
 
 	owns, err := a.db.DocumentStore.UserOwnsDocuments(user, dto.Documents)
 	if err != nil {
@@ -773,5 +806,6 @@ func (a *Api) bulkEditDocuments(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 	a.process.PullDocumentsToProcess()
+	opOk = true
 	respResourceList(resp, dto.Documents, len(dto.Documents))
 }

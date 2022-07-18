@@ -208,6 +208,12 @@ func (a *Api) addUserRule(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	opOk := false
+	ruleId := 0
+	defer func() {
+		logCrudRule(userId, "create", &opOk, "rule: %d", ruleId)
+	}()
+
 	rule, err := processingRule.ToRule()
 	if err != nil {
 		respError(resp, err, handler)
@@ -225,6 +231,8 @@ func (a *Api) addUserRule(resp http.ResponseWriter, req *http.Request) {
 		respError(resp, err, handler)
 		return
 	}
+	ruleId = rule.Id
+	opOk = true
 	respOk(resp, ruleToResp(rule))
 }
 
@@ -312,6 +320,9 @@ func (a *Api) updateUserRule(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	opOk := false
+	defer logCrudRule(userId, "update", &opOk, "rule: %d", processingRule.Id)
+
 	rule, err := processingRule.ToRule()
 	if err != nil {
 		respError(resp, err, handler)
@@ -324,6 +335,7 @@ func (a *Api) updateUserRule(resp http.ResponseWriter, req *http.Request) {
 		respError(resp, err, handler)
 		return
 	}
+	opOk = true
 	respOk(resp, ruleToResp(rule))
 }
 
@@ -345,11 +357,15 @@ func (a *Api) deleteUserRule(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	opOk := false
+	defer logCrudRule(userId, "update", &opOk, "rule: %d", id)
+
 	err = a.db.RuleStore.DeleteRule(userId, id)
 	if err != nil {
 		respError(resp, err, handler)
 		return
 	}
+	opOk = true
 	respOk(resp, nil)
 }
 
@@ -381,6 +397,13 @@ func (a *Api) testRule(resp http.ResponseWriter, req *http.Request) {
 
 	}
 
+	opOk := false
+	matched := false
+
+	defer func() {
+		logCrudRule(userId, "test", &opOk, "rule: %d, document: %s, matched: %v", id, processingRule.DocumentId, matched)
+	}()
+
 	rule, err := a.db.RuleStore.GetUserRule(userId, id)
 	if err != nil {
 		respError(resp, err, handler)
@@ -400,6 +423,8 @@ func (a *Api) testRule(resp http.ResponseWriter, req *http.Request) {
 
 	logrus.Infof("processing rule test finished: %v", status.Match)
 
+	opOk = true
+	matched = status.Match
 	respOk(resp, status)
 
 }

@@ -91,3 +91,11 @@ func logCrudOp(resource string, action string, userId int, success *bool) *logru
 func logCrudMetadata(userId int, action string, success *bool, fmt string, args ...interface{}) {
 	logCrudOp("metadata", action, userId, success).Infof(fmt, args...)
 }
+
+func logCrudDocument(userId int, action string, success *bool, fmt string, args ...interface{}) {
+	logCrudOp("document", action, userId, success).Infof(fmt, args...)
+}
+
+func logCrudRule(userId int, action string, success *bool, fmt string, args ...interface{}) {
+	logCrudOp("processing-rule", action, userId, success).Infof(fmt, args...)
+}

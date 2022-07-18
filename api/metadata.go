@@ -216,6 +216,9 @@ func (a *Api) updateDocumentMetadata(resp http.ResponseWriter, req *http.Request
 
 	documentId := getParamId(req)
 
+	opOk := false
+	defer logCrudMetadata(user, "update document metadata", &opOk, "document: %s", documentId)
+
 	dto := &metadataUpdateRequest{}
 	err := unMarshalBody(req, dto)
 	if err != nil {
@@ -228,6 +231,7 @@ func (a *Api) updateDocumentMetadata(resp http.ResponseWriter, req *http.Request
 	if err != nil {
 		respError(resp, err, handler)
 	}
+	opOk = true
 	respOk(resp, nil)
 }
 
@@ -243,6 +247,9 @@ func (a *Api) addMetadataKey(resp http.ResponseWriter, req *http.Request) {
 		respInternalError(resp)
 		return
 	}
+
+	opOk := false
+	defer logCrudMetadata(user, "add key", &opOk, "")
 
 	dto := &MetadataKeyRequest{}
 	err := unMarshalBody(req, dto)
@@ -263,7 +270,7 @@ func (a *Api) addMetadataKey(resp http.ResponseWriter, req *http.Request) {
 		respError(resp, err, handler)
 		return
 	}
-
+	opOk = true
 	respResourceList(resp, key, 1)
 }
 
@@ -294,6 +301,9 @@ func (a *Api) addMetadataValue(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	opOk := false
+	defer logCrudMetadata(user, "add value", &opOk, "key: %d", keyId)
+
 	value := &models.MetadataValue{
 		UserId:         user,
 		KeyId:          keyId,
@@ -321,6 +331,7 @@ func (a *Api) addMetadataValue(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	opOk = true
 	respResourceList(resp, value, 1)
 }
 
@@ -356,6 +367,9 @@ func (a *Api) updateMetadataValue(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	opOk := false
+	defer logCrudMetadata(user, "update value", &opOk, "key: %d, value: %d", keyId, valueId)
+
 	value := &models.MetadataValue{
 		Id:             valueId,
 		UserId:         user,
@@ -389,6 +403,7 @@ func (a *Api) updateMetadataValue(resp http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		respError(resp, err, handler)
 	} else {
+		opOk = true
 		respResourceList(resp, value, 1)
 	}
 }
@@ -420,6 +435,9 @@ func (a *Api) updateMetadataKey(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	opOk := false
+	defer logCrudMetadata(user, "update key", &opOk, "key: %d", keyId)
+
 	ownerShip, err := a.db.MetadataStore.UserHasKey(user, keyId)
 	if err != nil {
 		respError(resp, err, handler)
@@ -450,6 +468,7 @@ func (a *Api) updateMetadataKey(resp http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		respError(resp, err, handler)
 	} else {
+		opOk = true
 		respResourceList(resp, key, 1)
 	}
 }
