@@ -451,3 +451,39 @@ func (s *JobStore) AddDocumentsByMetadata(userId int, keyId int, valueId int, st
 	_, err = s.db.Exec(sql, args...)
 	return getDatabaseError(err, s, "queue documents by metadata")
 }
+
+func (s *JobStore) AddDocuments(userId int, documents []string, step models.ProcessStep) error {
+
+	steps := models.ProcessStepsAll[step-1:]
+	stepsSql := ""
+	for i, v := range steps {
+		if i != 0 {
+			stepsSql += ", "
+		}
+		val, _ := v.Value()
+		stepsSql += fmt.Sprintf("(%d)", val)
+	}
+
+	selectQuery := s.sq.Select("documents.id as document_id, steps.step").
+		From("documents").
+		Join(fmt.Sprintf("(SELECT DISTINCT * FROM (VALUES %s) AS v) AS steps(step) ON TRUE", stepsSql))
+
+	if userId != 0 {
+		selectQuery = selectQuery.Where("documents.user_id=?", userId)
+	}
+
+	selectQuery = selectQuery.Where(squirrel.Eq{"documents.id": documents})
+	query := s.sq.Insert("process_queue").
+		Columns("document_id", "step").
+		Select(selectQuery)
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		e := errors.ErrInternalError
+		e.Err = err
+		return e
+	}
+
+	_, err = s.db.Exec(sql, args...)
+	return getDatabaseError(err, s, "queue documents by metadata")
+}

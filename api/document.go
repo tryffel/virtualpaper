@@ -765,5 +765,13 @@ func (a *Api) bulkEditDocuments(resp http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
+
+	// need to reindex
+	err = a.db.JobStore.AddDocuments(user, dto.Documents, models.ProcessFts)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+	a.process.PullDocumentsToProcess()
 	respResourceList(resp, dto.Documents, len(dto.Documents))
 }

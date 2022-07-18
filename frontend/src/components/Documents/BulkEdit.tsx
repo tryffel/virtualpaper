@@ -32,14 +32,24 @@ import {
   TextInput,
   TextField,
   useStore,
+  useNotify,
+  useRedirect,
+  TopToolbar,
+  CreateButton,
 } from "react-admin";
 import {
   Typography,
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
 } from "@mui/material";
-import { ExpandMore } from "@mui/icons-material";
+import { ExpandMore, Help, Clear } from "@mui/icons-material";
 import { DocumentCard } from "./List";
 import { MetadataValueInput } from "./Edit";
 
@@ -64,145 +74,247 @@ const BulkEditDocuments = () => {
   const { data, isLoading, error, refetch } = useGetMany("documents", {
     ids: idList,
   });
+  const notify = useNotify();
+  const redirect = useRedirect();
 
-  //const [metadataAdd, setMetadataAdd] = React.useState<Metadata[]>([]);
-  //const [metadataRemove, setMetadataRemove] = React.useState<Metadata[]>([]);
+  const onSuccess = (data: any) => {
+    notify(`Documents modified`);
+    redirect("list", "documents");
+  };
 
   const emptyRecord = {
     documents: ids,
-    add_metadata: {metadata: []},
-    remove_metadata: {metadata: []},
+    add_metadata: { metadata: [] },
+    remove_metadata: { metadata: [] },
   };
+  
+  const cancel = () => {
+    redirect("list", "documents");
+  }
 
   if (isLoading) {
     return <Loading />;
   }
 
   return (
-    <CreateBase record={emptyRecord} redirect="false" >
+    <CreateBase
+      record={emptyRecord}
+      redirect="false"
+      mutationOptions={{ onSuccess }}
+    >
       <SimpleForm>
-        <Accordion>
-          <AccordionSummary expandIcon={<ExpandMore />}>
-            <Typography variant="h5">Documents</Typography>
-          </AccordionSummary>
-          <AccordionDetails style={{ flexDirection: "column" }}>
-            <Typography variant="body1">
-              {data ? data.length : "0"} Documents to edit
-            </Typography>
-            {data
-              ? data.map((document) => <DocumentCard record={document} />)
-              : null}
-          </AccordionDetails>
-        </Accordion>
-        <Accordion>
-          <AccordionSummary expandIcon={<ExpandMore />}>
-            <Typography variant="h5">Add metadata</Typography>
-          </AccordionSummary>
-          <AccordionDetails style={{ flexDirection: "column" }}>
-            <ArrayInput source="add_metadata.metadata" label={"Add metadata"}>
-              <SimpleFormIterator
-                defaultValue={[{ key_id: 0, key: "", value_id: 0, value: "" }]}
-                disableReordering={true}
-              >
-                <ReferenceInput
-                  label="Key"
-                  source="key_id"
-                  reference="metadata/keys"
-                  fullWidth
-                  className="MuiBox"
+      <Toolbar cancel={cancel}/>
+        <Box width="100%">
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMore />}>
+              <Typography variant="h5" sx={{ width: "33%" }}>
+                Documents
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                {idList ? "Editing " + idList.length + " documents" : null}
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails style={{ flexDirection: "column" }}>
+              <Typography variant="body1">
+                {data ? data.length : "0"} Documents to edit
+              </Typography>
+              {data
+                ? data.map((document) => <DocumentCard record={document} />)
+                : null}
+            </AccordionDetails>
+          </Accordion>
+        </Box>
+        <Box width="100%">
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMore />}>
+              <Typography variant="h5" sx={{ width: "33%" }}>
+                Add metadata
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails style={{ flexDirection: "column" }}>
+              <ArrayInput source="add_metadata.metadata" label={"Add metadata"}>
+                <SimpleFormIterator
+                  defaultValue={[
+                    { key_id: 0, key: "", value_id: 0, value: "" },
+                  ]}
+                  disableReordering={true}
                 >
-                  <SelectInput
-                    optionText="key"
+                  <ReferenceInput
+                    label="Key"
+                    source="key_id"
+                    reference="metadata/keys"
                     fullWidth
-                    data-testid="metadata-key"
-                  />
-                </ReferenceInput>
+                    className="MuiBox"
+                  >
+                    <SelectInput
+                      optionText="key"
+                      fullWidth
+                      data-testid="metadata-key"
+                    />
+                  </ReferenceInput>
 
-                <FormDataConsumer>
-                  {({ formData, scopedFormData, getSource }) =>
-                    scopedFormData && scopedFormData.key_id ? (
-                      <MetadataValueInput
-                        source={getSource ? getSource("value_id") : ""}
-                        record={scopedFormData}
-                        label={"Value"}
-                        fullWidth
-                      />
-                    ) : null
-                  }
-                </FormDataConsumer>
-              </SimpleFormIterator>
-            </ArrayInput>
-          </AccordionDetails>
-        </Accordion>
-        <Accordion>
-          <AccordionSummary expandIcon={<ExpandMore />}>
-            <Typography variant="h5">Remove metadata</Typography>
-          </AccordionSummary>
-          <AccordionDetails style={{ flexDirection: "column" }}>
-            <ArrayInput source="remove_metadata.metadata" label={"Add metadata"}>
-              <SimpleFormIterator
-                defaultValue={[{ key_id: 0, key: "", value_id: 0, value: "" }]}
-                disableReordering={true}
+                  <FormDataConsumer>
+                    {({ formData, scopedFormData, getSource }) =>
+                      scopedFormData && scopedFormData.key_id ? (
+                        <MetadataValueInput
+                          source={getSource ? getSource("value_id") : ""}
+                          record={scopedFormData}
+                          label={"Value"}
+                          fullWidth
+                        />
+                      ) : null
+                    }
+                  </FormDataConsumer>
+                </SimpleFormIterator>
+              </ArrayInput>
+            </AccordionDetails>
+          </Accordion>
+        </Box>
+        <Box width="100%">
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMore />}>
+              <Typography variant="h5">Remove metadata</Typography>
+            </AccordionSummary>
+            <AccordionDetails style={{ flexDirection: "column" }}>
+              <ArrayInput
+                source="remove_metadata.metadata"
+                label={"Add metadata"}
               >
-                <ReferenceInput
-                  label="Key"
-                  source="key_id"
-                  reference="metadata/keys"
-                  fullWidth
-                  className="MuiBox"
+                <SimpleFormIterator
+                  defaultValue={[
+                    { key_id: 0, key: "", value_id: 0, value: "" },
+                  ]}
+                  disableReordering={true}
                 >
-                  <SelectInput
-                    optionText="key"
+                  <ReferenceInput
+                    label="Key"
+                    source="key_id"
+                    reference="metadata/keys"
                     fullWidth
-                    data-testid="metadata-key"
-                  />
-                </ReferenceInput>
+                    className="MuiBox"
+                  >
+                    <SelectInput
+                      optionText="key"
+                      fullWidth
+                      data-testid="metadata-key"
+                    />
+                  </ReferenceInput>
 
-                <FormDataConsumer>
-                  {({ formData, scopedFormData, getSource }) =>
-                    scopedFormData && scopedFormData.key_id ? (
-                      <MetadataValueInput
-                        source={getSource ? getSource("value_id") : ""}
-                        record={scopedFormData}
-                        label={"Value"}
-                        fullWidth
-                      />
-                    ) : null
-                  }
-                </FormDataConsumer>
-              </SimpleFormIterator>
-            </ArrayInput>
-          </AccordionDetails>
-        </Accordion>
+                  <FormDataConsumer>
+                    {({ formData, scopedFormData, getSource }) =>
+                      scopedFormData && scopedFormData.key_id ? (
+                        <MetadataValueInput
+                          source={getSource ? getSource("value_id") : ""}
+                          record={scopedFormData}
+                          label={"Value"}
+                          fullWidth
+                        />
+                      ) : null
+                    }
+                  </FormDataConsumer>
+                </SimpleFormIterator>
+              </ArrayInput>
+            </AccordionDetails>
+          </Accordion>
+        </Box>
       </SimpleForm>
     </CreateBase>
   );
 };
 
-const AddMetadata = (props: any) => {
-  const { metadataList, setMetadataList } = props;
 
-  const defaultMetadata = {
-    KeyId: 0,
-    Key: "",
-    ValueId: 0,
-    Value: "",
+const Toolbar = (props: any) => {
+  const {cancel } = props;
+  
+  return (
+  <TopToolbar>
+  <HelpButton/>
+  <Button label="Cancel" startIcon={<Clear/>} onClick={cancel}/>
+    
+  </TopToolbar>
+    
+  )
+  
+}
+
+const HelpButton = () => {
+  const [open, setOpen] = React.useState(false);
+
+  const handleClickOpen = () => {
+    setOpen(true);
   };
 
-  const addDefault = () => {
-    setMetadataList(metadataList.concat([defaultMetadata]));
+  const handleClose = () => {
+    setOpen(false);
   };
-
-  console.log("to add: ", metadataList);
 
   return (
-    <>
-      <Button label="Add new" onClick={addDefault}></Button>
+    <div>
+      <Button
+        label="Help"
+        size="small"
+        alignIcon="left"
+        onClick={handleClickOpen}
+      >
+        <Help />
+      </Button>
+      <HelpDialog open={open} onClose={handleClose} />
+    </div>
+  );
+};
 
-      {metadataList.map((metadata: any) => (
-        <p>{metadata.Key}</p>
-      ))}
-    </>
+const HelpDialog = (props: any) => {
+  const [scroll, setScroll] = React.useState("paper");
+
+  const { onClose, open } = props;
+  const handleClose = () => {
+    onClose();
+  };
+
+  return (
+    <Dialog
+      onClose={handleClose}
+      aria-labelledby="simple-dialog-title"
+      open={open}
+    >
+      <DialogTitle id="simple-dialog-title">
+        Help: Editing multiple documents
+      </DialogTitle>
+      <DialogContent dividers={scroll === "paper"}>
+        <DialogContentText>
+          <p>
+            With this form it is possible to edit multiple document
+            simultaneously. This is particularly useful when there's multiple
+            documents, maybe even defined with a filter, that need similar
+            editing, such as removing or adding metadata.
+          </p>
+
+          <Typography variant="h6" color="textPrimary">
+            Usage
+          </Typography>
+          <p>
+            On top there's a list of documents that are being modified. Be sure
+            to verify that the documents are indeed the ones that should be
+            modified.
+          </p>
+
+          <ul>
+            <li>
+              Add metadata: adds one or more metadata key-values to documents
+            </li>
+            <li>
+              Remove metadata: removes one or more metadata key-values from
+              documents, if they have one.{" "}
+            </li>
+          </ul>
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleClose}>
+          <Typography>Close</Typography>
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 
