@@ -20,10 +20,11 @@ package migration
 
 import (
 	"fmt"
-	"github.com/jmoiron/sqlx"
-	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
+
+	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 )
 
 var Migrations = []Migrator{
@@ -61,6 +62,11 @@ var Migrations = []Migrator{
 		Name:   "add rules v2",
 		Level:  7,
 		Schema: schemaV7,
+	},
+	&Migration{
+		Name:   "add missing on cascade delete constraints",
+		Level:  8,
+		Schema: schemaV8,
 	},
 }
 
