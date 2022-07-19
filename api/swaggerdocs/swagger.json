@@ -18,7 +18,7 @@
     },
     "version": "0.1.0"
   },
-  "host": "localhost",
+  "host": "localhost:8000",
   "paths": {
     "/api/v1/admin/documents/process": {
       "get": {
@@ -163,14 +163,29 @@
       },
       "post": {
         "description": "Otherwise document is not processed yet and lacks other fields.",
+        "consumes": [
+          "multipart/form-data"
+        ],
         "tags": [
           "Documents"
         ],
         "summary": "Upload new document file. New document already contains id, name, filename and timestamps.",
         "operationId": "UploadFile",
+        "parameters": [
+          {
+            "name": "Body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/FormData"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "$ref": "#/responses/DocumentResponse"
+          },
+          "400": {
+            "$ref": "#/responses/DocumentExistsResponse"
           }
         }
       }
@@ -182,6 +197,44 @@
           "Documents"
         ],
         "operationId": "DeleteDocument",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/RespOk"
+          },
+          "400": {
+            "$ref": "#/responses/RespBadRequest"
+          },
+          "401": {
+            "$ref": "#/responses/RespForbidden"
+          },
+          "403": {
+            "$ref": "#/responses/RespNotFound"
+          },
+          "500": {
+            "$ref": "#/responses/RespInternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/bulkEdit": {
+      "post": {
+        "description": "Edit multiple documents at once",
+        "consumes": [
+          "application/json"
+        ],
+        "tags": [
+          "Documents"
+        ],
+        "operationId": "BulkEditDocuments",
+        "parameters": [
+          {
+            "name": "Body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/BulkEditDocumentsRequest"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "$ref": "#/responses/RespOk"
@@ -391,6 +444,30 @@
             "$ref": "#/responses/MetadataKeyResponse"
           }
         }
+      },
+      "put": {
+        "description": "Update metadata key",
+        "tags": [
+          "Metadata"
+        ],
+        "operationId": "UpdateMetadataKeyValues",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/MetadataKeyResponse"
+          }
+        }
+      },
+      "delete": {
+        "description": "Delete metadata key and all its values",
+        "tags": [
+          "Metadata"
+        ],
+        "operationId": "DeleteMetadataKey",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
       }
     },
     "/api/v1/metadata/keys/{id}/values": {
@@ -406,6 +483,18 @@
           }
         }
       },
+      "put": {
+        "description": "Update metadata key value",
+        "tags": [
+          "Metadata"
+        ],
+        "operationId": "UpdateMetadataKeyValue",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/MetadataKeyValueResponse"
+          }
+        }
+      },
       "post": {
         "description": "Add metadata key values",
         "tags": [
@@ -415,6 +504,23 @@
         "responses": {
           "200": {
             "$ref": "#/responses/MetadataKeyValueResponse"
+          },
+          "400": {
+            "$ref": "#/responses/String"
+          }
+        }
+      }
+    },
+    "/api/v1/metadata/keys/{key_id}/value{id}": {
+      "delete": {
+        "description": "Delete metadata value",
+        "tags": [
+          "Metadata"
+        ],
+        "operationId": "DeleteMetadataValue",
+        "responses": {
+          "200": {
+            "description": ""
           }
         }
       }
@@ -572,6 +678,51 @@
     }
   },
   "definitions": {
+    "BulkEditDocumentsRequest": {
+      "type": "object",
+      "properties": {
+        "add_metadata": {
+          "$ref": "#/definitions/metadataUpdateRequest"
+        },
+        "documents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-go-name": "Documents"
+        },
+        "remove_metadata": {
+          "$ref": "#/definitions/metadataUpdateRequest"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/api"
+    },
+    "DataFields": {
+      "type": "object",
+      "title": "DataFields represents a map of text based fields.",
+      "additionalProperties": {
+        "$ref": "#/definitions/Values"
+      },
+      "x-go-package": "gopkg.in/h2non/gentleman.v2/plugins/multipart"
+    },
+    "DocumentExistsResponse": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string",
+          "x-go-name": "Error"
+        },
+        "id": {
+          "type": "string",
+          "x-go-name": "Id"
+        },
+        "name": {
+          "type": "string",
+          "x-go-name": "Name"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/api"
+    },
     "DocumentProcessStep": {
       "type": "object",
       "properties": {
@@ -746,6 +897,35 @@
       },
       "x-go-name": "ForceDocumentProcessingRequest",
       "x-go-package": "tryffel.net/go/virtualpaper/api"
+    },
+    "FormData": {
+      "type": "object",
+      "title": "FormData represents the supported form fields by file and string data.",
+      "properties": {
+        "Data": {
+          "$ref": "#/definitions/DataFields"
+        },
+        "Files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FormFile"
+          }
+        }
+      },
+      "x-go-package": "gopkg.in/h2non/gentleman.v2/plugins/multipart"
+    },
+    "FormFile": {
+      "type": "object",
+      "title": "FormFile represents the file form field data.",
+      "properties": {
+        "Name": {
+          "type": "string"
+        },
+        "Reader": {
+          "$ref": "#/definitions/Reader"
+        }
+      },
+      "x-go-package": "gopkg.in/h2non/gentleman.v2/plugins/multipart"
     },
     "Int": {
       "type": "integer",
@@ -930,6 +1110,12 @@
         }
       },
       "x-go-package": "tryffel.net/go/virtualpaper/process"
+    },
+    "Reader": {
+      "description": "Read reads up to len(p) bytes into p. It returns the number of bytes\nread (0 \u003c= n \u003c= len(p)) and any error encountered. Even if Read\nreturns n \u003c len(p), it may use all of p as scratch space during the call.\nIf some data is available but not len(p) bytes, Read conventionally\nreturns what is available instead of waiting for more.\n\nWhen Read encounters an error or end-of-file condition after\nsuccessfully reading n \u003e 0 bytes, it returns the number of\nbytes read. It may return the (non-nil) error from the same call\nor return the error (and n == 0) from a subsequent call.\nAn instance of this general case is that a Reader returning\na non-zero number of bytes at the end of the input stream may\nreturn either err == EOF or err == nil. The next Read should\nreturn 0, EOF.\n\nCallers should always process the n \u003e 0 bytes returned before\nconsidering the error err. Doing so correctly handles I/O errors\nthat happen after reading some bytes and also both of the\nallowed EOF behaviors.\n\nImplementations of Read are discouraged from returning a\nzero byte count with a nil error, except when len(p) == 0.\nCallers should treat a return of 0 and nil as indicating that\nnothing happened; in particular it does not indicate EOF.\n\nImplementations must not retain p.",
+      "type": "object",
+      "title": "Reader is the interface that wraps the basic Read method.",
+      "x-go-package": "io"
     },
     "Rule": {
       "type": "object",
@@ -1341,6 +1527,14 @@
       "x-go-name": "ReqUserPreferences",
       "x-go-package": "tryffel.net/go/virtualpaper/api"
     },
+    "Values": {
+      "type": "array",
+      "title": "Values represents multiple multipart from values.",
+      "items": {
+        "type": "string"
+      },
+      "x-go-package": "gopkg.in/h2non/gentleman.v2/plugins/multipart"
+    },
     "VersionResponse": {
       "type": "object",
       "title": "VersionResponse contains general server info.",
@@ -1359,9 +1553,28 @@
         }
       },
       "x-go-package": "tryffel.net/go/virtualpaper/api"
+    },
+    "metadataUpdateRequest": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/MetadataRequest"
+          },
+          "x-go-name": "Metadata"
+        }
+      },
+      "x-go-package": "tryffel.net/go/virtualpaper/api"
     }
   },
   "responses": {
+    "DocumentExistsResponse": {
+      "description": "DocumentExistsResponse contains existing document's id and error message.",
+      "schema": {
+        "$ref": "#/definitions/DocumentExistsResponse"
+      }
+    },
     "DocumentResponse": {
       "description": "DocumentsResponse contains array of documents",
       "schema": {

@@ -81,6 +81,12 @@ func responseFromDocument(doc *models.Document) *DocumentResponse {
 	return resp
 }
 
+type DocumentExistsResponse struct {
+	Error string `json:"error"`
+	Id    string `json:"id"`
+	Name  string `json:"name"`
+}
+
 // DocumentUpdateRequest
 // swagger:model DocumentUpdateRequestBody
 type DocumentUpdateRequest struct {
@@ -326,8 +332,12 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 	// swagger:route POST /api/v1/documents Documents UploadFile
 	// Upload new document file. New document already contains id, name, filename and timestamps.
 	// Otherwise document is not processed yet and lacks other fields.
+	// Consumes:
+	// - multipart/form-data
+	//
 	// Responses:
 	//  200: DocumentResponse
+	//  400: DocumentExistsResponse
 	handler := "api.uploadFile"
 	userId, ok := getUserId(req)
 	if !ok {
@@ -416,7 +426,7 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	existingDoc, err := a.db.DocumentStore.GetByHash(hash)
+	existingDoc, err := a.db.DocumentStore.GetByHash(0, hash)
 	if err != nil {
 		if errors.Is(err, errors.ErrRecordNotFound) {
 		} else {
@@ -427,7 +437,12 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 
 	if existingDoc != nil {
 		if existingDoc.Id != "" {
-			_ = respJson(resp, fmt.Sprintf(`{id: %s}`, existingDoc.Id), http.StatusNotModified)
+			body := DocumentExistsResponse{
+				Error: "document exists",
+				Id:    existingDoc.Id,
+				Name:  existingDoc.Name,
+			}
+			_ = respJson(resp, body, http.StatusBadRequest)
 			err := os.Remove(tempFileName)
 			if err != nil {
 				logrus.Errorf("remove duplicated temp file: %v", err)
@@ -746,6 +761,9 @@ type BulkEditDocumentsRequest struct {
 func (a *Api) bulkEditDocuments(resp http.ResponseWriter, req *http.Request) {
 	// swagger:route POST /api/v1/documents/bulkEdit Documents BulkEditDocuments
 	// Edit multiple documents at once
+	// consumes:
+	//  - application/json
+	//
 	// Responses:
 	//   200: RespOk
 	//   400: RespBadRequest

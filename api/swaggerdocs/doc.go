@@ -26,7 +26,7 @@
 //
 // License: AGPL-v3
 //
-// Host: localhost
+// Host: localhost:8000
 //
 // Consumes:
 // - application/json

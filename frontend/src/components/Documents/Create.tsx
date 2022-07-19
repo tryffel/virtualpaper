@@ -16,40 +16,78 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 import * as React from "react";
-import {Create, Error, FileField, FileInput, Loading, SimpleForm, useGetOne} from "react-admin";
-import {useEffect} from "react";
+import {
+  Create,
+  Error,
+  FileField,
+  FileInput,
+  HttpError,
+  Loading,
+  SimpleForm,
+  useGetOne,
+  useNotify,
+  useRedirect,
+} from "react-admin";
+import { useEffect } from "react";
+import { Typography } from "@mui/material";
 
-
+interface UploadError extends HttpError {
+  body: {
+    error: string;
+    id: string;
+    name: string;
+  };
+}
 
 export const DocumentCreate = () => {
-    const {data, isLoading, error} = useGetOne(
-        'filetypes',
-        {id: ""},
-    );
+  const notify = useNotify();
+  const redirect = useRedirect();
+  const { data, isLoading, error } = useGetOne("filetypes", { id: "" });
 
-    const [fileNames, setFileNames ] = React.useState('');
-    const [mimeTypes, setMimeTypes ] = React.useState('');
+  const [fileNames, setFileNames] = React.useState("");
+  const [mimeTypes, setMimeTypes] = React.useState("");
 
-    useEffect(() => {
-        if (data) {
-            setFileNames(data.names.join(', '));
-            setMimeTypes(data.mimetypes.join(', '));
-        }
-    }, [data])
+  useEffect(() => {
+    if (data) {
+      setFileNames(data.names.join(", "));
+      setMimeTypes(data.mimetypes.join(", "));
+    }
+  }, [data]);
 
-    if (isLoading) return <Loading />;
-    //if (error) return <Error error={error}/>;
+  const onError = (data: UploadError) => {
+    if (data.status === 400 && data.body.error === "document exists") {
+      notify("Duplicate document found. Showing existing document", {
+        type: "info",
+        autoHideDuration: 4000,
+      });
+      redirect("show", "documents", data.body.id);
+    }
+  };
 
-    return (
-    <Create>
-        <SimpleForm title={"Upload new document"}>
-            <span>Supported file types: {fileNames}</span>
-            <FileInput accept={mimeTypes} multiple={false} label="File upload" source="file">
-                <FileField source="src" title="title"/>
-            </FileInput>
-        </SimpleForm>
+  if (isLoading) return <Loading />;
+
+  if (error) {
+    // @ts-ignore
+    return <Error error={error} />;
+  }
+
+  return (
+    // @ts-ignore
+    <Create mutationOptions={{ onError }}>
+      <SimpleForm title={"Upload new document"}>
+        <Typography variant="body2">
+          Supported file types: <em>{fileNames}</em>
+        </Typography>
+        <FileInput
+          accept={mimeTypes}
+          multiple={false}
+          label="File upload"
+          source="file"
+        >
+          <FileField source="src" title="title" />
+        </FileInput>
+      </SimpleForm>
     </Create>
-    )};
-
+  );
+};

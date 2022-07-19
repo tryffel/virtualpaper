@@ -151,13 +151,21 @@ func (s *DocumentStore) UserOwnsDocuments(userId int, documents []string) (bool,
 	return documentCount == len(documents), s.parseError(err, "check user owns documents")
 }
 
-func (s *DocumentStore) GetByHash(hash string) (*models.Document, error) {
+// GetByHash returns a document by its hash.
+// If userId != 0, user has to be the owner of the document.
+func (s *DocumentStore) GetByHash(userId int, hash string) (*models.Document, error) {
 
 	sql := `
-	SELECT id, name, filename, content, created_at, updated_at, hash, mimetype, description
+	SELECT *
 	FROM documents
-	WHERE hash = $1;
+	WHERE hash = $1
 `
+	args := []interface{}{hash}
+	if userId != 0 {
+		sql += " AND user_id = $2;"
+		args = append(args, userId)
+	}
+
 	object := &models.Document{}
 	err := s.db.Get(object, sql, hash)
 	if err != nil {

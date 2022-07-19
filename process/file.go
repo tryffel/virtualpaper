@@ -441,7 +441,7 @@ func (fp *fileProcessor) isDuplicate() (bool, error) {
 		return false, err
 	}
 
-	document, err := fp.db.DocumentStore.GetByHash(hash)
+	document, err := fp.db.DocumentStore.GetByHash(0, hash)
 	if err != nil {
 		if errors.Is(err, errors.ErrRecordNotFound) {
 			return false, nil

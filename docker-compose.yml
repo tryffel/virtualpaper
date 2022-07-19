@@ -23,7 +23,8 @@ services:
       - VIRTUALPAPER_LOGGING_LOG_LEVEL=DEBUG
 
     volumes:
-      - virtualpaper:/data
+      - virtualpaper_data:/data
+      - virtualpaper_config:/config
 
   meilisearch:
     image: getmeili/meilisearch:v0.25.2
@@ -54,7 +55,10 @@ volumes:
     name: virtualpaper_meilisearch${TEST_VOLUME_ID}
   postgres:
     name: virtualpaper_postgres${TEST_VOLUME_ID}
-  virtualpaper:
+  virtualpaper_data:
     name: virtualpaper_data${TEST_VOLUME_ID}
+  virtualpaper_config:
+    name: virtualpaper_config${TEST_VOLUME_ID}
+
 
 

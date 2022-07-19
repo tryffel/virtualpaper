@@ -18,13 +18,37 @@
 
 package swaggerdocs
 
-import "tryffel.net/go/virtualpaper/api"
+import (
+	"gopkg.in/h2non/gentleman.v2/plugins/multipart"
+	"tryffel.net/go/virtualpaper/api"
+)
 
 // DocumentsResponse contains array of documents
 // swagger:response DocumentResponse
 type documentResponse struct {
 	// in:body
 	Body []api.DocumentResponse
+}
+
+// DocumentExistsResponse contains existing document's id and error message.
+// swagger:response DocumentExistsResponse
+type documentExistsResponse struct {
+	// in:body
+	Body api.DocumentExistsResponse
+}
+
+// Upload file
+// swagger:parameters UploadFile ReqUploadFile
+type UploadFileRequest struct {
+	// in:body
+	Body multipart.FormData
+}
+
+// Bulk edit documents
+// swagger:parameters BulkEditDocuments ReqBulkEditDocuments
+type BulkEditDocuments struct {
+	// in:body
+	Body api.BulkEditDocumentsRequest
 }
 
 // swagger:parameters GetDocuments ReqDocumentFilter
