@@ -82,6 +82,10 @@ All configuration variable can be overridden with environment variables, e.g.:
 
 
 # Run
+
+See [documentation](https://virtualpaper.tryffel.net) for more help.
+
+
 Virtualpaper can be run directly or with docker. 
 Docker is easiest to get started with.
 
@@ -170,4 +174,9 @@ Also be sure the cleanup the server environment before running the e2e tests: ``
 
 All tests:
 ```make test```
+
+
+## License
+
+This software is licensed under AGPL-v3.
 

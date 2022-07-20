@@ -54,6 +54,7 @@ func (a *Api) addRoutes() {
 	a.privateRouter.HandleFunc("/documents/{id}/download", a.downloadDocument).Methods(http.MethodGet)
 	a.privateRouter.HandleFunc("/documents/{id}/metadata", a.updateDocumentMetadata).Methods(http.MethodPost)
 	a.privateRouter.HandleFunc("/documents/{id}/process", a.requestDocumentProcessing).Methods(http.MethodPost)
+	a.privateRouter.HandleFunc("/documents/search/suggest", a.searchSuggestions).Methods(http.MethodPost)
 
 	a.privateRouter.HandleFunc("/jobs", a.GetJob).Methods(http.MethodGet)
 

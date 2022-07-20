@@ -56,7 +56,11 @@ import get from "lodash/get";
 import { Help } from "@mui/icons-material";
 
 import { ThumbnailSmall } from "./Thumbnail";
-import { DocumentSearchFilter, FilterSidebar } from "./SearchFilter";
+import {
+  DocumentSearchFilter,
+  FilterSidebar,
+  FullTextSeachFilter,
+} from "./SearchFilter";
 import { LimitStringLength } from "../util";
 import { useState } from "react";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -101,7 +105,6 @@ const SmallDocumentList = () => {
       title="All documents"
       actions={<DocumentListActions />}
       pagination={<DocumentPagination />}
-      filters={DocumentSearchFilter}
     >
       <DocumentGrid />
     </List>
@@ -116,14 +119,15 @@ const LargeDocumentList = () => {
       aside={<FilterSidebar />}
       actions={<DocumentListActions />}
       sort={{ field: "date", order: "DESC" }}
-      filters={DocumentSearchFilter}
+      //filter={filter}
+       filters={[<DocumentSearchFilter/>]}
     >
       <DocumentGrid />
     </List>
   );
 };
 
-const DocumentGrid = () => {
+const DocumentGrid = (props: any) => {
   const { data, isLoading } = useListContext();
   const theme = useTheme();
 
@@ -163,6 +167,7 @@ const DocumentGrid = () => {
         clear={clearSelected}
         edit={bulkEdit}
       />
+      <FullTextSeachFilter/>
       {data.map((record) => (
         <DocumentCard
           record={record}

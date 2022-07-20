@@ -18,9 +18,12 @@
 
 package search
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
-func Test_parseFilter(t *testing.T) {
+func Test_parseMetadataFilter(t *testing.T) {
 	type args struct {
 		filter string
 	}
@@ -44,9 +47,174 @@ func Test_parseFilter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := parseFilter(tt.args.filter); got != tt.want {
+			if got := parseMetadataFilter(tt.args.filter); got != tt.want {
 				t.Errorf("parseFilter() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
+
+func Test_tokenizeFilter(t *testing.T) {
+	type args struct {
+		filter string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			args: args{`a author:doyle OR (topic:"misc topic" AND author:doyle) and one more`},
+			want: []string{"a", "author:doyle", "OR", "(", "topic:misc topic", "AND", "author:doyle", ")", "and", "one", "more"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tokenizeFilter(tt.args.filter); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("tokenizeFilter() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+/*
+func Test_parseFilter(t *testing.T) {
+	type args struct {
+		filter string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *searchQuery
+		wantErr bool
+	}{
+		{
+			name: "simple fts",
+			args: args{"test one"},
+			want: &searchQuery{
+				RawQuery:      "test one",
+				Query:         "test one",
+				MetadataQuery: []string{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "simple key:value",
+			args: args{"simple key:value"},
+			want: &searchQuery{
+				RawQuery:       "simple key:value",
+				Query:          "simple",
+				MetadataQuery:  []string{`metadata=key:"value"`},
+				MetadataString: `metadata=key:"value"`,
+			},
+			wantErr: false,
+		},
+		{
+			name: "multiple metadata",
+			args: args{"simple key:value AND another:value more search"},
+			want: &searchQuery{
+				RawQuery:       "simple key:value AND another:value more search",
+				Query:          "simple more search",
+				MetadataQuery:  []string{`metadata=key:"value"`, "AND", `metadata=another:"value"`},
+				MetadataString: `metadata=key:"value" AND metadata=another:"value"`,
+			},
+			wantErr: false,
+		},
+		{
+			name: "multiple metadata with parentheses",
+			args: args{"simple key:value AND (another:value OR key:value) more search"},
+			want: &searchQuery{
+				RawQuery:       "simple key:value AND (another:value OR key:value) more search",
+				Query:          "simple more search",
+				MetadataQuery:  []string{`metadata=key:"value"`, "AND", "(", `metadata=another:"value"`, "OR", `metadata=key:"value"`, ")"},
+				MetadataString: `metadata=key:"value" AND ( metadata=another:"value" OR metadata=key:"value" )`,
+			},
+			wantErr: false,
+		},
+		{
+			name: "date today",
+			args: args{"date:today"},
+			want: &searchQuery{
+				RawQuery:       "date:today",
+				Query:          "",
+				MetadataQuery:  []string{},
+				MetadataString: "",
+				Date:           midnightFordate(time.Now().Local()),
+			},
+			wantErr: false,
+		},
+		{
+			name: "date yesterday",
+			args: args{"date:yesterday"},
+			want: &searchQuery{
+				RawQuery:       "date:yesterday",
+				Query:          "",
+				MetadataQuery:  []string{},
+				MetadataString: "",
+				Date:           midnightFordate(time.Now().Local().AddDate(0, 0, -1)),
+			},
+			wantErr: false,
+		},
+		{
+			name: "name",
+			args: args{`name:"docname two"`},
+			want: &searchQuery{
+				RawQuery:       `name:"docname two"`,
+				MetadataQuery:  []string{},
+				MetadataString: "",
+				Name:           "docname two",
+			},
+			wantErr: false,
+		},
+		{
+			name: "content",
+			args: args{`content:"one two three"`},
+			want: &searchQuery{
+				RawQuery:       `content:"one two three"`,
+				MetadataQuery:  []string{},
+				MetadataString: "",
+				Content:        "one two three",
+			},
+			wantErr: false,
+		},
+		{
+			name: "description",
+			args: args{`description:"one two three"`},
+			want: &searchQuery{
+				RawQuery:       `description:"one two three"`,
+				MetadataQuery:  []string{},
+				MetadataString: "",
+				Description:    "one two three",
+			},
+
+			wantErr: false,
+		},
+		{
+			name: "combined",
+			args: args{`fts test date:today class:paper OR class:invoice"`},
+			want: &searchQuery{
+				RawQuery:       `fts test date:today class:paper OR class:invoice"`,
+				Query:          "fts test",
+				MetadataQuery:  []string{`metadata=class:"paper"`, "OR", `metadata=class:"invoice"`},
+				MetadataString: `metadata=class:"paper" OR metadata=class:"invoice"`,
+				Date:           midnightFordate(time.Now().Local()),
+			},
+
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseFilter(tt.args.filter)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseFilter() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parseFilter() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+*/

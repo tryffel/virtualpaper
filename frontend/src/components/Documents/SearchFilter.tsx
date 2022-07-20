@@ -23,7 +23,10 @@ import {
   TextField,
   Typography,
   Button,
+  Autocomplete,
+  Grid,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import { DesktopDatePicker } from "@mui/x-date-pickers/DesktopDatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -31,7 +34,9 @@ import {
   FilterList,
   FilterListItem,
   TextInput,
+  useDataProvider,
   useListFilterContext,
+  useTheme,
 } from "react-admin";
 import {
   endOfYesterday,
@@ -42,24 +47,23 @@ import {
 } from "date-fns";
 import { AccessTime } from "@mui/icons-material";
 import * as React from "react";
-import { values } from "lodash";
+import { debounce, throttle, values } from "lodash";
+import { string } from "prop-types";
 
-export const DocumentSearchFilter = [
-  <TextInput
-    source="q"
-    label="Full Text Search"
-    alwaysOn
-    resettable
-    fullWidth
-  />,
-  <TextInput
-    label="Metadata filter"
-    alwaysOn
-    resettable
-    fullWidth
-    source="metadata"
-  />,
-];
+export const DocumentSearchFilter = () => {
+  return (
+    <TextInput
+      source="q"
+      label="Search"
+      alwaysOn
+      resettable
+      fullWidth
+      sx={{
+        minWidth: "40em",
+      }}
+    />
+  );
+};
 
 export const FilterSidebar = () => (
   <Box
@@ -91,22 +95,22 @@ const DatePicker = (props) => {
   const handleChange = (newValue: Date | null) => {
     setValue(newValue);
     if (newValue) {
-    let values = {...filterValues};
-    if (props.mode === "after") {
-      values = values && {after: newValue? newValue.getTime(): null}
-    } else {
-      values = values && {before: newValue? newValue.getTime(): null}
+      let values = { ...filterValues };
+      if (props.mode === "after") {
+        values = values && { after: newValue ? newValue.getTime() : null };
+      } else {
+        values = values && { before: newValue ? newValue.getTime() : null };
+      }
+      setFilters({ ...values }, null, false);
     }
-    setFilters({ ...values}, null, false);
-  }
   };
 
   const onReset = () => {
-    let values = {}
+    let values = {};
     if (props.mode === "after") {
-      values = values && {after: value? value.getTime(): null}
+      values = values && { after: value ? value.getTime() : null };
     } else {
-      values = values && {before: value? value.getTime(): null}
+      values = values && { before: value ? value.getTime() : null };
     }
     const keysToRemove = Object.keys(values);
     const filters = Object.keys(filterValues).reduce(
@@ -120,7 +124,9 @@ const DatePicker = (props) => {
 
   return (
     <Box>
-      <Typography variant="body1">{props.mode === "after" ? "After": "Before"}</Typography>
+      <Typography variant="body1">
+        {props.mode === "after" ? "After" : "Before"}
+      </Typography>
       <LocalizationProvider dateAdapter={AdapterDateFns}>
         <DesktopDatePicker
           onChange={handleChange}
@@ -180,3 +186,156 @@ const LastVisitedFilter = () => (
     />
   </FilterList>
 );
+
+interface Suggestion {
+  value: string;
+  type: string;
+  hint: string;
+  prefixed: string;
+}
+
+export const FullTextSeachFilter = (props: any) => {
+  const theme = useTheme();
+
+  const navigate = useNavigate();
+  const [options, setOptions] = React.useState<Suggestion[]>([]);
+  const [query, setQuery] = React.useState("");
+
+  const [prefix, setPrefix] = React.useState("");
+
+  const [value, setValue] = React.useState<Suggestion>({
+    value: "",
+    type: "",
+    hint: "",
+    prefixed: "",
+  });
+
+  const [validQuery, setValidQuery] = React.useState(true);
+  const [initial, setInitial] = React.useState(false);
+
+  const dataProvider = useDataProvider();
+
+  const getSuggestions = (q: string) => {
+    dataProvider
+      .suggestSearch({
+        data: {
+          filter: q,
+        },
+      })
+      // @ts-ignore
+      .then((data) => {
+        // @ts-ignore
+        setOptions(
+          Object.values(data.data.suggestions).map(
+            // @ts-ignore
+            (val: Suggestion) => ({
+              type: val.type,
+              hint: val.hint,
+              prefixed: data.data.prefix.trimStart() + val.value,
+              value: val.value,
+            })
+          )
+        );
+        setPrefix(data.data.prefix);
+        setValidQuery(data.data.validQuery);
+        if (!initial) {
+          setInitial(true);
+        }
+      });
+  };
+
+  const doNavigate = (q: string) => {
+    const value = JSON.stringify({ q: q || "" });
+    navigate(`?filter=${value}`);
+  };
+
+  const throttledSuggestions = React.useCallback(
+    debounce(getSuggestions, 100, { leading: true, trailing: false }),
+    [query]
+  );
+
+  const throttledNavigate = React.useMemo(
+    () => debounce(doNavigate, 500, { leading: false, trailing: true }),
+    [query]
+  );
+
+  React.useEffect(() => {
+    throttledSuggestions(query);
+    throttledNavigate(query);
+
+    return () => {
+      throttledSuggestions.cancel();
+      throttledNavigate.cancel();
+    };
+  }, [query, initial]);
+
+  const styleForType = (type: string) => {
+    if (type === "key") {
+      return { fontStyle: "italic" };
+    }
+    if (type === "metadata") {
+      return {};
+    }
+    if (type === "primary") {
+      return {};
+    }
+  };
+
+  const colors = {
+    key: "",
+    metadata: "primary",
+    operand: "",
+  };
+
+  return (
+    <Autocomplete
+      disablePortal
+      id="full-text-search"
+      filterOptions={(x) => x}
+      options={options}
+      autoComplete
+      includeInputInList
+      value={value}
+      // @ts-ignore
+      onChange={(event: any, newValue: Suggestion) => {
+        // use selected suggestion
+        setQuery(newValue.prefixed);
+        setValue(newValue);
+      }}
+      onInputChange={(event, input) => {
+        // user entered text
+        setQuery(input);
+        setValue({ value: input, type: "", hint: "", prefixed: input });
+      }}
+      isOptionEqualToValue={(option, value): boolean => {
+        // set to never equal to ensure list of options is always visible
+        return false;
+      }}
+      renderInput={(params) => (
+        <TextField {...params} label="Search documents" fullWidth />
+      )}
+      getOptionLabel={(option) => option.prefixed}
+      renderOption={(props, option) => {
+        return (
+          <li {...props}>
+            <Grid container spacing={0} alignItems="left" justifyContent="flex-start">
+              <Grid item xs="auto" mr={0}>
+                <Typography variant="body1">{prefix.slice(-1) === ' ' ? prefix.trimEnd()+'\u00A0': prefix}</Typography>
+              </Grid>
+              <Grid item xs="auto" mr={0}>
+                <Typography
+                  variant="body1"
+                  // @ts-ignore
+                  color={colors[option.type]}
+                  style={styleForType(option.type)}
+                >
+                  {option.value}
+                </Typography>
+              </Grid>
+            </Grid>
+          </li>
+        );
+      }}
+    />
+  );
+};

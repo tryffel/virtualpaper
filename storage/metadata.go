@@ -25,21 +25,68 @@ import (
 
 	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
+	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
+	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 )
 
 type MetadataStore struct {
-	db *sqlx.DB
-	sq squirrel.StatementBuilderType
+	db    *sqlx.DB
+	sq    squirrel.StatementBuilderType
+	cache *cache.Cache
 }
 
 func NewMetadataStore(db *sqlx.DB) *MetadataStore {
 	return &MetadataStore{
-		db: db,
-		sq: squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+		db:    db,
+		sq:    squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+		cache: cache.New(time.Second*30, time.Second*30),
 	}
+}
+func (m *MetadataStore) cacheNameUserKeys(userId int) string {
+	return fmt.Sprintf("user-%d-keys", userId)
+}
+
+func (m *MetadataStore) cacheNameUserKeyValues(userId int, key string) string {
+	return fmt.Sprintf("user-%d-key-%s-values", userId, key)
+}
+
+func (m *MetadataStore) getCachedKeys(userId int) *[]models.MetadataKey {
+	data, ok := m.cache.Get(m.cacheNameUserKeys(userId))
+	if !ok {
+		return nil
+	}
+
+	keys, ok := data.(*[]models.MetadataKey)
+	if !ok {
+		m.flushCachedUserKeys(userId)
+		return nil
+	}
+	return keys
+}
+
+func (m *MetadataStore) flushCachedUserKeys(userId int) {
+	m.cache.Delete(m.cacheNameUserKeys(userId))
+}
+
+func (m *MetadataStore) getCachedKeyValues(userId int, key string) *[]models.Metadata {
+	data, ok := m.cache.Get(m.cacheNameUserKeyValues(userId, key))
+	if !ok {
+		return nil
+	}
+
+	keys, ok := data.(*[]models.Metadata)
+	if !ok {
+		m.flushCachedUserKeyValues(userId, key)
+		return nil
+	}
+	return keys
+}
+
+func (m *MetadataStore) flushCachedUserKeyValues(userId int, key string) {
+	m.cache.Delete(m.cacheNameUserKeyValues(userId, key))
 }
 
 func (s MetadataStore) Name() string {
@@ -100,6 +147,65 @@ ORDER BY key ASC;
 		}
 	}
 	return object, s.parseError(err, "get document metadata")
+}
+
+func (s *MetadataStore) GetUserKeysCached(userId int) (*[]models.MetadataKey, error) {
+
+	keys := s.getCachedKeys(userId)
+	if keys != nil {
+		return keys, nil
+	}
+
+	query := s.sq.Select("mk.id as id", "lower(mk.key) as key", "mk.comment as comment",
+		"mk.created_at as created_at", "COUNT(dm.document_id) as documents_count").
+		From("metadata_keys mk").LeftJoin("document_metadata dm ON mk.id = dm.key_id").
+		Where(squirrel.Eq{"user_id": userId}).GroupBy("mk.id").OrderBy("documents_count DESC").Limit(config.MaxRows)
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("construct sql: %v", err)
+	}
+
+	keys = &[]models.MetadataKey{}
+	err = s.db.Select(keys, sql, args...)
+
+	if err != nil {
+		return keys, s.parseError(err, "get keys")
+	}
+
+	s.cache.SetDefault(s.cacheNameUserKeys(userId), keys)
+	return keys, nil
+}
+func (s *MetadataStore) GetUserKeyValuesCached(userId int, key string) (*[]models.Metadata, error) {
+	values := s.getCachedKeyValues(userId, key)
+	if values != nil {
+		return values, nil
+	}
+
+	query := s.sq.Select(
+		"mv.id as value_id",
+		"mk.id as key_id",
+		"lower(mv.value) as value",
+		"lower(mk.key) as key").
+		From("metadata_values mv").
+		LeftJoin("metadata_keys mk on mv.key_id = mk.id").
+		LeftJoin("document_metadata dm on mv.id = dm.value_id").
+		Where(squirrel.Eq{"mv.user_id": userId}).
+		Where(squirrel.Eq{"lower(mk.key)": key}).GroupBy("mv.id", "mv.value", "mk.id", "mk.key").OrderBy("count(dm.document_id) DESC").Limit(config.MaxRows)
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("construct sql: %v", err)
+	}
+
+	values = &[]models.Metadata{}
+	err = s.db.Select(values, sql, args...)
+	if err != nil {
+		return values, s.parseError(err, "get key values")
+	}
+
+	s.cache.SetDefault(s.cacheNameUserKeyValues(userId, key), values)
+	return values, nil
 }
 
 // GetKeys returns all possible metadata-keys for user.
@@ -311,6 +417,7 @@ RETURNING id;
 		}
 		key.Id = id
 	}
+	s.flushCachedUserKeys(userId)
 	return nil
 }
 
@@ -517,7 +624,11 @@ WHERE id=$3;
 `
 
 	_, err := s.db.Exec(sql, key.Key, key.Comment, key.Id)
-	return s.parseError(err, "update key")
+	if err != nil {
+		return s.parseError(err, "update key")
+	}
+	s.flushCachedUserKeys(key.UserId)
+	return nil
 }
 
 // CheckKeyValuesExist verifies key-value pairs exist and user owns them.
@@ -645,7 +756,11 @@ func (s *MetadataStore) DeleteKey(userId int, keyId int) error {
 	}
 
 	_, err = s.db.Exec(sql, args...)
-	return s.parseError(err, "delete key")
+	if err != nil {
+		return s.parseError(err, "delete key")
+	}
+	s.flushCachedUserKeys(userId)
+	return nil
 }
 
 // DeleteValue deletes metadata value from key.

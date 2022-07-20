@@ -20,10 +20,11 @@ package search
 
 import (
 	"fmt"
-	"github.com/meilisearch/meilisearch-go"
-	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
+
+	"github.com/meilisearch/meilisearch-go"
+	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/storage"
@@ -71,7 +72,7 @@ func (d *DocumentFilter) buildRequest(paging storage.Paging) *meilisearch.Search
 		filter += fmt.Sprintf("date < %d", d.Before.Add(time.Hour*24).Unix())
 	}
 	if d.Metadata != "" {
-		metadata := parseFilter(d.Metadata)
+		metadata := parseMetadataFilter(d.Metadata)
 		if filter != "" {
 			filter += " AND "
 		}
@@ -81,7 +82,7 @@ func (d *DocumentFilter) buildRequest(paging storage.Paging) *meilisearch.Search
 		request.Filter = filter
 	}
 
-	if d.Sort != "" {
+	if d.Sort != "" && d.Sort != "id" {
 		if d.SortMode == "" {
 			d.SortMode = "desc"
 		}
@@ -90,9 +91,9 @@ func (d *DocumentFilter) buildRequest(paging storage.Paging) *meilisearch.Search
 	return request
 }
 
-// SearchDocuments searches documents for given user. Query can be anything. If field="", search in any field,
+// SearchDocumentsV1 searches documents for given user. Query can be anything. If field="", search in any field,
 // else search only specified field
-func (e *Engine) SearchDocuments(userId int, query *DocumentFilter, paging storage.Paging) ([]*models.Document, int, error) {
+func (e *Engine) SearchDocumentsV1(userId int, query *DocumentFilter, paging storage.Paging) ([]*models.Document, int, error) {
 
 	request := query.buildRequest(paging)
 	logrus.Debugf("Meilisearch query: %v", request)
@@ -100,6 +101,74 @@ func (e *Engine) SearchDocuments(userId int, query *DocumentFilter, paging stora
 	docs := make([]*models.Document, 0)
 
 	res, err := e.client.Index(indexName(userId)).Search(query.Query, request)
+	if err != nil {
+		if meiliError, ok := err.(*meilisearch.Error); ok {
+			if meiliError.StatusCode == 400 {
+				logrus.Debugf("meilisearch invalid query: %v", meiliError)
+				// invalid query
+				userError := errors.ErrInvalid
+				userError.ErrMsg = "Invalid query"
+				return nil, 0, userError
+			} else {
+				logrus.Errorf("meilisearch error: %v", meiliError)
+			}
+		}
+		return docs, 0, err
+	}
+	if len(res.Hits) == 0 {
+		return docs, 0, nil
+	}
+
+	docs = make([]*models.Document, len(res.Hits))
+
+	for i, v := range res.Hits {
+		isMap, ok := v.(map[string]interface{})
+		if ok {
+			doc := &models.Document{}
+			doc.Id = getString("document_id", isMap)
+			doc.Name = getString("name", isMap)
+			doc.Content = getString("content", isMap)
+			doc.Description = getString("description", isMap)
+			doc.Date = time.Unix(int64(getInt("date", isMap)), 0)
+			docs[i] = doc
+
+			formatted := isMap["_formatted"]
+			if formattedMap, ok := formatted.(map[string]interface{}); ok {
+				name := getString("name", formattedMap)
+				if name != "" {
+					doc.Name = name
+				}
+				content := getString("content", formattedMap)
+				if content != "" {
+					doc.Content = content
+				}
+			}
+
+		}
+	}
+	// If there are only filters and no query, meilisearch returns larger nbHits, probably count of all documents,
+	// which is incorrect for given filter.
+	nHits := int(res.NbHits)
+	return docs, nHits, nil
+}
+
+// SearchDocumentsV1 searches documents for given user. Query can be anything. If field="", search in any field,
+// else search only specified field
+func (e *Engine) SearchDocumentsNew(userId int, query string, sort storage.SortKey, paging storage.Paging) ([]*models.Document, int, error) {
+
+	qs, err := parseFilter(query)
+	if err != nil {
+		e := errors.ErrInvalid
+		e.ErrMsg = err.Error()
+		return nil, 0, e
+	}
+
+	request := qs.prepareMeiliQuery(userId, sort, paging)
+	logrus.Debugf("Meilisearch query: %s, %v", qs.Query, request.Filter)
+
+	docs := make([]*models.Document, 0)
+
+	res, err := e.client.Index(indexName(userId)).Search(qs.Query, request)
 	if err != nil {
 		if meiliError, ok := err.(*meilisearch.Error); ok {
 			if meiliError.StatusCode == 400 {
@@ -180,56 +249,173 @@ func getInt(key string, container map[string]interface{}) int {
 	return 0
 }
 
-// parse user filter into meilisearch metadata filter
-func parseFilter(filter string) string {
+// tokenizes filter: 'a:misc and (topic:"unknown topic")' -> [a:misc, and, (, topic:unknown topic, )]
+func tokenizeFilter(filter string) []string {
 	if filter == "" {
-		return filter
+		return []string{}
 	}
 
+	tokens := make([]string, 0, 10)
+	escapeChar := byte('"')
 	inEscape := false
 	textLeft := filter
+	token := ""
 
-	// sweep through the filter, remove whitespaces in sentences with underscore
-	for i := 0; i < len(filter); i++ {
+	for {
 		if textLeft == "" {
+			if token != "" {
+				tokens = append(tokens, token)
+			}
 			break
 		}
-		character := filter[i]
+		character := textLeft[0]
 		if inEscape {
-			if character == '"' {
+			if character == escapeChar {
 				inEscape = false
-				continue
-			}
-			if character == ' ' {
-				textLeft = textLeft[:i] + "_" + textLeft[i+1:]
+				tokens = append(tokens, token)
+				textLeft = textLeft[1:]
+				textLeft = strings.TrimLeft(textLeft, " ")
+				token = ""
+			} else {
+				token += string(character)
+				textLeft = textLeft[1:]
 			}
 		} else {
-			if character == '"' {
+			if character == escapeChar {
 				inEscape = true
+				textLeft = textLeft[1:]
+			} else if character == ' ' {
+				// next token
+				tokens = append(tokens, token)
+				textLeft = textLeft[1:]
+				token = ""
+			} else if character == ')' || character == '(' {
+				if token != "" {
+					tokens = append(tokens, token)
+					token = ""
+				}
+				tokens = append(tokens, string(character))
+				textLeft = textLeft[1:]
+				textLeft = strings.TrimLeft(textLeft, " ")
+			} else {
+				token += string(character)
+				textLeft = textLeft[1:]
 			}
 		}
 	}
 
-	// ensure parantheses are tokenized
-	textLeft = strings.Replace(textLeft, "(", " ( ", -1)
-	textLeft = strings.Replace(textLeft, ")", " ) ", -1)
+	return tokens
+}
 
-	tokens := strings.Split(textLeft, " ")
-	output := ""
+// parse user filter into meilisearch metadata filter
+func parseMetadataFilter(filter string) string {
+	tokens := tokenizeFilter(filter)
+	for i, v := range tokens {
+		if strings.Contains(v, ":") {
+			v = strings.Replace(v, " ", "_", -1)
+			v = `metadata="` + v + `"`
+			tokens[i] = v
+		}
+	}
+	return strings.Join(tokens, " ")
+}
 
-	// join tokens back, removing escapes strings
-	for _, token := range tokens {
-		if token == "" {
+func parseFilter(filter string) (*searchQuery, error) {
+	sq := &searchQuery{RawQuery: filter}
+	tokens := tokenizeFilter(strings.ToLower(filter))
+
+	operators := []string{"and", "or", "not", "(", ")"}
+	metadataQuery := []string{}
+
+	textQuery := []string{}
+
+	matchers := map[string]parseFunc{
+		"date":        parseDate,
+		"name":        parseName,
+		"content":     parseContent,
+		"description": parseDescription,
+	}
+
+	tokensLeft := tokens
+	removeToken := func() {
+		tokensLeft = tokensLeft[1:]
+	}
+
+	maxIterations := len(tokens)
+	iteration := 0
+	for iteration < maxIterations && len(tokensLeft) > 0 {
+		iteration += 1
+		token := tokensLeft[0]
+		splits := strings.Split(tokensLeft[0], ":")
+		if len(splits) == 1 {
+			found := false
+			for _, v := range operators {
+				if token == v {
+					metadataQuery = append(metadataQuery, strings.ToUpper(v))
+					removeToken()
+					found = true
+					break
+				}
+			}
+			if found {
+				continue
+			}
+			textQuery = append(textQuery, token)
+			removeToken()
 			continue
 		}
-		if strings.Contains(token, ":") {
-			token = strings.Replace(token, "\"", "", -1)
-			token = "metadata=\"" + token + "\""
+		found := false
+		for key, matcher := range matchers {
+
+			if splits[0] == key {
+				ok := matcher(splits[1], sq)
+				if !ok {
+					return sq, fmt.Errorf("invalid query: %v", token)
+				} else {
+					removeToken()
+					found = true
+					break
+				}
+			}
+
 		}
-		if output != "" {
-			output += " "
+		if found {
+			continue
 		}
-		output += token
+
+		metadataFilter := fmt.Sprintf(`metadata="%s:%s"`, splits[0], strings.Replace(splits[1], " ", "_", -1))
+		metadataQuery = append(metadataQuery, metadataFilter)
+		removeToken()
 	}
-	return output
+	sq.MetadataQuery = metadataQuery
+	sq.MetadataString = strings.Join(metadataQuery, " ")
+	sq.Query = strings.Join(textQuery, " ")
+	return sq, nil
+}
+
+type parseFunc func(value string, sq *searchQuery) bool
+
+func parseDate(value string, sq *searchQuery) bool {
+	status, _, startT, endT := matchDate(value)
+	if status == valueMatchStatusOk {
+		sq.DateAfter = startT
+		sq.DateBefore = endT
+		return true
+	}
+	return false
+}
+
+func parseName(value string, sq *searchQuery) bool {
+	sq.Name = value
+	return true
+}
+
+func parseContent(value string, sq *searchQuery) bool {
+	sq.Content = value
+	return true
+}
+
+func parseDescription(value string, sq *searchQuery) bool {
+	sq.Description = value
+	return true
 }

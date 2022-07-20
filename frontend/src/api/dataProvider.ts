@@ -378,6 +378,14 @@ export const dataProvider: DataProvider = {
     }).then(({ json }) => ({
       data: { ...params.data, ...json },
     })),
+    
+    suggestSearch: (params: any) => 
+    httpClient(`${apiUrl}/documents/search/suggest`, {
+      method: "POST",
+      body: JSON.stringify(params.data),
+    }).then(({ json }) => ({
+      data: { ...json },
+    })),
 
 };
 

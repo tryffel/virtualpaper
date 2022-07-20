@@ -41,7 +41,7 @@ func getPaging(req *http.Request) (storage.Paging, error) {
 	var pageStr string
 	var sizeStr string
 	page := 1
-	pageSize := 10
+	pageSize := 50
 
 	pageStr = req.FormValue("page")
 	if pageStr == "" {
@@ -55,7 +55,7 @@ func getPaging(req *http.Request) (storage.Paging, error) {
 
 	sizeStr = req.FormValue("page_size")
 	if sizeStr == "" {
-		pageSize = 10
+		pageSize = 50
 	} else {
 		size, err := strconv.Atoi(sizeStr)
 		if err == nil && size > 0 {

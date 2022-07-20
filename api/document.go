@@ -612,6 +612,20 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 	respResourceList(resp, responseFromDocument(doc), 1)
 }
 
+type documentSortParams struct{}
+
+func (d *documentSortParams) FilterAttributes() []string {
+	return []string{"id", "name", "content", "description", "date"}
+}
+
+func (d *documentSortParams) SortAttributes() []string {
+	return d.FilterAttributes()
+}
+
+func (d *documentSortParams) SortNoCase() []string { return d.FilterAttributes() }
+
+func (d *documentSortParams) Update() {}
+
 func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, resp http.ResponseWriter, req *http.Request) {
 	handler := "api.searchDocuments"
 
@@ -622,7 +636,7 @@ func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, resp ht
 		paging.Offset = 0
 	}
 
-	sort, err := getSortParams(req, &models.Document{})
+	sort, err := getSortParams(req, &documentSortParams{})
 	if err != nil {
 		respError(resp, err, handler)
 		return
@@ -633,10 +647,14 @@ func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, resp ht
 		filter.SortMode = strings.ToLower(sort[0].SortOrder())
 	}
 
+	if filter.Sort == "id" {
+		filter.Sort = ""
+	}
+
 	opOk := false
 	defer logCrudDocument(userId, "search", &opOk, "metadata: %v, query: %v", filter.Metadata != "", filter.Query != "")
 
-	res, n, err := a.search.SearchDocuments(userId, filter, paging)
+	res, n, err := a.search.SearchDocumentsNew(userId, filter.Query, sort[0], paging)
 	if err != nil {
 		respError(resp, err, handler)
 		return
@@ -826,4 +844,49 @@ func (a *Api) bulkEditDocuments(resp http.ResponseWriter, req *http.Request) {
 	a.process.PullDocumentsToProcess()
 	opOk = true
 	respResourceList(resp, dto.Documents, len(dto.Documents))
+}
+
+type SearchSuggestRequest struct {
+	Filter string `json:"filter" valid:"-"`
+}
+
+type SearchSuggestResponse struct {
+	Suggestions []string `json:"suggestions"`
+	Prefix      string   `json:"prefix"`
+}
+
+func (a *Api) searchSuggestions(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route POST /api/v1/documents/search/suggest Documents SearchSuggestions
+	// Get search suggestions
+	// consumes:
+	//  - application/json
+	//
+	// Responses:
+	//   200: RespOk
+	//   400: RespBadRequest
+	//   401: RespForbidden
+	//   403: RespNotFound
+	//   500: RespInternalError
+
+	handler := "Api.searchSuggestions"
+	user, ok := getUserId(req)
+	if !ok {
+		logrus.Errorf("no user in context")
+		respInternalError(resp)
+		return
+	}
+
+	dto := &SearchSuggestRequest{}
+	err := unMarshalBody(req, dto)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	suggestions, err := a.search.SuggestSearch(user, dto.Filter)
+	if err != nil {
+		respError(resp, err, handler)
+	}
+
+	respOk(resp, suggestions)
 }
