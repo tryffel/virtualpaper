@@ -159,7 +159,8 @@ func (s *MetadataStore) GetUserKeysCached(userId int) (*[]models.MetadataKey, er
 	query := s.sq.Select("mk.id as id", "lower(mk.key) as key", "mk.comment as comment",
 		"mk.created_at as created_at", "COUNT(dm.document_id) as documents_count").
 		From("metadata_keys mk").LeftJoin("document_metadata dm ON mk.id = dm.key_id").
-		Where(squirrel.Eq{"user_id": userId}).GroupBy("mk.id").OrderBy("documents_count DESC").Limit(config.MaxRows)
+		Where(squirrel.Eq{"user_id": userId}).GroupBy("mk.id").
+		OrderBy("documents_count DESC").Limit(config.MaxRows)
 
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -191,7 +192,9 @@ func (s *MetadataStore) GetUserKeyValuesCached(userId int, key string) (*[]model
 		LeftJoin("metadata_keys mk on mv.key_id = mk.id").
 		LeftJoin("document_metadata dm on mv.id = dm.value_id").
 		Where(squirrel.Eq{"mv.user_id": userId}).
-		Where(squirrel.Eq{"lower(mk.key)": key}).GroupBy("mv.id", "mv.value", "mk.id", "mk.key").OrderBy("count(dm.document_id) DESC").Limit(config.MaxRows)
+		Where(squirrel.Eq{"lower(mk.key)": key}).
+		GroupBy("mv.id", "mv.value", "mk.id", "mk.key").
+		OrderBy("count(dm.document_id) DESC").Limit(config.MaxRows)
 
 	sql, args, err := query.ToSql()
 	if err != nil {

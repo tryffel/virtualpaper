@@ -123,7 +123,7 @@ func (s *searchQuery) prepareMeiliQuery(userId int, sort storage.SortKey, paging
 		FacetsDistribution:    nil,
 		PlaceholderSearch:     false,
 	}
-	filter := ""
+	filter := s.MetadataString
 	if s.Query == "" {
 		request.PlaceholderSearch = true
 	}
@@ -136,11 +136,11 @@ func (s *searchQuery) prepareMeiliQuery(userId int, sort storage.SortKey, paging
 	datefilters := []string{}
 	if !s.DateAfter.IsZero() {
 		datefilters = append(datefilters, fmt.Sprintf("date >= %d", s.DateAfter.Unix()))
-		//logrus.Infof("search after %s", s.DateAfter.Format("2006-1-2"))
+		logrus.Tracef("search after %s", s.DateAfter.Format("2006-1-2"))
 	}
 	if !s.DateBefore.IsZero() {
 		datefilters = append(datefilters, fmt.Sprintf("date < %d", s.DateBefore.Unix()))
-		//logrus.Infof("search before %s", s.DateBefore.Format("2006-1-2"))
+		logrus.Tracef("search before %s", s.DateBefore.Format("2006-1-2"))
 
 	}
 	if len(datefilters) > 0 {
@@ -148,10 +148,6 @@ func (s *searchQuery) prepareMeiliQuery(userId int, sort storage.SortKey, paging
 	}
 	filter = strings.TrimSuffix(filter, " AND ")
 	//logrus.Infof("filter: %s", filter)
-	if s.MetadataString != "" {
-		filter = s.MetadataString
-	}
-
 	// TODO : fix
 	//if sort.Key != "" {
 	//request.Sort = []string{sort.Key + " :" + strings.ToLower(sort.SortOrder())}
@@ -175,7 +171,7 @@ func (s *searchQuery) prepareMeiliQuery(userId int, sort storage.SortKey, paging
 
 	if sort.Key != "" && sort.Key != "id" {
 		request.Sort = []string{sort.Key + ":" + strings.ToLower(sort.SortOrder())}
-		logrus.Info("sort: ", request.Sort)
+		//logrus.Info("sort: ", request.Sort)
 	}
 	return request
 }
@@ -207,9 +203,6 @@ func (q *QuerySuggestions) addSuggestion(s ...Suggestion) {
 }
 
 func (q *QuerySuggestions) addSuggestionValues(value, suggestionType, hint string) {
-	if strings.Contains(value, " ") {
-		value = `"` + value + `"`
-	}
 	q.Suggestions = append(q.Suggestions, Suggestion{value, suggestionType, hint})
 }
 
@@ -239,6 +232,9 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 		// suggest metadata keys
 		keys := metadata.queryKeys("")
 		for _, v := range keys {
+			if strings.Contains(v, " ") {
+				v = `"` + v + `"`
+			}
 			qs.addSuggestionValues(v+":", SuggestionTypeMetadata, "")
 		}
 		qs.Prefix = query
@@ -267,6 +263,9 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 
 		metadataKeys := metadata.queryKeys(parts[0])
 		for _, v := range metadataKeys {
+			if strings.Contains(v, " ") {
+				v = `"` + v + `"`
+			}
 			qs.addSuggestionValues(v+":", SuggestionTypeMetadata, "")
 		}
 
@@ -276,6 +275,9 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 			if i > 5 {
 				// show only 5 keys per key when still typing key
 				break
+			}
+			if strings.Contains(v, " ") {
+				v = `"` + v + `"`
 			}
 			qs.addSuggestionValues(parts[0]+":"+v, SuggestionTypeMetadata, "")
 		}
