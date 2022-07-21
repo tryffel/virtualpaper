@@ -1,10 +1,19 @@
 # Virtualpaper
 
+Virtualpaper is a document archiving solution that is heavily optimized for searching documents.
+For more information see the [official documentation](https://virtualpaper.tryffel.net).
+
+The screenshot below showcases the most important aspect of Virtualpaper:
+find the documents you're looking by typing any keywords or time ranges imaginable:
+The interactive search suggests you with keywords as you type. 
+
 ![Screenshot](screenshot-document-search.png)
 
-Virtualpaper is a text document management solution, featuring automatic content extraction and 
-powerful search for all content. Documents are not stored in hierarchical directories, instead it relies
-on completely user-editable key-value metadata. Think of it as not having a single hierarchy, but as many views to 
+Virtualpaper is a text document archiving solution, featuring automatic content extraction and 
+powerful search for all content. 
+Documents are not stored in hierarchical directories, instead it relies
+on completely user-editable key-value metadata. 
+Think of it as not having a single hierarchy, but as many views to 
 documents as you wish: 
 * List all invoices from last year
 * List all documents from company x
@@ -16,13 +25,14 @@ Virtualpaper tries to automatically match these values from document content whe
 In addition to filtering content according by metadata, Virtualpaper features full-text-search powered by Meilisearch,
 which covers all metadata as well as content of the document itself.
 
-This project is a **work-in-progress**.
+This project is in **beta phase** and help with testing is much appreciated.
 
 ## Features
 * Store text documents (pdf, image files are extracted for text content)
-* Save any key-value metadata to documents
+* Save any use-configurable key-value metadata to documents
     * If configured, try to match key-values automatically from documents
     * Detect document date
+    * User configurable rules for modifying the data
 * REST api (swagger documentation is located at api/swaggerdocs/swagger.json) or at <virtualpaper-instance>/api/v1/swagger.json
 * Full-text-search
 * **Total number of users is limited to 200.** This is because Meilisearch has a limit of 200 indices, and each user
