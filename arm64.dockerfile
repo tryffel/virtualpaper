@@ -38,6 +38,7 @@ RUN yarn add react-scripts
 WORKDIR /virtualpaper
 COPY . /virtualpaper
 
+RUN yarn config set network-timeout 600000 -g
 RUN cd frontend; yarn install
 RUN make build-frontend
 
