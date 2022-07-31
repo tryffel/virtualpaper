@@ -619,7 +619,7 @@ func (d *documentSortParams) FilterAttributes() []string {
 }
 
 func (d *documentSortParams) SortAttributes() []string {
-	return d.FilterAttributes()
+	return append(d.FilterAttributes(), "created_at", "updated_at")
 }
 
 func (d *documentSortParams) SortNoCase() []string { return d.FilterAttributes() }
