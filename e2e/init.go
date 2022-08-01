@@ -12,6 +12,7 @@ const userName = "user"
 const userPassword = "user"
 
 var userToken = ""
+var adminToken = ""
 
 const adminUser = "admin"
 const adminPassw = "admin"
@@ -23,6 +24,12 @@ type httpTest struct {
 func (t *httpTest) Authorize() *httpTest {
 	return &httpTest{
 		client: t.client.SetHeader("Authorization", "Bearer "+userToken),
+	}
+}
+
+func (t *httpTest) AuthorizeAdmin() *httpTest {
+	return &httpTest{
+		client: t.client.SetHeader("Authorization", "Bearer "+adminToken),
 	}
 }
 
