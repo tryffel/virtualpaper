@@ -1,0 +1,81 @@
+subnational Electricity and Gas Consumption Statistics
+Regional and Local Authority, Great Britain, 2020
+23 December 2021
+ National Statistics
+This publication provides national and subnational estimates of annual electricity and weather
+corrected gas consumption in Great Britain. The latest estimates are for 2020 1.
+Electricity
+•
+ There was a 4.8 per cent fall in total electricity consumption in Great Britain between 2019
+and 2020, the largest year-on-year decrease recorded in these statistics (which go back to
+2005). Eight out of the eleven countries/regions experienced record falls.
+•
+ The non-domestic sector consumes the most electricity, accounting for 58 per cent of total
+electricity consumption in 2020. The 4.8 per cent fall in total electricity consumption was
+driven by a record 11.1 per cent fall in total non-domestic electricity consumption and a 5.6
+per cent increase in domestic consumption; the COVID-19 pandemic was probably a key
+factor driving the changes in the electricity consumption between 2019 and 2020.
+•
+ For Great Britain as a whole, mean domestic electricity consumption per meter was 18.6
+per cent lower in 2020 than in 2005. The reductions for individual countries/regions varied
+from 15.6 per cent (in the South East) to 24.0 per cent (in Scotland).
+Gas
+•
+ Total gas consumption in 2020 was 1.3 per cent higher than in 2018 (a pre-COVID-19
+baseline year), with a 3.3 per cent increase in domestic consumption offset by a 2.0 per
+cent decrease in non-domestic consumption. Unlike for electricity, the domestic sector is
+the larger consumer, consuming 64 per cent of 2020 total gas consumption in Great Britain.
+•
+ Mean domestic gas consumption per meter was 28.0 per cent lower in 2020 than in 2005.
+The downward trend in mean gas consumption per meter has levelled off in the past few
+years, partly due to methodological changes, and likely in part due to the COVID-19
+pandemic.
+What you need to know about these statistics:
+Estimates are based on meter point data provided by the electricity and gas industries from their administrative
+systems. The gas consumption year for 2020 data is from mid-May 2020 to mid-May 2021, whereas the electricity
+year more closely aligns to the calendar year. This means that the 2020 gas data includes the impact of various
+COVID-19 restrictions in place in 2020 and 2021. This includes the second national lockdown which began in
+November 2020 and the third national lockdown which began in January 2021. The 2019 gas data will also be
+impacted by the first national lockdown in March 2020. The electricity data also includes the impact of COVID-19
+restrictions, including all three national lockdowns (March 2020, November 2020 and January 2021).
+Gas meters consuming above the industry standard threshold of 73,200 GWh per annum are categorised as
+non-domestic, otherwise as domestic. This may result in some smaller commercial properties being classified as
+domestic and can affect the trends over time. Improvements to methodology and data coverage over time mean
+that the time series is revised. In general, data from 2017/18 onwards are more accurate and consistent.
+Visit the Domestic Energy Map – an interactive map which displays average domestic electricity and gas
+consumption as well as the proportion of domestic properties not on the gas grid. This map will be updated with
+2020 consumption data in January 2022.
+
+1. Introduction
+1.1 Background
+This document provides commentary on BEIS’ subnational estimates of electricity and weather
+corrected gas consumption for Great Britain. Estimates are based on meter point data provided
+by the electricity and gas industries from their administrative systems. In this document, both
+the gas and electricity consumption years are referred to as 2020. It should be noted that the
+2020 gas year runs from mid-May 2020 to mid-May 2021, whereas the electric year more
+closely aligns to the calendar year; more detail on this is provided in the electricity and gas
+chapters. All local authority tables from 2015 have been updated to align with the local
+authority administrative boundaries as of 1 April 2021. A subnational methodology and
+guidance booklet is published alongside this statistical release and provides further information
+on the collection and compilation of these subnational estimates of consumption.
+Estimates are published from domestic and non-domestic users and broken down by countries
+and regions2 (within England), and local authorities. Data 3 are also published at the middle and
+lower layer super output area for England and Wales, and intermediate geography zone and
+data zone for Scotland.
+For national estimates of domestic consumption, Table C9 of ECUK should be used.
+Breakdowns of consumption by property attributes, household characteristics and business
+characteristics are available through the National Energy Efficiency Data-Framework (NEED).
+1.2 Users
+The most significant use of the subnational consumption data is by Local Authorities and
+devolved administrations, and other external users such as academics and industry. These
+data have most commonly been used for targeting, to examine trends over time, or to assess
+the effectiveness of carbon reduction and energy efficiency policies and initiatives.
+Internally, these data are used by BEIS policy colleagues and other analysts to inform policy
+development and help with the monitoring and evaluation of BEIS policies. The meter point gas
+and electricity data collected for subnational consumption outputs are also used in NEED.
+Feedback from users of these data is welcomed. If you have any queries or suggestions,
+please contact us at energyefficiency.stats@beis.gov.uk. The team which produces this
+publication may hold user engagement events in the future to understand how they can better
+meet user needs: if you would like to be considered for an invitation to the next event, please
+email the above email address with information on what you use the data for and/or what
+changes you may wish to see made to this publication.

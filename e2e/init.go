@@ -55,10 +55,19 @@ func addMetadata(t *testing.T) {
 	addMetadataKey(t, "test-1", "testing")
 	addMetadataKey(t, "test-2", "testing another")
 
-	addMetadataKeyValues(t, 1, "value-1")
-	addMetadataKeyValues(t, 1, "value-2")
-	addMetadataKeyValues(t, 2, "value-10")
-	addMetadataKeyValues(t, 2, "value-11")
+	addMetadataKey(t, "country", "Country")
+
+	addMetadataKey(t, "category", "Category")
+	addMetadataKey(t, "author", "Author")
+
+	// empty matchType should convert to 'exact'
+	addMetadataKeyValues(t, 4, "economy", false, "", "")
+	addMetadataKeyValues(t, 4, "scientific", false, "exact", "")
+	addMetadataKeyValues(t, 4, "energy", true, "regex", "(greenhouse)|(gas emission)")
+
+	addMetadataKeyValues(t, 5, "gov.uk", true, "exact", "gov.uk")
+	addMetadataKeyValues(t, 5, "lorem ipsum", true, "exact", "lorem ipsum")
+
 	metadataAdded = true
 }
 
@@ -78,13 +87,13 @@ func addMetadataKey(t *testing.T, key, comment string) {
 		SetHeader("content-type", "application/json").Expect(t).Status(200).Done()
 }
 
-func addMetadataKeyValues(t *testing.T, keyId int, value string) {
+func addMetadataKeyValues(t *testing.T, keyId int, value string, matchDocuments bool, matchType string, matchFilter string) {
 	body := api.MetadataValueRequest{
 		Value:          value,
 		Comment:        "",
-		MatchDocuments: false,
-		MatchType:      "",
-		MatchFilter:    "",
+		MatchDocuments: matchDocuments,
+		MatchType:      matchType,
+		MatchFilter:    matchFilter,
 	}
 
 	t.Log("add metadata key-value", keyId, value)
