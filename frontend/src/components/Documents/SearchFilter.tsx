@@ -224,7 +224,7 @@ export const FullTextSeachFilter = (props: any) => {
     value: "",
     type: "",
     hint: "",
-    prefixed: filterValues.q,
+    prefixed: filterValues.q ? filterValues.q : "",
   });
 
   const [validQuery, setValidQuery] = React.useState(true);
