@@ -42,3 +42,10 @@ export const LimitStringLength = (val: string, limit: number): string => {
     }
     return val.substring(0, limit - 3).concat("...")
 }
+
+export const EscapeWhitespace = (input: string): string => {
+    if (input.includes(" ")) {
+        return `"${input}"`
+    }
+    return input;
+}

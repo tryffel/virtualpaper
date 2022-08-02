@@ -42,6 +42,7 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useFormState } from "react-hook-form";
 import { Link } from "react-router-dom";
+import { EscapeWhitespace } from "../util";
 
 const MetadataValueUpdateDialog = (props: any) => {
   const [update, { data, isLoading, error }] = useUpdate("metadata/values", {
@@ -124,7 +125,7 @@ const MetadataValueUpdateDialog = (props: any) => {
     to = {
       pathname: "/documents",
       search: `filter=${JSON.stringify({
-        metadata: props.record.key + ":" + '"' + props.record.value + '"',
+        q: EscapeWhitespace(props.record.key) + ":" + EscapeWhitespace(props.record.value),
       })}`,
     };
   }
