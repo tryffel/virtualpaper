@@ -78,8 +78,8 @@ func (m *metadataSuggest) queryValues(key, value string) []string {
 		return []string{}
 	}
 	data := []string{}
-	for i, v := range *values {
-		if i > MaxSuggestMetadata {
+	for _, v := range *values {
+		if len(data) > MaxSuggestMetadata {
 			break
 		}
 		if value == "" {
