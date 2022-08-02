@@ -693,6 +693,27 @@ func TestDocumentRule_extractDates(t *testing.T) {
 			wantErr:  false,
 			wantDate: "0001-01-01",
 		},
+		{
+			name: "date in name",
+			fields: fields{
+				Document: &models.Document{
+					Content: `2021-07-30  Lorem ipsum dolor sit amet, 
+	consectetur adipiscing elit, 2021-07-31`,
+					Name: "2021-08-05",
+				},
+				date: time.Time{},
+			},
+			args: args{
+				condition: &models.RuleCondition{
+					ConditionType: models.RuleConditionDateIs,
+					Value:         "(\\d{4}-\\d{1,2}-\\d{1,2})",
+					DateFmt:       "2006-01-02",
+				},
+			},
+			want:     true,
+			wantErr:  false,
+			wantDate: "2021-08-05",
+		},
 	}
 
 	for _, tt := range tests {
