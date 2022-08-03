@@ -3,9 +3,12 @@ package e2e
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/h2non/baloo.v3"
+	"net/http"
 	"testing"
+
+	"gopkg.in/h2non/baloo.v3"
 	"tryffel.net/go/virtualpaper/api"
+	"tryffel.net/go/virtualpaper/models"
 )
 
 const userName = "user"
@@ -59,21 +62,23 @@ func addMetadata(t *testing.T) {
 		t.Errorf("no user token found")
 	}
 
-	addMetadataKey(t, "test-1", "testing")
-	addMetadataKey(t, "test-2", "testing another")
+	_ = addMetadataKey(t, "test-1", "testing")
+	_ = addMetadataKey(t, "test-2", "testing another")
 
 	addMetadataKey(t, "country", "Country")
 
-	addMetadataKey(t, "category", "Category")
-	addMetadataKey(t, "author", "Author")
+	category := addMetadataKey(t, "category", "Category")
+	author := addMetadataKey(t, "author", "Author")
+
+	addMetadataKey(t, "manyvalues", "testing another")
 
 	// empty matchType should convert to 'exact'
-	addMetadataKeyValues(t, 4, "economy", false, "", "")
-	addMetadataKeyValues(t, 4, "scientific", false, "exact", "")
-	addMetadataKeyValues(t, 4, "energy", true, "regex", "(greenhouse)|(gas emission)")
+	addMetadataKeyValues(t, category, "economy", false, "", "")
+	addMetadataKeyValues(t, category, "scientific", false, "exact", "")
+	addMetadataKeyValues(t, category, "energy", true, "regex", "(greenhouse)|(gas emission)")
 
-	addMetadataKeyValues(t, 5, "gov.uk", true, "exact", "gov.uk")
-	addMetadataKeyValues(t, 5, "lorem ipsum", true, "exact", "lorem ipsum")
+	addMetadataKeyValues(t, author, "gov.uk", true, "exact", "gov.uk")
+	addMetadataKeyValues(t, author, "lorem ipsum", true, "exact", "lorem ipsum")
 
 	metadataAdded = true
 }
@@ -83,15 +88,28 @@ func jsonToBody(data interface{}) string {
 	return string(buf)
 }
 
-func addMetadataKey(t *testing.T, key, comment string) {
+func addMetadataKey(t *testing.T, key, comment string) int {
 	body := api.MetadataKeyRequest{
 		Key:     key,
 		Comment: comment,
 	}
 
+	id := 0
+
 	t.Log("add metadata key", key)
 	test.IsJson().Authorize().client.Post("/api/v1/metadata/keys").BodyString(jsonToBody(body)).
-		SetHeader("content-type", "application/json").Expect(t).Status(200).Done()
+		SetHeader("content-type", "application/json").Expect(t).Status(200).AssertFunc(func(resp *http.Response, req *http.Request) error {
+		dto := &models.MetadataKey{}
+		err := json.NewDecoder(resp.Body).Decode(dto)
+		if err != nil {
+			t.Errorf("parse json: %v", err)
+		}
+
+		id = dto.Id
+		return nil
+	}).Done()
+
+	return id
 }
 
 func addMetadataKeyValues(t *testing.T, keyId int, value string, matchDocuments bool, matchType string, matchFilter string) {

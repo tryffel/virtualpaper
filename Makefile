@@ -25,10 +25,35 @@ test-unit:
 	# skip e2e tests
 	go test ./... -short
 
-test-e2e:
-	go test ./e2e
+test-integration:
+	# test integration with external programs
+	go test ./... -short -tags test_integration
 
-test-browser:
+test-api-init:
+	go test -v ./e2e -run TestLogin
+
+
+test-api-add-metadata:
+	go test -v ./e2e -run TestMetadata
+
+test-api-admin:
+	go test -v ./e2e -run TestServerInstallation -run TestAdminGetUsers
+
+
+test-api-upload:
+	go test -v ./e2e -run TestUploadDocument
+
+#" -test.run ^\QTestUploadDocument\E$"
+
+test-api: test-api-init test-api-add-metadata test-api-upload test-api-admin
+	
+
+test-clear-records:
+	docker exec -it virtualpaper_postgres_1 psql -U virtualpaper -c \
+		"delete from documents where 1=1; delete from metadata_values where 1=1; delete from metadata_keys where 1=1;"
+
+
+test-e2e:
 	cd frontend; node_modules/.bin/cypress run
 
 test-start: export TEST_VOLUME_ID=-test
@@ -57,7 +82,7 @@ test-cleanup:
 	docker volume rm virtualpaper_postgres
 	docker volume rm virtualpaper_meilisearch
 
-test: test-unit test-start test-e2e test-stop
+test: test-unit test-integration test-start test-api test-e2e test-stop
 
 
 run-frontend: 
