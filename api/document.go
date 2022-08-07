@@ -576,18 +576,19 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 	doc.Name = dto.Name
 	doc.Description = dto.Description
 	doc.Filename = dto.Filename
-	metadata := make([]*models.Metadata, len(dto.Metadata))
+	metadata := make([]models.Metadata, len(dto.Metadata))
 
 	for i, v := range dto.Metadata {
-		metadata[i] = &models.Metadata{
+		metadata[i] = models.Metadata{
 			KeyId:   v.KeyId,
 			ValueId: v.ValueId,
 		}
 	}
 
 	doc.Update()
+	doc.Metadata = metadata
 
-	err = a.db.DocumentStore.Update(doc)
+	err = a.db.DocumentStore.Update(user, doc)
 	if err != nil {
 		respError(resp, err, handler)
 		return

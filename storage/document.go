@@ -22,7 +22,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 )
@@ -30,7 +32,17 @@ import (
 const UserIdInternal = -1
 
 type DocumentStore struct {
-	db *sqlx.DB
+	db            *sqlx.DB
+	sq            squirrel.StatementBuilderType
+	metadataStore *MetadataStore
+}
+
+func NewDocumentStore(db *sqlx.DB, mt *MetadataStore) *DocumentStore {
+	return &DocumentStore{
+		db:            db,
+		sq:            squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+		metadataStore: mt,
+	}
 }
 
 func (s DocumentStore) Name() string {
@@ -200,25 +212,37 @@ INSERT INTO documents (id, user_id, name, content, filename, hash, mimetype, siz
 		}
 		rows.Close()
 	}
-	err = addDocumentHistoryAction(s.db, UserIdInternal, doc.Id, "create", "", doc.Name)
+	err = addDocumentHistoryAction(s.db, s.sq, []models.DocumentHistory{{DocumentId: doc.Id, Action: "create", OldValue: "", NewValue: doc.Name}}, doc.UserId)
+	s.sq.Select()
 	return err
 }
 
-func addDocumentHistoryAction(db *sqlx.DB, userId int, documentId, action, oldVal, newVal string) error {
-	var err error
-	if userId == UserIdInternal {
-		sql := `INSERT INTO document_history
-	(document_id, action, old_value, new_value)
-	VALUES ($1, $2, $3, $4);`
-		_, err = db.Exec(sql, documentId, action, oldVal, newVal)
-	} else {
-		sql := `INSERT INTO document_history
-	(document_id, action, old_value, new_value, user_id)
-	VALUES ($1, $2, $3, $4, $5);`
-
-		_, err = db.Exec(sql, documentId, action, oldVal, newVal, userId)
+func addDocumentHistoryAction(db *sqlx.DB, queryBuilder squirrel.StatementBuilderType, items []models.DocumentHistory, userId int) error {
+	if len(items) == 0 {
+		return nil
 	}
-	return getDatabaseError(err, &DocumentStore{}, "add action")
+
+	query := queryBuilder.Insert("document_history").Columns("document_id", "action", "old_value", "new_value")
+	if userId != UserIdInternal {
+		query = query.Columns("user_id")
+	}
+
+	if userId != UserIdInternal {
+		for _, v := range items {
+			query = query.Values(v.DocumentId, v.Action, v.OldValue, v.NewValue, userId)
+		}
+	} else {
+		for _, v := range items {
+			query = query.Values(v.DocumentId, v.Action, v.OldValue, v.NewValue)
+		}
+	}
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return fmt.Errorf("create sql: %v", err)
+	}
+	_, err = db.Exec(sql, args...)
+	return getDatabaseError(err, &DocumentStore{}, "add document_history actions")
 }
 
 // SetDocumentContent sets content for given document id
@@ -293,7 +317,19 @@ WHERE id IN ($3);
 }
 
 // Update sets complete document record, not just changed attributes. Thus document must be read before updating.
-func (s *DocumentStore) Update(doc *models.Document) error {
+func (s *DocumentStore) Update(userId int, doc *models.Document) error {
+
+	// TODO: metadata diff is not saved, bc the document metadata is saved separately
+	oldDoc, err := s.GetDocument(0, doc.Id)
+	if err != nil {
+		return s.parseError(err, "get document by id")
+	}
+	metadata, err := s.metadataStore.GetDocumentMetadata(userId, doc.Id)
+	if err != nil {
+		return fmt.Errorf("get document metadata: %v", err)
+	}
+	oldDoc.Metadata = *metadata
+
 	doc.UpdatedAt = time.Now()
 	sql := `
 UPDATE documents SET 
@@ -302,9 +338,26 @@ updated_at=$9, description=$10
 WHERE id=$1
 `
 
-	_, err := s.db.Exec(sql, doc.Id, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
+	_, err = s.db.Exec(sql, doc.Id, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
 		doc.Date, doc.UpdatedAt, doc.Description)
-	return s.parseError(err, "update")
+	if err != nil {
+		return s.parseError(err, "update")
+	}
+
+	metadata, err = s.metadataStore.GetDocumentMetadata(userId, doc.Id)
+	if err != nil {
+		return fmt.Errorf("get document metadata: %v", err)
+	}
+
+	doc.Metadata = *metadata
+	diff, err := oldDoc.Diff(doc, userId)
+	if err != nil {
+		return fmt.Errorf("get diff for document: %v", err)
+	}
+
+	err = addDocumentHistoryAction(s.db, s.sq, diff, userId)
+	logrus.Infof("User %d edited document %s with %d actions", userId, doc.Id, len(diff))
+	return err
 }
 
 func (s *DocumentStore) DeleteDocument(userId int, docId string) error {

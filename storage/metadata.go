@@ -282,7 +282,7 @@ func (s *MetadataStore) GetValues(userId int, keyId int, sort SortKey, paging Pa
 }
 
 // UpdateDocumentKeyValues updates key-values for document.
-func (s *MetadataStore) UpdateDocumentKeyValues(userId int, documentId string, metadata []*models.Metadata) error {
+func (s *MetadataStore) UpdateDocumentKeyValues(userId int, documentId string, metadata []models.Metadata) error {
 	logrus.Debugf("update document %s metadata, key-values: %d", documentId, len(metadata))
 
 	var sql string
@@ -664,7 +664,7 @@ func (s *MetadataStore) CheckKeyValuesExist(userId int, values []models.Metadata
 	return userErr
 }
 
-func (s *MetadataStore) UpsertDocumentMetadata(userId int, documents []string, metadata []*models.Metadata) error {
+func (s *MetadataStore) UpsertDocumentMetadata(userId int, documents []string, metadata []models.Metadata) error {
 	// when checking metadata: need to remove duplicate keys
 
 	sql := `
@@ -698,7 +698,7 @@ ON CONFLICT (document_id, key_id, value_id) DO NOTHING
 	return s.parseError(err, "upsert multiple documents metadata")
 }
 
-func (s *MetadataStore) DeleteDocumentsMetadata(userId int, documents []string, metadata []*models.Metadata) error {
+func (s *MetadataStore) DeleteDocumentsMetadata(userId int, documents []string, metadata []models.Metadata) error {
 
 	sqlFormat := `
 DELETE FROM document_metadata 

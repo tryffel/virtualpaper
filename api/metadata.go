@@ -55,8 +55,8 @@ type metadataUpdateRequest struct {
 	Metadata []MetadataRequest `valid:"required" json:"metadata"`
 }
 
-func (m *metadataUpdateRequest) toMetadataArray() []*models.Metadata {
-	metadata := make([]*models.Metadata, len(m.Metadata))
+func (m *metadataUpdateRequest) toMetadataArray() []models.Metadata {
+	metadata := make([]models.Metadata, len(m.Metadata))
 
 	for i, v := range m.Metadata {
 		metadata[i] = v.toMetadata()
@@ -64,8 +64,8 @@ func (m *metadataUpdateRequest) toMetadataArray() []*models.Metadata {
 	return metadata
 }
 
-func (m MetadataRequest) toMetadata() *models.Metadata {
-	return &models.Metadata{
+func (m MetadataRequest) toMetadata() models.Metadata {
+	return models.Metadata{
 		KeyId:   m.KeyId,
 		ValueId: m.ValueId,
 	}
