@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Show,
   TabbedShowLayout,
@@ -34,6 +34,7 @@ import {
   Loading,
   useGetManyReference,
   useRecordContext,
+  useGetList,
 } from "react-admin";
 import {
   Accordion,
@@ -42,6 +43,13 @@ import {
   AccordionDetails,
   Grid,
   Box,
+  Card,
+  CardContent,
+  Stepper,
+  Step,
+  StepLabel,
+  StepContent,
+  useMediaQuery,
 } from "@mui/material";
 import { Repeat, ExpandMore } from "@mui/icons-material";
 import { requestDocumentProcessing } from "../../api/dataProvider";
@@ -62,7 +70,11 @@ export const DocumentShow = () => {
   };
 
   return (
-    <Show title="Document" actions={<DocumentShowActions />}>
+    <Show
+      title="Document"
+      actions={<DocumentShowActions />}
+      aside={<ShowDocumentsEditHistory />}
+    >
       <TabbedShowLayout>
         <Tab label="general">
           <div>
@@ -265,5 +277,75 @@ function DocumentJobListItem(props: any) {
     </Accordion>
   );
 }
+
+const ShowDocumentsEditHistory = () => {
+  const [shown, setShown] = useState(false);
+
+  const record = useRecordContext();
+
+  const { data, isLoading, error } = useGetManyReference(
+    "documents/edithistory",
+    {
+      target: "id",
+      id: record?.id,
+      sort: {
+        field: "created_at",
+        order: "DESC",
+      },
+    }
+  );
+
+  const toggle = () => {
+    setShown(!shown);
+  };
+
+  const isMd = useMediaQuery((theme: any) => theme.breakpoints.down("md"));
+  if (isMd) {
+    return null;
+  }
+
+  if (isLoading) {
+    return <Loading />;
+  }
+  if (error) {
+    return null;
+  }
+
+  return (
+    <Box ml={2}>
+      <Card>
+        <CardContent>
+          <Grid container flex={1}>
+            <Grid item xs={12} md={6}>
+              <Box flexGrow={0}>
+                <Button label="Toggle history" onClick={toggle} />
+              </Box>
+            </Grid>
+
+            <Stepper orientation="vertical" sx={{ mt: 1 }}>
+              {shown &&
+                data?.map((item: any) => (
+                  <Step key={`${item.id}`} expanded active completed>
+                    <StepContent>
+                      <Typography variant="body2" gutterBottom>
+                        {item.created_at}:
+                      </Typography>
+                      <Typography variant="body1">{item.action}</Typography>
+                      <Typography variant="body1">
+                        From: {item.old_value}
+                      </Typography>
+                      <Typography variant="body1">
+                        To: {item.new_value}
+                      </Typography>
+                    </StepContent>
+                  </Step>
+                ))}
+            </Stepper>
+          </Grid>
+        </CardContent>
+      </Card>
+    </Box>
+  );
+};
 
 export default DocumentShow;

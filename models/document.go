@@ -20,10 +20,11 @@ package models
 
 import (
 	"database/sql"
-	"github.com/hashicorp/go-uuid"
-	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/go-uuid"
+	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/config"
 )
 
@@ -184,4 +185,29 @@ func (m *MetadataValue) SortAttributes() []string {
 
 func (m *MetadataValue) SortNoCase() []string {
 	return []string{"key", "value", "comment", "match_filter"}
+}
+
+type DocumentHistory struct {
+	Id         int       `db:"id" json:"id"`
+	DocumentId string    `db:"document_id" json:"document_id"`
+	Action     string    `db:"action" json:"action"`
+	OldValue   string    `db:"old_value" json:"old_value"`
+	NewValue   string    `db:"new_value" json:"new_value"`
+	UserId     int       `db:"user_id" json:"user_id"`
+	User       string    `db:"user" json:"user"`
+	CreatedAt  time.Time `db:"created_at" json:"created_at"`
+}
+
+func (dh *DocumentHistory) Update() {}
+
+func (dh *DocumentHistory) FilterAttributes() []string {
+	return []string{"id", "document_id", "action"}
+}
+
+func (dh *DocumentHistory) SortAttributes() []string {
+	return dh.FilterAttributes()
+}
+
+func (dh *DocumentHistory) SortNoCase() []string {
+	return dh.FilterAttributes()
 }

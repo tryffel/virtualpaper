@@ -27,6 +27,8 @@ import (
 	"tryffel.net/go/virtualpaper/models"
 )
 
+const UserIdInternal = -1
+
 type DocumentStore struct {
 	db *sqlx.DB
 }
@@ -198,7 +200,25 @@ INSERT INTO documents (id, user_id, name, content, filename, hash, mimetype, siz
 		}
 		rows.Close()
 	}
-	return nil
+	err = addDocumentHistoryAction(s.db, UserIdInternal, doc.Id, "create", "", doc.Name)
+	return err
+}
+
+func addDocumentHistoryAction(db *sqlx.DB, userId int, documentId, action, oldVal, newVal string) error {
+	var err error
+	if userId == UserIdInternal {
+		sql := `INSERT INTO document_history
+	(document_id, action, old_value, new_value)
+	VALUES ($1, $2, $3, $4);`
+		_, err = db.Exec(sql, documentId, action, oldVal, newVal)
+	} else {
+		sql := `INSERT INTO document_history
+	(document_id, action, old_value, new_value, user_id)
+	VALUES ($1, $2, $3, $4, $5);`
+
+		_, err = db.Exec(sql, documentId, action, oldVal, newVal, userId)
+	}
+	return getDatabaseError(err, &DocumentStore{}, "add action")
 }
 
 // SetDocumentContent sets content for given document id
@@ -297,4 +317,27 @@ func (s *DocumentStore) DeleteDocument(userId int, docId string) error {
 
 	_, err := s.db.Exec(sql, userId, docId)
 	return s.parseError(err, "update")
+}
+
+func (s *DocumentStore) GetDocumentHistory(userId int, docId string) (*[]models.DocumentHistory, error) {
+	sql := `
+	SELECT 
+	    dh.id as id,
+	    dh.document_id as document_id,
+	    dh.action as action,
+		dh.old_value as old_value,
+		dh.new_value as new_value,
+		dh.created_at as created_at,
+		coalesce(dh.user_id, 0) as user_id,
+		coalesce(u.name, 'Server') as user
+	FROM document_history dh 
+	LEFT JOIN documents d ON dh.document_id=d.id 
+	LEFT JOIN users u ON dh.user_id=u.id
+	WHERE document_id=$1
+	ORDER BY created_at ASC;
+	`
+
+	data := &[]models.DocumentHistory{}
+	err := s.db.Select(data, sql, docId)
+	return data, s.parseError(err, "get document history")
 }

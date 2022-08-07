@@ -68,6 +68,11 @@ var Migrations = []Migrator{
 		Level:  8,
 		Schema: schemaV8,
 	},
+	&Migration{
+		Name:   "add document history table",
+		Level:  9,
+		Schema: schemaV9,
+	},
 }
 
 type Schema struct {
