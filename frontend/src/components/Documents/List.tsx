@@ -38,11 +38,6 @@ import {
   CardContent,
   CardActions,
   CardHeader,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
   Typography,
   Box,
   useTheme,
@@ -53,7 +48,7 @@ import {
 
 import get from "lodash/get";
 
-import { Help } from "@mui/icons-material";
+import { HelpButton } from "../Help";
 
 import { ThumbnailSmall } from "./Thumbnail";
 import {
@@ -83,7 +78,7 @@ const DocumentPagination = () => (
 
 const DocumentListActions = () => (
   <TopToolbar>
-    <HelpButton />
+    <DocumentHelp/>
     <SortButton
       label="Sort"
       fields={["date", "name", "updated_at", "created_at"]}
@@ -120,7 +115,7 @@ const LargeDocumentList = () => {
       actions={<DocumentListActions />}
       sort={{ field: "date", order: "DESC" }}
       //filter={filter}
-       filters={[<DocumentSearchFilter/>]}
+      filters={[<DocumentSearchFilter />]}
     >
       <DocumentGrid />
     </List>
@@ -167,7 +162,7 @@ const DocumentGrid = (props: any) => {
         clear={clearSelected}
         edit={bulkEdit}
       />
-      <FullTextSeachFilter/>
+      <FullTextSeachFilter />
       {data.map((record) => (
         <DocumentCard
           record={record}
@@ -179,79 +174,29 @@ const DocumentGrid = (props: any) => {
   ) : null;
 };
 
-const HelpDialog = (props: any) => {
-  const [scroll, setScroll] = React.useState("paper");
-
-  const { onClose, open } = props;
-  const handleClose = () => {
-    onClose();
-  };
-
+const DocumentHelp = () => {
   return (
-    <Dialog
-      onClose={handleClose}
-      aria-labelledby="simple-dialog-title"
-      open={open}
-    >
-      <DialogTitle id="simple-dialog-title">
-        Help: Querying documents
-      </DialogTitle>
-      <DialogContent dividers={scroll === "paper"}>
-        <DialogContentText>
-          <Typography variant="h6" color="textPrimary">
-            Full text search
-          </Typography>
-          <p>
-            Full text input filters documents on any fields available. For
-            reference, see &nbsp;
-            <a href="https://docs.meilisearch.com/learn/what_is_meilisearch/features.html">
-              Meilisearch documentation
-            </a>
-          </p>
-          <Typography variant="h6" color="textPrimary">
-            Metadata filter
-          </Typography>
-          Returned documents can be filtered by their metadata. Possible
-          queries:
-          <Typography>- class:report</Typography>
-          <Typography>- author:apple OR author:google</Typography>
-          <Typography>
-            - class:book AND (author:"agatha christie" OR author:"doyle")
-          </Typography>
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose}>
-          <Typography>Close</Typography>
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
-
-const HelpButton = () => {
-  const [open, setOpen] = React.useState(false);
-
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-  };
-
-  return (
-    <div>
-      <Button
-        label="Help"
-        size="small"
-        alignIcon="left"
-        onClick={handleClickOpen}
-      >
-        <Help />
-      </Button>
-      <HelpDialog open={open} onClose={handleClose} />
-    </div>
+    <HelpButton title="Search documents">
+      <Typography variant="h6" color="textPrimary">
+        Full text search
+      </Typography>
+      <p>
+        Full text input filters documents on any fields available. For
+        reference, see &nbsp;
+        <a href="https://docs.meilisearch.com/learn/what_is_meilisearch/features.html">
+          Meilisearch documentation
+        </a>
+      </p>
+      <Typography variant="h6" color="textPrimary">
+        Metadata filter
+      </Typography>
+      Returned documents can be filtered by their metadata. Possible queries:
+      <Typography>- class:report</Typography>
+      <Typography>- author:apple OR author:google</Typography>
+      <Typography>
+        - class:book AND (author:"agatha christie" OR author:"doyle")
+      </Typography>
+    </HelpButton>
   );
 };
 

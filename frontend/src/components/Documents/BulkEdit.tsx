@@ -43,13 +43,9 @@ import {
   AccordionSummary,
   AccordionDetails,
   Box,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  DialogContentText,
 } from "@mui/material";
-import { ExpandMore, Help, Clear } from "@mui/icons-material";
+import { ExpandMore, Clear } from "@mui/icons-material";
+import { HelpButton } from "../Help";
 import { DocumentCard } from "./List";
 import { MetadataValueInput } from "./Edit";
 
@@ -87,10 +83,10 @@ const BulkEditDocuments = () => {
     add_metadata: { metadata: [] },
     remove_metadata: { metadata: [] },
   };
-  
+
   const cancel = () => {
     redirect("list", "documents");
-  }
+  };
 
   if (isLoading) {
     return <Loading />;
@@ -103,7 +99,7 @@ const BulkEditDocuments = () => {
       mutationOptions={{ onSuccess }}
     >
       <SimpleForm>
-      <Toolbar cancel={cancel}/>
+        <Toolbar cancel={cancel} />
         <Box width="100%">
           <Accordion>
             <AccordionSummary expandIcon={<ExpandMore />}>
@@ -222,99 +218,43 @@ const BulkEditDocuments = () => {
   );
 };
 
-
 const Toolbar = (props: any) => {
-  const {cancel } = props;
-  
-  return (
-  <TopToolbar>
-  <HelpButton/>
-  <Button label="Cancel" startIcon={<Clear/>} onClick={cancel}/>
-    
-  </TopToolbar>
-    
-  )
-  
-}
-
-const HelpButton = () => {
-  const [open, setOpen] = React.useState(false);
-
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-  };
+  const { cancel } = props;
 
   return (
-    <div>
-      <Button
-        label="Help"
-        size="small"
-        alignIcon="left"
-        onClick={handleClickOpen}
-      >
-        <Help />
-      </Button>
-      <HelpDialog open={open} onClose={handleClose} />
-    </div>
+    <TopToolbar>
+      <BulkEditHelp />
+      <Button label="Cancel" startIcon={<Clear />} onClick={cancel} />
+    </TopToolbar>
   );
 };
 
-const HelpDialog = (props: any) => {
-  const [scroll, setScroll] = React.useState("paper");
-
-  const { onClose, open } = props;
-  const handleClose = () => {
-    onClose();
-  };
-
+const BulkEditHelp = () => {
   return (
-    <Dialog
-      onClose={handleClose}
-      aria-labelledby="simple-dialog-title"
-      open={open}
-    >
-      <DialogTitle id="simple-dialog-title">
-        Help: Editing multiple documents
-      </DialogTitle>
-      <DialogContent dividers={scroll === "paper"}>
-        <DialogContentText>
-          <p>
-            With this form it is possible to edit multiple document
-            simultaneously. This is particularly useful when there's multiple
-            documents, maybe even defined with a filter, that need similar
-            editing, such as removing or adding metadata.
-          </p>
+    <HelpButton title="Edit Multiple Documents">
+      <p>
+        With this form it is possible to edit multiple document simultaneously.
+        This is particularly useful when there's multiple documents, maybe even
+        defined with a filter, that need similar editing, such as removing or
+        adding metadata.
+      </p>
 
-          <Typography variant="h6" color="textPrimary">
-            Usage
-          </Typography>
-          <p>
-            On top there's a list of documents that are being modified. Be sure
-            to verify that the documents are indeed the ones that should be
-            modified.
-          </p>
+      <Typography variant="h6" color="textPrimary">
+        Usage
+      </Typography>
+      <p>
+        On top there's a list of documents that are being modified. Be sure to
+        verify that the documents are indeed the ones that should be modified.
+      </p>
 
-          <ul>
-            <li>
-              Add metadata: adds one or more metadata key-values to documents
-            </li>
-            <li>
-              Remove metadata: removes one or more metadata key-values from
-              documents, if they have one.{" "}
-            </li>
-          </ul>
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose}>
-          <Typography>Close</Typography>
-        </Button>
-      </DialogActions>
-    </Dialog>
+      <ul>
+        <li>Add metadata: adds one or more metadata key-values to documents</li>
+        <li>
+          Remove metadata: removes one or more metadata key-values from
+          documents, if they have one.{" "}
+        </li>
+      </ul>
+    </HelpButton>
   );
 };
 
