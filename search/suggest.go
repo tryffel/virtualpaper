@@ -23,6 +23,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
 	"tryffel.net/go/virtualpaper/models"
 
 	"github.com/meilisearch/meilisearch-go"
@@ -49,7 +50,7 @@ type metadataSuggest struct {
 	userId int
 }
 
-func (m *metadataSuggest) queryKeys(key string) []string {
+func (m *metadataSuggest) queryKeys(key, prefix, suffix string) []string {
 	keys, err := m.db.MetadataStore.GetUserKeysCached(m.userId)
 	if err != nil {
 		logrus.Error(err)
@@ -64,9 +65,9 @@ func (m *metadataSuggest) queryKeys(key string) []string {
 		}
 
 		if key == "" {
-			data = append(data, v.Key+":")
+			data = append(data, prefix+v.Key+suffix)
 		} else if strings.Contains(v.Key, key) {
-			data = append(data, v.Key+":")
+			data = append(data, prefix+v.Key+suffix)
 		}
 	}
 	return data
@@ -231,7 +232,7 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 		inParantheses = true
 
 		// suggest metadata keys
-		keys := metadata.queryKeys("")
+		keys := metadata.queryKeys("", "", ":")
 		for _, v := range keys {
 			if strings.Contains(v, " ") {
 				v = `"` + v + `"`
@@ -262,7 +263,7 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 			}
 		}
 
-		metadataKeys := metadata.queryKeys(parts[0])
+		metadataKeys := metadata.queryKeys(parts[0], "", "")
 		for _, v := range metadataKeys {
 			if strings.Contains(v, " ") {
 				v = `"` + v + `"`
@@ -376,7 +377,7 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 func suggestEmpty(metadata metadataQuerier) []Suggestion {
 
 	keys := []string{"name", "description", "content", "date"}
-	results := metadata.queryKeys("")
+	results := metadata.queryKeys("", "", ":")
 
 	suggestions := make([]Suggestion, 0, len(keys)+len(results))
 	//values := make([]string, 0, len(keys)+len(results))
@@ -540,7 +541,7 @@ func parseDateFromLayout(token string, addDigit bool, removeDigit bool) time.Tim
 }
 
 type metadataQuerier interface {
-	queryKeys(key string) []string
+	queryKeys(key string, prefis string, suffix string) []string
 	queryValues(key, value string) []string
 }
 
