@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   useRecordContext,
   useGetManyReference,
@@ -34,17 +34,17 @@ import {
   StepLabel,
   StepContent,
   Typography,
+  Tooltip,
 } from "@mui/material";
 import { PrettifyTime } from "../util";
 
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import UpdateIcon from "@mui/icons-material/Update";
 import ArticleIcon from "@mui/icons-material/Article";
-import ScheduleIcon from '@mui/icons-material/Schedule';
+import ScheduleIcon from "@mui/icons-material/Schedule";
+import TagIcon from "@mui/icons-material/Tag";
 
 export const ShowDocumentsEditHistory = () => {
-  const [shown, setShown] = useState(false);
-
   const record = useRecordContext();
 
   const { data, isLoading, error } = useGetManyReference(
@@ -59,10 +59,6 @@ export const ShowDocumentsEditHistory = () => {
     }
   );
 
-  const toggle = () => {
-    setShown(!shown);
-  };
-
   const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
   if (isSmall) {
     return null;
@@ -76,22 +72,20 @@ export const ShowDocumentsEditHistory = () => {
   }
 
   return (
-    <Box ml={2}>
+    <Box ml={1}>
       <Card>
         <CardContent>
           <Grid container flex={1}>
-            <Grid item xs={12} md={6}>
-              <Box flexGrow={0}>
-                <Button label="Toggle history" onClick={toggle} />
-              </Box>
+            <Grid item xs={8} md={8}>
+              <Typography variant="overline">Document edit history</Typography>
             </Grid>
-
-            <Stepper orientation="vertical" sx={{ mt: 1 }}>
-              {shown &&
-                data?.map((item: DocumentHistoryItem) => (
+            <Grid item xs={12} md={12}>
+              <Stepper orientation="vertical" sx={{ mt: 1 }}>
+                {data?.map((item: DocumentHistoryItem) => (
                   <ShowDocumentsEditHistoryItem item={item} />
                 ))}
-            </Stepper>
+              </Stepper>
+            </Grid>
           </Grid>
         </CardContent>
       </Card>
@@ -158,6 +152,21 @@ const ShowDocumentsEditHistoryItem = (props: { item: DocumentHistoryItem }) => {
 };
 
 // create, rename, add metadata, remove metadata, date, description, content
+//
+const ItemLabel = (props: HistoryProps) => {
+  const ref = React.createRef();
+  const { item, pretty_time } = props;
+  // @ts-ignore
+  const fullTime = new Date(Date.parse(item.created_at)).toLocaleString();
+
+  return (
+    <Tooltip title={`Time: ${fullTime}`}>
+      <Typography variant="body2" gutterBottom>
+        {item.user} - {pretty_time}:
+      </Typography>
+    </Tooltip>
+  );
+};
 
 const DocumentHistoryCreate = (props: HistoryProps) => {
   const { item, pretty_time } = props;
@@ -166,9 +175,7 @@ const DocumentHistoryCreate = (props: HistoryProps) => {
     <Step key={`${item.id}`} expanded active completed>
       <StepLabel icon={<AddCircleIcon />}>Created document</StepLabel>
       <StepContent>
-        <Typography variant="body2" gutterBottom>
-          {item.user} - {pretty_time}:
-        </Typography>
+        <ItemLabel {...props} />
         <Typography variant="body1">Name: {item.new_value}</Typography>
       </StepContent>
     </Step>
@@ -179,11 +186,9 @@ const DocumentHistoryDescription = (props: HistoryProps) => {
   const { item, pretty_time } = props;
   return (
     <Step key={`${item.id}`} expanded active completed>
-      <StepLabel icon={<ArticleIcon/>}>Changed description</StepLabel>
+      <StepLabel icon={<ArticleIcon />}>Changed description</StepLabel>
       <StepContent>
-        <Typography variant="body2" gutterBottom>
-          {item.user} - {pretty_time}:
-        </Typography>
+        <ItemLabel {...props} />
         <Typography variant="body1">From: {item.old_value}</Typography>
         <Typography variant="body1">To: {item.new_value}</Typography>
       </StepContent>
@@ -195,11 +200,9 @@ const DocumentHistoryRename = (props: HistoryProps) => {
   const { item, pretty_time } = props;
   return (
     <Step key={`${item.id}`} expanded active completed>
-      <StepLabel icon={<ArticleIcon/>}>Renamed document</StepLabel>
+      <StepLabel icon={<ArticleIcon />}>Renamed document</StepLabel>
       <StepContent>
-        <Typography variant="body2" gutterBottom>
-          {item.user} - {pretty_time}:
-        </Typography>
+        <ItemLabel {...props} />
         <Typography variant="body1">From: {item.old_value}</Typography>
         <Typography variant="body1">To: {item.new_value}</Typography>
       </StepContent>
@@ -211,11 +214,9 @@ const DocumentHistoryAddMetadata = (props: HistoryProps) => {
   const { item, pretty_time } = props;
   return (
     <Step key={`${item.id}`} expanded active completed>
-      <StepLabel icon={<UpdateIcon />}>Added metadata</StepLabel>
+      <StepLabel icon={<TagIcon />}>Added metadata</StepLabel>
       <StepContent>
-        <Typography variant="body2" gutterBottom>
-          {item.user} - {pretty_time}:
-        </Typography>
+        <ItemLabel {...props} />
         <Typography variant="body1">Metadata: {item.new_value}</Typography>
       </StepContent>
     </Step>
@@ -226,11 +227,9 @@ const DocumentHistoryRemoveMetadata = (props: HistoryProps) => {
   const { item, pretty_time } = props;
   return (
     <Step key={`${item.id}`} expanded active completed>
-      <StepLabel icon={<UpdateIcon />}>Added metadata</StepLabel>
+      <StepLabel icon={<TagIcon />}>Added metadata</StepLabel>
       <StepContent>
-        <Typography variant="body2" gutterBottom>
-          {item.user} - {pretty_time}:
-        </Typography>
+        <ItemLabel {...props} />
         <Typography variant="body1">Metadata: {item.new_value}</Typography>
       </StepContent>
     </Step>
@@ -241,11 +240,9 @@ const DocumentHistoryContent = (props: HistoryProps) => {
   const { item, pretty_time } = props;
   return (
     <Step key={`${item.id}`} expanded active completed>
-      <StepLabel icon={<ArticleIcon/>}>Changed content</StepLabel>
+      <StepLabel icon={<ArticleIcon />}>Changed content</StepLabel>
       <StepContent>
-        <Typography variant="body2" gutterBottom>
-          {item.user} - {pretty_time}:
-        </Typography>
+        <ItemLabel {...props} />
         <Typography variant="body1">Content</Typography>
       </StepContent>
     </Step>
@@ -255,16 +252,14 @@ const DocumentHistoryContent = (props: HistoryProps) => {
 const DocumentHistoryDate = (props: HistoryProps) => {
   const { item, pretty_time } = props;
 
-  const oldDate = new Date(Number(item.old_value)*1000).toLocaleDateString();
-  const newDate = new Date(Number(item.new_value)*1000).toLocaleDateString();
+  const oldDate = new Date(Number(item.old_value) * 1000).toLocaleDateString();
+  const newDate = new Date(Number(item.new_value) * 1000).toLocaleDateString();
 
   return (
     <Step key={`${item.id}`} expanded active completed>
-      <StepLabel icon={<ScheduleIcon/>}>Changed date</StepLabel>
+      <StepLabel icon={<ScheduleIcon />}>Changed date</StepLabel>
       <StepContent>
-        <Typography variant="body2" gutterBottom>
-          {item.user} - {pretty_time}:
-        </Typography>
+        <ItemLabel {...props} />
         <Typography variant="body1">From: {oldDate}</Typography>
         <Typography variant="body1">To: {newDate}</Typography>
       </StepContent>

@@ -53,7 +53,6 @@ import { HelpButton } from "../Help";
 import { ThumbnailSmall } from "./Thumbnail";
 import {
   DocumentSearchFilter,
-  FilterSidebar,
   FullTextSeachFilter,
 } from "./SearchFilter";
 import { LimitStringLength } from "../util";
@@ -111,10 +110,8 @@ const LargeDocumentList = () => {
     <List
       title="All documents"
       pagination={<DocumentPagination />}
-      aside={<FilterSidebar />}
       actions={<DocumentListActions />}
       sort={{ field: "date", order: "DESC" }}
-      //filter={filter}
       filters={[<DocumentSearchFilter />]}
     >
       <DocumentGrid />
