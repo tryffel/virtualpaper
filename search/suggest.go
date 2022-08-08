@@ -63,9 +63,9 @@ func (m *metadataSuggest) queryKeys(key string) []string {
 		}
 
 		if key == "" {
-			data = append(data, v.Key)
+			data = append(data, v.Key+":")
 		} else if strings.Contains(v.Key, key) {
-			data = append(data, v.Key)
+			data = append(data, v.Key+":")
 		}
 	}
 	return data
