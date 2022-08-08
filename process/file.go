@@ -698,8 +698,11 @@ func (fp *fileProcessor) runRules() error {
 		CreatedAt:  time.Now(),
 	}
 	job, err := fp.db.JobStore.StartProcessItem(process, "process user rules")
+	// hotfix for failure when job item does not exist anymore.
 	if err != nil {
 		logrus.Warningf("persist job record: %v", err)
+		// use empty job to not panic the rest of the function
+		job = &models.Job{}
 	} else {
 		defer fp.completeProcessingStep(process, job)
 	}
