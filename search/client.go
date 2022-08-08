@@ -293,6 +293,19 @@ type UserIndexStatus struct {
 	Indexing     bool `json:"indexing"`
 }
 
+func (e *Engine) GetUserIndexStatus(userId int) (UserIndexStatus, error) {
+	stats, err := e.client.Index(indexName(userId)).GetStats()
+	if err != nil {
+		return UserIndexStatus{}, err
+	}
+	stat := UserIndexStatus{
+		UserId:       userId,
+		NumDocuments: int(stats.NumberOfDocuments),
+		Indexing:     stats.IsIndexing,
+	}
+	return stat, err
+}
+
 // GetUserIndicesStatus returns list of indices, total db size in bytes and possible error.
 func (e *Engine) GetUserIndicesStatus() (map[int]*UserIndexStatus, int64, error) {
 	var err errors.Error

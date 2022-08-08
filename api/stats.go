@@ -48,6 +48,8 @@ type UserDocumentStatistics struct {
 	// array of last updated document ids
 	// Example: [abcd]
 	LastDocumentsUpdated []string `json:"last_documents_updated"`
+
+	Indexing bool `json:"indexing"`
 }
 
 func docStatsToUserStats(stats *models.UserDocumentStatistics) *UserDocumentStatistics {
@@ -93,6 +95,13 @@ func (a *Api) getUserDocumentStatistics(resp http.ResponseWriter, req *http.Requ
 		respError(resp, err, handler)
 	} else {
 		stats.UserId = user
-		respOk(resp, docStatsToUserStats(stats))
+		statsDto := docStatsToUserStats(stats)
+		searchStats, err := a.search.GetUserIndexStatus(user)
+		if err != nil {
+			logrus.Warningf("get search engine indexing status: %v", err)
+		} else {
+			statsDto.Indexing = searchStats.Indexing
+		}
+		respOk(resp, statsDto)
 	}
 }
