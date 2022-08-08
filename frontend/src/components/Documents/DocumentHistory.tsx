@@ -63,8 +63,8 @@ export const ShowDocumentsEditHistory = () => {
     setShown(!shown);
   };
 
-  const isMd = useMediaQuery((theme: any) => theme.breakpoints.down("md"));
-  if (isMd) {
+  const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
+  if (isSmall) {
     return null;
   }
 
@@ -255,8 +255,8 @@ const DocumentHistoryContent = (props: HistoryProps) => {
 const DocumentHistoryDate = (props: HistoryProps) => {
   const { item, pretty_time } = props;
 
-  const oldDate = new Date(item.old_value).toLocaleString();
-  const newDate = new Date(item.new_value).toLocaleString();
+  const oldDate = new Date(Number(item.old_value)*1000).toLocaleDateString();
+  const newDate = new Date(Number(item.new_value)*1000).toLocaleDateString();
 
   return (
     <Step key={`${item.id}`} expanded active completed>
