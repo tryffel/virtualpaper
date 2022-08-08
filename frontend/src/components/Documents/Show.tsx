@@ -99,6 +99,7 @@ export const DocumentShow = () => {
                       style={{ fontSize: "2em" }}
                     />
                   </Box>
+
                   <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
                     <Typography>Date</Typography>
                     <DateField source="date" showTime={false} label="Date" />
@@ -124,6 +125,11 @@ export const DocumentShow = () => {
                     </Box>
                   ) : null}
                 </Box>
+                <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
+                  <Typography variant="body2">Id: </Typography>
+                  <TextField source="id" label="" variant="caption" />
+                </Box>
+
                 <Box display={{ xs: "block", sm: "flex" }}>
                   <Typography>Type</Typography>
                   <ChipField source="type"></ChipField>
@@ -219,14 +225,15 @@ function DocumentShowActions(props: ActionsProps) {
       >
         <Repeat />
       </Button>
-      {!isSmall &&
-      <Button
-        color="primary"
-        onClick={toggleHistory}
-        label={historyShown ? "Hide history" : "Show history"}
-      >
-        <HistoryIcon />
-      </Button>}
+      {!isSmall && (
+        <Button
+          color="primary"
+          onClick={toggleHistory}
+          label={historyShown ? "Hide history" : "Show history"}
+        >
+          <HistoryIcon />
+        </Button>
+      )}
     </TopToolbar>
   );
 }
@@ -306,6 +313,5 @@ function DocumentJobListItem(props: any) {
     </Accordion>
   );
 }
-
 
 export default DocumentShow;
