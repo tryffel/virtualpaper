@@ -24,9 +24,22 @@ import {
   DateField,
   TextField,
   DateInput,
+  useAuthProvider,
 } from "react-admin";
 
-import { Box, Button, Typography, Grid } from "@mui/material";
+import {
+  Box,
+  Button,
+  Typography,
+  Grid,
+  InputLabel,
+  OutlinedInput,
+  InputAdornment,
+  IconButton,
+  Tooltip,
+} from "@mui/material";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { JsonInput } from "react-admin-json-view";
 
 export const ProfileEdit = (staticContext: any, ...props: any) => {
@@ -66,6 +79,11 @@ export const ProfileEdit = (staticContext: any, ...props: any) => {
                   />
                 </Box>
               </Box>
+              <Box display={{ xs: "block", sm: "flex" }}>
+                <Box mr={{ xs: 0, sm: "0.5em" }}>
+                  <ShowToken />
+                </Box>
+              </Box>
             </Grid>
             <Grid item xs={12} md={8}>
               <Typography variant="h5">Statistics</Typography>
@@ -91,6 +109,49 @@ export const ProfileEdit = (staticContext: any, ...props: any) => {
         </div>
       </SimpleForm>
     </Edit>
+  );
+};
+
+const ShowToken = () => {
+  const authProvider = useAuthProvider();
+  const token = authProvider.getToken();
+  const [tokenShown, setTokenShown] = React.useState(false);
+
+  const handleClickShowPassword = () => {
+    setTokenShown(!tokenShown);
+  };
+
+  const handleMouseDownPassword = (
+    event: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    event.preventDefault();
+  };
+
+  return (
+    <>
+      <InputLabel htmlFor="outlined-adornment-password">API Token</InputLabel>
+      <Tooltip title="Api token. Please read documentation first. This will grant access to all user data, so please be careful not to expose it.">
+        <OutlinedInput
+          multiline
+          id="outlined-adornment-password"
+          type={tokenShown ? "text" : "password"}
+          value={tokenShown ? token : "******"}
+          endAdornment={
+            <InputAdornment position="end">
+              <IconButton
+                aria-label="toggle password visibility"
+                onClick={handleClickShowPassword}
+                onMouseDown={handleMouseDownPassword}
+                edge="end"
+              >
+                {tokenShown ? <VisibilityOff /> : <Visibility />}
+              </IconButton>
+            </InputAdornment>
+          }
+          label="Password"
+        />
+      </Tooltip>
+    </>
   );
 };
 

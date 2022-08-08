@@ -78,6 +78,9 @@ const authProvider: AuthProvider = {
     const admin = localStorage.getItem("is_admin");
     return admin === "true";
   },
+  getToken: () => {
+    return localStorage.getItem("auth")
+  }
 };
 
 export default authProvider;
