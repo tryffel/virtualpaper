@@ -52,6 +52,7 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import { Repeat, ExpandMore } from "@mui/icons-material";
+import HistoryIcon from "@mui/icons-material/History";
 import { requestDocumentProcessing } from "../../api/dataProvider";
 import { ThumbnailField, EmbedFile } from "./Thumbnail";
 import { IndexingStatusField } from "./IndexingStatus";
@@ -62,6 +63,7 @@ import { ShowDocumentsEditHistory } from "./DocumentHistory";
 
 export const DocumentShow = () => {
   const [enableFormatting, setState] = React.useState(true);
+  const [historyEnabled, toggleHistory] = React.useState(false);
   const record = useRecordContext();
 
   const toggleFormatting = () => {
@@ -75,8 +77,13 @@ export const DocumentShow = () => {
   return (
     <Show
       title="Document"
-      actions={<DocumentShowActions />}
-      aside={<ShowDocumentsEditHistory />}
+      actions={
+        <DocumentShowActions
+          showHistory={toggleHistory}
+          historyShown={historyEnabled}
+        />
+      }
+      aside={historyEnabled ? <ShowDocumentsEditHistory /> : undefined}
     >
       <TabbedShowLayout>
         <Tab label="general">
@@ -174,7 +181,7 @@ export const DocumentShow = () => {
         <Tab label="preview">
           <EmbedFile source="download_url" />
         </Tab>
-        <Tab label="history">
+        <Tab label="Processing trace">
           <DocumentJobsHistory />
         </Tab>
       </TabbedShowLayout>
@@ -182,13 +189,24 @@ export const DocumentShow = () => {
   );
 };
 
-function DocumentShowActions() {
+interface ActionsProps {
+  historyShown: boolean;
+  showHistory: (shown: boolean) => any;
+}
+
+function DocumentShowActions(props: ActionsProps) {
   const record = useRecordContext();
+  const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
   const requestProcessing = () => {
     if (record) {
       // @ts-ignore
       requestDocumentProcessing(record.id);
     }
+  };
+
+  const { historyShown, showHistory } = props;
+  const toggleHistory = () => {
+    showHistory(!historyShown);
   };
 
   return (
@@ -201,6 +219,14 @@ function DocumentShowActions() {
       >
         <Repeat />
       </Button>
+      {!isSmall &&
+      <Button
+        color="primary"
+        onClick={toggleHistory}
+        label={historyShown ? "Hide history" : "Show history"}
+      >
+        <HistoryIcon />
+      </Button>}
     </TopToolbar>
   );
 }
@@ -281,111 +307,5 @@ function DocumentJobListItem(props: any) {
   );
 }
 
-/*
-const ShowDocumentsEditHistory = () => {
-  const [shown, setShown] = useState(false);
-
-  const record = useRecordContext();
-
-  const { data, isLoading, error } = useGetManyReference(
-    "documents/edithistory",
-    {
-      target: "id",
-      id: record?.id,
-      sort: {
-        field: "created_at",
-        order: "DESC",
-      },
-    }
-  );
-
-  const toggle = () => {
-    setShown(!shown);
-  };
-
-  const isMd = useMediaQuery((theme: any) => theme.breakpoints.down("md"));
-  if (isMd) {
-    return null;
-  }
-
-  if (isLoading) {
-    return <Loading />;
-  }
-  if (error) {
-    return null;
-  }
-
-  return (
-    <Box ml={2}>
-      <Card>
-        <CardContent>
-          <Grid container flex={1}>
-            <Grid item xs={12} md={6}>
-              <Box flexGrow={0}>
-                <Button label="Toggle history" onClick={toggle} />
-              </Box>
-            </Grid>
-
-            <Stepper orientation="vertical" sx={{ mt: 1 }}>
-              {shown &&
-                data?.map((item: DocumentHistoryItem) => (
-                  <ShowDocumentsEditHistoryItem item={item} />
-                ))}
-            </Stepper>
-          </Grid>
-        </CardContent>
-      </Card>
-    </Box>
-  );
-};
-
-interface DocumentHistoryItem {
-  id: number;
-  document_id: string;
-  action: string;
-  old_value: string;
-  new_value: string;
-  user_id: number;
-  user: number;
-  created_at: string|number;
-}
-
-interface HistoryProps extends DocumentHistoryItem {
-  pretty_time: string;
-}
-
-const ShowDocumentsEditHistoryItem = (props: { item: DocumentHistoryItem }) => {
-  const {item} = props;
-  
-  if (!item) {
-    return null;
-  }
-  
-  const timeString = PrettifyTime(item.created_at);
-  
-  return (
-    <Step key={`${item.id}`} expanded active completed>
-    <StepLabel >label: {item.action}</StepLabel>
-      <StepContent>
-        <Typography variant="body2" gutterBottom>
-          {item.user} - {timeString}:
-        </Typography>
-        <Typography variant="body1">{item.action}</Typography>
-        <Typography variant="body1">From: {item.old_value}</Typography>
-        <Typography variant="body1">To: {item.new_value}</Typography>
-      </StepContent>
-    </Step>
-  );
-};
-
-
-// create, rename, add metadata, remove metadata, date, description, content
-
-
-const DocumentHistoryCreate = (props: HistoryProps) => {
-  
-  
-}
-*/
 
 export default DocumentShow;
