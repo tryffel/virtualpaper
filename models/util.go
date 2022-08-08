@@ -22,6 +22,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"strconv"
+	"time"
 )
 
 // GetSize returns human-formatted size
@@ -93,4 +94,9 @@ func (t *Text) Scan(src interface{}) error {
 	}
 
 	return fmt.Errorf("unknown type: %v", src)
+}
+
+func MidnightForDate(t time.Time) time.Time {
+	y, m, d := t.UTC().Date()
+	return time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
 }

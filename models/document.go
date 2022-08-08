@@ -240,7 +240,8 @@ func (d *Document) Diff(newDocument *Document, userId int) ([]DocumentHistory, e
 	if d.Description != d2.Description {
 		addHistoryItem("description", d.Description, d2.Description)
 	}
-	if d.Date != d2.Date {
+
+	if MidnightForDate(d.Date) != MidnightForDate(d2.Date) {
 		addHistoryItem("date", strconv.Itoa(int(d.Date.Unix())), strconv.Itoa(int(d2.Date.Unix())))
 	}
 
