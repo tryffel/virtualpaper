@@ -56,6 +56,9 @@ import { requestDocumentProcessing } from "../../api/dataProvider";
 import { ThumbnailField, EmbedFile } from "./Thumbnail";
 import { IndexingStatusField } from "./IndexingStatus";
 import { MarkdownField } from "../Markdown";
+import { number } from "prop-types";
+import { PrettifyTime } from "../util";
+import { ShowDocumentsEditHistory } from "./DocumentHistory";
 
 export const DocumentShow = () => {
   const [enableFormatting, setState] = React.useState(true);
@@ -278,6 +281,7 @@ function DocumentJobListItem(props: any) {
   );
 }
 
+/*
 const ShowDocumentsEditHistory = () => {
   const [shown, setShown] = useState(false);
 
@@ -324,21 +328,8 @@ const ShowDocumentsEditHistory = () => {
 
             <Stepper orientation="vertical" sx={{ mt: 1 }}>
               {shown &&
-                data?.map((item: any) => (
-                  <Step key={`${item.id}`} expanded active completed>
-                    <StepContent>
-                      <Typography variant="body2" gutterBottom>
-                        {item.created_at}:
-                      </Typography>
-                      <Typography variant="body1">{item.action}</Typography>
-                      <Typography variant="body1">
-                        From: {item.old_value}
-                      </Typography>
-                      <Typography variant="body1">
-                        To: {item.new_value}
-                      </Typography>
-                    </StepContent>
-                  </Step>
+                data?.map((item: DocumentHistoryItem) => (
+                  <ShowDocumentsEditHistoryItem item={item} />
                 ))}
             </Stepper>
           </Grid>
@@ -347,5 +338,54 @@ const ShowDocumentsEditHistory = () => {
     </Box>
   );
 };
+
+interface DocumentHistoryItem {
+  id: number;
+  document_id: string;
+  action: string;
+  old_value: string;
+  new_value: string;
+  user_id: number;
+  user: number;
+  created_at: string|number;
+}
+
+interface HistoryProps extends DocumentHistoryItem {
+  pretty_time: string;
+}
+
+const ShowDocumentsEditHistoryItem = (props: { item: DocumentHistoryItem }) => {
+  const {item} = props;
+  
+  if (!item) {
+    return null;
+  }
+  
+  const timeString = PrettifyTime(item.created_at);
+  
+  return (
+    <Step key={`${item.id}`} expanded active completed>
+    <StepLabel >label: {item.action}</StepLabel>
+      <StepContent>
+        <Typography variant="body2" gutterBottom>
+          {item.user} - {timeString}:
+        </Typography>
+        <Typography variant="body1">{item.action}</Typography>
+        <Typography variant="body1">From: {item.old_value}</Typography>
+        <Typography variant="body1">To: {item.new_value}</Typography>
+      </StepContent>
+    </Step>
+  );
+};
+
+
+// create, rename, add metadata, remove metadata, date, description, content
+
+
+const DocumentHistoryCreate = (props: HistoryProps) => {
+  
+  
+}
+*/
 
 export default DocumentShow;

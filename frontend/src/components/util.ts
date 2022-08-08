@@ -16,6 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import { FormTab } from "react-admin";
+
 // Convert Numerical byte to string representation.
 export const ByteToString = (byte: number | string): string => {
     const classes = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']
@@ -48,4 +50,35 @@ export const EscapeWhitespace = (input: string): string => {
         return `"${input}"`
     }
     return input;
+}
+
+
+// Prettify time since now().
+//e.g. -> 'Just now', '30 minutes ago', '5 days ago', '7/7/2022'.
+export const PrettifyTime = (time: number | string): string => {
+    const now = Date.now()
+    const d = (typeof time === 'string') ? Date.parse(time) : time;
+    // @ts-ignore
+    const secondsDiff = (now - ((typeof time === 'string') ? Date.parse(time) : time)) / 1000
+    if (secondsDiff < 60) {
+        return "Just now";
+    }
+
+    const minutesDiff = Math.round(secondsDiff / 60)
+    if (minutesDiff < 60) {
+        return `${minutesDiff} minutes ago`
+    }
+
+    const hoursDiff = Math.round(minutesDiff / 60)
+    if (hoursDiff < 24) {
+        return `${hoursDiff} hours ago`
+    }
+
+    const daysDiff = Math.floor(hoursDiff / 24);
+    if (daysDiff < 7) {
+        return `${daysDiff} days ago`
+    }
+
+    const date = new Date(time);
+    return date.toLocaleDateString();
 }
