@@ -125,16 +125,27 @@ WHERE id = $1;
 
 // GetPendingProcessing returns max 100 processQueue items ordered by created_at.
 // Also returns total number of pending process_queues.
+// Only returns steps for documents that are not currently being processed
 func (s *JobStore) GetPendingProcessing() (*[]models.ProcessItem, int, error) {
 
 	sql := `
-select d.document_id as document_id, min(d.step) as step, min(d.created_at) as created_at
+select 
+	d.document_id as document_id, 
+	min(d.step) as step, 
+	min(d.created_at) as created_at
 from (
          select document_id,
                 step,
                 created_at
          from process_queue
-         where running = false
+		 where running = false 
+		 -- ignore document's that are being processed
+		 and document_id not in 
+		 	(
+				select document_id 
+				from process_queue 
+				where running=true group by document_id
+			)
          order by created_at asc
      ) as d
 group by d.document_id

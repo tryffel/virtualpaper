@@ -324,12 +324,6 @@ func (s *DocumentStore) Update(userId int, doc *models.Document) error {
 	if err != nil {
 		return s.parseError(err, "get document by id")
 	}
-	metadata, err := s.metadataStore.GetDocumentMetadata(userId, doc.Id)
-	if err != nil {
-		return fmt.Errorf("get document metadata: %v", err)
-	}
-	oldDoc.Metadata = *metadata
-
 	doc.UpdatedAt = time.Now()
 	sql := `
 UPDATE documents SET 
@@ -344,12 +338,6 @@ WHERE id=$1
 		return s.parseError(err, "update")
 	}
 
-	metadata, err = s.metadataStore.GetDocumentMetadata(userId, doc.Id)
-	if err != nil {
-		return fmt.Errorf("get document metadata: %v", err)
-	}
-
-	doc.Metadata = *metadata
 	diff, err := oldDoc.Diff(doc, userId)
 	if err != nil {
 		return fmt.Errorf("get diff for document: %v", err)
