@@ -35,6 +35,7 @@ import {
   FilterListItem,
   TextInput,
   useDataProvider,
+  useListContext,
   useListFilterContext,
   useTheme,
 } from "react-admin";
@@ -47,7 +48,7 @@ import {
 } from "date-fns";
 import { AccessTime } from "@mui/icons-material";
 import * as React from "react";
-import { debounce, throttle, values } from "lodash";
+import { debounce, filter, throttle, values } from "lodash";
 import { string } from "prop-types";
 
 export const DocumentSearchFilter = () => {
@@ -197,21 +198,37 @@ interface Suggestion {
 export const FullTextSeachFilter = (props: any) => {
   const theme = useTheme();
 
-  const navigate = useNavigate();
-  const [options, setOptions] = React.useState<Suggestion[]>([]);
-  const [query, setQuery] = React.useState("");
+  const { filterValues, setFilters } = useListContext();
+  const addFilter = (q: string) => {
+    setFilters({ ...filterValues, q: q }, false);
+  };
 
-  const [prefix, setPrefix] = React.useState("");
+  const removeFilter = () => {
+    //const keysToRemove = Object.keys(value);
+    const keyToRemove = "q";
+    const filters = Object.keys(filterValues).reduce(
+      (acc, key) => (key === "q" ? acc : { ...acc, [key]: filterValues[key] }),
+      {}
+    );
+
+    setFilters(filters, null, false);
+  };
+
+  //const navigate = useNavigate();
+  const [options, setOptions] = React.useState<Suggestion[]>([]);
+  const [query, setQuery] = React.useState(filterValues.q);
+
+  const [prefix, setPrefix] = React.useState(filterValues.q);
 
   const [value, setValue] = React.useState<Suggestion>({
     value: "",
     type: "",
     hint: "",
-    prefixed: "",
+    prefixed: filterValues.q ? filterValues.q : "",
   });
 
   const [validQuery, setValidQuery] = React.useState(true);
-  const [initial, setInitial] = React.useState(false);
+  const [initial, setInitial] = React.useState(filterValues.q === undefined);
 
   const dataProvider = useDataProvider();
 
@@ -245,8 +262,11 @@ export const FullTextSeachFilter = (props: any) => {
   };
 
   const doNavigate = (q: string) => {
-    const value = JSON.stringify({ q: q || "" });
-    navigate(`?filter=${value}`);
+    if (q === "") {
+    removeFilter();
+    } else {
+    addFilter(q);
+    }
   };
 
   const throttledSuggestions = React.useCallback(
@@ -318,9 +338,18 @@ export const FullTextSeachFilter = (props: any) => {
       renderOption={(props, option) => {
         return (
           <li {...props}>
-            <Grid container spacing={0} alignItems="left" justifyContent="flex-start">
+            <Grid
+              container
+              spacing={0}
+              alignItems="left"
+              justifyContent="flex-start"
+            >
               <Grid item xs="auto" mr={0}>
-                <Typography variant="body1">{prefix.slice(-1) === ' ' ? prefix.trimEnd()+'\u00A0': prefix}</Typography>
+                <Typography variant="body1">
+                  {prefix.slice(-1) === " "
+                    ? prefix.trimEnd() + "\u00A0"
+                    : prefix}
+                </Typography>
               </Grid>
               <Grid item xs="auto" mr={0}>
                 <Typography

@@ -91,6 +91,8 @@ func (a *Api) addRoutes() {
 	a.adminRouter.HandleFunc("/documents/process", a.forceDocumentProcessing).Methods(http.MethodPost)
 	a.adminRouter.HandleFunc("/documents/process", a.getDocumentProcessQueue).Methods(http.MethodGet)
 	a.adminRouter.HandleFunc("/users", a.getUsers).Methods(http.MethodGet)
+
+	// allow non-admins access to system info
 	a.privateRouter.HandleFunc("/admin/systeminfo", a.getSystemInfo).Methods(http.MethodGet)
 
 	if config.C.Api.StaticContentPath != "" {
