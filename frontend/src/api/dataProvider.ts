@@ -242,6 +242,8 @@ export const dataProvider: DataProvider = {
       url = `${apiUrl}/metadata/keys/${params.id}/values?${stringify(query)}`;
     } else if (resource === "documents/edithistory" && params.id) {
       url = `${apiUrl}/documents/${params.id}/history?${stringify(query)}`;
+    } else if (resource === "documents/linked" && params.id) {
+      url = `${apiUrl}/documents/${params.id}/linked-documents?${stringify(query)}`;
     }
     const options =
       countHeader === "Content-Range"

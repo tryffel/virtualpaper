@@ -582,3 +582,75 @@ func (a *Api) deleteMetadataValue(resp http.ResponseWriter, req *http.Request) {
 	opOk = true
 	respOk(resp, "ok")
 }
+
+type linkedDocumentParams struct {
+	DocumentIds []string `json:"documents" valid:"-"`
+}
+
+func (a *Api) getLinkedDocuments(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route GET /api/v1/documents/{id}/linked-documents Metadata GetLinkedDocuments
+	// Get linked documents
+	// Responses:
+	//  200:
+	handler := "Api.getLinkedDocuments"
+	user, ok := getUserId(req)
+	if !ok {
+		logrus.Errorf("no user in context")
+		respInternalError(resp)
+		return
+	}
+	docId := getParamId(req)
+	opOk := false
+	defer logCrudMetadata(user, "get linked documents", &opOk, "document: %s", docId)
+	docs, err := a.db.MetadataStore.GetLinkedDocuments(user, docId)
+	if err != nil {
+		respError(resp, err, handler)
+	} else {
+		opOk = true
+		respResourceList(resp, docs, len(docs))
+	}
+}
+
+func (a *Api) updateLinkedDocuments(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route PUT /api/v1/documents/{id}/linked-documents Metadata UpdateLinkedDocuments
+	// Update linked documents
+	// Responses:
+	//  200:
+
+	handler := "Api.updateLinkedDocuments"
+	user, ok := getUserId(req)
+	if !ok {
+		logrus.Errorf("no user in context")
+		respInternalError(resp)
+		return
+	}
+	docId := getParamId(req)
+	opOk := false
+	defer logCrudMetadata(user, "update linked documents", &opOk, "document: %s", docId)
+
+	dto := &linkedDocumentParams{}
+	err := unMarshalBody(req, dto)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	ownership, err := a.db.DocumentStore.UserOwnsDocuments(user, append(dto.DocumentIds, docId))
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+	if !ownership {
+		e := errors.ErrRecordNotFound
+		e.ErrMsg = "document(s) not found"
+		respError(resp, e, handler)
+	}
+
+	err = a.db.MetadataStore.UpdateLinkedDocuments(user, docId, dto.DocumentIds)
+	if err != nil {
+		respError(resp, err, handler)
+	} else {
+		opOk = true
+		respOk(resp, nil)
+	}
+}

@@ -58,7 +58,7 @@ const App = () => (
     <Resource name="admin/users" />
     <Resource name="admin/documents/processing" />
     <Resource name="documents/bulkEdit" create={<BulkEditDocuments/>} />
-
+    <Resource name="documents/linked" options={{ label: "Linked documents" }} />
 
     <CustomRoutes>
       <Route

@@ -60,6 +60,7 @@ import { MarkdownField } from "../Markdown";
 import { number } from "prop-types";
 import { PrettifyTime } from "../util";
 import { ShowDocumentsEditHistory } from "./DocumentHistory";
+import { LinkedDocumentList } from "./LinkedDocuments";
 
 export const DocumentShow = () => {
   const [enableFormatting, setState] = React.useState(true);
@@ -124,6 +125,13 @@ export const DocumentShow = () => {
                       </ArrayField>
                     </Box>
                   ) : null}
+                </Box>
+                <Box display={{ xs: "block", sm: "flex" }}>
+                  <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
+                    <Labeled label="Linked documents">
+                      <LinkedDocumentList />
+                    </Labeled>
+                  </Box>
                 </Box>
                 <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
                   <Typography variant="body2">Id: </Typography>

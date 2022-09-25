@@ -33,6 +33,7 @@ import (
 )
 
 type MetadataStore struct {
+	*resource
 	db    *sqlx.DB
 	sq    squirrel.StatementBuilderType
 	cache *cache.Cache
@@ -40,6 +41,10 @@ type MetadataStore struct {
 
 func NewMetadataStore(db *sqlx.DB) *MetadataStore {
 	return &MetadataStore{
+		resource: &resource{
+			name: "metadatastore",
+			db:   db,
+		},
 		db:    db,
 		sq:    squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
 		cache: cache.New(time.Second*30, time.Second*30),
@@ -785,4 +790,106 @@ func (s *MetadataStore) DeleteValue(userId int, valueId int) error {
 
 	_, err = s.db.Exec(sql, args...)
 	return s.parseError(err, "delete value")
+}
+
+// GetLinkedDocuments returns a list of documents that are linked to docId.
+func (s *MetadataStore) GetLinkedDocuments(userId int, docId string) ([]*models.LinkedDocument, error) {
+	query := s.sq.Select("doc_a_id", "doc_b_id", "da.name as doc_a_name", "db.name as doc_b_name", "l.created_at as created_at").
+		From("linked_documents l").
+		LeftJoin("documents da on l.doc_a_id = da.id").
+		LeftJoin("documents db on l.doc_b_id = db.id").
+		Where(squirrel.Or{squirrel.Eq{"doc_a_id": docId}, squirrel.Eq{"doc_b_id": docId}}).
+		OrderBy("l.created_at DESC").
+		Limit(config.MaxRows)
+	query = query.Where(squirrel.Eq{"da.user_id": userId, "db.user_id": userId})
+	docs := make([]*models.LinkedDocument, 0)
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return docs, fmt.Errorf("create sql: %v", err)
+	}
+	rows, err := s.db.Queryx(sql, args...)
+	if err != nil {
+		return docs, s.parseError(err, "get linked documents")
+	}
+
+	type result struct {
+		DocAId    string    `db:"doc_a_id"`
+		DocBId    string    `db:"doc_b_id"`
+		DocAName  string    `db:"doc_a_name"`
+		DocBName  string    `db:"doc_b_name"`
+		CreatedAt time.Time `db:"created_at"`
+	}
+
+	res := &result{}
+	for rows.Next() {
+		err = rows.StructScan(res)
+		if err != nil {
+			logrus.Errorf("scan linked_document row: %v", err)
+			continue
+		}
+		targetId := ""
+		name := ""
+		if res.DocAId == docId {
+			targetId = res.DocBId
+			name = res.DocBName
+		} else {
+			targetId = res.DocAId
+			name = res.DocAName
+		}
+		docs = append(docs, &models.LinkedDocument{
+			DocumentId:   targetId,
+			DocumentName: name,
+			CreatedAt:    res.CreatedAt,
+		})
+	}
+	return docs, nil
+}
+
+// UpdateLinkedDocuments updates document. This does not validate ownership of the documents.
+func (s *MetadataStore) UpdateLinkedDocuments(userId int, docId string, docs []string) error {
+	tx, err := s.beginTx()
+	if err != nil {
+		return fmt.Errorf("begin transaction: %v", err)
+	}
+	defer tx.Close()
+	delQuery := s.sq.Delete("linked_documents").
+		Where(squirrel.Or{squirrel.Eq{"doc_a_id": docId}, squirrel.Eq{"doc_b_id": docId}})
+
+	sql, args, err := delQuery.ToSql()
+	if err != nil {
+		return fmt.Errorf("get DELTET sql: %v", err)
+	}
+
+	_, err = tx.tx.Exec(sql, args...)
+	if err != nil {
+		return s.parseError(err, "update linked documents - delete old")
+	}
+
+	if len(docs) > 0 {
+		insertQuery := s.sq.Insert("linked_documents").Columns("doc_a_id", "doc_b_id")
+		for _, doc := range docs {
+			insertQuery = insertQuery.Values(docId, doc)
+		}
+
+		sql, args, err = insertQuery.ToSql()
+		if err != nil {
+			return fmt.Errorf("get INSERT sql: %v", err)
+		}
+		_, err = tx.tx.Exec(sql, args...)
+		if err != nil {
+			return s.parseError(err, "update linked documents - insert new")
+		}
+	}
+	historyItem := models.DocumentHistory{
+		Id:         0,
+		DocumentId: docId,
+		Action:     "modified linked documents",
+		OldValue:   "",
+		NewValue:   fmt.Sprintf("%d documents linked", len(docs)),
+		UserId:     userId,
+		User:       "",
+	}
+	tx.ok = true
+	err = addDocumentHistoryAction(s.db, s.sq, []models.DocumentHistory{historyItem}, userId)
+	return nil
 }

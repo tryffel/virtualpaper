@@ -282,3 +282,10 @@ func (d *Document) Diff(newDocument *Document, userId int) ([]DocumentHistory, e
 
 	return history, nil
 }
+
+// LinkedDocument represents documents that are linked together
+type LinkedDocument struct {
+	DocumentId   string    `json:"id"`
+	DocumentName string    `json:"name"`
+	CreatedAt    time.Time `json:"created_at"`
+}

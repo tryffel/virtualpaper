@@ -55,6 +55,8 @@ func (a *Api) addRoutes() {
 	a.privateRouter.HandleFunc("/documents/{id}/metadata", a.updateDocumentMetadata).Methods(http.MethodPost)
 	a.privateRouter.HandleFunc("/documents/{id}/process", a.requestDocumentProcessing).Methods(http.MethodPost)
 	a.privateRouter.HandleFunc("/documents/{id}/history", a.getDocumentHistory).Methods(http.MethodGet)
+	a.privateRouter.HandleFunc("/documents/{id}/linked-documents", a.getLinkedDocuments).Methods(http.MethodGet)
+	a.privateRouter.HandleFunc("/documents/{id}/linked-documents", a.updateLinkedDocuments).Methods(http.MethodPut)
 
 	a.privateRouter.HandleFunc("/documents/search/suggest", a.searchSuggestions).Methods(http.MethodPost)
 
