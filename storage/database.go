@@ -41,11 +41,10 @@ func NewDatabase() (*Database, error) {
 	if err != nil {
 		return db, err
 	}
-
-	db.UserStore = newUserStore(db.conn)
-	db.DocumentStore = &DocumentStore{db: db.conn}
-	db.JobStore = newJobStore(db.conn)
 	db.MetadataStore = NewMetadataStore(db.conn)
+	db.UserStore = newUserStore(db.conn)
+	db.DocumentStore = NewDocumentStore(db.conn, db.MetadataStore)
+	db.JobStore = newJobStore(db.conn)
 	db.StatsStore = NewStatsStore(db.conn)
 	db.RuleStore = newRuleStore(db.conn, db.MetadataStore)
 	return db, nil
@@ -64,10 +63,10 @@ func NewMockDatabase(matcher sqlmock.QueryMatcher) (*Database, sqlmock.Sqlmock, 
 	db := &Database{
 		conn: sqlx.NewDb(mockDb, "sqlmock"),
 	}
-	db.UserStore = newUserStore(db.conn)
-	db.DocumentStore = &DocumentStore{db: db.conn}
-	db.JobStore = newJobStore(db.conn)
 	db.MetadataStore = NewMetadataStore(db.conn)
+	db.UserStore = newUserStore(db.conn)
+	db.DocumentStore = NewDocumentStore(db.conn, db.MetadataStore)
+	db.JobStore = newJobStore(db.conn)
 	db.StatsStore = &StatsStore{db: db.conn}
 
 	return db, mock, nil

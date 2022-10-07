@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/meilisearch/meilisearch-go"
 	"github.com/sirupsen/logrus"
@@ -256,7 +257,7 @@ func tokenizeFilter(filter string) []string {
 	}
 
 	tokens := make([]string, 0, 10)
-	escapeChar := byte('"')
+	escapeChar := '"'
 	inEscape := false
 	textLeft := filter
 	token := ""
@@ -268,26 +269,26 @@ func tokenizeFilter(filter string) []string {
 			}
 			break
 		}
-		character := textLeft[0]
+		character, width := utf8.DecodeRuneInString(textLeft)
 		if inEscape {
 			if character == escapeChar {
 				inEscape = false
 				tokens = append(tokens, token)
-				textLeft = textLeft[1:]
+				textLeft = textLeft[width:]
 				textLeft = strings.TrimLeft(textLeft, " ")
 				token = ""
 			} else {
 				token += string(character)
-				textLeft = textLeft[1:]
+				textLeft = textLeft[width:]
 			}
 		} else {
 			if character == escapeChar {
 				inEscape = true
-				textLeft = textLeft[1:]
+				textLeft = textLeft[width:]
 			} else if character == ' ' {
 				// next token
 				tokens = append(tokens, token)
-				textLeft = textLeft[1:]
+				textLeft = textLeft[width:]
 				token = ""
 			} else if character == ')' || character == '(' {
 				if token != "" {
@@ -295,11 +296,11 @@ func tokenizeFilter(filter string) []string {
 					token = ""
 				}
 				tokens = append(tokens, string(character))
-				textLeft = textLeft[1:]
+				textLeft = textLeft[width:]
 				textLeft = strings.TrimLeft(textLeft, " ")
 			} else {
 				token += string(character)
-				textLeft = textLeft[1:]
+				textLeft = textLeft[width:]
 			}
 		}
 	}

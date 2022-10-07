@@ -22,13 +22,27 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 )
 
+const UserIdInternal = -1
+
 type DocumentStore struct {
-	db *sqlx.DB
+	db            *sqlx.DB
+	sq            squirrel.StatementBuilderType
+	metadataStore *MetadataStore
+}
+
+func NewDocumentStore(db *sqlx.DB, mt *MetadataStore) *DocumentStore {
+	return &DocumentStore{
+		db:            db,
+		sq:            squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+		metadataStore: mt,
+	}
 }
 
 func (s DocumentStore) Name() string {
@@ -198,7 +212,37 @@ INSERT INTO documents (id, user_id, name, content, filename, hash, mimetype, siz
 		}
 		rows.Close()
 	}
-	return nil
+	err = addDocumentHistoryAction(s.db, s.sq, []models.DocumentHistory{{DocumentId: doc.Id, Action: "create", OldValue: "", NewValue: doc.Name}}, doc.UserId)
+	s.sq.Select()
+	return err
+}
+
+func addDocumentHistoryAction(db *sqlx.DB, queryBuilder squirrel.StatementBuilderType, items []models.DocumentHistory, userId int) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	query := queryBuilder.Insert("document_history").Columns("document_id", "action", "old_value", "new_value")
+	if userId != UserIdInternal {
+		query = query.Columns("user_id")
+	}
+
+	if userId != UserIdInternal {
+		for _, v := range items {
+			query = query.Values(v.DocumentId, v.Action, v.OldValue, v.NewValue, userId)
+		}
+	} else {
+		for _, v := range items {
+			query = query.Values(v.DocumentId, v.Action, v.OldValue, v.NewValue)
+		}
+	}
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return fmt.Errorf("create sql: %v", err)
+	}
+	_, err = db.Exec(sql, args...)
+	return getDatabaseError(err, &DocumentStore{}, "add document_history actions")
 }
 
 // SetDocumentContent sets content for given document id
@@ -273,7 +317,13 @@ WHERE id IN ($3);
 }
 
 // Update sets complete document record, not just changed attributes. Thus document must be read before updating.
-func (s *DocumentStore) Update(doc *models.Document) error {
+func (s *DocumentStore) Update(userId int, doc *models.Document) error {
+
+	// TODO: metadata diff is not saved, bc the document metadata is saved separately
+	oldDoc, err := s.GetDocument(0, doc.Id)
+	if err != nil {
+		return s.parseError(err, "get document by id")
+	}
 	doc.UpdatedAt = time.Now()
 	sql := `
 UPDATE documents SET 
@@ -282,9 +332,20 @@ updated_at=$9, description=$10
 WHERE id=$1
 `
 
-	_, err := s.db.Exec(sql, doc.Id, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
+	_, err = s.db.Exec(sql, doc.Id, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
 		doc.Date, doc.UpdatedAt, doc.Description)
-	return s.parseError(err, "update")
+	if err != nil {
+		return s.parseError(err, "update")
+	}
+
+	diff, err := oldDoc.Diff(doc, userId)
+	if err != nil {
+		return fmt.Errorf("get diff for document: %v", err)
+	}
+
+	err = addDocumentHistoryAction(s.db, s.sq, diff, userId)
+	logrus.Infof("User %d edited document %s with %d actions", userId, doc.Id, len(diff))
+	return err
 }
 
 func (s *DocumentStore) DeleteDocument(userId int, docId string) error {
@@ -297,4 +358,27 @@ func (s *DocumentStore) DeleteDocument(userId int, docId string) error {
 
 	_, err := s.db.Exec(sql, userId, docId)
 	return s.parseError(err, "update")
+}
+
+func (s *DocumentStore) GetDocumentHistory(userId int, docId string) (*[]models.DocumentHistory, error) {
+	sql := `
+	SELECT 
+	    dh.id as id,
+	    dh.document_id as document_id,
+	    dh.action as action,
+		dh.old_value as old_value,
+		dh.new_value as new_value,
+		dh.created_at as created_at,
+		coalesce(dh.user_id, 0) as user_id,
+		coalesce(u.name, 'Server') as user
+	FROM document_history dh 
+	LEFT JOIN documents d ON dh.document_id=d.id 
+	LEFT JOIN users u ON dh.user_id=u.id
+	WHERE document_id=$1
+	ORDER BY created_at ASC;
+	`
+
+	data := &[]models.DocumentHistory{}
+	err := s.db.Select(data, sql, docId)
+	return data, s.parseError(err, "get document history")
 }

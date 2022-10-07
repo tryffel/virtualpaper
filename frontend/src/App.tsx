@@ -26,6 +26,7 @@ import Rules from "./components/Rules";
 import { ProfileEdit } from "./components/Preferences";
 import AdminView from "./components/Admin";
 import BulkEditDocuments from "./components/Documents/BulkEdit";
+import Dashboard from "./components/Dashboard";
 
 const App = () => (
   <Admin
@@ -33,6 +34,7 @@ const App = () => (
     theme={lightTheme}
     dataProvider={dataProvider}
     authProvider={authProvider}
+    dashboard={Dashboard}
     requireAuth
   >
     <Resource name="documents" {...documents} icon={ArticleIcon} />
@@ -56,7 +58,7 @@ const App = () => (
     <Resource name="admin/users" />
     <Resource name="admin/documents/processing" />
     <Resource name="documents/bulkEdit" create={<BulkEditDocuments/>} />
-
+    <Resource name="documents/linked" options={{ label: "Linked documents" }} />
 
     <CustomRoutes>
       <Route

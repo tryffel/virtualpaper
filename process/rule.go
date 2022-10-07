@@ -299,8 +299,9 @@ func (d *DocumentRule) extractDates(condition *models.RuleCondition, now time.Ti
 	if err != nil {
 		return false, fmt.Errorf("regex: %v", err)
 	}
-
+	nameMatches := re.FindAllString(d.Document.Name, -1)
 	matches := re.FindAllString(d.Document.Content, -1)
+	matches = append(nameMatches, matches...)
 
 	if logger != nil {
 		logger.Infof("Regex resulted in total of %d matches", len(matches))

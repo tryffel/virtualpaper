@@ -24,6 +24,8 @@ import (
 	"strings"
 	"time"
 
+	"tryffel.net/go/virtualpaper/models"
+
 	"github.com/meilisearch/meilisearch-go"
 	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/storage"
@@ -48,7 +50,7 @@ type metadataSuggest struct {
 	userId int
 }
 
-func (m *metadataSuggest) queryKeys(key string) []string {
+func (m *metadataSuggest) queryKeys(key, prefix, suffix string) []string {
 	keys, err := m.db.MetadataStore.GetUserKeysCached(m.userId)
 	if err != nil {
 		logrus.Error(err)
@@ -63,9 +65,9 @@ func (m *metadataSuggest) queryKeys(key string) []string {
 		}
 
 		if key == "" {
-			data = append(data, v.Key)
+			data = append(data, prefix+v.Key+suffix)
 		} else if strings.Contains(v.Key, key) {
-			data = append(data, v.Key)
+			data = append(data, prefix+v.Key+suffix)
 		}
 	}
 	return data
@@ -230,7 +232,7 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 		inParantheses = true
 
 		// suggest metadata keys
-		keys := metadata.queryKeys("")
+		keys := metadata.queryKeys("", "", ":")
 		for _, v := range keys {
 			if strings.Contains(v, " ") {
 				v = `"` + v + `"`
@@ -261,7 +263,7 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 			}
 		}
 
-		metadataKeys := metadata.queryKeys(parts[0])
+		metadataKeys := metadata.queryKeys(parts[0], "", "")
 		for _, v := range metadataKeys {
 			if strings.Contains(v, " ") {
 				v = `"` + v + `"`
@@ -375,7 +377,7 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 func suggestEmpty(metadata metadataQuerier) []Suggestion {
 
 	keys := []string{"name", "description", "content", "date"}
-	results := metadata.queryKeys("")
+	results := metadata.queryKeys("", "", ":")
 
 	suggestions := make([]Suggestion, 0, len(keys)+len(results))
 	//values := make([]string, 0, len(keys)+len(results))
@@ -434,15 +436,15 @@ func matchDate(token string) (valueMatchStatus, string, time.Time, time.Time) {
 		return valueMatchStatusIncomplete, "", time.Time{}, time.Time{}
 	}
 	if token == "today" {
-		return valueMatchStatusOk, "today", midnightFordate(time.Now()), midnightFordate(time.Now().AddDate(0, 0, 1))
+		return valueMatchStatusOk, "today", models.MidnightForDate(time.Now()), models.MidnightForDate(time.Now().AddDate(0, 0, 1))
 	} else if token == "yesterday" {
-		return valueMatchStatusOk, "yesterday", midnightFordate(time.Now().AddDate(0, 0, -1)), midnightFordate(time.Now())
+		return valueMatchStatusOk, "yesterday", models.MidnightForDate(time.Now().AddDate(0, 0, -1)), models.MidnightForDate(time.Now())
 	} else if token == "week" {
-		return valueMatchStatusOk, "week", midnightFordate(time.Now().AddDate(0, 0, -7)), midnightFordate(time.Now())
+		return valueMatchStatusOk, "week", models.MidnightForDate(time.Now().AddDate(0, 0, -7)), models.MidnightForDate(time.Now())
 	} else if token == "month" {
-		return valueMatchStatusOk, "month", midnightFordate(time.Now().AddDate(0, -1, 0)), midnightFordate(time.Now())
+		return valueMatchStatusOk, "month", models.MidnightForDate(time.Now().AddDate(0, -1, 0)), models.MidnightForDate(time.Now())
 	} else if token == "year" {
-		return valueMatchStatusOk, "year", midnightFordate(time.Now().AddDate(-1, 0, 0)), midnightFordate(time.Now())
+		return valueMatchStatusOk, "year", models.MidnightForDate(time.Now().AddDate(-1, 0, 0)), models.MidnightForDate(time.Now())
 	}
 
 	separator := "|"
@@ -492,15 +494,15 @@ var regexDate = regexp.MustCompile(`^(\d{4}-\d{1,2}-\d{1,2})$`)
 func parseDateFromLayout(token string, addDigit bool, removeDigit bool) time.Time {
 
 	if token == "today" {
-		return midnightFordate(time.Now())
+		return models.MidnightForDate(time.Now())
 	} else if token == "yesterday" {
-		return midnightFordate(time.Now().AddDate(0, 0, -1))
+		return models.MidnightForDate(time.Now().AddDate(0, 0, -1))
 	} else if token == "week" {
-		return midnightFordate(time.Now().AddDate(0, 0, 7))
+		return models.MidnightForDate(time.Now().AddDate(0, 0, 7))
 	} else if token == "month" {
-		return midnightFordate(time.Now().AddDate(0, 1, 0))
+		return models.MidnightForDate(time.Now().AddDate(0, 1, 0))
 	} else if token == "year" {
-		return midnightFordate(time.Now().AddDate(1, 0, 0))
+		return models.MidnightForDate(time.Now().AddDate(1, 0, 0))
 	}
 
 	t, err := time.Parse("2006", "2006")
@@ -532,21 +534,16 @@ func parseDateFromLayout(token string, addDigit bool, removeDigit bool) time.Tim
 			if removeDigit {
 				date = date.AddDate(-addYears, -addMonths, -addDays)
 			}
-			return midnightFordate(date)
+			return models.MidnightForDate(date)
 		}
 	}
 	return time.Time{}
 }
 
 type metadataQuerier interface {
-	queryKeys(key string) []string
+	queryKeys(key string, prefis string, suffix string) []string
 	queryValues(key, value string) []string
 }
 
 //type metadataQueryKeyFunc = func(key string) []string
 //type metadataValueQueryFunc = func(key, value string) []string
-
-func midnightFordate(t time.Time) time.Time {
-	y, m, d := t.UTC().Date()
-	return time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
-}

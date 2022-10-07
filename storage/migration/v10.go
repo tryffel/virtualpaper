@@ -1,6 +1,6 @@
 /*
  * Virtualpaper is a service to manage users paper documents in virtual format.
- * Copyright (C) 2020  Tero Vierimaa
+ * Copyright (C) 2022  Tero Vierimaa
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,36 +15,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+package migration
 
-import * as React from "react";
-import { Button } from "react-admin";
-import { Help } from "@mui/icons-material";
+const schemaV10 = `
+CREATE TABLE linked_documents (
+	doc_a_id TEXT NOT NULL,
+	doc_b_id TEXT NOT NULL,
+	created_at TIMESTAMPTZ default now(),
+	
+	CONSTRAINT fk_document_a_id 
+		FOREIGN KEY (doc_a_id) 
+		REFERENCES documents(id) 
+		ON DELETE CASCADE,
 
-/*
-export const HelpButton = (props: any) => {
-  const [open, setOpen] = React.useState(false);
-  const { children } = props;
-
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-  };
-
-  return (
-    <div>
-      <Button
-        label="Help"
-        size="small"
-        alignIcon="left"
-        onClick={handleClickOpen}
-      >
-        <Help />
-      </Button>
-      
-  );
-};
-
-*/
+	CONSTRAINT fk_document_b_id 
+		FOREIGN KEY (doc_b_id) 
+		REFERENCES documents(id) 
+		ON DELETE CASCADE
+);
+`

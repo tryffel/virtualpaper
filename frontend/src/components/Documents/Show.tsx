@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Show,
   TabbedShowLayout,
@@ -34,6 +34,7 @@ import {
   Loading,
   useGetManyReference,
   useRecordContext,
+  useGetList,
 } from "react-admin";
 import {
   Accordion,
@@ -42,15 +43,28 @@ import {
   AccordionDetails,
   Grid,
   Box,
+  Card,
+  CardContent,
+  Stepper,
+  Step,
+  StepLabel,
+  StepContent,
+  useMediaQuery,
 } from "@mui/material";
 import { Repeat, ExpandMore } from "@mui/icons-material";
+import HistoryIcon from "@mui/icons-material/History";
 import { requestDocumentProcessing } from "../../api/dataProvider";
 import { ThumbnailField, EmbedFile } from "./Thumbnail";
 import { IndexingStatusField } from "./IndexingStatus";
 import { MarkdownField } from "../Markdown";
+import { number } from "prop-types";
+import { PrettifyTime } from "../util";
+import { ShowDocumentsEditHistory } from "./DocumentHistory";
+import { LinkedDocumentList } from "./LinkedDocuments";
 
 export const DocumentShow = () => {
   const [enableFormatting, setState] = React.useState(true);
+  const [historyEnabled, toggleHistory] = React.useState(false);
   const record = useRecordContext();
 
   const toggleFormatting = () => {
@@ -62,7 +76,16 @@ export const DocumentShow = () => {
   };
 
   return (
-    <Show title="Document" actions={<DocumentShowActions />}>
+    <Show
+      title="Document"
+      actions={
+        <DocumentShowActions
+          showHistory={toggleHistory}
+          historyShown={historyEnabled}
+        />
+      }
+      aside={historyEnabled ? <ShowDocumentsEditHistory /> : undefined}
+    >
       <TabbedShowLayout>
         <Tab label="general">
           <div>
@@ -77,6 +100,7 @@ export const DocumentShow = () => {
                       style={{ fontSize: "2em" }}
                     />
                   </Box>
+
                   <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
                     <Typography>Date</Typography>
                     <DateField source="date" showTime={false} label="Date" />
@@ -102,6 +126,18 @@ export const DocumentShow = () => {
                     </Box>
                   ) : null}
                 </Box>
+                <Box display={{ xs: "block", sm: "flex" }}>
+                  <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
+                    <Labeled label="Linked documents">
+                      <LinkedDocumentList />
+                    </Labeled>
+                  </Box>
+                </Box>
+                <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
+                  <Typography variant="body2">Id: </Typography>
+                  <TextField source="id" label="" variant="caption" />
+                </Box>
+
                 <Box display={{ xs: "block", sm: "flex" }}>
                   <Typography>Type</Typography>
                   <ChipField source="type"></ChipField>
@@ -159,7 +195,7 @@ export const DocumentShow = () => {
         <Tab label="preview">
           <EmbedFile source="download_url" />
         </Tab>
-        <Tab label="history">
+        <Tab label="Processing trace">
           <DocumentJobsHistory />
         </Tab>
       </TabbedShowLayout>
@@ -167,13 +203,24 @@ export const DocumentShow = () => {
   );
 };
 
-function DocumentShowActions() {
+interface ActionsProps {
+  historyShown: boolean;
+  showHistory: (shown: boolean) => any;
+}
+
+function DocumentShowActions(props: ActionsProps) {
   const record = useRecordContext();
+  const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
   const requestProcessing = () => {
     if (record) {
       // @ts-ignore
       requestDocumentProcessing(record.id);
     }
+  };
+
+  const { historyShown, showHistory } = props;
+  const toggleHistory = () => {
+    showHistory(!historyShown);
   };
 
   return (
@@ -186,6 +233,15 @@ function DocumentShowActions() {
       >
         <Repeat />
       </Button>
+      {!isSmall && (
+        <Button
+          color="primary"
+          onClick={toggleHistory}
+          label={historyShown ? "Hide history" : "Show history"}
+        >
+          <HistoryIcon />
+        </Button>
+      )}
     </TopToolbar>
   );
 }

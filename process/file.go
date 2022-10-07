@@ -156,7 +156,7 @@ func (fp *fileProcessor) cancelDocumentProcessing(reason string) error {
 			}
 		}
 
-		err = fp.db.DocumentStore.Update(fp.document)
+		err = fp.db.DocumentStore.Update(storage.UserIdInternal, fp.document)
 		if err != nil {
 			return fmt.Errorf("update document: %v", err)
 		}
@@ -304,7 +304,7 @@ func (fp *fileProcessor) updateHash(doc *models.Document, file *os.File) error {
 	}
 
 	fp.document.Hash = hash
-	err = fp.db.DocumentStore.Update(fp.document)
+	err = fp.db.DocumentStore.Update(storage.UserIdInternal, fp.document)
 	if err != nil {
 		job.Status = models.JobFailure
 		return fmt.Errorf("save updated document: %v", err)
@@ -338,7 +338,7 @@ func (fp *fileProcessor) updateThumbnail(doc *models.Document, file *os.File) er
 	logrus.Infof("generate thumbnail for document %s", fp.document.Id)
 	err = generateThumbnail(file.Name(), output, 0, 500, process.Document.Mimetype)
 
-	err = fp.db.DocumentStore.Update(doc)
+	err = fp.db.DocumentStore.Update(storage.UserIdInternal, doc)
 	if err != nil {
 		logrus.Errorf("update document record: %v", err)
 	}
@@ -698,8 +698,11 @@ func (fp *fileProcessor) runRules() error {
 		CreatedAt:  time.Now(),
 	}
 	job, err := fp.db.JobStore.StartProcessItem(process, "process user rules")
+	// hotfix for failure when job item does not exist anymore.
 	if err != nil {
 		logrus.Warningf("persist job record: %v", err)
+		// use empty job to not panic the rest of the function
+		job = &models.Job{}
 	} else {
 		defer fp.completeProcessingStep(process, job)
 	}
@@ -748,14 +751,14 @@ func (fp *fileProcessor) runRules() error {
 		job.Status = models.JobFinished
 	}
 
-	err = fp.db.DocumentStore.Update(fp.document)
+	err = fp.db.DocumentStore.Update(storage.UserIdInternal, fp.document)
 	if err != nil {
 		logrus.Errorf("update document (%s) after rules: %v", fp.document.Id, err)
 	}
 
-	metadata := make([]*models.Metadata, len(fp.document.Metadata))
+	metadata := make([]models.Metadata, len(fp.document.Metadata))
 	for i, _ := range fp.document.Metadata {
-		metadata[i] = &fp.document.Metadata[i]
+		metadata[i] = fp.document.Metadata[i]
 	}
 	err = fp.db.MetadataStore.UpdateDocumentKeyValues(fp.document.UserId, fp.document.Id, metadata)
 	if err != nil {

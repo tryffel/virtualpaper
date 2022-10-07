@@ -576,18 +576,19 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 	doc.Name = dto.Name
 	doc.Description = dto.Description
 	doc.Filename = dto.Filename
-	metadata := make([]*models.Metadata, len(dto.Metadata))
+	metadata := make([]models.Metadata, len(dto.Metadata))
 
 	for i, v := range dto.Metadata {
-		metadata[i] = &models.Metadata{
+		metadata[i] = models.Metadata{
 			KeyId:   v.KeyId,
 			ValueId: v.ValueId,
 		}
 	}
 
 	doc.Update()
+	doc.Metadata = metadata
 
-	err = a.db.DocumentStore.Update(doc)
+	err = a.db.DocumentStore.Update(user, doc)
 	if err != nil {
 		respError(resp, err, handler)
 		return
@@ -646,7 +647,6 @@ func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, resp ht
 		filter.Sort = sort[0].Key
 		filter.SortMode = strings.ToLower(sort[0].SortOrder())
 	}
-
 	if filter.Sort == "id" {
 		filter.Sort = ""
 	}
@@ -889,4 +889,46 @@ func (a *Api) searchSuggestions(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	respOk(resp, suggestions)
+}
+
+func (a *Api) getDocumentHistory(resp http.ResponseWriter, req *http.Request) {
+	// swagger:route GET /api/v1/documents/:id/history Documents GetHistory
+	// Get document history
+	// Responses:
+	//   200: RespOk
+	//   400: RespBadRequest
+	//   401: RespForbidden
+	//   403: RespNotFound
+	//   500: RespInternalError
+
+	handler := "Api.getDocumentHistory"
+	user, ok := getUserId(req)
+	if !ok {
+		logrus.Errorf("no user in context")
+		respInternalError(resp)
+		return
+	}
+
+	id := getParamId(req)
+	opOk := false
+	defer logCrudDocument(user, "delete", &opOk, "document: %s", id)
+
+	owns, err := a.db.DocumentStore.UserOwnsDocument(id, user)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	if !owns {
+		respForbidden(resp)
+		return
+	}
+
+	data, err := a.db.DocumentStore.GetDocumentHistory(user, id)
+	if err != nil {
+		respError(resp, err, handler)
+		return
+	}
+
+	respResourceList(resp, data, len(*data))
 }

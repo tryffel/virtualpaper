@@ -20,10 +20,14 @@ package models
 
 import (
 	"database/sql"
-	"github.com/hashicorp/go-uuid"
-	"github.com/sirupsen/logrus"
+	"errors"
+	"fmt"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/go-uuid"
+	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/config"
 )
 
@@ -184,4 +188,104 @@ func (m *MetadataValue) SortAttributes() []string {
 
 func (m *MetadataValue) SortNoCase() []string {
 	return []string{"key", "value", "comment", "match_filter"}
+}
+
+type DocumentHistory struct {
+	Id         int       `db:"id" json:"id"`
+	DocumentId string    `db:"document_id" json:"document_id"`
+	Action     string    `db:"action" json:"action"`
+	OldValue   string    `db:"old_value" json:"old_value"`
+	NewValue   string    `db:"new_value" json:"new_value"`
+	UserId     int       `db:"user_id" json:"user_id"`
+	User       string    `db:"user" json:"user"`
+	CreatedAt  time.Time `db:"created_at" json:"created_at"`
+}
+
+func (dh *DocumentHistory) Update() {}
+
+func (dh *DocumentHistory) FilterAttributes() []string {
+	return []string{"id", "document_id", "action"}
+}
+
+func (dh *DocumentHistory) SortAttributes() []string {
+	return dh.FilterAttributes()
+}
+
+func (dh *DocumentHistory) SortNoCase() []string {
+	return dh.FilterAttributes()
+}
+
+// Diffs returns a list of DocumentHistory items from d -> newDocument.
+func (d *Document) Diff(newDocument *Document, userId int) ([]DocumentHistory, error) {
+	history := make([]DocumentHistory, 0)
+	d2 := newDocument
+
+	addHistoryItem := func(action, oldValue, newValue string) {
+		history = append(history, DocumentHistory{
+			DocumentId: d2.Id,
+			Action:     action,
+			OldValue:   oldValue,
+			NewValue:   newValue,
+			UserId:     userId,
+		})
+	}
+
+	if d.Id != newDocument.Id {
+		return nil, errors.New("document id does not match")
+	}
+
+	if d.Name != d2.Name {
+		addHistoryItem("rename", d.Name, d2.Name)
+	}
+	if d.Description != d2.Description {
+		addHistoryItem("description", d.Description, d2.Description)
+	}
+
+	if MidnightForDate(d.Date) != MidnightForDate(d2.Date) {
+		addHistoryItem("date", strconv.Itoa(int(d.Date.Unix())), strconv.Itoa(int(d2.Date.Unix())))
+	}
+
+	if d.Content != d2.Content {
+		addHistoryItem("content", d.Content, d2.Content)
+	}
+
+	if len(d.Metadata) == 0 && len(d2.Metadata) == 0 {
+		return history, nil
+	}
+
+	oldMetadata := map[string]Metadata{}
+	newMetadata := map[string]Metadata{}
+
+	for _, v := range d.Metadata {
+		oldMetadata[v.Key+"-"+v.Value] = v
+	}
+
+	for _, v := range d2.Metadata {
+		newMetadata[v.Key+"-"+v.Value] = v
+	}
+
+	formatMetadata := func(m Metadata) string {
+		return fmt.Sprintf("%s:%s", m.Key, m.Value)
+	}
+
+	for keyValue, oldVal := range oldMetadata {
+		if _, found := newMetadata[keyValue]; !found {
+			addHistoryItem("remove metadata", formatMetadata(oldVal), "")
+		}
+	}
+
+	for keyValue, newVal := range newMetadata {
+		if _, found := oldMetadata[keyValue]; !found {
+			addHistoryItem("add metadata", "", formatMetadata(newVal))
+		}
+	}
+
+	return history, nil
+}
+
+// LinkedDocument represents documents that are linked together
+type LinkedDocument struct {
+	DocumentId   string    `json:"id"`
+	DocumentName string    `json:"name"`
+	CreatedAt    time.Time `json:"created_at"`
 }

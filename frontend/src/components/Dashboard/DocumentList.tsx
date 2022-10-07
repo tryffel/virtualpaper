@@ -16,63 +16,36 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import * as React from 'react';
-import { useState } from 'react';
+import * as React from "react";
 
-import { Loading, Error, Datagrid, TextField, DateField } from 'react-admin';
+import { Loading, useGetMany } from "react-admin";
 
-import {Grid, Card, CardContent, Typography} from "@mui/material";
+import { useTheme, Grid, Typography, Box, Paper } from "@mui/material";
+import { isDOMComponent } from "react-dom/test-utils";
+import { DocumentCard } from "../Documents/List";
 
+export const LastUpdatedDocumentList = (props: { ids: string[] }) => {
+  const theme = useTheme();
+  const { ids } = props;
+  const { data, isLoading, error, refetch } = useGetMany("documents", {
+    ids: ids.slice(0, 5),
+  });
 
-/*
-export const LastUpdatedDocumentsList = () => {
-    const [page, setPage] = useState(1);
-    const [perPage, setPerPage] = useState(10);
-    const [sort, setSort] = useState({ field: "updated_at", order: "DESC" });
-    const { data, total, loading, error } = useQueryWithStore({
-      type: "getList",
-      resource: "documents",
-      payload: {
-        pagination: { page, perPage },
-        sort: {
-          field: "created_at",
-          order: "DESC",
-        },
-        filter: {},
-      },
-    });
-  
-    if (loading) {
-      return <Loading />;
-    }
-    if (error) {
-      return <Error error={error} />;
-    }
-  
+  if (isLoading) {
+    return <Loading />;
+  }
+
+  if (data) {
     return (
-      <Grid>
-        <Card>
-          <CardContent>
-            <Typography variant="h5" color="textSecondary">
-              Last updated documents
-            </Typography>
-              
-            <Datagrid
-              basePath="/documents"
-              rowClick="show"
-              isRowSelectable={false}
-              data={keyBy(data, "id")}
-              ids={data.map(({ id }) => id)}
-              currentSort={sort}
-            >
-              <TextField source="name" />
-              <DateField source="date" />
-              <DateField source="created_at" />
-            </Datagrid>
-          </CardContent>
-        </Card>
-      </Grid>
+      <Paper elevation={2}>
+        <Typography variant="h5" gutterBottom marginLeft="1em">
+          Latest documents
+        </Typography>
+        {data.map((document) => (
+          <DocumentCard record={document} />
+        ))}
+      </Paper>
     );
-  };
-  
-  */
+  }
+  return null;
+};

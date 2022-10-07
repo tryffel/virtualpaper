@@ -17,7 +17,7 @@ func TestUploadDocument(t *testing.T) {
 	TestLogin(t)
 	apiTest(t)
 	// works with plain text files only. Multipart form.header holds incorrect mime type, which is always plain/text.
-	uploadDocument(t, "text-1.txt", "lorem ipsum", 20)
+	uploadDocument(t, "text-1.txt", "Lorem ipsum", 20)
 	uploadDocument(t, "1990-2020-final-emissions-standard-industrial-classification-annex-2.txt",
 		"This publication is an extension of the final UK territorial greenhouse", 20)
 	uploadDocument(t, "subnational_electricity_and_gas_consumption_summary_report_2020.txt",

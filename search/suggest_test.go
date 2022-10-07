@@ -53,8 +53,8 @@ func Test_matchDate(t *testing.T) {
 			args:  args{"2022-07-01"},
 			want:  valueMatchStatusOk,
 			want1: "",
-			want2: midnightFordate(time.Date(2022, 7, 1, 0, 0, 0, 0, time.UTC)),
-			want3: midnightFordate(time.Date(2022, 7, 2, 0, 0, 0, 0, time.UTC)),
+			want2: models.MidnightForDate(time.Date(2022, 7, 1, 0, 0, 0, 0, time.UTC)),
+			want3: models.MidnightForDate(time.Date(2022, 7, 2, 0, 0, 0, 0, time.UTC)),
 		},
 	}
 	for _, tt := range tests {

@@ -416,6 +416,11 @@ func (a *Api) testRule(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	metadata, err := a.db.MetadataStore.GetDocumentMetadata(userId, processingRule.DocumentId)
+	if err != nil {
+		respError(resp, err, handler)
+	}
+	doc.Metadata = *metadata
 	logrus.Infof("User %d tests processing rule %d on document %s", userId, id, processingRule.DocumentId)
 
 	processRule := process.NewDocumentRule(doc, rule)
