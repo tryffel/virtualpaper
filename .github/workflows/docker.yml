@@ -44,6 +44,8 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/virtualpaper:arm64
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/virtualpaper:buildcache_arm64
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/virtualpaper:buildcache_arm64,mode=max
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v2
@@ -54,3 +56,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/virtualpaper:buildcache_amd64
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/virtualpaper:buildcache_amd64,mode=max
