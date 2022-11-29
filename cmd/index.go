@@ -21,6 +21,7 @@ package cmd
 import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
@@ -30,13 +31,13 @@ var indexCmd = &cobra.Command{
 	Short: "Index documents to meilisearch for full-text-search",
 	Run: func(cmd *cobra.Command, args []string) {
 		initConfig()
-		db, err := storage.NewDatabase()
+		db, err := storage.NewDatabase(config.C.Database)
 		if err != nil {
 			logrus.Fatalf("Connect to database: %v", err)
 		}
 		defer db.Close()
 
-		engine, err := search.NewEngine(db)
+		engine, err := search.NewEngine(db, &config.C.Meilisearch)
 		if err != nil {
 			logrus.Fatalf("Init search engine: %v", err)
 		}

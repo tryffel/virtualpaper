@@ -67,7 +67,7 @@ func NewApi(database *storage.Database) (*Api, error) {
 	}
 
 	var err error
-	api.search, err = search.NewEngine(database)
+	api.search, err = search.NewEngine(database, &config.C.Meilisearch)
 	if err != nil {
 		return api, err
 	}

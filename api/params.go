@@ -82,16 +82,17 @@ func getPaging(req *http.Request) (storage.Paging, error) {
 	return paging, nil
 }
 
-func getDocumentFilter(req *http.Request) (*search.DocumentFilter, error) {
-	type documentFilter struct {
-		Query    string `json:"q" valid:"-"`
-		Tag      string `json:"tag" valid:"-"`
-		After    int64  `json:"after" valid:"-"`
-		Before   int64  `json:"before" valid:"-"`
-		Metadata string `json:"metadata" valid:"-"`
-	}
+type DocumentFilter struct {
+	Query    string `json:"q" valid:"-"`
+	Tag      string `json:"tag" valid:"-"`
+	After    int64  `json:"after" valid:"-"`
+	Before   int64  `json:"before" valid:"-"`
+	Metadata string `json:"metadata" valid:"-"`
+}
 
-	body := &documentFilter{}
+func getDocumentFilter(req *http.Request) (*search.DocumentFilter, error) {
+
+	body := &DocumentFilter{}
 
 	query := req.FormValue("filter")
 	if query == "" || query == "{}" {

@@ -24,10 +24,10 @@ type Engine struct {
 	ApiKey string
 }
 
-func NewEngine(db *storage.Database) (*Engine, error) {
+func NewEngine(db *storage.Database, conf *config.Meilisearch) (*Engine, error) {
 	engine := &Engine{
-		Url:    config.C.Meilisearch.Url,
-		ApiKey: config.C.Meilisearch.ApiKey,
+		Url:    conf.Url,
+		ApiKey: conf.ApiKey,
 		db:     db,
 	}
 	err := engine.connect()
@@ -340,4 +340,13 @@ func (e *Engine) GetUserIndicesStatus() (map[int]*UserIndexStatus, int64, error)
 		counter += 1
 	}
 	return indices, stats.DatabaseSize, nil
+}
+
+func (e *Engine) DeleteDocuments(userId int) error {
+	index := indexName(userId)
+	_, err := e.client.Index(index).DeleteAllDocuments()
+	if err != nil {
+		return fmt.Errorf("delete index: %v", err)
+	}
+	return nil
 }

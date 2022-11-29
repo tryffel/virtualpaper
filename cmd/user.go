@@ -69,7 +69,7 @@ var addUserCmd = &cobra.Command{
 			return
 		}
 		defer config.DeinitLogging()
-		db, err := storage.NewDatabase()
+		db, err := storage.NewDatabase(config.C.Database)
 		if err != nil {
 			logrus.Fatalf("Connect to database: %v", err)
 		}
@@ -138,7 +138,7 @@ var addUserCmd = &cobra.Command{
 		}
 
 		logrus.Infof("init search engine index for new user")
-		_, err = search.NewEngine(db)
+		_, err = search.NewEngine(db, &config.C.Meilisearch)
 		if err != nil {
 			logrus.Fatalf("connect to search engine: %v", err)
 		}
@@ -158,7 +158,7 @@ var resetPwCMd = &cobra.Command{
 		}
 		defer config.DeinitLogging()
 
-		db, err := storage.NewDatabase()
+		db, err := storage.NewDatabase(config.C.Database)
 		if err != nil {
 			logrus.Fatalf("Connect to database: %v", err)
 		}

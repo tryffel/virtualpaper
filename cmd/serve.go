@@ -26,7 +26,7 @@ var serveCmd = &cobra.Command{
 		}
 		defer config.DeinitLogging()
 
-		db, err := storage.NewDatabase()
+		db, err := storage.NewDatabase(config.C.Database)
 		if err != nil {
 			logrus.Fatalf("connect to database: %v", err)
 			return
