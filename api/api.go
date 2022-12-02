@@ -36,8 +36,11 @@ import (
 
 type Api struct {
 	server *http.Server
-	// baseRouter server static files and other public content as well as private endpoints
+	// baseRouter serves static files and apirouter
 	baseRouter *mux.Router
+
+	// apiRouter serves api endpoints (public and protected)
+	apiRouter *mux.Router
 	// privateRouter routes only authenticated endpoints
 	privateRouter *mux.Router
 
@@ -77,8 +80,9 @@ func NewApi(database *storage.Database) (*Api, error) {
 		return api, err
 	}
 
-	api.privateRouter = api.baseRouter.PathPrefix("/api/v1").Subrouter()
-	api.adminRouter = api.baseRouter.PathPrefix("/api/v1/admin").Subrouter()
+	api.apiRouter = api.baseRouter.PathPrefix("/api").Subrouter()
+	api.privateRouter = api.apiRouter.PathPrefix("/v1").Subrouter()
+	api.adminRouter = api.apiRouter.PathPrefix("/v1/admin").Subrouter()
 	api.addRoutes()
 	return api, err
 }

@@ -20,9 +20,6 @@ package api
 
 import (
 	"net/http"
-	"path"
-
-	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/config"
 )
 
@@ -31,7 +28,8 @@ func (a *Api) addRoutes() {
 		a.baseRouter.Use(a.corsHeader)
 	}
 
-	a.baseRouter.Use(LoggingMiddleware)
+	a.apiRouter.Use(LoggingMiddleware)
+	a.baseRouter.Handle("/", staticServer()).Methods(http.MethodGet)
 	a.baseRouter.HandleFunc("/api/v1/auth/login", a.login).Methods(http.MethodPost)
 	a.baseRouter.HandleFunc("/api/v1/version", a.getVersion).Methods(http.MethodGet)
 	a.baseRouter.HandleFunc("/api/v1/swagger.json", serverSwaggerDoc).Methods(http.MethodGet)
@@ -98,13 +96,4 @@ func (a *Api) addRoutes() {
 
 	// allow non-admins access to system info
 	a.privateRouter.HandleFunc("/admin/systeminfo", a.getSystemInfo).Methods(http.MethodGet)
-
-	if config.C.Api.StaticContentPath != "" {
-		logrus.Debugf("Serve static files")
-		a.baseRouter.Handle("/", http.FileServer(http.Dir(config.C.Api.StaticContentPath)))
-		a.baseRouter.PathPrefix("/static").
-			Handler(http.StripPrefix("/static/",
-				http.FileServer(http.Dir(path.Join(config.C.Api.StaticContentPath, "static")))))
-	}
-
 }

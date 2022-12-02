@@ -12,8 +12,6 @@ secret_key = ""
 cors_hosts = []
 # Public facing url, for creating urls for clients
 public_url = "http://localhost:8000"
-# serve web page from this directory. Leave empty to serve only api and not web page.
-static_content_path= "static"
 # Token expire time in seconds. Set to 0 to disable. Default value is 1 week.
 token_expire_sec = 579600
 
