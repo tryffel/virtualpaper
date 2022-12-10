@@ -19,9 +19,8 @@
 package api
 
 import (
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 	"net/http"
-	"strconv"
 	"strings"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
@@ -48,56 +47,6 @@ func userIsAdmin(req *http.Request) (bool, error) {
 		return false, errors.New("user record not found in context")
 	}
 	return user.IsAdmin, nil
-}
-
-func getParamId(req *http.Request) string {
-	idStr := mux.Vars(req)["id"]
-	return idStr
-}
-
-func getParamKeyId(req *http.Request) string {
-	idStr := mux.Vars(req)["key_id"]
-	return idStr
-}
-
-func getParamValueId(req *http.Request) string {
-	idStr := mux.Vars(req)["value_id"]
-	return idStr
-}
-
-func getParamInt(req *http.Request, key_name string) (int, error) {
-	idStr := mux.Vars(req)[key_name]
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		e := errors.ErrInvalid
-		e.ErrMsg = "id not integer"
-		return -1, e
-	}
-
-	if id < 0 {
-		e := errors.ErrInvalid
-		e.ErrMsg = "id must be >0"
-		return -1, e
-	}
-	return id, err
-}
-
-func getParamIntId(req *http.Request) (int, error) {
-	idStr := getParamId(req)
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		e := errors.ErrInvalid
-		e.ErrMsg = "id not integer"
-		return -1, e
-	}
-
-	if id < 0 {
-		e := errors.ErrInvalid
-		e.ErrMsg = "id must be >0"
-		return -1, e
-	}
-
-	return id, err
 }
 
 // getSortParams parses and validates sorting parameters. This always returns list of params
@@ -157,4 +106,15 @@ func parseSortParamArray(s string) (string, string) {
 		return s, ""
 	}
 	return parts[0], parts[1]
+}
+
+type Context struct {
+	echo.Context
+}
+
+type UserContext struct {
+	Context
+	Admin  bool
+	UserId int
+	User   *models.User
 }

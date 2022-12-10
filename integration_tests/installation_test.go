@@ -24,9 +24,9 @@ func (suite *AdminTestSuite) TestGetServerInstallation() {
 	suite.adminHttp.Get("/api/v1/admin/systeminfo").Expect(suite.T()).Json(suite.T(), data).e.Status(200).Done()
 
 	assert.Equal(suite.T(), "Virtualpaper", data.Name)
-	assert.Equal(suite.T(), true, data.PopplerInstalled)
-	assert.Equal(suite.T(), true, data.PandocInstalled)
-	assert.Equal(suite.T(), true, data.SearchEngineStatus.Ok)
+	assert.Equal(suite.T(), true, data.PopplerInstalled, "poppler installed")
+	assert.Equal(suite.T(), true, data.PandocInstalled, "pandoc installed")
+	assert.Equal(suite.T(), true, data.SearchEngineStatus.Ok, "searchEngine status ok")
 }
 
 func (suite *AdminTestSuite) TestGetUsers() {

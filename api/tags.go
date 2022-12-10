@@ -19,8 +19,7 @@
 package api
 
 import (
-	"github.com/sirupsen/logrus"
-	"net/http"
+	"github.com/labstack/echo/v4"
 	"tryffel.net/go/virtualpaper/models"
 )
 
@@ -29,67 +28,40 @@ type TagRequest struct {
 	Comment string `valid:"-" json:"comment"`
 }
 
-func (a *Api) getTags(resp http.ResponseWriter, req *http.Request) {
-	handler := "Api.getTags"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
-
-	paging, err := getPaging(req)
+func (a *Api) getTags(c echo.Context) error {
+	ctx := c.(UserContext)
+	paging, err := bindPaging(c)
 	if err != nil {
-		respBadRequest(resp, err.Error(), nil)
+		return err
 	}
 
-	tags, n, err := a.db.MetadataStore.GetTags(user, paging)
+	tags, n, err := a.db.MetadataStore.GetTags(ctx.UserId, paging)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
-
-	respResourceList(resp, tags, n)
+	return resourceList(c, tags, n)
 }
 
-func (a *Api) getTag(resp http.ResponseWriter, req *http.Request) {
-	handler := "Api.getTag"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
-
-	id, err := getParamIntId(req)
+func (a *Api) getTag(c echo.Context) error {
+	ctx := c.(UserContext)
+	id, err := bindPathIdInt(c)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	tag, err := a.db.MetadataStore.GetTag(user, id)
+	tag, err := a.db.MetadataStore.GetTag(ctx.UserId, id)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
-
-	respResourceList(resp, tag, 1)
+	return resourceList(c, tag, 1)
 }
 
-func (a *Api) createTag(resp http.ResponseWriter, req *http.Request) {
-	handler := "Api.createTag"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
-
+func (a *Api) createTag(c echo.Context) error {
+	ctx := c.(UserContext)
 	dto := &TagRequest{}
-	err := unMarshalBody(req, dto)
+	err := unMarshalBody(c.Request(), dto)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	tag := &models.Tag{
@@ -97,11 +69,10 @@ func (a *Api) createTag(resp http.ResponseWriter, req *http.Request) {
 		Comment: dto.Comment,
 	}
 
-	err = a.db.MetadataStore.CreateTag(user, tag)
+	err = a.db.MetadataStore.CreateTag(ctx.UserId, tag)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	respResourceList(resp, tag, 1)
+	return resourceList(c, tag, 1)
 }

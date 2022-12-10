@@ -19,9 +19,9 @@
 package api
 
 import (
-	"context"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
@@ -36,60 +36,53 @@ const (
 	tokenClaimUserid = "user_id"
 )
 
-func (a *Api) authorizeUser(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var err error
-		key := r.Header.Get("Authorization")
-		if key == "" {
-			var err error
-			err = respUnauthorized(w)
-			if err != nil {
-				logrus.Errorf("send unauthorized to user: %v", err)
-			}
-			return
-		}
+func (a *Api) authorizeUserV2() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) (authErr error) {
+			authErr = echo.ErrUnauthorized
 
-		parts := strings.Split(key, " ")
-		if len(parts) != 2 {
-			respBadRequest(w, "Invalid token", nil)
-			return
-		}
-
-		userId, err := validateToken(parts[1], config.C.Api.Key)
-		if userId == "" || err != nil {
-			respError(w, err, "authorize user middleware")
-			return
-		}
-
-		if userId != "" {
-			numId, err := strconv.Atoi(userId)
-			if err != nil {
-				logrus.Errorf("user id is not numerical: %v", err)
-				respInternalError(w)
+			key := c.Request().Header.Get("Authorization")
+			if key == "" {
 				return
 			}
 
-			user, err := a.db.UserStore.GetUser(numId)
-			if err != nil {
-				respError(w, err, "api.authorizeUser")
+			parts := strings.Split(key, " ")
+			if len(parts) != 2 {
 				return
 			}
 
-			if !user.IsActive {
-				logrus.Debugf("refuse to serve user %d, who is not active", user.Id)
-				respError(w, errors.ErrForbidden, "api.authorizeUser")
+			userId, err := validateToken(parts[1], config.C.Api.Key)
+			if userId == "" || err != nil {
 				return
 			}
 
-			ctx := r.Context()
-			userCtx := context.WithValue(ctx, "user_id", numId)
-			userCtx = context.WithValue(userCtx, "user", user)
-			ctxReq := r.WithContext(userCtx)
-			next.ServeHTTP(w, ctxReq)
+			if userId != "" {
+				numId, err := strconv.Atoi(userId)
+				if err != nil {
+					c.Logger().Error("user id is not numerical", numId)
+					return echo.ErrInternalServerError
+				}
+
+				user, err := a.db.UserStore.GetUser(numId)
+				if err != nil {
+					return
+				}
+
+				if !user.IsActive {
+					return
+				}
+
+				ctx := UserContext{
+					Context: Context{c},
+					Admin:   user.IsAdmin,
+					UserId:  numId,
+					User:    user,
+				}
+				return next(ctx)
+			}
 			return
 		}
-		respBadRequest(w, "invalid token", nil)
-	})
+	}
 }
 
 func (a *Api) corsHeader(next http.Handler) http.Handler {
@@ -185,24 +178,24 @@ type LoginResponse struct {
 	Token  string
 }
 
-func (a *Api) login(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) LoginV2(c echo.Context) error {
 	// swagger:route POST /api/v1/version Authentication Login
 	// Login
 	//
 	// responses:
 	//   200:
+
+	req := c.Request()
 	headers := req.Header
 	token := headers.Get("Authorization")
 	if len(token) > 0 {
-		respBadRequest(resp, "already logged in", nil)
-		return
+		return c.String(http.StatusNotModified, "already logged in")
 	}
 
 	dto := &LoginRequest{}
 	err := unMarshalBody(req, dto)
 	if err != nil {
-		respBadRequest(resp, err.Error(), nil)
-		return
+		return c.String(http.StatusBadRequest, err.Error())
 	}
 
 	dto.Username = strings.ToLower(dto.Username)
@@ -210,42 +203,34 @@ func (a *Api) login(resp http.ResponseWriter, req *http.Request) {
 	remoteAddr := getRemoteAddr(req)
 	if userId == -1 || err != nil {
 		logrus.Infof("Failed login attempt for user %s from remote %s", dto.Username, remoteAddr)
-		respUnauthorized(resp)
-		return
+		return echo.ErrUnauthorized
 	}
 
-	logrus.Infof("User %d '%s' logged in from %s", userId, dto.Username, remoteAddr)
+	c.Logger().Infof("User %d '%s' logged in from %s", userId, dto.Username, remoteAddr)
 	token, err = newToken(strconv.Itoa(userId), config.C.Api.Key)
 	if err != nil {
-		logrus.Errorf("Create new token: %v", err)
-		respInternalError(resp)
-		return
+		c.Logger().Errorf("Create new token: %v", err)
 	}
 
 	user, err := a.db.UserStore.GetUser(userId)
-	if err != nil {
-		logrus.Errorf("get user: %v", err)
-	} else {
-		if user.Email != "" {
-			logrus.Debugf("Send email for logged in user to %s", user.Email)
+	if user.Email != "" {
+		logrus.Debugf("Send email for logged in user to %s", user.Email)
 
-			msg := fmt.Sprintf(`User logged in
+		msg := fmt.Sprintf(`User logged in
 
 ip address: %s,
 user agent: %s,
 `, remoteAddr, req.Header.Get("user-agent"))
 
-			err := mail.SendMail("User logged in", msg, user.Email)
-			if err != nil {
-				logrus.Errorf("send logged-in email to user: %s: %v", user.Email, err)
-			}
+		err := mail.SendMail("User logged in", msg, user.Email)
+		if err != nil {
+			logrus.Errorf("send logged-in email to user: %s: %v", user.Email, err)
 		}
 	}
-
 	respBody := &LoginResponse{
 		UserId: userId,
 		Token:  token,
 	}
 
-	respOk(resp, respBody)
+	return c.JSON(http.StatusOK, respBody)
 }

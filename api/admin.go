@@ -20,6 +20,7 @@ package api
 
 import (
 	"bytes"
+	"github.com/labstack/echo/v4"
 	"net/http"
 	"os/exec"
 	"runtime"
@@ -32,27 +33,21 @@ import (
 	"tryffel.net/go/virtualpaper/search"
 )
 
-func (a *Api) authorizeAdmin(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		admin, err := userIsAdmin(r)
-		if err != nil {
-			respError(w, err, "api.authorizeAdmin")
-			return
-		}
-		if !admin {
-			if logrus.IsLevelEnabled(logrus.DebugLevel) {
-				user, ok := getUser(r)
-				if !ok {
-					logrus.Debug("user (unknown) is not admin, refuse to serve")
-				} else {
-					logrus.Debugf("user %d is not admin, refuse to serve", user.Id)
-				}
+func (a *Api) AuthorizeAdminV2() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			ctx, ok := c.(UserContext)
+			if !ok {
+				c.Logger().Error("no UserContext found")
+				return echo.ErrInternalServerError
 			}
-			respUnauthorized(w)
-			return
+			if !ctx.Admin {
+				return echo.ErrUnauthorized
+			}
+
+			return next(c)
 		}
-		next.ServeHTTP(w, r)
-	})
+	}
 }
 
 // ForceDocumentsProcessingRequest describes request to force processing of documents.
@@ -63,7 +58,7 @@ type ForceDocumentProcessingRequest struct {
 	FromStep   string `json:"from_step" valid:"-"`
 }
 
-func (a *Api) forceDocumentProcessing(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) forceDocumentProcessing(c echo.Context) error {
 	// swagger:route POST /api/v1/admin/documents/process Admin AdminForceDocumentProcessing
 	// Force document processing.
 	//
@@ -92,12 +87,10 @@ func (a *Api) forceDocumentProcessing(resp http.ResponseWriter, req *http.Reques
 	//   401: RespForbidden
 	//   403: RespNotFound
 
-	handler := "Api.getDocuments"
 	body := &ForceDocumentProcessingRequest{}
-	err := unMarshalBody(req, body)
+	err := unMarshalBody(c.Request(), body)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	step := models.ProcessFts
@@ -113,13 +106,12 @@ func (a *Api) forceDocumentProcessing(resp http.ResponseWriter, req *http.Reques
 	case "fts":
 		step = models.ProcessFts
 	default:
-		respBadRequest(resp, "no such step", nil)
-		return
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid step")
 	}
 
 	err = a.db.JobStore.ForceProcessing(body.UserId, body.DocumentId, step)
 	if err != nil {
-		respError(resp, err, handler)
+		return err
 	}
 
 	if body.DocumentId != "" {
@@ -135,7 +127,7 @@ func (a *Api) forceDocumentProcessing(resp http.ResponseWriter, req *http.Reques
 	} else {
 		a.process.PullDocumentsToProcess()
 	}
-	respOk(resp, nil)
+	return c.String(http.StatusOK, "")
 }
 
 type DocumentProcessStep struct {
@@ -143,7 +135,7 @@ type DocumentProcessStep struct {
 	Step       string `json:"step"`
 }
 
-func (a *Api) getDocumentProcessQueue(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) getDocumentProcessQueue(c echo.Context) error {
 	// swagger:route GET /api/v1/admin/documents/process Admin AdminGetDocumentProcessQueue
 	// Get documents awaiting processing
 	//
@@ -151,12 +143,9 @@ func (a *Api) getDocumentProcessQueue(resp http.ResponseWriter, req *http.Reques
 	//   200: RespDocumentProcessingSteps
 	//   401: RespForbidden
 	//   500: RespInternalError
-	handler := "Api.adminGetProcessQueue"
-
 	queue, n, err := a.db.JobStore.GetPendingProcessing()
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	processes := make([]DocumentProcessStep, len(*queue))
@@ -165,7 +154,7 @@ func (a *Api) getDocumentProcessQueue(resp http.ResponseWriter, req *http.Reques
 		processes[i].Step = v.Step.String()
 	}
 
-	respResourceList(resp, processes, n)
+	return resourceList(c, processes, n)
 }
 
 // swagger:response SystemInfo
@@ -196,7 +185,7 @@ type SystemInfo struct {
 	SearchEngineStatus search.EngineStatus   `json:"search_engine_status"`
 }
 
-func (a *Api) getSystemInfo(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) getSystemInfo(c echo.Context) error {
 	// swagger:route GET /api/v1/admin/systeminfo Admin AdminGetSystemInfo
 	// Get system information
 	//
@@ -221,8 +210,7 @@ func (a *Api) getSystemInfo(resp http.ResponseWriter, req *http.Request) {
 
 	stats, err := a.db.StatsStore.GetSystemStats()
 	if err != nil {
-		respError(resp, err, "getSystemInfo")
-		return
+		return err
 	}
 
 	info.DocumentsInQueue = stats.DocumentsInQueue
@@ -258,10 +246,10 @@ func (a *Api) getSystemInfo(resp http.ResponseWriter, req *http.Request) {
 	} else {
 		info.SearchEngineStatus = *engineStatus
 	}
-	respOk(resp, info)
+	return c.JSON(http.StatusOK, info)
 }
 
-func (a *Api) getUsers(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) getUsers(c echo.Context) error {
 	// swagger:route GET /api/v1/admin/users Admin AdminGetUsers
 	// Get detailed users info.
 	//
@@ -270,14 +258,12 @@ func (a *Api) getUsers(resp http.ResponseWriter, req *http.Request) {
 
 	info, err := a.db.UserStore.GetUsersInfo()
 	if err != nil {
-		respError(resp, err, "adminGetUsers")
-		return
+		return err
 	}
 
 	searchStatus, _, err := a.search.GetUserIndicesStatus()
 	if err != nil {
-		respError(resp, err, "adminGetUsers")
-		return
+		return err
 	}
 
 	for i, v := range *info {
@@ -287,5 +273,5 @@ func (a *Api) getUsers(resp http.ResponseWriter, req *http.Request) {
 			(*info)[i].TotalDocumentsIndexed = indexStatus.NumDocuments
 		}
 	}
-	respResourceList(resp, info, len(*info))
+	return resourceList(c, info, len(*info))
 }

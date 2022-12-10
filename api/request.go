@@ -21,6 +21,7 @@ package api
 import (
 	"encoding/json"
 	"github.com/asaskevich/govalidator"
+	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
@@ -54,6 +55,14 @@ func unMarshalBody(r *http.Request, body interface{}) error {
 		return e
 	}
 	return nil
+}
+
+func bindBody(c echo.Context, body interface{}) error {
+	err := (&echo.DefaultBinder{}).BindBody(c, &body)
+	if err != nil {
+		return err
+	}
+	return c.Validate(body)
 }
 
 var ipRegex = regexp.MustCompile("\\[?([\\d.:]+)\\]?:(\\d+)")

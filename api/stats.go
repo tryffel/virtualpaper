@@ -19,6 +19,7 @@
 package api
 
 import (
+	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"tryffel.net/go/virtualpaper/models"
@@ -71,7 +72,7 @@ func docStatsToUserStats(stats *models.UserDocumentStatistics) *UserDocumentStat
 	return uds
 }
 
-func (a *Api) getUserDocumentStatistics(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) getUserDocumentStatistics(c echo.Context) error {
 	// swagger:route GET /api/v1/documents/stats Documents GetUserDocumentStatistics
 	// Get document statistics
 	//
@@ -82,26 +83,20 @@ func (a *Api) getUserDocumentStatistics(resp http.ResponseWriter, req *http.Requ
 	//   401: RespForbidden
 	//   403: RespNotFound
 	//   500: RespInternalError
-	handler := "Api.getUserDocumentStatistics"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
 
-	stats, err := a.db.StatsStore.GetUserDocumentStats(user)
+	ctx := c.(UserContext)
+	stats, err := a.db.StatsStore.GetUserDocumentStats(ctx.UserId)
 	if err != nil {
-		respError(resp, err, handler)
+		return err
 	} else {
-		stats.UserId = user
+		stats.UserId = ctx.UserId
 		statsDto := docStatsToUserStats(stats)
-		searchStats, err := a.search.GetUserIndexStatus(user)
+		searchStats, err := a.search.GetUserIndexStatus(ctx.UserId)
 		if err != nil {
 			logrus.Warningf("get search engine indexing status: %v", err)
 		} else {
 			statsDto.Indexing = searchStats.Indexing
 		}
-		respOk(resp, statsDto)
+		return c.JSON(http.StatusOK, statsDto)
 	}
 }

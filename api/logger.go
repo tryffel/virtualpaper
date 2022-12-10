@@ -19,64 +19,11 @@
 package api
 
 import (
-	"net/http"
-	"time"
-
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/config"
 )
-
-type LoggingWriter struct {
-	resp   http.ResponseWriter
-	status int
-	length int
-}
-
-func (l *LoggingWriter) WriteHeader(status int) {
-	l.length = 0
-	l.status = status
-	l.resp.WriteHeader(status)
-}
-
-func (l *LoggingWriter) Write(b []byte) (int, error) {
-	l.length = len(b)
-	if l.status == 0 {
-		l.status = 200
-	}
-	return l.resp.Write(b)
-}
-
-func (l *LoggingWriter) Header() http.Header {
-	return l.resp.Header()
-}
-
-// LogginMiddlware Provide logging for requests
-func LoggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		logger := &LoggingWriter{
-			resp: w,
-		}
-		next.ServeHTTP(logger, r)
-
-		duration := time.Since(start).String()
-		verb := r.Method
-		url := r.RequestURI
-
-		fields := make(map[string]interface{})
-		fields["verb"] = verb
-		fields["request"] = url
-		fields["duration"] = duration
-		fields["status"] = logger.status
-		fields["length"] = logger.length
-
-		if config.C.Logging.HttpLog != nil {
-			config.C.Logging.HttpLog.WithFields(fields).Infof("http")
-		} else {
-			logrus.WithFields(fields).Infof("http")
-		}
-	})
-}
 
 func logCrudOp(resource string, action string, userId int, success *bool) *logrus.Entry {
 	return logrus.WithFields(logrus.Fields{
@@ -98,4 +45,48 @@ func logCrudDocument(userId int, action string, success *bool, fmt string, args 
 
 func logCrudRule(userId int, action string, success *bool, fmt string, args ...interface{}) {
 	logCrudOp("processing-rule", action, userId, success).Infof(fmt, args...)
+}
+
+func loggingMiddlware() echo.MiddlewareFunc {
+	var logger *logrus.Logger
+
+	if config.C.Logging.HttpLog != nil {
+		logger = config.C.Logging.HttpLog
+	} else {
+		logger = logrus.StandardLogger()
+	}
+
+	logFunc := func(c echo.Context, values middleware.RequestLoggerValues) error {
+		logger.WithFields(logrus.Fields{
+			"method":    values.Method,
+			"uri":       values.URIPath,
+			"status":    values.Status,
+			"requestId": values.RequestID,
+		}).Info("request")
+		return nil
+	}
+
+	return middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		Skipper:          middleware.DefaultSkipper,
+		BeforeNextFunc:   nil,
+		LogValuesFunc:    logFunc,
+		LogLatency:       false,
+		LogProtocol:      false,
+		LogRemoteIP:      true,
+		LogHost:          false,
+		LogMethod:        true,
+		LogURI:           false,
+		LogURIPath:       true,
+		LogRoutePath:     false,
+		LogRequestID:     true,
+		LogReferer:       false,
+		LogUserAgent:     false,
+		LogStatus:        true,
+		LogError:         true,
+		LogContentLength: false,
+		LogResponseSize:  true,
+		LogHeaders:       nil,
+		LogQueryParams:   nil,
+		LogFormValues:    nil,
+	})
 }
