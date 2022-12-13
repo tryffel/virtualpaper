@@ -23,10 +23,8 @@ type Database struct {
 }
 
 // NewDatabase returns working instance of database connection.
-func NewDatabase() (*Database, error) {
+func NewDatabase(conf config.Database) (*Database, error) {
 	db := &Database{}
-
-	conf := config.C.Database
 
 	url := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s",
 		conf.Host, conf.Port, conf.Username, conf.Password, conf.Database)

@@ -21,77 +21,75 @@ package api
 import (
 	"encoding/json"
 	"github.com/asaskevich/govalidator"
+	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
 	"time"
-	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
 type pageParams struct {
-	Page     int
-	PageSize int
+	Page     int `query:"page"`
+	PageSize int `query:"page_size"`
 }
 
-func getPaging(req *http.Request) (storage.Paging, error) {
-	params := &pageParams{}
-
-	var pageStr string
-	var sizeStr string
-	page := 1
-	pageSize := 50
-
-	pageStr = req.FormValue("page")
-	if pageStr == "" {
-		page = 1
-	} else {
-		gotPage, err := strconv.Atoi(pageStr)
-		if err == nil && gotPage > 0 {
-			page = gotPage
-		}
+func bindPaging(c echo.Context) (storage.Paging, error) {
+	params := &pageParams{
+		Page:     1,
+		PageSize: 50,
+	}
+	err := (&echo.DefaultBinder{}).BindQueryParams(c, params)
+	if err != nil {
+		return storage.Paging{Limit: 1}, echo.NewHTTPError(http.StatusBadRequest, "invalid paging: page and page_size must be numeric and > 0")
 	}
 
-	sizeStr = req.FormValue("page_size")
-	if sizeStr == "" {
-		pageSize = 50
-	} else {
-		size, err := strconv.Atoi(sizeStr)
-		if err == nil && size > 0 {
-			if size > config.MaxRows {
-				pageSize = config.MaxRows
-			} else {
-				pageSize = size
-			}
-		}
-	}
-
-	params.Page = page
-	params.PageSize = pageSize
 	paging := storage.Paging{
 		Offset: (params.Page - 1) * params.PageSize,
 		Limit:  params.PageSize,
 	}
-
-	if paging.Offset < 0 {
-		paging.Offset = 0
-	}
-
 	paging.Validate()
 	return paging, nil
 }
 
-func getDocumentFilter(req *http.Request) (*search.DocumentFilter, error) {
-	type documentFilter struct {
-		Query    string `json:"q" valid:"-"`
-		Tag      string `json:"tag" valid:"-"`
-		After    int64  `json:"after" valid:"-"`
-		Before   int64  `json:"before" valid:"-"`
-		Metadata string `json:"metadata" valid:"-"`
+func bindPathId(c echo.Context) string {
+	return c.Param("id")
+}
+
+func bindPathIdInt(c echo.Context) (int, error) {
+	return bindPathInt(c, "id")
+}
+
+func bindPathInt(c echo.Context, name string) (int, error) {
+	idStr := c.Param(name)
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		e := errors.ErrInvalid
+		e.ErrMsg = name + " not integer"
+		return -1, e
 	}
 
-	body := &documentFilter{}
+	if id < 0 {
+		e := errors.ErrInvalid
+		e.ErrMsg = name + " must be >0"
+		return -1, e
+	}
+	return id, err
+
+}
+
+type DocumentFilter struct {
+	Query    string `json:"q" valid:"-"`
+	Tag      string `json:"tag" valid:"-"`
+	After    int64  `json:"after" valid:"-"`
+	Before   int64  `json:"before" valid:"-"`
+	Metadata string `json:"metadata" valid:"-"`
+}
+
+func getDocumentFilter(req *http.Request) (*search.DocumentFilter, error) {
+
+	body := &DocumentFilter{}
 
 	query := req.FormValue("filter")
 	if query == "" || query == "{}" {

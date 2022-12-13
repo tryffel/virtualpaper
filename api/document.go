@@ -20,6 +20,7 @@ package api
 
 import (
 	"fmt"
+	"github.com/labstack/echo/v4"
 	"io"
 	"net/http"
 	"os"
@@ -97,238 +98,166 @@ type DocumentUpdateRequest struct {
 	Metadata    []MetadataRequest `json:"metadata" valid:"-"`
 }
 
-func (a *Api) getDocuments(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) getDocuments(c echo.Context) error {
 	// swagger:route GET /api/v1/documents Documents GetDocuments
 	// Get documents
 	//
 	// responses:
 	//   200: DocumentResponse
-	handler := "Api.getDocuments"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
-
-	query, err := getDocumentFilter(req)
+	//handler := "Api.getDocuments"
+	ctx := c.(UserContext)
+	//user := ctx.User
+	query, err := getDocumentFilter(c.Request())
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	if query != nil {
-		a.searchDocuments(user, query, resp, req)
-		return
+		return a.searchDocuments(ctx.UserId, query, c)
 	}
 
-	paging, err := getPaging(req)
+	paging, err := bindPaging(c)
 	if err != nil {
-		respBadRequest(resp, err.Error(), nil)
+		return err
 	}
 
-	sort, err := getSortParams(req, &models.Document{})
+	sort, err := getSortParams(c.Request(), &models.Document{})
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	if len(sort) == 0 {
 		sort = append(sort, storage.SortKey{})
 	}
 
-	docs, count, err := a.db.DocumentStore.GetDocuments(user, paging, sort[0], true)
+	docs, count, err := a.db.DocumentStore.GetDocuments(ctx.UserId, paging, sort[0], true)
 	if err != nil {
 		logrus.Errorf("get documents: %v", err)
-		respInternalError(resp)
-		return
+		return err
 	}
 	respDocs := make([]*DocumentResponse, len(*docs))
 
 	for i, v := range *docs {
 		respDocs[i] = responseFromDocument(&v)
 	}
-
-	respResourceList(resp, respDocs, count)
+	return resourceList(c, respDocs, count)
 }
 
-func (a *Api) getDocument(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) getDocument(c echo.Context) error {
 	// swagger:route GET /api/v1/documents/{id} Documents GetDocument
 	// Get document
 	// responses:
 	//   200: DocumentResponse
-	handler := "Api.getDocument"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
-	id := getParamId(req)
-	doc, err := a.db.DocumentStore.GetDocument(user, id)
+
+	ctx := c.(UserContext)
+	id := c.Param("id")
+	doc, err := a.db.DocumentStore.GetDocument(ctx.UserId, id)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	status, err := a.db.JobStore.GetDocumentStatus(doc.Id)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	metadata, err := a.db.MetadataStore.GetDocumentMetadata(user, id)
+	metadata, err := a.db.MetadataStore.GetDocumentMetadata(ctx.UserId, id)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 	doc.Metadata = *metadata
 
-	tags, err := a.db.MetadataStore.GetDocumentTags(user, id)
+	tags, err := a.db.MetadataStore.GetDocumentTags(ctx.UserId, id)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 	doc.Tags = *tags
 
 	respDoc := responseFromDocument(doc)
 	respDoc.Status = status
-	respOk(resp, respDoc)
+	return c.JSON(http.StatusOK, respDoc)
 }
 
-func (a *Api) getDocumentContent(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) getDocumentContent(c echo.Context) error {
 	// swagger:route GET /api/v1/documents/{id}/content Documents GetDocumentContent
 	// Get full document parsed content
 	// responses:
 	//   200: DocumentResponse
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
-	id := getParamId(req)
 
-	content, err := a.db.DocumentStore.GetContent(user, id)
+	ctx := c.(UserContext)
+	id := c.Param("id")
+
+	content, err := a.db.DocumentStore.GetContent(ctx.UserId, id)
 	if err != nil {
-		respError(resp, err, "api.getDocumentContent")
-		return
+		return err
 	}
-	respOk(resp, &content)
+	return c.String(http.StatusOK, *content)
 }
 
-func (a *Api) getDocumentLogs(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) getDocumentLogs(c echo.Context) error {
 	// swagger:route GET /api/v1/documents/{id}/jobs Documents GetDocumentJobs
 	// Get processing job history related to document
 	// responses:
 	//   200: DocumentResponse
 
-	handler := "Api.getDocumentLogs"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
-	id := getParamId(req)
-	owns, err := a.db.DocumentStore.UserOwnsDocument(id, user)
+	ctx := c.(UserContext)
+	id := c.Param("id")
+	owns, err := a.db.DocumentStore.UserOwnsDocument(id, ctx.UserId)
 	if err != nil {
-		logrus.Errorf("Get document ownserhip: %v", err)
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	if !owns {
-		respUnauthorized(resp)
-		return
+		return echo.NewHTTPError(http.StatusForbidden, "forbidden")
 	}
 
 	job, err := a.db.JobStore.GetByDocument(id)
 	if err != nil {
-		logrus.Errorf("get document jobs: %v", err)
-		respError(resp, err, handler)
-		return
+		return err
 	}
-	respResourceList(resp, job, len(*job))
+	return resourceList(c, job, len(*job))
 }
 
-func (a *Api) getDocumentPreview(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) getDocumentPreview(c echo.Context) error {
 	// swagger:route GET /api/v1/documents/{id}/preview Documents GetDocumentPreview
 	// Get document preview, a small png image of first page of document.
 	// responses:
-	//   200: DocumentResponse
-	handler := "Api.getDocumentPreview"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
-	id := getParamId(req)
-	doc, err := a.db.DocumentStore.GetDocument(user, id)
+
+	ctx := c.(UserContext)
+	id := c.Param("id")
+	doc, err := a.db.DocumentStore.GetDocument(ctx.UserId, id)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	filePath := storage.PreviewPath(doc.Id)
 	file, err := os.Open(filePath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			/*
-				logrus.Warningf("document %d does not have thumbnail, scheduling", id)
-				process := &models.ProcessItem{
-					DocumentId: doc.Id,
-					Document:   nil,
-					Step:       models.ProcessThumbnail,
-					CreatedAt:  time.Now(),
-				}
-
-				err = a.db.JobStore.CreateProcessItem(process)
-				if err != nil {
-					if errors.Is(err, storage.ErrAlreadyExists) {
-					} else {
-						logrus.Error("add process step for missing thumbnail (doc %c): %v", doc.Id, err)
-					}
-				}
-
-				err = a.process.AddDocumentForProcessing(doc)
-				if err != nil {
-					if errors.Is(err, storage.ErrAlreadyExists) {
-						// process exists already
-					} else {
-						logrus.Error("schedule document thumbnail (doc %c): %v", doc.Id, err)
-					}
-				}
-
-			*/
-			respError(resp, errors.ErrInternalError, handler)
-			return
+			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
-		respError(resp, err, handler)
-		return
+		return err
 	}
 	stat, err := file.Stat()
 	if err != nil {
-		respError(resp, fmt.Errorf("get file preview stat: %v", err), handler)
-		return
+		return err
 	}
 
-	header := resp.Header()
+	header := c.Response().Header()
 	header.Set("Content-Type", "image/png")
 	header.Set("Content-Length", strconv.Itoa(int(stat.Size())))
 	header.Set("Content-Disposition", "attachment; filename="+doc.Id+".png")
-	resp.Header().Set("Cache-Control", "max-age=600")
+	header.Set("Cache-Control", "max-age=600")
 
 	defer file.Close()
-
-	_, err = io.Copy(resp, file)
+	_, err = io.Copy(c.Response(), file)
 	if err != nil {
 		logrus.Errorf("send file over http: %v", err)
 	}
+	return nil
 }
 
-func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) uploadFile(c echo.Context) error {
 	// swagger:route POST /api/v1/documents Documents UploadFile
 	// Upload new document file. New document already contains id, name, filename and timestamps.
 	// Otherwise document is not processed yet and lacks other fields.
@@ -338,34 +267,30 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 	// Responses:
 	//  200: DocumentResponse
 	//  400: DocumentExistsResponse
-	handler := "api.uploadFile"
-	userId, ok := getUserId(req)
-	if !ok {
-		respError(resp, errors.New("no userId found"), handler)
-	}
+	ctx := c.(UserContext)
 	var err error
 	opOk := false
 	documentId := ""
 
 	defer func() {
-		logCrudMetadata(userId, "upload", &opOk, "document: %s", documentId)
+		logCrudMetadata(ctx.UserId, "upload", &opOk, "document: %s", documentId)
 	}()
+
+	req := c.Request()
 
 	err = req.ParseMultipartForm(1024 * 1024 * 500)
 	if err != nil {
 		userError := errors.ErrInvalid
 		userError.ErrMsg = fmt.Sprintf("invalid form: %v", err)
 		userError.Err = err
-		respError(resp, userError, handler)
-		return
+		return userError
 	}
 	reader, header, err := req.FormFile("file")
 	if err != nil {
 		userError := errors.ErrInvalid
 		userError.ErrMsg = fmt.Sprintf("invalid file: %v", err)
 		userError.Err = err
-		respError(resp, userError, handler)
-		return
+		return userError
 	}
 
 	mimetype := header.Header.Get("Content-Type")
@@ -380,7 +305,7 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 
 	document := &models.Document{
 		Id:       "",
-		UserId:   userId,
+		UserId:   ctx.UserId,
 		Name:     header.Filename,
 		Content:  "",
 		Filename: header.Filename,
@@ -393,21 +318,20 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 	if !process.MimeTypeIsSupported(mimetype, header.Filename) {
 		e := errors.ErrInvalid
 		e.ErrMsg = fmt.Sprintf("unsupported file type: %v", header.Filename)
-		respError(resp, e, handler)
 		req.Body.Close()
-		return
+		return e
 	}
 
 	tempFileName := storage.TempFilePath(tempHash)
 	inputFile, err := os.OpenFile(tempFileName, os.O_CREATE|os.O_WRONLY, os.ModePerm)
 	if err != nil {
-		respError(resp, fmt.Errorf("open new file for saving upload: %v", err), handler)
-		return
+		c.Logger().Errorf("open new file for saving upload: %v", err)
+		//respError(resp, fmt.Errorf("open new file for saving upload: %v", err), handler)
+		return err
 	}
 	n, err := inputFile.ReadFrom(reader)
 	if err != nil {
-		respError(resp, fmt.Errorf("write uploaded file to disk: %v", err), handler)
-		return
+		return fmt.Errorf("write uploaded file to disk: %v", err)
 	}
 
 	if n != header.Size {
@@ -416,22 +340,19 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 
 	err = inputFile.Close()
 	if err != nil {
-		respError(resp, fmt.Errorf("close file: %v", err), handler)
-		return
+		return fmt.Errorf("close file: %v", err)
 	}
 
 	hash, err := process.GetHash(tempFileName)
 	if err != nil {
-		respError(resp, fmt.Errorf("get hash for temp file: %v", err), handler)
-		return
+		return fmt.Errorf("get hash for temp file: %v", err)
 	}
 
 	existingDoc, err := a.db.DocumentStore.GetByHash(0, hash)
 	if err != nil {
 		if errors.Is(err, errors.ErrRecordNotFound) {
 		} else {
-			respError(resp, fmt.Errorf("get existing document by hash: %v", err), handler)
-			return
+			return fmt.Errorf("get existing document by hash: %v", err)
 		}
 	}
 
@@ -442,20 +363,18 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 				Id:    existingDoc.Id,
 				Name:  existingDoc.Name,
 			}
-			_ = respJson(resp, body, http.StatusBadRequest)
 			err := os.Remove(tempFileName)
 			if err != nil {
-				logrus.Errorf("remove duplicated temp file: %v", err)
+				c.Logger().Errorf("remove duplicated temp file: %v", err)
 			}
-			return
+			return c.JSON(http.StatusBadRequest, body)
 		}
 	}
 
 	document.Hash = hash
 	err = a.db.DocumentStore.Create(document)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	documentId = document.Id
@@ -463,29 +382,21 @@ func (a *Api) uploadFile(resp http.ResponseWriter, req *http.Request) {
 
 	err = storage.CreateDocumentDir(document.Id)
 	if err != nil {
-		logrus.Errorf("create directory for doc: %v", err)
-		return
+		return fmt.Errorf("create directory for doc: %v", err)
 	}
 
 	err = storage.MoveFile(tempFileName, newFile)
 	if err != nil {
-		logrus.Errorf("rename temp file by document id: %v", err)
-		return
+		return fmt.Errorf("rename temp file by document id: %v", err)
 	}
 
 	err = a.db.JobStore.AddDocument(document)
 	if err != nil {
-		respError(resp, fmt.Errorf("add process steps for new document: %v", err), handler)
-		return
+		return fmt.Errorf("add process steps for new document: %v", err)
 	}
 	err = a.process.AddDocumentForProcessing(document)
-	if err != nil {
-		respError(resp, err, handler)
-	} else {
-		respOk(resp, responseFromDocument(document))
-	}
 	opOk = true
-	return
+	return c.JSON(http.StatusOK, responseFromDocument(document))
 }
 
 func (a *Api) getEmptyDocument(resp http.ResponseWriter, req *http.Request) {
@@ -493,32 +404,27 @@ func (a *Api) getEmptyDocument(resp http.ResponseWriter, req *http.Request) {
 	respResourceList(resp, responseFromDocument(doc), 1)
 }
 
-func (a *Api) downloadDocument(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) downloadDocument(c echo.Context) error {
 	// swagger:route GET /api/v1/documents/{id} Documents DownloadDocument
 	// Downloads original document
 	// Responses:
 	//  200: DocumentResponse
-	handler := "download document"
-	userId, ok := getUserId(req)
-	if !ok {
-		respError(resp, errors.New("no userId found"), handler)
-	}
+
+	ctx := c.(UserContext)
 	var err error
-	id := getParamId(req)
+	id := c.Param("id")
 
 	opOk := false
-	defer logCrudDocument(userId, "download", &opOk, "document: %s", id)
-	doc, err := a.db.DocumentStore.GetDocument(userId, id)
+	defer logCrudDocument(ctx.UserId, "download", &opOk, "document: %s", id)
+	doc, err := a.db.DocumentStore.GetDocument(ctx.UserId, id)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	filePath := storage.DocumentPath(doc.Id)
 	file, err := os.Open(filePath)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	defer file.Close()
@@ -526,6 +432,7 @@ func (a *Api) downloadDocument(resp http.ResponseWriter, req *http.Request) {
 	stat, err := file.Stat()
 	size := stat.Size()
 
+	resp := c.Response()
 	resp.Header().Set("Content-Type", doc.Mimetype)
 	resp.Header().Set("Content-Length", strconv.Itoa(int(size)))
 	resp.Header().Set("Cache-Control", "max-age=600")
@@ -535,38 +442,30 @@ func (a *Api) downloadDocument(resp http.ResponseWriter, req *http.Request) {
 		logrus.Errorf("send file over http: %v", err)
 	}
 	opOk = true
+	return nil
 }
 
-func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) updateDocument(c echo.Context) error {
 	// swagger:route PUT /api/v1/documents/{id} Documents UpdateDocument
 	// Updates document
 	// Responses:
 	//  200: DocumentResponse
 
-	handler := "Api.updateDocument"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
-
-	id := getParamId(req)
+	ctx := c.(UserContext)
+	id := c.Param("id")
 	dto := &DocumentUpdateRequest{}
-	err := unMarshalBody(req, dto)
+	err := unMarshalBody(c.Request(), dto)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	opOk := false
-	defer logCrudDocument(user, "update", &opOk, "document: %s", id)
+	defer logCrudDocument(ctx.UserId, "update", &opOk, "document: %s", id)
 
 	dto.Filename = govalidator.SafeFileName(dto.Filename)
-	doc, err := a.db.DocumentStore.GetDocument(user, id)
+	doc, err := a.db.DocumentStore.GetDocument(ctx.UserId, id)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	if dto.Date != 0 {
@@ -588,19 +487,18 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 	doc.Update()
 	doc.Metadata = metadata
 
-	err = a.db.DocumentStore.Update(user, doc)
+	err = a.db.DocumentStore.Update(ctx.UserId, doc)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	err = a.db.MetadataStore.UpdateDocumentKeyValues(user, doc.Id, metadata)
+	err = a.db.MetadataStore.UpdateDocumentKeyValues(ctx.UserId, doc.Id, metadata)
 	if err != nil {
-		respError(resp, err, handler)
+		return err
 	}
 
 	logrus.Debugf("document updated, force fts update")
-	err = a.db.JobStore.ForceProcessing(user, doc.Id, models.ProcessFts)
+	err = a.db.JobStore.ForceProcessing(ctx.UserId, doc.Id, models.ProcessFts)
 	if err != nil {
 		logrus.Warningf("error marking document for processing (doc %s): %v", doc.Id, err)
 	} else {
@@ -610,7 +508,7 @@ func (a *Api) updateDocument(resp http.ResponseWriter, req *http.Request) {
 		}
 	}
 	opOk = true
-	respResourceList(resp, responseFromDocument(doc), 1)
+	return resourceList(c, responseFromDocument(doc), 1)
 }
 
 type documentSortParams struct{}
@@ -627,20 +525,15 @@ func (d *documentSortParams) SortNoCase() []string { return d.FilterAttributes()
 
 func (d *documentSortParams) Update() {}
 
-func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, resp http.ResponseWriter, req *http.Request) {
-	handler := "api.searchDocuments"
-
-	paging, err := getPaging(req)
+func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, c echo.Context) error {
+	paging, err := bindPaging(c)
 	if err != nil {
-		logrus.Warningf("invalid paging: %v", err)
-		paging.Limit = 100
-		paging.Offset = 0
+		return err
 	}
 
-	sort, err := getSortParams(req, &documentSortParams{})
+	sort, err := getSortParams(c.Request(), &documentSortParams{})
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	if len(sort) == 1 {
@@ -656,8 +549,7 @@ func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, resp ht
 
 	res, n, err := a.search.SearchDocumentsNew(userId, filter.Query, sort[0], paging)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	docs := make([]*DocumentResponse, len(res))
@@ -665,10 +557,10 @@ func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, resp ht
 		docs[i] = responseFromDocument(v)
 	}
 	opOk = true
-	respResourceList(resp, docs, n)
+	return resourceList(c, docs, n)
 }
 
-func (a *Api) requestDocumentProcessing(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) requestDocumentProcessing(c echo.Context) error {
 	// swagger:route POST /api/v1/location Documents RequestProcessing
 	// Request document re-processing
 	// Responses:
@@ -678,35 +570,26 @@ func (a *Api) requestDocumentProcessing(resp http.ResponseWriter, req *http.Requ
 	//   403: RespNotFound
 	//   500: RespInternalError
 
-	handler := "Api.requestDocumentProcessing"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
-	id := getParamId(req)
-
-	owns, err := a.db.DocumentStore.UserOwnsDocument(id, user)
+	ctx := c.(UserContext)
+	id := bindPathId(c)
+	owns, err := a.db.DocumentStore.UserOwnsDocument(id, ctx.UserId)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	opOk := false
-	defer logCrudDocument(user, "schedule processing", &opOk, "document: %s", id)
+	defer logCrudDocument(ctx.UserId, "schedule processing", &opOk, "document: %s", id)
 
 	if !owns {
-		respForbidden(resp)
-		return
+		return respForbiddenV2()
 	}
 
-	err = a.db.JobStore.ForceProcessing(user, id, models.ProcessRules)
+	err = a.db.JobStore.ForceProcessing(ctx.UserId, id, models.ProcessRules)
 	if err != nil {
-		respError(resp, err, handler)
+		return err
 	}
 
-	doc, err := a.db.DocumentStore.GetDocument(user, id)
+	doc, err := a.db.DocumentStore.GetDocument(ctx.UserId, id)
 	if err != nil {
 		logrus.Errorf("Get document to process: %v", err)
 	} else {
@@ -716,10 +599,10 @@ func (a *Api) requestDocumentProcessing(resp http.ResponseWriter, req *http.Requ
 		}
 	}
 	opOk = true
-	respOk(resp, nil)
+	return c.String(http.StatusOK, "")
 }
 
-func (a *Api) deleteDocument(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) deleteDocument(c echo.Context) error {
 	// swagger:route DELETE /api/v1/documents/:id Documents DeleteDocument
 	// Delete document
 	// Responses:
@@ -729,45 +612,36 @@ func (a *Api) deleteDocument(resp http.ResponseWriter, req *http.Request) {
 	//   403: RespNotFound
 	//   500: RespInternalError
 
-	handler := "Api.deleteDocument"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
+	ctx := c.(UserContext)
+	id := c.Param("id")
 
-	id := getParamId(req)
 	opOk := false
-	defer logCrudDocument(user, "delete", &opOk, "document: %s", id)
+	defer logCrudDocument(ctx.UserId, "delete", &opOk, "document: %s", id)
 
-	owns, err := a.db.DocumentStore.UserOwnsDocument(id, user)
+	owns, err := a.db.DocumentStore.UserOwnsDocument(id, ctx.UserId)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	if !owns {
-		respForbidden(resp)
-		return
+		return respForbiddenV2()
 	}
 
-	logrus.Infof("Request user %d removing document %s", user, id)
+	logrus.Infof("Request user %d removing document %s", ctx.UserId, id)
 
-	err = a.search.DeleteDocument(id, user)
+	err = a.search.DeleteDocument(id, ctx.UserId)
 	if err != nil {
 		logrus.Errorf("delete document from search index: %v", err)
-		respInternalError(resp)
+		return respInternalErrorV2("delete from search index", err)
 	}
 
-	process.DeleteDocument(id)
-	err = a.db.DocumentStore.DeleteDocument(user, id)
+	_ = process.DeleteDocument(id)
+	err = a.db.DocumentStore.DeleteDocument(ctx.UserId, id)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 	opOk = true
-	respOk(resp, nil)
+	return c.JSON(http.StatusOK, nil)
 }
 
 type BulkEditDocumentsRequest struct {
@@ -776,7 +650,7 @@ type BulkEditDocumentsRequest struct {
 	RemoveMetadata metadataUpdateRequest `json:"remove_metadata" valid:"-"`
 }
 
-func (a *Api) bulkEditDocuments(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) bulkEditDocuments(c echo.Context) error {
 	// swagger:route POST /api/v1/documents/bulkEdit Documents BulkEditDocuments
 	// Edit multiple documents at once
 	// consumes:
@@ -789,61 +663,48 @@ func (a *Api) bulkEditDocuments(resp http.ResponseWriter, req *http.Request) {
 	//   403: RespNotFound
 	//   500: RespInternalError
 
-	handler := "Api.bulkEditDocuments"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
-
+	ctx := c.(UserContext)
 	dto := &BulkEditDocumentsRequest{}
-	err := unMarshalBody(req, dto)
+	err := unMarshalBody(c.Request(), dto)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	opOk := false
-	defer logCrudDocument(user, "bulk edit", &opOk, "documents: %v, add metadata: %d, remove metadata: %d",
+	defer logCrudDocument(ctx.UserId, "bulk edit", &opOk, "documents: %v, add metadata: %d, remove metadata: %d",
 		len(dto.Documents), len(dto.AddMetadata.Metadata), len(dto.RemoveMetadata.Metadata))
 
-	owns, err := a.db.DocumentStore.UserOwnsDocuments(user, dto.Documents)
+	owns, err := a.db.DocumentStore.UserOwnsDocuments(ctx.UserId, dto.Documents)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 	if !owns {
-		respForbidden(resp)
-		return
+		return respForbiddenV2()
 	}
 
 	if len(dto.AddMetadata.Metadata) > 0 {
 		addMetadata := dto.AddMetadata.toMetadataArray()
-		err = a.db.MetadataStore.UpsertDocumentMetadata(user, dto.Documents, addMetadata)
+		err = a.db.MetadataStore.UpsertDocumentMetadata(ctx.UserId, dto.Documents, addMetadata)
 		if err != nil {
-			respError(resp, err, handler)
-			return
+			return err
 		}
 	}
 	if len(dto.RemoveMetadata.Metadata) > 0 {
 		removeMetadata := dto.RemoveMetadata.toMetadataArray()
-		err = a.db.MetadataStore.DeleteDocumentsMetadata(user, dto.Documents, removeMetadata)
+		err = a.db.MetadataStore.DeleteDocumentsMetadata(ctx.UserId, dto.Documents, removeMetadata)
 		if err != nil {
-			respError(resp, err, handler)
-			return
+			return err
 		}
 	}
 
 	// need to reindex
-	err = a.db.JobStore.AddDocuments(user, dto.Documents, models.ProcessFts)
+	err = a.db.JobStore.AddDocuments(ctx.UserId, dto.Documents, models.ProcessFts)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 	a.process.PullDocumentsToProcess()
 	opOk = true
-	respResourceList(resp, dto.Documents, len(dto.Documents))
+	return resourceList(c, dto.Documents, len(dto.Documents))
 }
 
 type SearchSuggestRequest struct {
@@ -855,7 +716,7 @@ type SearchSuggestResponse struct {
 	Prefix      string   `json:"prefix"`
 }
 
-func (a *Api) searchSuggestions(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) searchSuggestions(c echo.Context) error {
 	// swagger:route POST /api/v1/documents/search/suggest Documents SearchSuggestions
 	// Get search suggestions
 	// consumes:
@@ -867,31 +728,22 @@ func (a *Api) searchSuggestions(resp http.ResponseWriter, req *http.Request) {
 	//   401: RespForbidden
 	//   403: RespNotFound
 	//   500: RespInternalError
-
-	handler := "Api.searchSuggestions"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
+	ctx := c.(UserContext)
 
 	dto := &SearchSuggestRequest{}
-	err := unMarshalBody(req, dto)
+	err := unMarshalBody(c.Request(), dto)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	suggestions, err := a.search.SuggestSearch(user, dto.Filter)
+	suggestions, err := a.search.SuggestSearch(ctx.UserId, dto.Filter)
 	if err != nil {
-		respError(resp, err, handler)
+		return err
 	}
-
-	respOk(resp, suggestions)
+	return c.JSON(http.StatusOK, suggestions)
 }
 
-func (a *Api) getDocumentHistory(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) getDocumentHistory(c echo.Context) error {
 	// swagger:route GET /api/v1/documents/:id/history Documents GetHistory
 	// Get document history
 	// Responses:
@@ -901,34 +753,24 @@ func (a *Api) getDocumentHistory(resp http.ResponseWriter, req *http.Request) {
 	//   403: RespNotFound
 	//   500: RespInternalError
 
-	handler := "Api.getDocumentHistory"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
-
-	id := getParamId(req)
+	ctx := c.(UserContext)
+	id := c.Param("id")
 	opOk := false
-	defer logCrudDocument(user, "delete", &opOk, "document: %s", id)
+	defer logCrudDocument(ctx.UserId, "delete", &opOk, "document: %s", id)
 
-	owns, err := a.db.DocumentStore.UserOwnsDocument(id, user)
+	owns, err := a.db.DocumentStore.UserOwnsDocument(id, ctx.UserId)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	if !owns {
-		respForbidden(resp)
-		return
+		return echo.NewHTTPError(http.StatusForbidden, "forbidden")
 	}
 
-	data, err := a.db.DocumentStore.GetDocumentHistory(user, id)
+	data, err := a.db.DocumentStore.GetDocumentHistory(ctx.UserId, id)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	respResourceList(resp, data, len(*data))
+	return resourceList(c, data, len(*data))
 }

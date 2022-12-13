@@ -19,10 +19,10 @@
 package api
 
 import (
+	"github.com/labstack/echo/v4"
 	"net/http"
 
 	"github.com/sirupsen/logrus"
-	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/process"
 )
@@ -182,7 +182,7 @@ func (r *Rule) ToRule() (*models.Rule, error) {
 	return rule, nil
 }
 
-func (a *Api) addUserRule(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) addUserRule(c echo.Context) error {
 	// swagger:route POST /api/v1/processing/rules Processing AddRule
 	// Add processing rule
 	// responses:
@@ -193,207 +193,152 @@ func (a *Api) addUserRule(resp http.ResponseWriter, req *http.Request) {
 	//   403: RespNotFound
 	//   500: RespInternalError
 
-	handler := "api.addUserRule"
-
-	userId, ok := getUserId(req)
-	if !ok {
-		respError(resp, errors.New("no user_id in request context"), handler)
-		return
-	}
-
+	ctx := c.(UserContext)
 	processingRule := &Rule{}
-	err := unMarshalBody(req, processingRule)
+	err := unMarshalBody(c.Request(), processingRule)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	opOk := false
 	ruleId := 0
 	defer func() {
-		logCrudRule(userId, "create", &opOk, "rule: %d", ruleId)
+		logCrudRule(ctx.UserId, "create", &opOk, "rule: %d", ruleId)
 	}()
 
 	rule, err := processingRule.ToRule()
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	err = a.db.RuleStore.AddRule(userId, rule)
+	err = a.db.RuleStore.AddRule(ctx.UserId, rule)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	rule, err = a.db.RuleStore.GetUserRule(userId, rule.Id)
+	rule, err = a.db.RuleStore.GetUserRule(ctx.UserId, rule.Id)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 	ruleId = rule.Id
 	opOk = true
-	respOk(resp, ruleToResp(rule))
+	return c.JSON(http.StatusOK, ruleToResp(rule))
 }
 
-func (a *Api) getUserRules(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) getUserRules(c echo.Context) error {
 	// swagger:route GET /api/v1/processing/rules Processing GetRules
 	// Get processing rules
 	// responses:
 	//   200: ProcessingRuleResponse
-	handler := "api.getUserRules"
-	userId, ok := getUserId(req)
-	if !ok {
-		respError(resp, errors.New("no user_id in request context"), handler)
-		return
+
+	ctx := c.(UserContext)
+	paging, err := bindPaging(c)
+	if err != nil {
+		return err
 	}
 
-	paging, err := getPaging(req)
+	rules, err := a.db.RuleStore.GetUserRules(ctx.UserId, paging)
 	if err != nil {
-		respError(resp, err, handler)
-		return
-	}
-
-	rules, err := a.db.RuleStore.GetUserRules(userId, paging)
-	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	processingRules := make([]*Rule, len(rules))
 	for i, v := range rules {
 		processingRules[i] = ruleToResp(v)
 	}
-	respResourceList(resp, processingRules, len(processingRules))
+	return resourceList(c, processingRules, len(processingRules))
 }
 
-func (a *Api) getUserRule(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) getUserRule(c echo.Context) error {
 	// swagger:route GET /api/v1/processing/rules/{id} Processing GetRule
 	// Get processing rule by id
 	// responses:
 	//   200: ProcessingRuleResponse
-	handler := "api.getUserRule"
-	userId, ok := getUserId(req)
-	if !ok {
-		respError(resp, errors.New("no user_id in request context"), handler)
-		return
-	}
 
-	id, err := getParamIntId(req)
+	ctx := c.(UserContext)
+	id, err := bindPathIdInt(c)
+	rule, err := a.db.RuleStore.GetUserRule(ctx.UserId, id)
 	if err != nil {
-		respBadRequest(resp, "no id specified", nil)
-		return
-	}
-
-	rule, err := a.db.RuleStore.GetUserRule(userId, id)
-	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	r := ruleToResp(rule)
-	respResourceList(resp, r, 1)
+	return resourceList(c, r, 1)
 }
 
-func (a *Api) updateUserRule(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) updateUserRule(c echo.Context) error {
 	// swagger:route PUT /api/v1/processing/rules/{id} Processing UpdateRule
 	// Update rule contents
 	// responses:
 	//   200:
-	handler := "api.updateUserRule"
-	userId, ok := getUserId(req)
-	if !ok {
-		respError(resp, errors.New("no user_id in request context"), handler)
-		return
-	}
-
-	id, err := getParamIntId(req)
+	ctx := c.(UserContext)
+	id, err := bindPathIdInt(c)
 	if err != nil {
-		respBadRequest(resp, "no id specified", nil)
-		return
+		return err
 	}
 
 	processingRule := &Rule{}
-	err = unMarshalBody(req, processingRule)
+	err = unMarshalBody(c.Request(), processingRule)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	opOk := false
-	defer logCrudRule(userId, "update", &opOk, "rule: %d", processingRule.Id)
+	defer logCrudRule(ctx.UserId, "update", &opOk, "rule: %d", processingRule.Id)
 
 	rule, err := processingRule.ToRule()
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 	rule.Id = id
-	rule.UserId = userId
-	err = a.db.RuleStore.UpdateRule(userId, rule)
+	rule.UserId = ctx.UserId
+	err = a.db.RuleStore.UpdateRule(ctx.UserId, rule)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 	opOk = true
-	respOk(resp, ruleToResp(rule))
+	return c.JSON(http.StatusOK, ruleToResp(rule))
 }
 
-func (a *Api) deleteUserRule(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) deleteUserRule(c echo.Context) error {
 	// swagger:route DELETE /api/v1/processing/rules/{id} Processing DeleteRule
 	// Delete rule
 	// responses:
 	//   200:
-	handler := "api.deleteUserRule"
-	userId, ok := getUserId(req)
-	if !ok {
-		respError(resp, errors.New("no user_id in request context"), handler)
-		return
-	}
-
-	id, err := getParamIntId(req)
+	ctx := c.(UserContext)
+	id, err := bindPathIdInt(c)
 	if err != nil {
-		respBadRequest(resp, "no id specified", nil)
-		return
+		return err
 	}
 
 	opOk := false
-	defer logCrudRule(userId, "update", &opOk, "rule: %d", id)
+	defer logCrudRule(ctx.UserId, "update", &opOk, "rule: %d", id)
 
-	err = a.db.RuleStore.DeleteRule(userId, id)
+	err = a.db.RuleStore.DeleteRule(ctx.UserId, id)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 	opOk = true
-	respOk(resp, nil)
+	return c.String(http.StatusOK, "")
 }
 
-func (a *Api) testRule(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) testRule(c echo.Context) error {
 	// swagger:route PUT /api/v1/processing/rules/{id}/test Processing TestRule
 	// Test rule execution
 	// responses:
 	//   200: process.RuleTestResult
 	//   403:
 
-	handler := "api.testUserRule"
-	userId, ok := getUserId(req)
-	if !ok {
-		respError(resp, errors.New("no user_id in request context"), handler)
-		return
-	}
-
-	id, err := getParamIntId(req)
+	ctx := c.(UserContext)
+	id, err := bindPathIdInt(c)
 	if err != nil {
-		respBadRequest(resp, "no id specified", nil)
-		return
+		return err
 	}
 
 	processingRule := &RuleTest{}
-	err = unMarshalBody(req, processingRule)
+	err = unMarshalBody(c.Request(), processingRule)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 
 	}
 
@@ -401,27 +346,25 @@ func (a *Api) testRule(resp http.ResponseWriter, req *http.Request) {
 	matched := false
 
 	defer func() {
-		logCrudRule(userId, "test", &opOk, "rule: %d, document: %s, matched: %v", id, processingRule.DocumentId, matched)
+		logCrudRule(ctx.UserId, "test", &opOk, "rule: %d, document: %s, matched: %v", id, processingRule.DocumentId, matched)
 	}()
 
-	rule, err := a.db.RuleStore.GetUserRule(userId, id)
+	rule, err := a.db.RuleStore.GetUserRule(ctx.UserId, id)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	doc, err := a.db.DocumentStore.GetDocument(userId, processingRule.DocumentId)
+	doc, err := a.db.DocumentStore.GetDocument(ctx.UserId, processingRule.DocumentId)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	metadata, err := a.db.MetadataStore.GetDocumentMetadata(userId, processingRule.DocumentId)
+	metadata, err := a.db.MetadataStore.GetDocumentMetadata(ctx.UserId, processingRule.DocumentId)
 	if err != nil {
-		respError(resp, err, handler)
+		return err
 	}
 	doc.Metadata = *metadata
-	logrus.Infof("User %d tests processing rule %d on document %s", userId, id, processingRule.DocumentId)
+	logrus.Infof("User %d tests processing rule %d on document %s", ctx.UserId, id, processingRule.DocumentId)
 
 	processRule := process.NewDocumentRule(doc, rule)
 	status := processRule.MatchTest()
@@ -430,6 +373,5 @@ func (a *Api) testRule(resp http.ResponseWriter, req *http.Request) {
 
 	opOk = true
 	matched = status.Match
-	respOk(resp, status)
-
+	return c.JSON(http.StatusOK, status)
 }

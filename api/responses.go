@@ -20,6 +20,8 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
 	"time"
@@ -90,6 +92,12 @@ func respResourceList(resp http.ResponseWriter, body interface{}, totalCount int
 	}
 }
 
+func resourceList(c echo.Context, body interface{}, total int) error {
+	c.Response().Header().Set("Access-Control-Expose-Headers", "content-range")
+	c.Response().Header().Set("Content-Range", strconv.Itoa(total))
+	return c.JSON(http.StatusOK, body)
+}
+
 func respBadRequest(resp http.ResponseWriter, reason string, body interface{}) {
 	if reason != "" && body == nil {
 		body = map[string]string{
@@ -109,52 +117,56 @@ func respInternalError(resp http.ResponseWriter) {
 	}
 }
 
-func respForbidden(resp http.ResponseWriter) {
-	err := respJson(resp, `{"error": "forbidden"}"`, http.StatusForbidden)
-	if err != nil {
-		logrus.Errorf("write response: %v", err)
-	}
+func respForbiddenV2(error ...interface{}) error {
+	return echo.NewHTTPError(http.StatusForbidden, error)
 }
 
-func respError(resp http.ResponseWriter, err error, handler string) {
+func respInternalErrorV2(error ...interface{}) error {
+	return echo.NewHTTPError(http.StatusInternalServerError, error)
+}
+
+func httpErrorHandler(err error, c echo.Context) {
 	var statuscode int
 	var reason string
-	appError, ok := err.(errors.Error)
-	if ok {
 
-		if appError.ErrType == errors.ErrAlreadyExists.ErrType {
-			statuscode = http.StatusNotModified
-			reason = appError.ErrMsg
-		} else if appError.ErrType == errors.ErrRecordNotFound.ErrType {
-			statuscode = http.StatusNotFound
-			reason = appError.ErrMsg
-		} else if appError.ErrType == errors.ErrInternalError.ErrType {
-			statuscode = http.StatusInternalServerError
-			reason = "internal error"
-			logrus.WithField("handler", handler).Errorf("internal error: %v", appError.ErrMsg)
-		} else if appError.ErrType == errors.ErrForbidden.ErrType {
-			statuscode = http.StatusForbidden
-			reason = appError.ErrMsg
-			logrus.Errorf("internal error: %v", err)
-		} else if appError.ErrType == errors.ErrInvalid.ErrType {
-			statuscode = http.StatusBadRequest
-			reason = appError.ErrMsg
+	if he, ok := err.(*echo.HTTPError); ok {
+		statuscode = he.Code
+		reason = fmt.Sprintf("%v", he.Message)
+	} else {
+		appError, ok := err.(errors.Error)
+		if ok {
+			if appError.ErrType == errors.ErrAlreadyExists.ErrType {
+				statuscode = http.StatusNotModified
+				reason = appError.ErrMsg
+			} else if appError.ErrType == errors.ErrRecordNotFound.ErrType {
+				statuscode = http.StatusNotFound
+				reason = appError.ErrMsg
+			} else if appError.ErrType == errors.ErrInternalError.ErrType {
+				statuscode = http.StatusInternalServerError
+				reason = "internal error"
+				//logrus.WithField("handler", handler).Errorf("internal error: %v", appError.ErrMsg)
+				c.Logger().Error("internal error", appError.ErrMsg)
+			} else if appError.ErrType == errors.ErrForbidden.ErrType {
+				statuscode = http.StatusForbidden
+				reason = appError.ErrMsg
+				logrus.Errorf("internal error: %v", err)
+			} else if appError.ErrType == errors.ErrInvalid.ErrType {
+				statuscode = http.StatusBadRequest
+				reason = appError.ErrMsg
+			} else {
+				statuscode = http.StatusInternalServerError
+				reason = "internal error, please try again shortly"
+				logrus.Errorf("internal error: %v", err)
+			}
 		} else {
 			statuscode = http.StatusInternalServerError
-			reason = "internal error, please try again shortly"
-			logrus.Errorf("internal error: %v", err)
+			reason = "internal error"
+			c.Logger().Errorf("internal error: %v", err.Error())
 		}
-	} else {
-		statuscode = http.StatusInternalServerError
-		reason = "internal error"
-		logrus.WithField("handler", handler).Errorf("internal error (not storage.Error): %v", err.Error())
 	}
 
 	body := map[string]string{
 		"Error": reason,
 	}
-	respErr := respJson(resp, body, statuscode)
-	if respErr != nil {
-		logrus.WithField("handler", handler).Errorf("write error response: %v", err)
-	}
+	c.JSON(statuscode, body)
 }

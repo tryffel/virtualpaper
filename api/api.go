@@ -19,14 +19,17 @@
 package api
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/gorilla/mux"
-	"github.com/rs/cors"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/process"
@@ -35,13 +38,11 @@ import (
 )
 
 type Api struct {
-	server *http.Server
-	// baseRouter server static files and other public content as well as private endpoints
-	baseRouter *mux.Router
-	// privateRouter routes only authenticated endpoints
-	privateRouter *mux.Router
-
-	adminRouter *mux.Router
+	echo          *echo.Echo
+	publicRouter  *echo.Group
+	apiRouter     *echo.Group
+	privateRouter *echo.Group
+	adminRouter   *echo.Group
 
 	cors    http.Handler
 	db      *storage.Database
@@ -52,22 +53,21 @@ type Api struct {
 // NewApi initializes new api instance. It connects to database and opens http port.
 func NewApi(database *storage.Database) (*Api, error) {
 	api := &Api{
-		baseRouter: mux.NewRouter(),
-		db:         database,
+		db:   database,
+		echo: echo.New(),
 	}
 
-	c := cors.AllowAll()
-	api.cors = c.Handler(api.baseRouter)
+	api.echo.Use(middleware.RequestID())
+	api.echo.Use(loggingMiddlware())
+	api.echo.Use(middleware.Recover())
+	api.echo.Use(middleware.CORS())
+	api.echo.HTTPErrorHandler = httpErrorHandler
 
-	api.server = &http.Server{
-		Handler:      api.cors,
-		Addr:         fmt.Sprintf("%s:%d", config.C.Api.Host, config.C.Api.Port),
-		WriteTimeout: time.Second * 30,
-		ReadTimeout:  time.Second * 30,
-	}
+	api.echo.Server.ReadTimeout = time.Second * 30
+	api.echo.Server.WriteTimeout = time.Second * 30
 
 	var err error
-	api.search, err = search.NewEngine(database)
+	api.search, err = search.NewEngine(database, &config.C.Meilisearch)
 	if err != nil {
 		return api, err
 	}
@@ -77,9 +77,7 @@ func NewApi(database *storage.Database) (*Api, error) {
 		return api, err
 	}
 
-	api.privateRouter = api.baseRouter.PathPrefix("/api/v1").Subrouter()
-	api.adminRouter = api.baseRouter.PathPrefix("/api/v1/admin").Subrouter()
-	api.addRoutes()
+	api.addRoutesV2()
 	return api, err
 }
 
@@ -89,8 +87,27 @@ func (a *Api) Serve() error {
 		return err
 	}
 
-	logrus.Infof("listen http on %s", a.server.Addr)
-	return a.server.ListenAndServe()
+	go func() {
+		addr := fmt.Sprintf("%s:%d", config.C.Api.Host, config.C.Api.Port)
+		logrus.Infof("listen http on %s", addr)
+		err := a.echo.Start(addr)
+		if err != nil && err != http.ErrServerClosed {
+			a.echo.Logger.Fatal("shutting down")
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	logrus.Info("stop server")
+	if err := a.echo.Shutdown(ctx); err != nil {
+		a.echo.Logger.Fatal(err)
+	}
+	logrus.Info("server stopped")
+	return nil
 }
 
 // VersionResponse contains general server info.
@@ -106,7 +123,7 @@ type MimeTypesSupportedResponse struct {
 	Mimetypes []string `json:"mimetypes"`
 }
 
-func (a *Api) getVersion(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) getVersionV2(c echo.Context) error {
 	// swagger:route GET /api/v1/version Public GetVersion
 	// Get server version
 	//
@@ -117,10 +134,10 @@ func (a *Api) getVersion(resp http.ResponseWriter, req *http.Request) {
 		Version: config.Version,
 		Commit:  config.Commit,
 	}
-	respOk(resp, v)
+	return c.JSON(http.StatusOK, v)
 }
 
-func (a *Api) getSupportedFileTypes(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) getSupportedFileTypes(c echo.Context) error {
 	// swagger:route GET /api/v1/filetypes Public GetFileTypes
 	// Get supported file types.
 	// Returns a list of valid name endings and a list of mime types.
@@ -134,12 +151,7 @@ func (a *Api) getSupportedFileTypes(resp http.ResponseWriter, req *http.Request)
 		Names:     filetypes,
 		Mimetypes: mimetypes,
 	}
-
-	respOk(resp, mimes)
-}
-
-func (a *Api) getEmptyResp(resp http.ResponseWriter, req *http.Request) {
-	respOk(resp, nil)
+	return c.JSON(http.StatusOK, mimes)
 }
 
 func init() {
@@ -149,7 +161,6 @@ func init() {
 //go:embed swaggerdocs/swagger.json
 var swaggerJson string
 
-func serverSwaggerDoc(resp http.ResponseWriter, req *http.Request) {
-	resp.Header().Set("content-type", "application/json")
-	_, _ = resp.Write([]byte(swaggerJson))
+func serverSwaggerDoc(c echo.Context) error {
+	return c.File(swaggerJson)
 }

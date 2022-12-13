@@ -177,7 +177,7 @@ Integration tests:
 ```make test-integration```
 
 End-to-end tests (requires running server instance):
-```make test-e2e```
+```make test-api```
 e2e-tests communicate with the actual server and thus needs a working connection.
 Before running e2e tests, start the server with ```make test-start```.
 Also be sure the cleanup the server environment before running the e2e tests: ```make test-stop```.
@@ -185,6 +185,20 @@ Also be sure the cleanup the server environment before running the e2e tests: ``
 All tests:
 ```make test```
 
+
+## Develop backend with delve
+
+First initialize the setup with ```make dev-init```.
+Build the image ```make dev-build-container```.
+
+A new directory dev/ is created. 
+Only Virtualpaper-server is started. 
+You will need to edit dev/config/config.toml 
+to make sure Virtualpaper can connect to Postgresql and Meilisearch.
+
+Launch the program with ```make dev-start-container```. 
+Now delve is running and waiting for connection. 
+Connect to delve from your IDE.
 
 ## License
 

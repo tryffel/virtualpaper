@@ -1,30 +1,20 @@
 package api
 
 import (
-	"fmt"
-	"net/http"
-	"tryffel.net/go/virtualpaper/errors"
+	"github.com/labstack/echo/v4"
 )
 
-func (a *Api) GetJob(w http.ResponseWriter, req *http.Request) {
-	handler := "api.GetJob"
-	userId, ok := getUserId(req)
-	if !ok {
-		respError(w, fmt.Errorf("user id not found: %v", errors.ErrInternalError), handler)
-		return
-	}
-
-	params, err := getPaging(req)
+func (a *Api) GetJob(c echo.Context) error {
+	ctx := c.(UserContext)
+	params, err := bindPaging(c)
 	if err != nil {
-		respBadRequest(w, err.Error(), nil)
-		return
+		return err
 	}
 
-	jobs, err := a.db.JobStore.GetByUser(userId, params)
+	jobs, err := a.db.JobStore.GetByUser(ctx.UserId, params)
 	if err != nil {
-		respError(w, err, handler)
-		return
+		return err
 	}
 
-	respResourceList(w, jobs, 100)
+	return resourceList(c, jobs, len(*jobs))
 }

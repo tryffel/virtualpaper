@@ -18,93 +18,71 @@
 
 package api
 
-import (
-	"net/http"
-	"path"
+func (api *Api) addRoutesV2() {
+	api.publicRouter = api.echo.Group("")
+	api.apiRouter = api.publicRouter.Group("/api")
+	api.privateRouter = api.apiRouter.Group("/v1", api.authorizeUserV2())
+	api.adminRouter = api.privateRouter.Group("/admin", api.AuthorizeAdminV2())
 
-	"github.com/sirupsen/logrus"
-	"tryffel.net/go/virtualpaper/config"
-)
+	//a.oldPrivateRouter.HandleFunc("/tags/{id}", a.getTag).Methods(http.MethodGet)
+	//a.oldPrivateRouter.HandleFunc("/tags", a.createTag).Methods(http.MethodPost)
+	//a.oldPrivateRouter.HandleFunc("/tags/create", a.createTag).Methods(http.MethodPost)
 
-func (a *Api) addRoutes() {
-	if len(config.C.Api.CorsHosts) > 0 {
-		a.baseRouter.Use(a.corsHeader)
-	}
+	api.publicRouter.StaticFS("/", static())
+	api.publicRouter.GET("/api/v1/swagger.json", serverSwaggerDoc)
+	api.publicRouter.GET("/api/v1/version", api.getVersionV2)
 
-	a.baseRouter.Use(LoggingMiddleware)
-	a.baseRouter.HandleFunc("/api/v1/auth/login", a.login).Methods(http.MethodPost)
-	a.baseRouter.HandleFunc("/api/v1/version", a.getVersion).Methods(http.MethodGet)
-	a.baseRouter.HandleFunc("/api/v1/swagger.json", serverSwaggerDoc).Methods(http.MethodGet)
+	api.apiRouter.POST("/v1/auth/login", api.LoginV2)
 
-	a.privateRouter.Use(a.authorizeUser)
-	a.privateRouter.HandleFunc("/documents", a.getDocuments).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents/undefined", a.getEmptyDocument).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents/{id}/show", a.getDocument).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents/{id:[a-zA-Z0-9-]{30,40}}", a.getDocument).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents/{id}", a.deleteDocument).Methods(http.MethodDelete)
-	a.privateRouter.HandleFunc("/documents/{id}", a.updateDocument).Methods(http.MethodPut)
-	a.privateRouter.HandleFunc("/documents/{id}/preview", a.getDocumentPreview).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents/{id}/jobs", a.getDocumentLogs).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents", a.uploadFile).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/documents/create", a.uploadFile).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/documents/undefined", a.uploadFile).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/documents/create", a.getEmptyDocument).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents/bulkEdit", a.bulkEditDocuments).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/documents/{id}/content", a.getDocumentContent).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents/{id}/download", a.downloadDocument).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents/{id}/metadata", a.updateDocumentMetadata).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/documents/{id}/process", a.requestDocumentProcessing).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/documents/{id}/history", a.getDocumentHistory).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents/{id}/linked-documents", a.getLinkedDocuments).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/documents/{id}/linked-documents", a.updateLinkedDocuments).Methods(http.MethodPut)
+	api.privateRouter.GET("/filetypes", api.getSupportedFileTypes)
+	api.privateRouter.GET("/admin/systeminfo", api.getSystemInfo)
+	api.adminRouter.GET("/documents/process", api.getDocumentProcessQueue)
+	api.adminRouter.POST("/documents/process", api.forceDocumentProcessing)
 
-	a.privateRouter.HandleFunc("/documents/search/suggest", a.searchSuggestions).Methods(http.MethodPost)
+	api.privateRouter.GET("/documents/stats", api.getUserDocumentStatistics)
 
-	a.privateRouter.HandleFunc("/jobs", a.GetJob).Methods(http.MethodGet)
+	api.privateRouter.POST("/documents", api.uploadFile)
+	api.privateRouter.GET("/documents", api.getDocuments).Name = "get-documents"
+	api.privateRouter.GET("/documents/:id", api.getDocument).Name = "get-document"
+	api.privateRouter.PUT("/documents/:id", api.updateDocument)
+	api.privateRouter.DELETE("/documents/:id", api.deleteDocument)
+	api.privateRouter.GET("/documents/:id/show", api.getDocument).Name = "get-document"
+	api.privateRouter.GET("/documents/:id/preview", api.getDocumentPreview)
+	api.privateRouter.GET("/documents/:id/content", api.getDocumentContent)
+	api.privateRouter.GET("/documents/:id/download", api.downloadDocument)
+	api.privateRouter.GET("/documents/:id/linked-documents", api.getLinkedDocuments)
+	api.privateRouter.POST("/documents/:id/metadata", api.updateDocumentMetadata)
+	api.privateRouter.POST("/documents/:id/process", api.requestDocumentProcessing)
+	api.privateRouter.PUT("/documents/:id/linked-documents", api.updateLinkedDocuments)
+	api.privateRouter.GET("/documents/:id/history", api.getDocumentHistory)
+	api.privateRouter.GET("/documents/:id/jobs", api.getDocumentLogs)
 
-	a.privateRouter.HandleFunc("/tags", a.getTags).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/tags/{id}", a.getTag).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/tags", a.createTag).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/tags/create", a.createTag).Methods(http.MethodPost)
+	api.privateRouter.POST("/documents/bulkEdit", api.bulkEditDocuments)
 
-	a.privateRouter.HandleFunc("/metadata/keys", a.getMetadataKeys).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/metadata/keys", a.addMetadataKey).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/metadata/keys/{id}", a.updateMetadataKey).Methods(http.MethodPut)
-	a.privateRouter.HandleFunc("/metadata/keys/{id}", a.getMetadataKey).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/metadata/keys/{id}", a.deleteMetadataKey).Methods(http.MethodDelete)
-	a.privateRouter.HandleFunc("/metadata/keys/{id}/values", a.getMetadataKeyValues).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/metadata/keys/{id}/values", a.addMetadataValue).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/metadata/keys/{key_id}/values/{value_id}", a.updateMetadataValue).Methods(http.MethodPut)
-	a.privateRouter.HandleFunc("/metadata/keys/{key_id}/values/{value_id}", a.deleteMetadataValue).Methods(http.MethodDelete)
+	api.privateRouter.POST("/documents/search/suggest", api.searchSuggestions).Name = "search-suggest"
 
-	a.privateRouter.HandleFunc("/documents/stats", a.getUserDocumentStatistics).Methods(http.MethodGet)
+	api.privateRouter.GET("/jobs", api.GetJob)
+	api.privateRouter.GET("/tags", api.getTags)
 
-	a.privateRouter.HandleFunc("/processing/rules", a.addUserRule).Methods(http.MethodPost)
-	a.privateRouter.HandleFunc("/processing/rules/{id}", a.updateUserRule).Methods(http.MethodPut)
-	a.privateRouter.HandleFunc("/processing/rules/{id}", a.deleteUserRule).Methods(http.MethodDelete)
-	a.privateRouter.HandleFunc("/processing/rules", a.getUserRules).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/processing/rules/{id}", a.getUserRule).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/processing/rules/{id}/test", a.testRule).Methods(http.MethodPut)
+	api.privateRouter.GET("/metadata/keys", api.getMetadataKeys)
+	api.privateRouter.POST("/metadata/keys", api.addMetadataKey)
+	api.privateRouter.PUT("/metadata/keys/:id", api.updateMetadataKey)
+	api.privateRouter.GET("/metadata/keys/:id", api.getMetadataKey)
+	api.privateRouter.GET("/metadata/keys/:id/values", api.getMetadataKeyValues)
+	api.privateRouter.POST("/metadata/keys/:id/values", api.addMetadataValue)
+	api.privateRouter.DELETE("/metadata/keys/:id", api.deleteMetadataKey)
+	api.privateRouter.PUT("/metadata/keys/:keyId/values/:valueId", api.updateMetadataValue)
+	api.privateRouter.DELETE("/metadata/keys/:keyId/values/:valueId", api.deleteMetadataValue)
 
-	a.privateRouter.HandleFunc("/preferences/user", a.getUserPreferences).Methods(http.MethodGet)
-	a.privateRouter.HandleFunc("/preferences/user", a.updateUserPreferences).Methods(http.MethodPut)
+	api.privateRouter.GET("/processing/rules", api.getUserRules)
+	api.privateRouter.POST("/processing/rules", api.addUserRule)
+	api.privateRouter.GET("/processing/rules/:id", api.getUserRule)
+	api.privateRouter.PUT("/processing/rules/:id", api.updateUserRule)
+	api.privateRouter.DELETE("/processing/rules/:id", api.deleteUserRule)
+	api.privateRouter.PUT("/processing/rules/:id/test", api.testRule)
 
-	a.privateRouter.HandleFunc("/filetypes", a.getSupportedFileTypes).Methods(http.MethodGet)
+	api.privateRouter.GET("/preferences/user", api.getUserPreferences).Name = "get-user-preferences"
+	api.privateRouter.PUT("/preferences/user", api.updateUserPreferences)
 
-	a.adminRouter.Use(a.authorizeUser, a.authorizeAdmin)
-	a.adminRouter.HandleFunc("/documents/process", a.forceDocumentProcessing).Methods(http.MethodPost)
-	a.adminRouter.HandleFunc("/documents/process", a.getDocumentProcessQueue).Methods(http.MethodGet)
-	a.adminRouter.HandleFunc("/users", a.getUsers).Methods(http.MethodGet)
-
-	// allow non-admins access to system info
-	a.privateRouter.HandleFunc("/admin/systeminfo", a.getSystemInfo).Methods(http.MethodGet)
-
-	if config.C.Api.StaticContentPath != "" {
-		logrus.Debugf("Serve static files")
-		a.baseRouter.Handle("/", http.FileServer(http.Dir(config.C.Api.StaticContentPath)))
-		a.baseRouter.PathPrefix("/static").
-			Handler(http.StripPrefix("/static/",
-				http.FileServer(http.Dir(path.Join(config.C.Api.StaticContentPath, "static")))))
-	}
-
+	api.adminRouter.GET("/users", api.getUsers)
 }

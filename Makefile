@@ -22,31 +22,16 @@ run:
 	go run main.go
 
 test-unit: 
-	# skip e2e tests
 	go test ./... -short
 
-test-integration:
+test-external:
 	# test integration with external programs
 	go test ./... -short -tags test_integration
 
-test-api-init:
-	go test -v ./e2e -run TestLogin
+test-api:
+	# diseble caching
+	go test -v ./integration_tests -count=1
 
-
-test-api-add-metadata:
-	go test -v ./e2e -run TestMetadata
-
-test-api-admin:
-	go test -v ./e2e -run TestServerInstallation -run TestAdminGetUsers
-
-
-test-api-upload:
-	go test -v ./e2e -run TestUploadDocument
-
-#" -test.run ^\QTestUploadDocument\E$"
-
-test-api: test-api-init test-api-add-metadata test-api-upload test-api-admin
-	
 
 test-clear-records:
 	docker exec -it virtualpaper_postgres_1 psql -U virtualpaper -c \
@@ -81,6 +66,7 @@ test-cleanup:
 	docker volume rm virtualpaper_data
 	docker volume rm virtualpaper_postgres
 	docker volume rm virtualpaper_meilisearch
+	rm integration_tests/TOKEN
 
 test: test-unit test-integration test-start test-api test-e2e test-stop
 
@@ -109,8 +95,8 @@ dev-build-container:
 	docker build --file=Dockerfile.dev -t tryffel/virtualpaper-devenv:latest .
 	docker volume create virtualpaper-dev-go
 
-dev-start-container:
-	echo "Starting docker container"
+dev-debug:
+	echo "Starting debug docker container"
 	docker run --name=virtualpaper-dev \
 		--rm -d -it \
 		-p 127.0.0.1:22:22 \
@@ -127,6 +113,26 @@ dev-start-container:
 	docker exec -it virtualpaper-dev \
 		/bin/sh -c "dlv debug --headless --listen=:2345 --api-version=2 --accept-multiclient  -- serve --config /config/config.toml"
 	docker kill virtualpaper-dev
+
+dev-start-container:
+	echo "Starting docker container"
+	docker run --name=virtualpaper-dev \
+		--rm -d -it \
+		-p 127.0.0.1:22:22 \
+		-p 127.0.0.1:8000:8000 \
+		-p 127.0.0.1:2345:2345 \
+		-v `pwd`:/virtualpaper \
+		-v `pwd`/dev/config:/config \
+		-v `pwd`/dev/data:/data \
+		-v `pwd`/dev/logs:/logs \
+		--network virtualpaper_virtualpaper \
+		-v virtualpaper-dev-go:/go/pkg/ \
+		tryffel/virtualpaper-devenv:latest /bin/sh
+	docker exec -it virtualpaper-dev \
+		/bin/sh -c "go run . serve --config /config/config.toml"
+	docker kill virtualpaper-dev
+
+
 
 
 all: test release build-frontend 

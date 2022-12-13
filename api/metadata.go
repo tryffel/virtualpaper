@@ -19,11 +19,10 @@
 package api
 
 import (
-	"fmt"
+	"github.com/labstack/echo/v4"
 	"net/http"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/storage"
@@ -71,30 +70,23 @@ func (m MetadataRequest) toMetadata() models.Metadata {
 	}
 }
 
-func (a *Api) getMetadataKeys(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) getMetadataKeys(c echo.Context) error {
 	// swagger:route GET /api/v1/metadata/keys Metadata GetMetadataKeys
 	// Get metadata keys
 	// Responses:
 	//  200: MetadataKeyResponse
-	handler := "Api.getMetadataKeys"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
+	ctx := c.(UserContext)
 
-	paging, err := getPaging(req)
+	paging, err := bindPaging(c)
 	if err != nil {
-		logrus.Warningf("invalid paging: %v", err)
+		c.Logger().Debug("invalid paging", err)
 		paging.Limit = 100
 		paging.Offset = 0
 	}
 
-	sort, err := getSortParams(req, &models.MetadataKey{})
+	sort, err := getSortParams(c.Request(), &models.MetadataKey{})
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	var sortfield = "key"
@@ -107,79 +99,58 @@ func (a *Api) getMetadataKeys(resp http.ResponseWriter, req *http.Request) {
 		caseInsensitive = sort[0].CaseInsensitive
 	}
 
-	filter, err := getMetadataFilter(req)
+	filter, err := getMetadataFilter(c.Request())
 	if err != nil {
-		respError(resp, fmt.Errorf("get metadata filter: %v", err), handler)
-		return
+		return err
 	}
 
-	keys, err := a.db.MetadataStore.GetKeys(user, filter,
+	keys, err := a.db.MetadataStore.GetKeys(ctx.UserId, filter,
 		storage.NewSortKey(sortfield, "key", sortOrder, caseInsensitive),
 		paging)
 	if err != nil {
-		respError(resp, err, handler)
+		return err
 	}
 
-	respResourceList(resp, keys, len(*keys))
+	return resourceList(c, keys, len(*keys))
 }
 
-func (a *Api) getMetadataKey(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) getMetadataKey(c echo.Context) error {
 	// swagger:route GET /api/v1/metadata/keys/{id} Metadata GetMetadataKey
 	// Get metadata key
 	// Responses:
 	//  200: MetadataKeyResponse
-	handler := "Api.getMetadataKey"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
-
-	id, err := getParamIntId(req)
+	ctx := c.(UserContext)
+	id, err := bindPathIdInt(c)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	key, err := a.db.MetadataStore.GetKey(user, id)
+	key, err := a.db.MetadataStore.GetKey(ctx.UserId, id)
 	if err != nil {
-		respError(resp, err, handler)
+		return err
 	}
-
-	respResourceList(resp, key, 1)
+	return resourceList(c, key, 1)
 }
 
-func (a *Api) getMetadataKeyValues(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) getMetadataKeyValues(c echo.Context) error {
 	// swagger:route GET /api/v1/metadata/keys/{id}/values Metadata GetMetadataKeyValues
 	// Get metadata key values
 	// Responses:
 	//  200: MetadataKeyValueResponse
-	handler := "Api.getMetadataKeyValues"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
+	ctx := c.(UserContext)
+	key, err := bindPathIdInt(c)
+	if err != nil {
+		return err
 	}
 
-	key, err := getParamIntId(req)
+	paging, err := bindPaging(c)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	paging, err := getPaging(req)
+	sort, err := getSortParams(c.Request(), &models.MetadataValue{})
 	if err != nil {
-		logrus.Warningf("invalid paging: %v", err)
-		paging.Limit = 100
-		paging.Offset = 0
-	}
-
-	sort, err := getSortParams(req, &models.MetadataValue{})
-	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	var sortfield = "value"
@@ -192,120 +163,96 @@ func (a *Api) getMetadataKeyValues(resp http.ResponseWriter, req *http.Request) 
 		caseInsensitive = sort[0].CaseInsensitive
 	}
 
-	keys, err := a.db.MetadataStore.GetValues(user, key,
+	keys, err := a.db.MetadataStore.GetValues(ctx.UserId, key,
 		storage.NewSortKey(sortfield, "value", sortOrder, caseInsensitive), paging)
 	if err != nil {
-		respError(resp, err, handler)
+		return err
 	}
 
-	respResourceList(resp, keys, len(*keys))
+	return resourceList(c, keys, len(*keys))
 }
 
-func (a *Api) updateDocumentMetadata(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) updateDocumentMetadata(c echo.Context) error {
 	// swagger:route POST /api/v1/documents/{id}/metadata Documents UpdateDocumentMetadata
 	// Update document metadata
 	// Responses:
 	//  200: DocumentResponse
-	handler := "Api.updateDocumentMetadata"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
-
-	documentId := getParamId(req)
+	ctx := c.(UserContext)
+	documentId := bindPathId(c)
 
 	opOk := false
-	defer logCrudMetadata(user, "update document metadata", &opOk, "document: %s", documentId)
+	defer logCrudMetadata(ctx.UserId, "update document metadata", &opOk, "document: %s", documentId)
 
 	dto := &metadataUpdateRequest{}
-	err := unMarshalBody(req, dto)
+	err := unMarshalBody(c.Request(), dto)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	metadata := dto.toMetadataArray()
-	err = a.db.MetadataStore.UpdateDocumentKeyValues(user, documentId, metadata)
+	err = a.db.MetadataStore.UpdateDocumentKeyValues(ctx.UserId, documentId, metadata)
 	if err != nil {
-		respError(resp, err, handler)
+		return err
 	}
 	opOk = true
-	respOk(resp, nil)
+	return c.String(http.StatusOK, "")
 }
 
-func (a *Api) addMetadataKey(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) addMetadataKey(c echo.Context) error {
 	// swagger:route POST /api/v1/metadata/keys Metadata AddMetadataKey
 	// Add metadata key
 	// Responses:
 	//  200: MetadataKeyResponse
-	handler := "Api.addMetadataKey"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
+	ctx := c.(UserContext)
 
 	opOk := false
-	defer logCrudMetadata(user, "add key", &opOk, "")
+	defer logCrudMetadata(ctx.UserId, "add key", &opOk, "")
 
 	dto := &MetadataKeyRequest{}
-	err := unMarshalBody(req, dto)
+	err := unMarshalBody(c.Request(), dto)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	key := &models.MetadataKey{
-		UserId:    user,
+		UserId:    ctx.UserId,
 		Key:       dto.Key,
 		CreatedAt: time.Now(),
 		Comment:   dto.Comment,
 	}
 
-	err = a.db.MetadataStore.CreateKey(user, key)
+	err = a.db.MetadataStore.CreateKey(ctx.UserId, key)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 	opOk = true
-	respResourceList(resp, key, 1)
+	return resourceList(c, key, 1)
 }
 
-func (a *Api) addMetadataValue(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) addMetadataValue(c echo.Context) error {
 	// swagger:route POST /api/v1/metadata/keys/{id}/values Metadata AddMetadataKeyValues
 	// Add metadata key values
 	// Responses:
 	//  200: MetadataKeyValueResponse
 	//  400: String
-	handler := "Api.addMetadataValue"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
 
-	keyId, err := getParamIntId(req)
+	ctx := c.(UserContext)
+	keyId, err := bindPathIdInt(c)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	dto := &MetadataValueRequest{}
-	err = unMarshalBody(req, dto)
+	err = unMarshalBody(c.Request(), dto)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	opOk := false
-	defer logCrudMetadata(user, "add value", &opOk, "key: %d", keyId)
+	defer logCrudMetadata(ctx.UserId, "add value", &opOk, "key: %d", keyId)
 
 	value := &models.MetadataValue{
-		UserId:         user,
+		UserId:         ctx.UserId,
 		KeyId:          keyId,
 		Value:          dto.Value,
 		CreatedAt:      time.Now(),
@@ -321,58 +268,46 @@ func (a *Api) addMetadataValue(resp http.ResponseWriter, req *http.Request) {
 	if value.MatchType != models.MetadataMatchRegex && value.MatchType != models.MetadataMatchExact {
 		err := errors.ErrInvalid
 		err.ErrMsg = "match type must be either exact or regex"
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	err = a.db.MetadataStore.CreateValue(user, value)
+	err = a.db.MetadataStore.CreateValue(ctx.UserId, value)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
-
 	opOk = true
-	respResourceList(resp, value, 1)
+	return resourceList(c, value, 1)
 }
 
-func (a *Api) updateMetadataValue(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) updateMetadataValue(c echo.Context) error {
 	// swagger:route PUT /api/v1/metadata/keys/{id}/values Metadata UpdateMetadataKeyValue
 	// Update metadata key value
 	// Responses:
 	//  200: MetadataKeyValueResponse
-	handler := "Api.updateMetadataValue"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
+
+	ctx := c.(UserContext)
+	keyId, err := bindPathInt(c, "keyId")
+	if err != nil {
+		return err
 	}
 
-	keyId, err := getParamInt(req, "key_id")
+	valueId, err := bindPathInt(c, "valueId")
 	if err != nil {
-		respError(resp, err, handler)
-		return
-	}
-
-	valueId, err := getParamInt(req, "value_id")
-	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	dto := &MetadataValueRequest{}
-	err = unMarshalBody(req, dto)
+	err = unMarshalBody(c.Request(), dto)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	opOk := false
-	defer logCrudMetadata(user, "update value", &opOk, "key: %d, value: %d", keyId, valueId)
+	defer logCrudMetadata(ctx.UserId, "update value", &opOk, "key: %d, value: %d", keyId, valueId)
 
 	value := &models.MetadataValue{
 		Id:             valueId,
-		UserId:         user,
+		UserId:         ctx.UserId,
 		KeyId:          keyId,
 		Value:          dto.Value,
 		Comment:        dto.Comment,
@@ -380,79 +315,66 @@ func (a *Api) updateMetadataValue(resp http.ResponseWriter, req *http.Request) {
 		MatchType:      models.MetadataRuleType(dto.MatchType),
 		MatchFilter:    dto.MatchFilter,
 	}
-	ownerShip, err := a.db.MetadataStore.UserHasKeyValue(user, keyId, valueId)
+	ownerShip, err := a.db.MetadataStore.UserHasKeyValue(ctx.UserId, keyId, valueId)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	if !ownerShip {
 		err := errors.ErrRecordNotFound
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	// rest should be enclodes in a transaction
 	err = a.db.MetadataStore.UpdateValue(value)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	err = a.db.JobStore.AddDocumentsByMetadata(user, keyId, valueId, models.ProcessFts)
+	err = a.db.JobStore.AddDocumentsByMetadata(ctx.UserId, keyId, valueId, models.ProcessFts)
 	if err != nil {
-		respError(resp, err, handler)
+		return err
 	} else {
 		opOk = true
-		respResourceList(resp, value, 1)
+		return resourceList(c, value, 1)
 	}
 }
 
-func (a *Api) updateMetadataKey(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) updateMetadataKey(c echo.Context) error {
 	// swagger:route PUT /api/v1/metadata/keys/{id} Metadata UpdateMetadataKeyValues
 	// Update metadata key
 	// Responses:
 	//  200: MetadataKeyResponse
 
-	handler := "Api.updateMetadataKey"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
+	ctx := c.(UserContext)
 
-	keyId, err := getParamInt(req, "id")
+	keyId, err := bindPathIdInt(c)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	dto := &MetadataKeyRequest{}
-	err = unMarshalBody(req, dto)
+	err = unMarshalBody(c.Request(), dto)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	opOk := false
-	defer logCrudMetadata(user, "update key", &opOk, "key: %d", keyId)
+	defer logCrudMetadata(ctx.UserId, "update key", &opOk, "key: %d", keyId)
 
-	ownerShip, err := a.db.MetadataStore.UserHasKey(user, keyId)
+	ownerShip, err := a.db.MetadataStore.UserHasKey(ctx.UserId, keyId)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	if !ownerShip {
 		err := errors.ErrRecordNotFound
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	key := &models.MetadataKey{
 		Id:      keyId,
-		UserId:  user,
+		UserId:  ctx.UserId,
 		Key:     dto.Key,
 		Comment: dto.Comment,
 	}
@@ -460,197 +382,157 @@ func (a *Api) updateMetadataKey(resp http.ResponseWriter, req *http.Request) {
 	// rest should be enclosed in a transaction
 	err = a.db.MetadataStore.UpdateKey(key)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	err = a.db.JobStore.AddDocumentsByMetadata(user, keyId, 0, models.ProcessFts)
+	err = a.db.JobStore.AddDocumentsByMetadata(ctx.UserId, keyId, 0, models.ProcessFts)
 	if err != nil {
-		respError(resp, err, handler)
+		return err
 	} else {
 		opOk = true
-		respResourceList(resp, key, 1)
+		return resourceList(c, key, 1)
 	}
 }
 
-func (a *Api) deleteMetadataKey(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) deleteMetadataKey(c echo.Context) error {
 	// swagger:route DELETE /api/v1/metadata/keys/{id} Metadata DeleteMetadataKey
 	// Delete metadata key and all its values
 	// Responses:
 	//  200:
 
-	handler := "Api.deleteMetadataKey"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
-
-	keyId, err := getParamInt(req, "id")
+	ctx := c.(UserContext)
+	keyId, err := bindPathIdInt(c)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	opOk := false
-	defer logCrudMetadata(user, "delete key", &opOk, "key: %d", keyId)
-	ownerShip, err := a.db.MetadataStore.UserHasKey(user, keyId)
+	defer logCrudMetadata(ctx.UserId, "delete key", &opOk, "key: %d", keyId)
+	ownerShip, err := a.db.MetadataStore.UserHasKey(ctx.UserId, keyId)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	if !ownerShip {
 		err := errors.ErrRecordNotFound
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	// need to add processing when the metadata still exists
-	err = a.db.JobStore.AddDocumentsByMetadata(user, keyId, 0, models.ProcessFts)
+	err = a.db.JobStore.AddDocumentsByMetadata(ctx.UserId, keyId, 0, models.ProcessFts)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	err = a.db.MetadataStore.DeleteKey(user, keyId)
+	err = a.db.MetadataStore.DeleteKey(ctx.UserId, keyId)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	a.process.PullDocumentsToProcess()
 	opOk = true
-	respOk(resp, "ok")
+	return c.String(http.StatusOK, "ok")
 }
 
-func (a *Api) deleteMetadataValue(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) deleteMetadataValue(c echo.Context) error {
 	// swagger:route DELETE /api/v1/metadata/keys/{key_id}/value{id} Metadata DeleteMetadataValue
 	// Delete metadata value
 	// Responses:
 	//  200:
 
-	handler := "Api.deleteMetadataValue"
-
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-
-	}
-	keyId, err := getParamInt(req, "key_id")
+	ctx := c.(UserContext)
+	keyId, err := bindPathInt(c, "keyId")
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
-	valueId, err := getParamInt(req, "value_id")
+
+	valueId, err := bindPathInt(c, "valueId")
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	opOk := false
-	defer logCrudMetadata(user, "delete value", &opOk, "key: %d, value: %d", keyId, valueId)
+	defer logCrudMetadata(ctx.UserId, "delete value", &opOk, "key: %d, value: %d", keyId, valueId)
 
-	ownerShip, err := a.db.MetadataStore.UserHasKey(user, keyId)
+	ownerShip, err := a.db.MetadataStore.UserHasKey(ctx.UserId, keyId)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	if !ownerShip {
 		err := errors.ErrRecordNotFound
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
 	// need to add processing when the metadata still exists
-	err = a.db.JobStore.AddDocumentsByMetadata(user, keyId, valueId, models.ProcessFts)
+	err = a.db.JobStore.AddDocumentsByMetadata(ctx.UserId, keyId, valueId, models.ProcessFts)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	err = a.db.MetadataStore.DeleteValue(user, valueId)
+	err = a.db.MetadataStore.DeleteValue(ctx.UserId, valueId)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 	a.process.PullDocumentsToProcess()
 	opOk = true
-	respOk(resp, "ok")
+	return c.String(http.StatusOK, "ok")
 }
 
 type linkedDocumentParams struct {
 	DocumentIds []string `json:"documents" valid:"-"`
 }
 
-func (a *Api) getLinkedDocuments(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) getLinkedDocuments(c echo.Context) error {
 	// swagger:route GET /api/v1/documents/{id}/linked-documents Metadata GetLinkedDocuments
 	// Get linked documents
 	// Responses:
 	//  200:
-	handler := "Api.getLinkedDocuments"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
-	docId := getParamId(req)
+	ctx := c.(UserContext)
+	docId := c.Param("id")
 	opOk := false
-	defer logCrudMetadata(user, "get linked documents", &opOk, "document: %s", docId)
-	docs, err := a.db.MetadataStore.GetLinkedDocuments(user, docId)
+	defer logCrudMetadata(ctx.UserId, "get linked documents", &opOk, "document: %s", docId)
+	docs, err := a.db.MetadataStore.GetLinkedDocuments(ctx.UserId, docId)
 	if err != nil {
-		respError(resp, err, handler)
+		return err
 	} else {
 		opOk = true
-		respResourceList(resp, docs, len(docs))
+		return resourceList(c, docs, len(docs))
 	}
 }
 
-func (a *Api) updateLinkedDocuments(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) updateLinkedDocuments(c echo.Context) error {
 	// swagger:route PUT /api/v1/documents/{id}/linked-documents Metadata UpdateLinkedDocuments
 	// Update linked documents
 	// Responses:
 	//  200:
 
-	handler := "Api.updateLinkedDocuments"
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
-	docId := getParamId(req)
+	ctx := c.(UserContext)
+	docId := bindPathId(c)
 	opOk := false
-	defer logCrudMetadata(user, "update linked documents", &opOk, "document: %s", docId)
+	defer logCrudMetadata(ctx.UserId, "update linked documents", &opOk, "document: %s", docId)
 
 	dto := &linkedDocumentParams{}
-	err := unMarshalBody(req, dto)
+	err := unMarshalBody(c.Request(), dto)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	ownership, err := a.db.DocumentStore.UserOwnsDocuments(user, append(dto.DocumentIds, docId))
+	ownership, err := a.db.DocumentStore.UserOwnsDocuments(ctx.UserId, append(dto.DocumentIds, docId))
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 	if !ownership {
 		e := errors.ErrRecordNotFound
 		e.ErrMsg = "document(s) not found"
-		respError(resp, e, handler)
+		return err
 	}
 
-	err = a.db.MetadataStore.UpdateLinkedDocuments(user, docId, dto.DocumentIds)
+	err = a.db.MetadataStore.UpdateLinkedDocuments(ctx.UserId, docId, dto.DocumentIds)
 	if err != nil {
-		respError(resp, err, handler)
+		return err
 	} else {
 		opOk = true
-		respOk(resp, nil)
+		return c.String(http.StatusOK, "")
 	}
 }

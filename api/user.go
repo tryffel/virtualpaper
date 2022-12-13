@@ -19,7 +19,7 @@
 package api
 
 import (
-	"github.com/sirupsen/logrus"
+	"github.com/labstack/echo/v4"
 	"net/http"
 	"tryffel.net/go/virtualpaper/models"
 )
@@ -54,7 +54,7 @@ func (u *UserPreferences) copyUser(userPref *models.UserPreferences) {
 	u.Synonyms = userPref.Synonyms
 }
 
-func (a *Api) getUserPreferences(resp http.ResponseWriter, req *http.Request) {
+func (a *Api) getUserPreferences(c echo.Context) error {
 	// swagger:route GET /api/v1/preferences/user Preferences GetPreferences
 	// Get user preferences
 	// responses:
@@ -67,26 +67,32 @@ func (a *Api) getUserPreferences(resp http.ResponseWriter, req *http.Request) {
 	//
 
 	//handler := "Api.getUserPreferences"
-	user, ok := getUser(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
+	ctx := c.(UserContext)
 
-	preferences, err := a.db.UserStore.GetUserPreferences(user.Id)
+	/*
+
+		user, ok := getUser(req)
+		if !ok {
+			logrus.Errorf("no user in context")
+			respInternalError(resp)
+			return
+		}
+
+	*/
+
+	preferences, err := a.db.UserStore.GetUserPreferences(ctx.UserId)
 	if err != nil {
-		respError(resp, err, "get user preferences")
-		return
+		return err
 	}
 
-	preferences.CreatedAt = user.CreatedAt
-	preferences.UpdatedAt = user.UpdatedAt
-	preferences.Email = user.Email
+	preferences.CreatedAt = ctx.User.CreatedAt
+	preferences.UpdatedAt = ctx.User.UpdatedAt
+	preferences.Email = ctx.User.Email
 
 	userPref := &UserPreferences{}
 	userPref.copyUser(preferences)
-	respOk(resp, userPref)
+	return c.JSON(http.StatusOK, userPref)
+	//respOk(resp, userPref)
 }
 
 // swagger:model UserPreferences
@@ -95,34 +101,23 @@ type ReqUserPreferences struct {
 	Synonyms  [][]string `json:"synonyms" valid:"-"`
 }
 
-func (a *Api) updateUserPreferences(resp http.ResponseWriter, req *http.Request) {
-	handler := "updateUserPreferences"
-
-	user, ok := getUserId(req)
-	if !ok {
-		logrus.Errorf("no user in context")
-		respInternalError(resp)
-		return
-	}
+func (a *Api) updateUserPreferences(c echo.Context) error {
+	ctx := c.(UserContext)
 
 	dto := &ReqUserPreferences{}
-	err := unMarshalBody(req, dto)
+	err := unMarshalBody(c.Request(), dto)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	err = a.db.UserStore.UpdatePreferences(user, dto.StopWords, dto.Synonyms)
+	err = a.db.UserStore.UpdatePreferences(ctx.UserId, dto.StopWords, dto.Synonyms)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
 
-	err = a.search.UpdateUserPreferences(user)
+	err = a.search.UpdateUserPreferences(ctx.UserId)
 	if err != nil {
-		respError(resp, err, handler)
-		return
+		return err
 	}
-
-	respOk(resp, nil)
+	return c.String(http.StatusOK, "")
 }
