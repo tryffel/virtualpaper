@@ -221,6 +221,62 @@ func Test_parseFilter(t *testing.T) {
 
 			wantErr: false,
 		},
+		{
+			name: "date: year",
+			args: args{`date:2022`},
+			want: &searchQuery{
+				RawQuery:       `date:2022`,
+				Query:          "",
+				MetadataQuery:  []string{},
+				MetadataString: "",
+				DateBefore:     timeFromDate(2023, 1, 1),
+				DateAfter:      timeFromDate(2022, 1, 1),
+			},
+
+			wantErr: false,
+		},
+		{
+			name: "date: month range",
+			args: args{`date:2022|2022-06`},
+			want: &searchQuery{
+				RawQuery:       `date:2022|2022-06`,
+				Query:          "",
+				MetadataQuery:  []string{},
+				MetadataString: "",
+				DateBefore:     timeFromDate(2022, 7, 1),
+				DateAfter:      timeFromDate(2022, 1, 1),
+			},
+
+			wantErr: false,
+		},
+		{
+			name: "date: year range",
+			args: args{`date:2020|today`},
+			want: &searchQuery{
+				RawQuery:       `date:2020|today`,
+				Query:          "",
+				MetadataQuery:  []string{},
+				MetadataString: "",
+				DateBefore:     models.MidnightForDate(time.Now().AddDate(0, 0, 0)),
+				DateAfter:      timeFromDate(2020, 1, 1),
+			},
+
+			wantErr: false,
+		},
+		{
+			name: "date: day-to-yesterday",
+			args: args{`date:2015-6-12|yesterday`},
+			want: &searchQuery{
+				RawQuery:       `date:2015-6-12|yesterday`,
+				Query:          "",
+				MetadataQuery:  []string{},
+				MetadataString: "",
+				DateBefore:     models.MidnightForDate(time.Now().AddDate(0, 0, -1)),
+				DateAfter:      timeFromDate(2015, 6, 12),
+			},
+
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -234,4 +290,8 @@ func Test_parseFilter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func timeFromDate(year, month, day int) time.Time {
+	return time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 }
