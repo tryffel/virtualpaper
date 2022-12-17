@@ -273,10 +273,7 @@ func tokenizeFilter(filter string) []string {
 		if inEscape {
 			if character == escapeChar {
 				inEscape = false
-				tokens = append(tokens, token)
 				textLeft = textLeft[width:]
-				textLeft = strings.TrimLeft(textLeft, " ")
-				token = ""
 			} else {
 				token += string(character)
 				textLeft = textLeft[width:]
@@ -384,7 +381,7 @@ func parseFilter(filter string) (*searchQuery, error) {
 			continue
 		}
 
-		metadataFilter := fmt.Sprintf(`metadata="%s:%s"`, splits[0], strings.Replace(splits[1], " ", "_", -1))
+		metadataFilter := fmt.Sprintf(`metadata="%s:%s"`, normalizeMetadataKey(splits[0]), normalizeMetadataValue(splits[1]))
 		metadataQuery = append(metadataQuery, metadataFilter)
 		removeToken()
 	}
@@ -419,4 +416,12 @@ func parseContent(value string, sq *searchQuery) bool {
 func parseDescription(value string, sq *searchQuery) bool {
 	sq.Description = value
 	return true
+}
+
+func normalizeMetadataKey(key string) string {
+	return strings.Replace(key, " ", "_", -1)
+}
+
+func normalizeMetadataValue(value string) string {
+	return normalizeMetadataKey(value)
 }

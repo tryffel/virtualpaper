@@ -175,8 +175,9 @@ func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 
 		metadata := make([]string, len(v.Metadata))
 		for metadataI, v := range v.Metadata {
-			value := strings.Replace(v.Value, " ", "_", -1)
-			metadata[metadataI] = v.Key + ":" + value
+			key := normalizeMetadataKey(v.Key)
+			value := normalizeMetadataValue(v.Value)
+			metadata[metadataI] = key + ":" + value
 		}
 
 		data[i] = map[string]interface{}{
