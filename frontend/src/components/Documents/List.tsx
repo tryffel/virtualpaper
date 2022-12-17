@@ -174,25 +174,52 @@ const DocumentGrid = (props: any) => {
 const DocumentHelp = () => {
   return (
     <HelpButton title="Search documents">
-      <Typography variant="h6" color="textPrimary">
-        Full text search
-      </Typography>
-      <p>
-        Full text input filters documents on any fields available. For
-        reference, see &nbsp;
-        <a href="https://docs.meilisearch.com/learn/what_is_meilisearch/features.html">
-          Meilisearch documentation
-        </a>
-      </p>
-      <Typography variant="h6" color="textPrimary">
-        Metadata filter
-      </Typography>
-      Returned documents can be filtered by their metadata. Possible queries:
-      <Typography>- class:report</Typography>
-      <Typography>- author:apple OR author:google</Typography>
-      <Typography>
-        - class:book AND (author:"agatha christie" OR author:"doyle")
-      </Typography>
+        <Typography variant="h5" color="textPrimary">
+            Full text search
+        </Typography>
+        <p>
+          Query is single sentence that can consist of text, date range or metadata.
+          Any single words or phrases are used to query the contents of the documents.
+          Date range filters results by their date.
+          Metadata filters results by metadata.
+          The search bar uses autocomplete feature.
+        </p>
+        <p>
+            For more help on search queries please see the official documentation.
+        </p>
+
+        <Typography variant="h5" color="textPrimary">
+            Sample queries
+        </Typography>
+
+        <p>
+            <Typography>Text</Typography>
+            <Typography>- searching single words</Typography>
+            <Typography>- searching single words AND (phrase must match)</Typography>
+        </p>
+        <p>
+            <Typography>Metadata</Typography>
+            <Typography>- key:value</Typography>
+            <Typography>- author:doyle</Typography>
+            <Typography>- (author:doyle OR author:christie)</Typography>
+        </p>
+        <p>
+            <Typography>Date</Typography>
+            <Typography>- date:today</Typography>
+            <Typography>- date:2022</Typography>
+            <Typography>- date:2015|2022 #(range between dates) </Typography>
+            <Typography>- date:2015|today </Typography>
+            <Typography>- date:2015-6-12|2022-8 </Typography>
+        </p>
+
+        <p>
+            <Typography variant="h6" color="textPrimary">Combining multiple terms into single query</Typography>
+            <Typography>Any term can be combined into more complex queries</Typography>
+            <Typography>- word search date:2022 author:doyle </Typography>
+            <Typography>- word search author:doyle (class:paper OR class:invoice)</Typography>
+            <p>The last query is parsed as: "'word' AND 'search' AND metadata(author:doyle) AND (metadata(class:paper) OR metadata(class:invoice))"</p>
+        </p>
+
     </HelpButton>
   );
 };
