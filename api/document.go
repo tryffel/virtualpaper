@@ -547,7 +547,7 @@ func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, c echo.
 	opOk := false
 	defer logCrudDocument(userId, "search", &opOk, "metadata: %v, query: %v", filter.Metadata != "", filter.Query != "")
 
-	res, n, err := a.search.SearchDocumentsNew(userId, filter.Query, sort[0], paging)
+	res, n, err := a.search.SearchDocuments(userId, filter.Query, sort[0], paging)
 	if err != nil {
 		return err
 	}

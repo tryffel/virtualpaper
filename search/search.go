@@ -42,120 +42,9 @@ type DocumentFilter struct {
 	SortMode string    `json:"sort_mode"`
 }
 
-func (d *DocumentFilter) buildRequest(paging storage.Paging) *meilisearch.SearchRequest {
-	request := &meilisearch.SearchRequest{
-		Offset:                int64(paging.Offset),
-		Limit:                 int64(paging.Limit),
-		AttributesToRetrieve:  []string{"document_id", "name", "content", "description", "date"},
-		AttributesToCrop:      []string{"content"},
-		CropLength:            1000,
-		AttributesToHighlight: []string{"content", "name", "description"},
-		Matches:               false,
-		FacetsDistribution:    nil,
-		PlaceholderSearch:     false,
-	}
-	filter := ""
-	if d.Query == "" {
-		request.PlaceholderSearch = true
-	}
-
-	facets := make([]interface{}, 0)
-	if d.Tag != "" {
-		facets = append(facets, fmt.Sprintf(`tags:%s`, d.Tag))
-	}
-	if !d.After.IsZero() {
-		filter += fmt.Sprintf("date > %d", d.After.Add(-time.Hour*24).Unix())
-	}
-	if !d.Before.IsZero() {
-		if filter != "" {
-			filter += " AND "
-		}
-		filter += fmt.Sprintf("date < %d", d.Before.Add(time.Hour*24).Unix())
-	}
-	if d.Metadata != "" {
-		metadata := parseMetadataFilter(d.Metadata)
-		if filter != "" {
-			filter += " AND "
-		}
-		filter += metadata
-	}
-	if filter != "" {
-		request.Filter = filter
-	}
-
-	if d.Sort != "" && d.Sort != "id" {
-		if d.SortMode == "" {
-			d.SortMode = "desc"
-		}
-		request.Sort = []string{d.Sort + ":" + d.SortMode}
-	}
-	return request
-}
-
-// SearchDocumentsV1 searches documents for given user. Query can be anything. If field="", search in any field,
+// SearchDocuments searches documents for given user. Query can be anything. If field="", search in any field,
 // else search only specified field
-func (e *Engine) SearchDocumentsV1(userId int, query *DocumentFilter, paging storage.Paging) ([]*models.Document, int, error) {
-
-	request := query.buildRequest(paging)
-	logrus.Debugf("Meilisearch query: %v", request)
-
-	docs := make([]*models.Document, 0)
-
-	res, err := e.client.Index(indexName(userId)).Search(query.Query, request)
-	if err != nil {
-		if meiliError, ok := err.(*meilisearch.Error); ok {
-			if meiliError.StatusCode == 400 {
-				logrus.Debugf("meilisearch invalid query: %v", meiliError)
-				// invalid query
-				userError := errors.ErrInvalid
-				userError.ErrMsg = "Invalid query"
-				return nil, 0, userError
-			} else {
-				logrus.Errorf("meilisearch error: %v", meiliError)
-			}
-		}
-		return docs, 0, err
-	}
-	if len(res.Hits) == 0 {
-		return docs, 0, nil
-	}
-
-	docs = make([]*models.Document, len(res.Hits))
-
-	for i, v := range res.Hits {
-		isMap, ok := v.(map[string]interface{})
-		if ok {
-			doc := &models.Document{}
-			doc.Id = getString("document_id", isMap)
-			doc.Name = getString("name", isMap)
-			doc.Content = getString("content", isMap)
-			doc.Description = getString("description", isMap)
-			doc.Date = time.Unix(int64(getInt("date", isMap)), 0)
-			docs[i] = doc
-
-			formatted := isMap["_formatted"]
-			if formattedMap, ok := formatted.(map[string]interface{}); ok {
-				name := getString("name", formattedMap)
-				if name != "" {
-					doc.Name = name
-				}
-				content := getString("content", formattedMap)
-				if content != "" {
-					doc.Content = content
-				}
-			}
-
-		}
-	}
-	// If there are only filters and no query, meilisearch returns larger nbHits, probably count of all documents,
-	// which is incorrect for given filter.
-	nHits := int(res.NbHits)
-	return docs, nHits, nil
-}
-
-// SearchDocumentsV1 searches documents for given user. Query can be anything. If field="", search in any field,
-// else search only specified field
-func (e *Engine) SearchDocumentsNew(userId int, query string, sort storage.SortKey, paging storage.Paging) ([]*models.Document, int, error) {
+func (e *Engine) SearchDocuments(userId int, query string, sort storage.SortKey, paging storage.Paging) ([]*models.Document, int, error) {
 
 	qs, err := parseFilter(query)
 	if err != nil {
@@ -303,19 +192,6 @@ func tokenizeFilter(filter string) []string {
 	}
 
 	return tokens
-}
-
-// parse user filter into meilisearch metadata filter
-func parseMetadataFilter(filter string) string {
-	tokens := tokenizeFilter(filter)
-	for i, v := range tokens {
-		if strings.Contains(v, ":") {
-			v = strings.Replace(v, " ", "_", -1)
-			v = `metadata="` + v + `"`
-			tokens[i] = v
-		}
-	}
-	return strings.Join(tokens, " ")
 }
 
 func parseFilter(filter string) (*searchQuery, error) {

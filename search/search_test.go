@@ -25,37 +25,6 @@ import (
 	"tryffel.net/go/virtualpaper/models"
 )
 
-func Test_parseMetadataFilter(t *testing.T) {
-	type args struct {
-		filter string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			args: args{filter: ""},
-			want: "",
-		},
-		{
-			args: args{filter: `class:book AND (name:"james bond" OR name:"agatha christie")`},
-			want: `metadata="class:book" AND ( metadata="name:james_bond" OR metadata="name:agatha_christie" )`,
-		},
-		{
-			args: args{filter: `class:book NOT author:"james bond"`},
-			want: `metadata="class:book" NOT metadata="author:james_bond"`,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := parseMetadataFilter(tt.args.filter); got != tt.want {
-				t.Errorf("parseFilter() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_tokenizeFilter(t *testing.T) {
 	type args struct {
 		filter string

@@ -400,8 +400,6 @@ const (
 	valueMatchStatusOk
 )
 
-const tDay = time.Second * 3600 * 24
-
 func suggestDate(token string) []string {
 	suggestions := []string{}
 	keys := []string{"today", "yesterday", "week", "month", "year"}
@@ -544,6 +542,3 @@ type metadataQuerier interface {
 	queryKeys(key string, prefis string, suffix string) []string
 	queryValues(key, value string) []string
 }
-
-//type metadataQueryKeyFunc = func(key string) []string
-//type metadataValueQueryFunc = func(key, value string) []string
