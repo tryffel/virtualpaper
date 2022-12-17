@@ -301,3 +301,14 @@ func normalizeMetadataKey(key string) string {
 func normalizeMetadataValue(value string) string {
 	return normalizeMetadataKey(value)
 }
+
+func escapeMetadataKey(key string) string {
+	if strings.Contains(key, " ") {
+		return `"` + key + `"`
+	}
+	return key
+}
+
+func escapeMetadataValue(value string) string {
+	return escapeMetadataKey(value)
+}

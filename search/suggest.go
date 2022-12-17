@@ -234,10 +234,7 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 		// suggest metadata keys
 		keys := metadata.queryKeys("", "", ":")
 		for _, v := range keys {
-			if strings.Contains(v, " ") {
-				v = `"` + v + `"`
-			}
-			qs.addSuggestionValues(v+":", SuggestionTypeMetadata, "")
+			qs.addSuggestionValues(escapeMetadataKey(v)+":", SuggestionTypeMetadata, "")
 		}
 		qs.Prefix = query
 		return qs
@@ -278,15 +275,12 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 				// show only 5 keys per key when still typing key
 				break
 			}
-			if strings.Contains(v, " ") {
-				v = `"` + v + `"`
-			}
-			qs.addSuggestionValues(parts[0]+":"+v, SuggestionTypeMetadata, "")
+			qs.addSuggestionValues(parts[0]+":"+escapeMetadataValue(v), SuggestionTypeMetadata, "")
 		}
 
 		qs.Prefix = strings.Join(normalizedTokens, " ") + " "
 	} else if len(parts) == 2 {
-		tokenPrefix := parts[0]
+		tokenPrefix := escapeMetadataKey(parts[0])
 		addWhiteSpace := true
 		// suggest value
 		if inParantheses && parts[0] != "" {
@@ -319,7 +313,7 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 					perfectMatch = true
 					break
 				}
-				qs.addSuggestionValues(v, SuggestionTypeMetadata, "")
+				qs.addSuggestionValues(escapeMetadataValue(v), SuggestionTypeMetadata, "")
 			}
 			if len(values) > 0 && !perfectMatch {
 				tokenPrefix = tokenPrefix + ":"

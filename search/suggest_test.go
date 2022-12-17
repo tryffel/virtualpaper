@@ -93,6 +93,9 @@ func newMetadata() *metadata {
 	m.addKey("topic")
 	m.addKey("datasource")
 
+	m.addKey("whitespace key")
+	m.addValue("whitespace key", "whitespace value")
+
 	m.addValue("class", "paper")
 	m.addValue("class", "invoice")
 
@@ -211,6 +214,7 @@ func Test_suggest(t *testing.T) {
 				{Value: "authentic:", Type: "metadata", Hint: ""},
 				{Value: "topic:", Type: "metadata", Hint: ""},
 				{Value: "datasource:", Type: "metadata", Hint: ""},
+				{Value: `"whitespace key":`, Type: "metadata", Hint: ""},
 			}, Prefix: "one author ( ", ValidQuery: false},
 		},
 		{
@@ -220,6 +224,13 @@ func Test_suggest(t *testing.T) {
 				{Value: "author:", Type: "metadata", Hint: ""},
 				{Value: "authentic:", Type: "metadata", Hint: ""},
 			}, Prefix: "one author ( ", ValidQuery: false},
+		},
+		{
+			name: "autocomplete metadata with whitespace",
+			args: args{"one space "},
+			want: &QuerySuggestions{Suggestions: []Suggestion{
+				{Value: `"whitespace key":`, Type: "metadata", Hint: ""},
+			}, Prefix: "one ", ValidQuery: false},
 		},
 		{
 			name: "suggest metadata and operators inside parantheses",
@@ -279,6 +290,13 @@ func Test_suggest(t *testing.T) {
 			}, Prefix: "one author:", ValidQuery: false},
 		},
 		{
+			name: "autocomplete metadata value with whitespace",
+			args: args{`one "whitespace key":"val"`},
+			want: &QuerySuggestions{Suggestions: []Suggestion{
+				{Value: `"whitespace value"`, Type: "metadata", Hint: ""},
+			}, Prefix: `one "whitespace key":`, ValidQuery: false},
+		},
+		{
 			name: "autocomplete metadata value fuzzy",
 			args: args{"one topic:log"},
 			want: &QuerySuggestions{Suggestions: []Suggestion{
@@ -295,7 +313,8 @@ func Test_suggest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := suggest(tt.args.query, metadata); !reflect.DeepEqual(got, tt.want) {
+			got := suggest(tt.args.query, metadata)
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("suggest() = %v, want %v", got, tt.want)
 			}
 		})
