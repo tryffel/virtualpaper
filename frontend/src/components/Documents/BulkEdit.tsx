@@ -129,12 +129,7 @@ const BulkEditDocuments = () => {
             </AccordionSummary>
             <AccordionDetails style={{ flexDirection: "column" }}>
               <ArrayInput source="add_metadata.metadata" label={"Add metadata"}>
-                <SimpleFormIterator
-                  defaultValue={[
-                    { key_id: 0, key: "", value_id: 0, value: "" },
-                  ]}
-                  disableReordering={true}
-                >
+                <SimpleFormIterator disableReordering={true}>
                   <ReferenceInput
                     label="Key"
                     source="key_id"
@@ -176,12 +171,7 @@ const BulkEditDocuments = () => {
                 source="remove_metadata.metadata"
                 label={"Add metadata"}
               >
-                <SimpleFormIterator
-                  defaultValue={[
-                    { key_id: 0, key: "", value_id: 0, value: "" },
-                  ]}
-                  disableReordering={true}
-                >
+                <SimpleFormIterator disableReordering={true}>
                   <ReferenceInput
                     label="Key"
                     source="key_id"

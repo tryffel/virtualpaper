@@ -79,11 +79,7 @@ export const DocumentEdit = () => {
         <DocumentEditActions open={previewOpen} setOpen={setPreviewOpen} />
       }
     >
-      <SimpleForm
-        redirect="show"
-        warnWhenUnsavedChanges
-        toolbar={<EditToolBar />}
-      >
+      <SimpleForm warnWhenUnsavedChanges toolbar={<EditToolBar />}>
         <div>
           <Grid container spacing={2}>
             <Grid item xs={12} md={8} lg={12}>
@@ -115,12 +111,7 @@ export const DocumentEdit = () => {
               </Box>
               <Box display={{ xs: "block", sm: "block" }}>
                 <ArrayInput source="metadata" label={"Metadata"}>
-                  <SimpleFormIterator
-                    defaultValue={[
-                      { key_id: 0, key: "", value_id: 0, value: "" },
-                    ]}
-                    disableReordering={true}
-                  >
+                  <SimpleFormIterator inline disableReordering fullWidth>
                     <ReferenceInput
                       label="Key"
                       source="key_id"
@@ -130,7 +121,6 @@ export const DocumentEdit = () => {
                     >
                       <SelectInput
                         optionText="key"
-                        fullWidth
                         data-testid="metadata-key"
                       />
                     </ReferenceInput>
@@ -142,7 +132,6 @@ export const DocumentEdit = () => {
                             source={getSource ? getSource("value_id") : ""}
                             record={scopedFormData}
                             label={"Value"}
-                            fullWidth
                           />
                         ) : null
                       }
@@ -170,7 +159,7 @@ export interface MetadataValueInputProps {
   source: string;
   record: any;
   label: string;
-  fullWidth: boolean;
+  fullWidth?: boolean;
 }
 
 export const MetadataValueInput = (props: MetadataValueInputProps) => {

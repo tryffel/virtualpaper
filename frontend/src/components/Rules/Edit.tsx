@@ -38,12 +38,7 @@ import {
 } from "react-admin";
 import get from "lodash/get";
 
-import {
-  Typography,
-  Grid,
-  Box,
-  useTheme,
-} from "@mui/material";
+import { Typography, Grid, Box, useTheme } from "@mui/material";
 import { HelpButton } from "../Help";
 import { MarkdownInput } from "../Markdown";
 import { MetadataValueInputProps } from "../Documents/Edit";
@@ -174,15 +169,7 @@ export const ConditionEdit = () => {
   const record = useRecordContext();
   const theme = useTheme();
   return (
-    <SimpleFormIterator
-      source={"conditions"}
-      defaultValue={{
-        enabled: true,
-        condition_type: "content_contains",
-        value: "",
-        date_fmt: "",
-      }}
-    >
+    <SimpleFormIterator source={"conditions"}>
       <FormDataConsumer>
         {({ formData, scopedFormData, getSource }) => {
           return getSource ? (
@@ -308,10 +295,7 @@ export const ActionEdit = () => {
   const record = useRecordContext();
 
   return record ? (
-    <SimpleFormIterator
-      source={"actions"}
-      defaultValue={{ enabled: true, action: "name_append", value: "" }}
-    >
+    <SimpleFormIterator source={"actions"}>
       <FormDataConsumer>
         {({ formData, scopedFormData, getSource }) => {
           return getSource ? (
@@ -439,8 +423,8 @@ const MatchTypeSelectInput = (props: SourceProps) => {
 };
 
 const RuleEditHelp = () => {
-  const dateRegexExample = `(\d{4}-\d{1,2}-\d{1,2})`; 
-  
+  const dateRegexExample = `(\d{4}-\d{1,2}-\d{1,2})`;
+
   return (
     <HelpButton title="Edit Rule">
       <Typography variant="h6" color="textPrimary">
