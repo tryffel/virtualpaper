@@ -21,38 +21,9 @@ package search
 import (
 	"reflect"
 	"testing"
+	"time"
+	"tryffel.net/go/virtualpaper/models"
 )
-
-func Test_parseMetadataFilter(t *testing.T) {
-	type args struct {
-		filter string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			args: args{filter: ""},
-			want: "",
-		},
-		{
-			args: args{filter: `class:book AND (name:"james bond" OR name:"agatha christie")`},
-			want: `metadata="class:book" AND ( metadata="name:james_bond" OR metadata="name:agatha_christie" )`,
-		},
-		{
-			args: args{filter: `class:book NOT author:"james bond"`},
-			want: `metadata="class:book" NOT metadata="author:james_bond"`,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := parseMetadataFilter(tt.args.filter); got != tt.want {
-				t.Errorf("parseFilter() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func Test_tokenizeFilter(t *testing.T) {
 	type args struct {
@@ -67,6 +38,10 @@ func Test_tokenizeFilter(t *testing.T) {
 			args: args{`a author:doyle OR (topic:"misc topic" AND author:doyle) and one more`},
 			want: []string{"a", "author:doyle", "OR", "(", "topic:misc topic", "AND", "author:doyle", ")", "and", "one", "more"},
 		},
+		{
+			args: args{`a "complex key":"complex value"`},
+			want: []string{"a", "complex key:complex value"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -77,7 +52,6 @@ func Test_tokenizeFilter(t *testing.T) {
 	}
 }
 
-/*
 func Test_parseFilter(t *testing.T) {
 	type args struct {
 		filter string
@@ -104,8 +78,19 @@ func Test_parseFilter(t *testing.T) {
 			want: &searchQuery{
 				RawQuery:       "simple key:value",
 				Query:          "simple",
-				MetadataQuery:  []string{`metadata=key:"value"`},
-				MetadataString: `metadata=key:"value"`,
+				MetadataQuery:  []string{`metadata="key:value"`},
+				MetadataString: `metadata="key:value"`,
+			},
+			wantErr: false,
+		},
+		{
+			name: "multi word key values",
+			args: args{`simple "key 2":"complex value" AND key:value`},
+			want: &searchQuery{
+				RawQuery:       `simple "key 2":"complex value" AND key:value`,
+				Query:          "simple",
+				MetadataQuery:  []string{`metadata="key_2:complex_value"`, "AND", `metadata="key:value"`},
+				MetadataString: `metadata="key_2:complex_value" AND metadata="key:value"`,
 			},
 			wantErr: false,
 		},
@@ -115,8 +100,8 @@ func Test_parseFilter(t *testing.T) {
 			want: &searchQuery{
 				RawQuery:       "simple key:value AND another:value more search",
 				Query:          "simple more search",
-				MetadataQuery:  []string{`metadata=key:"value"`, "AND", `metadata=another:"value"`},
-				MetadataString: `metadata=key:"value" AND metadata=another:"value"`,
+				MetadataQuery:  []string{`metadata="key:value"`, "AND", `metadata="another:value"`},
+				MetadataString: `metadata="key:value" AND metadata="another:value"`,
 			},
 			wantErr: false,
 		},
@@ -126,8 +111,8 @@ func Test_parseFilter(t *testing.T) {
 			want: &searchQuery{
 				RawQuery:       "simple key:value AND (another:value OR key:value) more search",
 				Query:          "simple more search",
-				MetadataQuery:  []string{`metadata=key:"value"`, "AND", "(", `metadata=another:"value"`, "OR", `metadata=key:"value"`, ")"},
-				MetadataString: `metadata=key:"value" AND ( metadata=another:"value" OR metadata=key:"value" )`,
+				MetadataQuery:  []string{`metadata="key:value"`, "AND", "(", `metadata="another:value"`, "OR", `metadata="key:value"`, ")"},
+				MetadataString: `metadata="key:value" AND ( metadata="another:value" OR metadata="key:value" )`,
 			},
 			wantErr: false,
 		},
@@ -139,7 +124,8 @@ func Test_parseFilter(t *testing.T) {
 				Query:          "",
 				MetadataQuery:  []string{},
 				MetadataString: "",
-				Date:           midnightFordate(time.Now().Local()),
+				DateBefore:     models.MidnightForDate(time.Now().AddDate(0, 0, 1).Local()),
+				DateAfter:      models.MidnightForDate(time.Now().AddDate(0, 0, 0).Local()),
 			},
 			wantErr: false,
 		},
@@ -151,7 +137,8 @@ func Test_parseFilter(t *testing.T) {
 				Query:          "",
 				MetadataQuery:  []string{},
 				MetadataString: "",
-				Date:           midnightFordate(time.Now().Local().AddDate(0, 0, -1)),
+				DateBefore:     models.MidnightForDate(time.Now().AddDate(0, 0, 0).Local()),
+				DateAfter:      models.MidnightForDate(time.Now().AddDate(0, 0, -1).Local()),
 			},
 			wantErr: false,
 		},
@@ -195,9 +182,66 @@ func Test_parseFilter(t *testing.T) {
 			want: &searchQuery{
 				RawQuery:       `fts test date:today class:paper OR class:invoice"`,
 				Query:          "fts test",
-				MetadataQuery:  []string{`metadata=class:"paper"`, "OR", `metadata=class:"invoice"`},
-				MetadataString: `metadata=class:"paper" OR metadata=class:"invoice"`,
-				Date:           midnightFordate(time.Now().Local()),
+				MetadataQuery:  []string{`metadata="class:paper"`, "OR", `metadata="class:invoice"`},
+				MetadataString: `metadata="class:paper" OR metadata="class:invoice"`,
+				DateBefore:     models.MidnightForDate(time.Now().Local().AddDate(0, 0, 1)),
+				DateAfter:      models.MidnightForDate(time.Now().Local().AddDate(0, 0, 0)),
+			},
+
+			wantErr: false,
+		},
+		{
+			name: "date: year",
+			args: args{`date:2022`},
+			want: &searchQuery{
+				RawQuery:       `date:2022`,
+				Query:          "",
+				MetadataQuery:  []string{},
+				MetadataString: "",
+				DateBefore:     timeFromDate(2023, 1, 1),
+				DateAfter:      timeFromDate(2022, 1, 1),
+			},
+
+			wantErr: false,
+		},
+		{
+			name: "date: month range",
+			args: args{`date:2022|2022-06`},
+			want: &searchQuery{
+				RawQuery:       `date:2022|2022-06`,
+				Query:          "",
+				MetadataQuery:  []string{},
+				MetadataString: "",
+				DateBefore:     timeFromDate(2022, 7, 1),
+				DateAfter:      timeFromDate(2022, 1, 1),
+			},
+
+			wantErr: false,
+		},
+		{
+			name: "date: year range",
+			args: args{`date:2020|today`},
+			want: &searchQuery{
+				RawQuery:       `date:2020|today`,
+				Query:          "",
+				MetadataQuery:  []string{},
+				MetadataString: "",
+				DateBefore:     models.MidnightForDate(time.Now().AddDate(0, 0, 0)),
+				DateAfter:      timeFromDate(2020, 1, 1),
+			},
+
+			wantErr: false,
+		},
+		{
+			name: "date: day-to-yesterday",
+			args: args{`date:2015-6-12|yesterday`},
+			want: &searchQuery{
+				RawQuery:       `date:2015-6-12|yesterday`,
+				Query:          "",
+				MetadataQuery:  []string{},
+				MetadataString: "",
+				DateBefore:     models.MidnightForDate(time.Now().AddDate(0, 0, -1)),
+				DateAfter:      timeFromDate(2015, 6, 12),
 			},
 
 			wantErr: false,
@@ -217,4 +261,6 @@ func Test_parseFilter(t *testing.T) {
 	}
 }
 
-*/
+func timeFromDate(year, month, day int) time.Time {
+	return time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+}

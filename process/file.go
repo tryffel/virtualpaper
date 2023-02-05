@@ -170,6 +170,7 @@ func (fp *fileProcessor) process(op fileOp) {
 		fp.file = op.file
 		fp.processFile()
 	} else if op.document != nil {
+		fp.file = op.file
 		fp.document = op.document
 		fp.startedProcessing = time.Now()
 		fp.processDocument()
@@ -179,6 +180,7 @@ func (fp *fileProcessor) process(op fileOp) {
 	}
 }
 
+/* New implementation, used when document is sent using the API */
 func (fp *fileProcessor) processDocument() {
 	logrus.Debugf("Task %d process file %s", fp.id, fp.document.Id)
 
@@ -202,46 +204,48 @@ func (fp *fileProcessor) processDocument() {
 		fp.document.Tags = *tags
 	}
 
-	filePath := storage.DocumentPath(fp.document.Id)
-	file, err := os.Open(filePath)
-	if err != nil {
-		logrus.Errorf("open document %s file: %v", fp.document.Id, err)
-		err = fp.cancelDocumentProcessing("file not found")
-		if err != nil {
-			logrus.Errorf("cancel document processing: %v", err)
-		}
-		return
-	}
-
 	defer fp.cleanup()
 
 	for _, step := range *pendingSteps {
 		switch step.Step {
 		case models.ProcessHash:
-			err := fp.updateHash(fp.document, file)
+			err = fp.ensureFileOpenAndLogFailure()
+			if err != nil {
+				err = fp.cancelDocumentProcessing("file not found")
+				if err != nil {
+					logrus.Errorf("cancel document processing: %v", err)
+				}
+				return
+			}
+			err := fp.updateHash(fp.document)
 			if err != nil {
 				logrus.Errorf("update hash: %v", err)
 				return
-			} else {
-				file.Close()
-				file, err = os.Open(filePath)
-				if err != nil {
-					logrus.Errorf("open document %s file: %v", fp.document.Id, err)
-					err = fp.cancelDocumentProcessing("file not found")
-					if err != nil {
-						logrus.Errorf("cancel document processing: %v", err)
-					}
-					return
-				}
 			}
 		case models.ProcessThumbnail:
-			err := fp.generateThumbnail(file)
+			err = fp.ensureFileOpenAndLogFailure()
+			if err != nil {
+				err = fp.cancelDocumentProcessing("file not found")
+				if err != nil {
+					logrus.Errorf("cancel document processing: %v", err)
+				}
+				return
+			}
+			err := fp.generateThumbnail()
 			if err != nil {
 				logrus.Errorf("generate thumbnail: %v", err)
 				return
 			}
 		case models.ProcessParseContent:
-			err := fp.parseContent(file)
+			err = fp.ensureFileOpenAndLogFailure()
+			if err != nil {
+				err = fp.cancelDocumentProcessing("file not found")
+				if err != nil {
+					logrus.Errorf("cancel document processing: %v", err)
+				}
+				return
+			}
+			err := fp.parseContent()
 			if err != nil {
 				logrus.Errorf("parse content: %v", err)
 				return
@@ -262,13 +266,11 @@ func (fp *fileProcessor) processDocument() {
 			logrus.Warningf("unhandle process step: %v, skipping", step.Step)
 		}
 	}
-
-	file.Close()
 }
 
 // re-calculate hash. If it differs from current document.Hash, update document record and rename file to new hash,
 // if different.
-func (fp *fileProcessor) updateHash(doc *models.Document, file *os.File) error {
+func (fp *fileProcessor) updateHash(doc *models.Document) error {
 	process := &models.ProcessItem{
 		DocumentId: fp.document.Id,
 		Step:       models.ProcessHash,
@@ -280,8 +282,13 @@ func (fp *fileProcessor) updateHash(doc *models.Document, file *os.File) error {
 		return fmt.Errorf("persist process item: %v", err)
 	}
 
+	err = fp.ensureFileOpen()
+	if err != nil {
+		return err
+	}
+
 	defer fp.completeProcessingStep(process, job)
-	hash, err := GetFileHash(file)
+	hash, err := GetFileHash(fp.rawFile)
 	if err != nil {
 		job.Status = models.JobFailure
 		return err
@@ -296,7 +303,7 @@ func (fp *fileProcessor) updateHash(doc *models.Document, file *os.File) error {
 		return nil
 	}
 
-	oldName := file.Name()
+	oldName := fp.rawFile.Name()
 	err = os.Rename(oldName, path.Join(config.C.Processing.DocumentsDir, hash))
 	if err != nil {
 		job.Status = models.JobFailure
@@ -352,6 +359,28 @@ func (fp *fileProcessor) updateThumbnail(doc *models.Document, file *os.File) er
 	return nil
 }
 
+func (fp *fileProcessor) ensureFileOpen() error {
+	if fp.rawFile != nil {
+		return nil
+	}
+	var err error
+	fp.rawFile, err = os.OpenFile(fp.file, os.O_RDONLY, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("open file: %v", err)
+	}
+	return nil
+}
+
+func (fp fileProcessor) ensureFileOpenAndLogFailure() error {
+	err := fp.ensureFileOpen()
+	if err != nil {
+		logrus.WithField("document", fp.document.Id).Error(err)
+		return err
+	}
+	return nil
+}
+
+/* Old implementation, currently being used when file originates from file system and not from the API */
 func (fp *fileProcessor) processFile() {
 	logrus.Infof("task %d, process file %s", fp.id, fp.file)
 
@@ -360,7 +389,11 @@ func (fp *fileProcessor) processFile() {
 	fp.lock.Unlock()
 	var err error
 
-	fp.rawFile, err = os.OpenFile(fp.file, os.O_RDONLY, os.ModePerm)
+	err = fp.ensureFileOpen()
+	if err != nil {
+		logrus.Errorf("process file %s: %v", fp.document.Id, err)
+		return
+	}
 
 	defer fp.cleanup()
 
@@ -387,14 +420,14 @@ func (fp *fileProcessor) processFile() {
 	}
 
 	logrus.Info("generate thumbnail")
-	err = fp.generateThumbnail(fp.rawFile)
+	err = fp.generateThumbnail()
 	if err != nil {
 		logrus.Errorf("generate thumbnail: %v", err)
 		return
 	}
 
 	logrus.Info("parse content")
-	err = fp.parseContent(fp.rawFile)
+	err = fp.parseContent()
 	if err != nil {
 		logrus.Errorf("Parse document content: %v", err)
 	}
@@ -436,6 +469,10 @@ func (fp *fileProcessor) cleanup() {
 }
 
 func (fp *fileProcessor) isDuplicate() (bool, error) {
+	err := fp.ensureFileOpen()
+	if err != nil {
+		return false, err
+	}
 	hash, err := GetFileHash(fp.rawFile)
 	if err != nil {
 		return false, err
@@ -482,6 +519,11 @@ func (fp *fileProcessor) createNewDocumentRecord() error {
 	doc.UpdatedAt = time.Now()
 	doc.CreatedAt = time.Now()
 
+	err = fp.ensureFileOpen()
+	if err != nil {
+		return err
+	}
+
 	doc.Hash, err = GetFileHash(fp.rawFile)
 	if err != nil {
 		return fmt.Errorf("get hash: %v", err)
@@ -496,7 +538,7 @@ func (fp *fileProcessor) createNewDocumentRecord() error {
 	return nil
 }
 
-func (fp *fileProcessor) generateThumbnail(file *os.File) error {
+func (fp *fileProcessor) generateThumbnail() error {
 	process := &models.ProcessItem{
 		DocumentId: fp.document.Id,
 		Step:       models.ProcessThumbnail,
@@ -515,7 +557,7 @@ func (fp *fileProcessor) generateThumbnail(file *os.File) error {
 		return fmt.Errorf("create thumbnail output dir: %v", err)
 	}
 
-	name := file.Name()
+	name := fp.rawFile.Name()
 	err = generateThumbnail(name, output, 0, 500, fp.document.Mimetype)
 	if err != nil {
 		job.Status = models.JobFailure
@@ -527,7 +569,8 @@ func (fp *fileProcessor) generateThumbnail(file *os.File) error {
 	return nil
 }
 
-func (fp *fileProcessor) parseContent(file *os.File) error {
+func (fp *fileProcessor) parseContent() error {
+	file := fp.rawFile
 
 	logrus.Infof("extract content for document %s", fp.document.Id)
 	if fp.document.IsPdf() {
@@ -866,7 +909,7 @@ func (fp *fileProcessor) completeProcessingStep(process *models.ProcessItem, job
 	}
 }
 
-//DeleteDocument deletes original document and its preview file.
+// DeleteDocument deletes original document and its preview file.
 func DeleteDocument(docId string) error {
 	previewPath := storage.PreviewPath(docId)
 	docPath := storage.DocumentPath(docId)
