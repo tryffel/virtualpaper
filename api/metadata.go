@@ -50,11 +50,34 @@ type MetadataValueRequest struct {
 	MatchFilter string `json:"match_filter" valid:"-"`
 }
 
-type metadataUpdateRequest struct {
+type MetadataUpdateRequest struct {
 	Metadata []MetadataRequest `valid:"required" json:"metadata"`
 }
 
-func (m *metadataUpdateRequest) toMetadataArray() []models.Metadata {
+func (m *MetadataUpdateRequest) UniqueKeys() []int {
+	keyMap := map[int]bool{}
+	for _, v := range m.Metadata {
+		keyMap[v.KeyId] = true
+	}
+
+	keys := make([]int, len(keyMap))
+	index := 0
+	for i, _ := range keyMap {
+		keys[index] = i
+		index += 1
+	}
+	return keys
+}
+
+func (m *MetadataUpdateRequest) Keys() []int {
+	keys := make([]int, len(m.Metadata))
+	for i, v := range m.Metadata {
+		keys[i] = v.KeyId
+	}
+	return keys
+}
+
+func (m *MetadataUpdateRequest) toMetadataArray() []models.Metadata {
 	metadata := make([]models.Metadata, len(m.Metadata))
 
 	for i, v := range m.Metadata {
@@ -183,7 +206,7 @@ func (a *Api) updateDocumentMetadata(c echo.Context) error {
 	opOk := false
 	defer logCrudMetadata(ctx.UserId, "update document metadata", &opOk, "document: %s", documentId)
 
-	dto := &metadataUpdateRequest{}
+	dto := &MetadataUpdateRequest{}
 	err := unMarshalBody(c.Request(), dto)
 	if err != nil {
 		return err

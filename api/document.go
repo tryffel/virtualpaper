@@ -646,8 +646,8 @@ func (a *Api) deleteDocument(c echo.Context) error {
 
 type BulkEditDocumentsRequest struct {
 	Documents      []string              `json:"documents" valid:"required"`
-	AddMetadata    metadataUpdateRequest `json:"add_metadata" valid:"-"`
-	RemoveMetadata metadataUpdateRequest `json:"remove_metadata" valid:"-"`
+	AddMetadata    MetadataUpdateRequest `json:"add_metadata" valid:"-"`
+	RemoveMetadata MetadataUpdateRequest `json:"remove_metadata" valid:"-"`
 }
 
 func (a *Api) bulkEditDocuments(c echo.Context) error {
@@ -670,6 +670,11 @@ func (a *Api) bulkEditDocuments(c echo.Context) error {
 		return err
 	}
 
+	if len(dto.RemoveMetadata.Metadata) == 0 && len(dto.AddMetadata.Metadata) == 0 {
+		userErr := errors.ErrAlreadyExists
+		userErr.ErrMsg = "no documents modified"
+		return userErr
+	}
 	opOk := false
 	defer logCrudDocument(ctx.UserId, "bulk edit", &opOk, "documents: %v, add metadata: %d, remove metadata: %d",
 		len(dto.Documents), len(dto.AddMetadata.Metadata), len(dto.RemoveMetadata.Metadata))
@@ -684,6 +689,17 @@ func (a *Api) bulkEditDocuments(c echo.Context) error {
 
 	if len(dto.AddMetadata.Metadata) > 0 {
 		addMetadata := dto.AddMetadata.toMetadataArray()
+		//keys := dto.AddMetadata.UniqueKeys()
+		keys := dto.AddMetadata.UniqueKeys()
+		ok, err := a.db.MetadataStore.UserHasKeys(ctx.UserId, keys)
+		logrus.Info("user owns keys: ", ok, err)
+		if err != nil {
+			return fmt.Errorf("check user owns keys: %v", err)
+		}
+		if !ok {
+			return respForbiddenV2()
+		}
+
 		err = a.db.MetadataStore.UpsertDocumentMetadata(ctx.UserId, dto.Documents, addMetadata)
 		if err != nil {
 			return err
@@ -691,6 +707,16 @@ func (a *Api) bulkEditDocuments(c echo.Context) error {
 	}
 	if len(dto.RemoveMetadata.Metadata) > 0 {
 		removeMetadata := dto.RemoveMetadata.toMetadataArray()
+		keys := dto.RemoveMetadata.UniqueKeys()
+		ok, err := a.db.MetadataStore.UserHasKeys(ctx.UserId, keys)
+		logrus.Info("user owns keys: ", ok, err)
+		if err != nil {
+			return fmt.Errorf("check user owns keys: %v", err)
+		}
+		if !ok {
+			return respForbiddenV2()
+		}
+
 		err = a.db.MetadataStore.DeleteDocumentsMetadata(ctx.UserId, dto.Documents, removeMetadata)
 		if err != nil {
 			return err
@@ -700,7 +726,11 @@ func (a *Api) bulkEditDocuments(c echo.Context) error {
 	// need to reindex
 	err = a.db.JobStore.AddDocuments(ctx.UserId, dto.Documents, models.ProcessFts)
 	if err != nil {
-		return err
+		if errors.Is(err, errors.ErrAlreadyExists) {
+			// already indexing, skip
+		} else {
+			return err
+		}
 	}
 	a.process.PullDocumentsToProcess()
 	opOk = true

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"gopkg.in/h2non/baloo.v3"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"testing"
@@ -58,12 +58,12 @@ func (h *httpRequest) Page(page, perPage int) *httpRequest {
 }
 
 func (h *httpRequest) Expect(t *testing.T) *httpResponse {
-	req := h.req.Expect(t).AssertFunc(logRequestFunc(t, ""))
+	req := h.req.Expect(t).AssertFunc(logRequestFunc(t, "", false))
 	return &httpResponse{req}
 }
 
-func (h *httpRequest) ExpectName(t *testing.T, name string) *httpResponse {
-	req := h.req.Expect(t).AssertFunc(logRequestFunc(t, name))
+func (h *httpRequest) ExpectName(t *testing.T, name string, logResp bool) *httpResponse {
+	req := h.req.Expect(t).AssertFunc(logRequestFunc(t, name, logResp))
 	return &httpResponse{req}
 }
 
@@ -73,7 +73,7 @@ func (h *httpResponse) Json(t *testing.T, data interface{}) *httpResponse {
 
 func readBodyFunc(t *testing.T, dto interface{}) func(r *http.Response, w *http.Request) error {
 	return func(r *http.Response, w *http.Request) error {
-		data, err := ioutil.ReadAll(r.Body)
+		data, err := io.ReadAll(r.Body)
 		err = json.Unmarshal(data, &dto)
 		if err != nil {
 			t.Errorf("parse response json: %v", err)
@@ -83,13 +83,18 @@ func readBodyFunc(t *testing.T, dto interface{}) func(r *http.Response, w *http.
 	}
 }
 
-func logRequestFunc(t *testing.T, name string) func(r *http.Response, w *http.Request) error {
+func logRequestFunc(t *testing.T, name string, logResp bool) func(r *http.Response, w *http.Request) error {
 	return func(r *http.Response, w *http.Request) error {
 		var suffix = ""
 		if name != "" {
 			suffix = " " + name
 		}
-		t.Logf("%s %s %d%s\n", w.Method, w.URL.String(), r.StatusCode, suffix)
+		if logResp {
+			data, _ := io.ReadAll(r.Body)
+			t.Logf("%s %s %d%s\ndata: %s", w.Method, w.URL.String(), r.StatusCode, suffix, string(data))
+		} else {
+			t.Logf("%s %s %d%s\n", w.Method, w.URL.String(), r.StatusCode, suffix)
+		}
 		return nil
 	}
 }

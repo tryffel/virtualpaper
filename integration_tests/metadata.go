@@ -80,6 +80,7 @@ func AddMetadataValue(t *testing.T, client *httpClient, keyId int, value *models
 	if wantHttpStatus == 200 {
 		req.Expect(t).Json(t, body).e.Status(200).Done()
 		assert.True(t, body.Id > 0, "id must be > 0")
+		body.KeyId = keyId
 		return body
 	} else {
 		req.req.Expect(t).Status(wantHttpStatus).Done()

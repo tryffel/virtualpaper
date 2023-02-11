@@ -359,7 +359,7 @@ func (suite *RuleTestSuite) TestRuleTesting() {
 
 func addRule(t *testing.T, client *httpClient, rule *api.Rule, expectStatus int, name string) *api.Rule {
 	data := &api.Rule{}
-	req := client.Post("/api/v1/processing/rules").Json(t, rule).ExpectName(t, name)
+	req := client.Post("/api/v1/processing/rules").Json(t, rule).ExpectName(t, name, false)
 	if expectStatus == 200 {
 		req = req.Json(t, data)
 	}
@@ -369,7 +369,7 @@ func addRule(t *testing.T, client *httpClient, rule *api.Rule, expectStatus int,
 
 func updateRule(t *testing.T, client *httpClient, rule *api.Rule, expectStatus int, name string) *api.Rule {
 	data := &api.Rule{}
-	req := client.Put("/api/v1/processing/rules/"+strconv.Itoa(rule.Id)).Json(t, rule).ExpectName(t, name)
+	req := client.Put("/api/v1/processing/rules/"+strconv.Itoa(rule.Id)).Json(t, rule).ExpectName(t, name, false)
 	if expectStatus == 200 {
 		req = req.Json(t, data)
 	}
