@@ -66,6 +66,28 @@ func (suite *BulkEditTestSuite) TestAddMetadata() {
 
 	valueDoyle := suite.user1Values["author"]["doyle"]
 
+	suite.T().Log("bulk edit zero documents, add one key, should fail")
+	doBulkEditRequest(suite.T(), suite.userHttp, &api.BulkEditDocumentsRequest{
+		Documents: []string{},
+		AddMetadata: api.MetadataUpdateRequest{[]api.MetadataRequest{
+			{
+				KeyId:   suite.user1Keys["author"].Id,
+				ValueId: valueDoyle.Id,
+			},
+		},
+		},
+		RemoveMetadata: api.MetadataUpdateRequest{},
+	}, 400)
+
+	suite.T().Log("bulk edit one document, no edits, should fail")
+	doBulkEditRequest(suite.T(), suite.userHttp, &api.BulkEditDocumentsRequest{
+		Documents: []string{
+			originalX86.Id,
+		},
+		AddMetadata:    api.MetadataUpdateRequest{[]api.MetadataRequest{}},
+		RemoveMetadata: api.MetadataUpdateRequest{},
+	}, 304)
+
 	suite.T().Log("bulk edit one document, add one key")
 	doBulkEditRequest(suite.T(), suite.userHttp, &api.BulkEditDocumentsRequest{
 		Documents: []string{

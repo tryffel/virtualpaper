@@ -689,10 +689,8 @@ func (a *Api) bulkEditDocuments(c echo.Context) error {
 
 	if len(dto.AddMetadata.Metadata) > 0 {
 		addMetadata := dto.AddMetadata.toMetadataArray()
-		//keys := dto.AddMetadata.UniqueKeys()
 		keys := dto.AddMetadata.UniqueKeys()
 		ok, err := a.db.MetadataStore.UserHasKeys(ctx.UserId, keys)
-		logrus.Info("user owns keys: ", ok, err)
 		if err != nil {
 			return fmt.Errorf("check user owns keys: %v", err)
 		}
@@ -709,7 +707,6 @@ func (a *Api) bulkEditDocuments(c echo.Context) error {
 		removeMetadata := dto.RemoveMetadata.toMetadataArray()
 		keys := dto.RemoveMetadata.UniqueKeys()
 		ok, err := a.db.MetadataStore.UserHasKeys(ctx.UserId, keys)
-		logrus.Info("user owns keys: ", ok, err)
 		if err != nil {
 			return fmt.Errorf("check user owns keys: %v", err)
 		}

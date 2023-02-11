@@ -90,6 +90,7 @@ func insertTestDocuments(t *testing.T) error {
 		err := db.DocumentStore.Create(v)
 		if err != nil {
 			t.Errorf("insert test document %s: %v", v.Id, err)
+			t.Fail()
 			return err
 		}
 	}

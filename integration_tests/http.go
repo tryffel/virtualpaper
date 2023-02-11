@@ -44,7 +44,7 @@ func (h *httpRequest) Json(t *testing.T, data interface{}) *httpRequest {
 	if err != nil {
 		t.Errorf("decode json: %v", err)
 	}
-	return &httpRequest{h.req.SetHeader("Content-Type", "Application/json").Body(buf)}
+	return &httpRequest{h.req.SetHeader("Content-Type", "application/json").Body(buf)}
 }
 
 func (h *httpRequest) Sort(key, order string) *httpRequest {
