@@ -65,6 +65,7 @@ type Processing struct {
 	PdfToTextBin string
 	PandocBin    string
 	ImagickBin   string
+	TesseractBin string
 
 	// application directories. Stored by default in ./media/{previews, documents}.
 	PreviewsDir  string
@@ -141,6 +142,7 @@ func ConfigFromViper() error {
 			PdfToTextBin: viper.GetString("processing.pdftotext_bin"),
 			PandocBin:    viper.GetString("processing.pandoc_bin"),
 			ImagickBin:   viper.GetString("processing.imagick_bin"),
+			TesseractBin: viper.GetString("processing.tesseract_bin"),
 		},
 		Meilisearch: Meilisearch{
 			Url:    viper.GetString("meilisearch.url"),

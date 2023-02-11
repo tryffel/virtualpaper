@@ -44,14 +44,16 @@ tmp_dir = "/tmp"
 output_dir = "media"
 # Max background workers allowed. If empty, set to number of cpus available.
 max_workers = 4
-
 # array of tesseract languages. Each language requires separate tesseract-data package to be installed.
 ocr_languages = ["eng"]
-
 # to use pdftotext binary for faster and more reliable pdf parsing, set binary path.
 pdftotext_bin = ""
-
+# location of pandoc binary
 pandoc_bin = ""
+# location of tesseract binary
+tesseract_bin = ""
+# location of imagemagick's convert binary
+imagick_bin = ""
 
 # Mail configuration. Uncomment to enable setings mails.
 # Host must be smtp server that is accessible with authentication.

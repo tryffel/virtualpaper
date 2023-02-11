@@ -99,7 +99,6 @@ dev-debug:
 	echo "Starting debug docker container"
 	docker run --name=virtualpaper-dev \
 		--rm -d -it \
-		-p 127.0.0.1:22:22 \
 		-p 127.0.0.1:8000:8000 \
 		-p 127.0.0.1:2345:2345 \
 		-v `pwd`:/virtualpaper \
@@ -118,7 +117,6 @@ dev-start-container:
 	echo "Starting docker container"
 	docker run --name=virtualpaper-dev \
 		--rm -d -it \
-		-p 127.0.0.1:22:22 \
 		-p 127.0.0.1:8000:8000 \
 		-p 127.0.0.1:2345:2345 \
 		-v `pwd`:/virtualpaper \

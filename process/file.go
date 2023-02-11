@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/otiai10/gosseract"
 	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
@@ -570,6 +569,11 @@ func (fp *fileProcessor) generateThumbnail() error {
 }
 
 func (fp *fileProcessor) parseContent() error {
+	err := fp.ensureFileOpen()
+	if err != nil {
+		logrus.Errorf("open file: %v", err)
+
+	}
 	file := fp.rawFile
 
 	logrus.Infof("extract content for document %s", fp.document.Id)
@@ -663,14 +667,8 @@ func (fp *fileProcessor) extractImage(file *os.File) error {
 	}
 
 	defer fp.completeProcessingStep(process, job)
-	client := gosseract.NewClient()
-	defer client.Close()
 
-	err = client.SetImage(file.Name())
-	if err != nil {
-		return fmt.Errorf("set ocr image source: %v", err)
-	}
-	text, err := client.Text()
+	text, err := runOcr(file.Name(), fp.document.Id)
 	if err != nil {
 		job.Message += "; " + err.Error()
 		job.Status = models.JobFailure

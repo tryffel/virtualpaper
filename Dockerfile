@@ -1,5 +1,5 @@
 # Backend build
-FROM golang:1.18.3-alpine3.15 as backend
+FROM golang:1.20-alpine3.17 as backend
 
 RUN apk update
 RUN apk --no-cache add \
@@ -7,11 +7,7 @@ RUN apk --no-cache add \
     make \
     gcc \
     g++ \
-    musl-dev \
-    tesseract-ocr \
-    tesseract-ocr-dev \
-    imagemagick \
-    imagemagick-dev
+    musl-dev 
 
 WORKDIR /virtualpaper
 COPY . /virtualpaper
@@ -21,7 +17,7 @@ RUN make build
 
 
 ### Frontend build
-FROM node:16.15.1-alpine3.16 as frontend
+FROM node:18.14.0-alpine3.17 as frontend
 
 RUN apk update
 RUN apk --no-cache add \
@@ -43,7 +39,7 @@ RUN make build-frontend
 
 
 # Runtime
-FROM alpine:3.14.6
+FROM alpine:3.17.2
 
 EXPOSE 8000:8000
 
@@ -81,6 +77,7 @@ ENV VIRTUALPAPER_LOGGING_DIRECTORY="/log"
 ENV VIRTUALPAPER_PROCESSING_PANDOC_BIN="/pandoc-2.18/bin/pandoc"
 ENV VIRTUALPAPER_PROCESSING_PDFTOTEXT_BIN="/usr/bin/pdftotext"
 ENV VIRTUALPAPER_PROCESSING_IMAGICK_BIN="/usr/bin/convert"
+ENV VIRTUALPAPER_PROCESSING_TESSERACT_BIN="/usr/bin/tesseract"
 
 
 ENTRYPOINT ["app/start.sh"]

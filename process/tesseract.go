@@ -19,13 +19,16 @@
 package process
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
-	"github.com/otiai10/gosseract"
 	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/storage"
@@ -52,13 +55,9 @@ func runOcr(inputImage, id string) (string, error) {
 		return text, fmt.Errorf("generate pictures from pdf pages: %v", err)
 	}
 
-	client := gosseract.NewClient()
-	defer client.Close()
-	err = client.SetLanguage(config.C.Processing.OcrLanguages...)
-	if err != nil {
-		logrus.Errorf("set tesseract languages: %v. continue with default language.", err)
-	}
 	pages := &[]string{}
+
+	languageParam := strings.Join(config.C.Processing.OcrLanguages, "+")
 
 	walkFunc := func(fileName string, info os.FileInfo, err error) error {
 		if info.Name() == id {
@@ -67,17 +66,36 @@ func runOcr(inputImage, id string) (string, error) {
 		}
 		start := time.Now()
 		logrus.Infof("OCR file %s", fileName)
-		err = client.SetImage(fileName)
-		if err != nil {
-			return fmt.Errorf("set ocr image source: %v", err)
+
+		outputFile := fileName + "-out"
+
+		args := []string{
+			fileName,
+			outputFile,
+			"-l",
+			languageParam,
 		}
-		pageText, err := client.Text()
+
+		_, err = callTesseract(args...)
 		if err != nil {
-			return fmt.Errorf("tesseract extract text: %v", err)
+			logrus.Errorf("call tesseract: %s -  %v", args, err)
 		}
+
+		output, err := os.Open(outputFile + ".txt")
+		if err != nil {
+			logrus.Errorf("read output file %s: %v", outputFile, err)
+		}
+
+		pageText, err := io.ReadAll(output)
+		err = output.Close()
+		if err != nil {
+			logrus.Errorf("close output file %s: %v", outputFile, err)
+
+		}
+
 		took := time.Now().Sub(start)
 		logrus.Infof("Extracted %s, took %.2f s, content length: %d", fileName, took.Seconds(), len(pageText))
-		*pages = append(*pages, pageText)
+		*pages = append(*pages, string(pageText))
 		return nil
 	}
 
@@ -98,5 +116,37 @@ func runOcr(inputImage, id string) (string, error) {
 }
 
 func GetTesseractVersion() string {
-	return gosseract.Version()
+	out, err := callTesseract("--version")
+	if err != nil {
+		logrus.Error(err)
+	} else {
+		logrus.Infof("tesseract version: %s", out)
+	}
+
+	splits := strings.Split(out, "\n")
+	if len(splits) == 0 {
+		return out
+	}
+	return splits[0]
+}
+
+func callTesseract(args ...string) (string, error) {
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+
+	logrus.Debugf("call tesseract: %s, %v", config.C.Processing.TesseractBin, args)
+	cmd := exec.Command(config.C.Processing.TesseractBin, args...)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	err := cmd.Run()
+	stdErr := stderr.String()
+	if stdErr != "" {
+		logrus.Warningf("Tesseract failed, stderr: %v", err)
+		return stdErr, err
+	}
+	if err != nil {
+		logrus.Warningf("run %v: %v", args, err)
+		return stdErr, fmt.Errorf("call tesseract: %v", err)
+	}
+	return stdout.String(), nil
 }
