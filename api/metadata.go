@@ -34,13 +34,13 @@ type MetadataRequest struct {
 }
 
 type MetadataKeyRequest struct {
-	Key     string `json:"key" valid:"required"`
+	Key     string `json:"key" valid:"required,metadata"`
 	Comment string `json:"comment" valid:"-"`
 }
 
 type MetadataValueRequest struct {
 	// Value of new metadata
-	Value string `json:"value" valid:"required"`
+	Value string `json:"value" valid:"required,metadata"`
 	// Optional comment
 	Comment string `json:"comment" valid:"-"`
 	// MatchDocuments instructs to try to match documents for this value.

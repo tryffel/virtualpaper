@@ -26,6 +26,12 @@ func TestMetadataKeys(t *testing.T) {
 	suite.Run(t, new(MetadataKeySuite))
 }
 
+func (suite *MetadataKeySuite) TestAddInvalidKeys() {
+	AddMetadataKey(suite.T(), suite.userHttp, "", "document author", 400)
+	AddMetadataKey(suite.T(), suite.userHttp, "test:key", "document author", 400)
+	AddMetadataKey(suite.T(), suite.userHttp, "test;", "document author", 400)
+}
+
 func (suite *MetadataKeySuite) TestUpdateKey() {
 	key := suite.keys["author"]
 	key.Key = "testing author"
