@@ -158,7 +158,7 @@ func (a *Api) getSupportedFileTypes(c echo.Context) error {
 func init() {
 	govalidator.SetFieldsRequiredByDefault(true)
 	govalidator.TagMap["metadata"] = govalidator.Validator(func(str string) bool {
-		return !(strings.Contains(str, ";") || strings.Contains(str, ":"))
+		return !(strings.Contains(str, ";") || strings.Contains(str, ":") || strings.Contains(str, "\n"))
 	})
 }
 

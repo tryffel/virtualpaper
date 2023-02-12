@@ -62,6 +62,19 @@ func (suite *MetadataValueSuite) TestInvalidValues() {
 		MatchFilter:    "",
 	}, 400)
 
+	AddMetadataValue(suite.T(), suite.userHttp, suite.keys["author"].Id, &models.MetadataValue{
+		Value:          "test",
+		MatchDocuments: false,
+		MatchType:      "non-existing",
+		MatchFilter:    "",
+	}, 400)
+
+	AddMetadataValue(suite.T(), suite.userHttp, suite.keys["author"].Id, &models.MetadataValue{
+		Value:          "toolong",
+		MatchDocuments: false,
+		MatchType:      "",
+		MatchFilter:    testDocumentX86Intel.Description,
+	}, 400)
 }
 
 func initMetadataKeyValues(t *testing.T, client *httpClient) (map[string]*models.MetadataKey, map[string]map[string]*models.MetadataValue) {

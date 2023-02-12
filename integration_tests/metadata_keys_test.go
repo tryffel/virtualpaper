@@ -30,6 +30,9 @@ func (suite *MetadataKeySuite) TestAddInvalidKeys() {
 	AddMetadataKey(suite.T(), suite.userHttp, "", "document author", 400)
 	AddMetadataKey(suite.T(), suite.userHttp, "test:key", "document author", 400)
 	AddMetadataKey(suite.T(), suite.userHttp, "test;", "document author", 400)
+	AddMetadataKey(suite.T(), suite.userHttp, "test\nnewline", "document author", 400)
+	// too long key
+	AddMetadataKey(suite.T(), suite.userHttp, "LoremIpsumissimplydummytextoftheprintingandtypesetting", "document author", 400)
 }
 
 func (suite *MetadataKeySuite) TestUpdateKey() {
