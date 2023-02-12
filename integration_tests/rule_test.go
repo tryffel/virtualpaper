@@ -315,11 +315,11 @@ func (suite *RuleTestSuite) GetRule() {
 }
 
 func (suite *RuleTestSuite) TestRuleTesting() {
-	docId := uploadDocument(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 20)
-	doc := getDocument(suite.T(), suite.userHttp, docId, 200)
+	_ = insertTestDocuments(suite.T())
+	doc := getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
+	assert.Equal(suite.T(), testDocumentX86Intel.Name, doc.Name)
 
-	assert.Equal(suite.T(), "file", doc.Name)
-
+	suite.T().Log("test rule with 'match_any'")
 	rule := &api.Rule{
 		Name:        "rule1",
 		Description: "",
@@ -330,13 +330,13 @@ func (suite *RuleTestSuite) TestRuleTesting() {
 			{
 				ConditionType: "content_contains",
 				IsRegex:       true,
-				Value:         "[lL]orem ipsum",
+				Value:         "[pP]ersonal",
 				Enabled:       true,
 			},
 			{
 				ConditionType: "content_contains",
 				IsRegex:       false,
-				Value:         "Lorem ipsum",
+				Value:         "widely used",
 				Enabled:       true,
 			},
 		},
@@ -352,9 +352,8 @@ func (suite *RuleTestSuite) TestRuleTesting() {
 	gotRule := addRule(suite.T(), suite.userHttp, rule, 200, "add rule")
 	rule.Id = gotRule.Id
 
-	ruleTest := testRule(suite.T(), suite.userHttp, rule.Id, docId, 200)
+	ruleTest := testRule(suite.T(), suite.userHttp, rule.Id, testDocumentX86Intel.Id, 200)
 	assert.Equal(suite.T(), true, ruleTest.Match)
-
 }
 
 func addRule(t *testing.T, client *httpClient, rule *api.Rule, expectStatus int, name string) *api.Rule {

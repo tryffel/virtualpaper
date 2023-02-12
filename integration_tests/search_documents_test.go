@@ -35,7 +35,7 @@ func (suite *DocumentSearchSuite) SetupTest() {
 	text1Id := uploadDocument(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 20)
 	text1 := getDocument(suite.T(), suite.userHttp, text1Id, 200)
 
-	text2d := uploadDocument(suite.T(), suite.userClient, "text-2.txt", "Modified version", 20)
+	text2d := uploadDocument(suite.T(), suite.userClient, "pdf-1.pdf", "Lorem ipsum", 40)
 	text2 := getDocument(suite.T(), suite.userHttp, text2d, 200)
 
 	suite.docs["text-1"] = text1
@@ -61,13 +61,15 @@ func (suite *DocumentSearchSuite) SetupTest() {
 			ValueId: suite.values["category"]["paper"].Id,
 		},
 	)
-	text2.Date = time.Now().AddDate(0, -9, 0).UnixMilli()
+	text2.Date = time.Now().AddDate(-1, 0, 0).UnixMilli()
 	updateDocument(suite.T(), suite.userHttp, text1, 200)
 	updateDocument(suite.T(), suite.userHttp, text2, 200)
 
 	suite.docs["text-1"] = getDocument(suite.T(), suite.userHttp, text1.Id, 200)
 	suite.docs["text-2"] = getDocument(suite.T(), suite.userHttp, text2.Id, 200)
-	waitIndexingReady(suite.T(), suite.userHttp, 20)
+	suite.T().Log("wait for indexing to finish")
+	waitIndexingReady(suite.T(), suite.userHttp, 60)
+	suite.T().Log("indexing finished")
 }
 
 func (suite *DocumentSearchSuite) TestSearchByDate() {
@@ -82,20 +84,21 @@ func (suite *DocumentSearchSuite) TestSearchByDate() {
 	assert.Equal(suite.T(), suite.docs["text-1"].Id, docs[0].Id)
 
 	// this year
+	q := fmt.Sprintf("date:%d|%d", time.Now().AddDate(-1, 0, 0).Year(), time.Now().Year())
 	filter = map[string]string{
-		"q": fmt.Sprintf("date:%d", time.Now().Year()),
+		"q": q,
 		//"metadata": "",
 	}
 
-	action := "filter by date:today"
+	action := "filter by " + q
 	docs = searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
-	assert.Equal(suite.T(), 2, len(docs))
+	assert.Equal(suite.T(), 2, len(docs), action)
 	assertDocInDocs(suite.T(), suite.docs["text-1"].Id, &docs, action)
 	assertDocInDocs(suite.T(), suite.docs["text-2"].Id, &docs, action)
 
-	action = "filter by date:today, sort desc"
+	action = "filter by " + q + ", sort desc"
 	docs = searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
-	assert.Equal(suite.T(), 2, len(docs))
+	assert.Equal(suite.T(), 2, len(docs), action)
 	assertDocInDocs(suite.T(), suite.docs["text-1"].Id, &docs, action)
 	assertDocInDocs(suite.T(), suite.docs["text-2"].Id, &docs, action)
 
@@ -129,6 +132,28 @@ func (suite *DocumentSearchSuite) TestSearchByDate() {
 	docs = searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
 	assert.Equal(suite.T(), 2, len(docs))
 	assertDocInDocs(suite.T(), suite.docs["text-1"].Id, &docs, action)
+	assertDocInDocs(suite.T(), suite.docs["text-2"].Id, &docs, action)
+
+	q = fmt.Sprintf("date:%d", time.Now().Year())
+	filter = map[string]string{
+		"q": q,
+		//"metadata": "",
+	}
+
+	action = "filter by " + q
+	docs = searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
+	assert.Equal(suite.T(), 1, len(docs), action)
+	assertDocInDocs(suite.T(), suite.docs["text-1"].Id, &docs, action)
+
+	q = fmt.Sprintf("date:%d", time.Now().AddDate(-1, 0, 0).Year())
+	filter = map[string]string{
+		"q": q,
+		//"metadata": "",
+	}
+
+	action = "filter by " + q
+	docs = searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
+	assert.Equal(suite.T(), 1, len(docs), action)
 	assertDocInDocs(suite.T(), suite.docs["text-2"].Id, &docs, action)
 }
 
@@ -185,5 +210,6 @@ func assertDocInDocs(t *testing.T, docId string, docs *[]*api.DocumentResponse, 
 			return
 		}
 	}
-	assert.Errorf(t, errors.New("expected document to exist in collection"), msg)
+	assert.Errorf(t, errors.New("expected document to exist in collection"), msg, docId, &docs)
+	t.Fail()
 }
