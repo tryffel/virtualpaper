@@ -91,10 +91,10 @@ type DocumentExistsResponse struct {
 // DocumentUpdateRequest
 // swagger:model DocumentUpdateRequestBody
 type DocumentUpdateRequest struct {
-	Name        string            `json:"name" valid:"-"`
-	Description string            `json:"description" valid:"-"`
-	Filename    string            `json:"filename" valid:"-"`
-	Date        int64             `json:"date" valid:"-"`
+	Name        string            `json:"name" valid:"required,stringlength(1|200)"`
+	Description string            `json:"description" valid:"stringlength(0|1000),optional"`
+	Filename    string            `json:"filename" valid:"optional,safefilename"`
+	Date        int64             `json:"date" valid:"optional,range(0|4106139691000)"` // year 2200 in ms
 	Metadata    []MetadataRequest `json:"metadata" valid:"-"`
 }
 
@@ -315,6 +315,9 @@ func (a *Api) uploadFile(c echo.Context) error {
 	}
 
 	detectedFileType := http.DetectContentType(buf)
+	if strings.HasPrefix(detectedFileType, "text/plain") {
+		detectedFileType = "text/plain"
+	}
 	if detectedFileType != mimetype {
 		logrus.Warningf("uploaded document detected mimetype does not match reported, given %s, detected %s", header.Filename, detectedFileType)
 		userError := errors.ErrInvalid

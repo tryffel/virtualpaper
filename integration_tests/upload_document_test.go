@@ -45,6 +45,32 @@ func (suite *UploadDocumentSuite) TestUploadFail() {
 	uploadDocumentWithStatus(suite.T(), suite.userClient, "pdf-1-illegal.png", "Lorem ipsum", 20, 400)
 }
 
+func (suite *UploadDocumentSuite) TestEditDocFail() {
+	_ = insertTestDocuments(suite.T())
+	doc := getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
+	doc.Name = "empty"
+	updateDocument(suite.T(), suite.userHttp, doc, 200)
+
+	doc.Name = ""
+	updateDocument(suite.T(), suite.userHttp, doc, 400)
+
+	// too long name
+	doc.Name = testDocumentX86Intel.Content
+	updateDocument(suite.T(), suite.userHttp, doc, 400)
+
+	doc.Name = "valid"
+	updateDocument(suite.T(), suite.userHttp, doc, 200)
+
+	doc.Filename = "unsafe/filename//."
+	updateDocument(suite.T(), suite.userHttp, doc, 400)
+
+	doc.Filename = "file.txt"
+	updateDocument(suite.T(), suite.userHttp, doc, 200)
+
+	doc.Date = -1
+	updateDocument(suite.T(), suite.userHttp, doc, 400)
+}
+
 func (suite *UploadDocumentSuite) TestUploadTxt() {
 	uploadDocument(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 60)
 }

@@ -160,6 +160,9 @@ func init() {
 	govalidator.TagMap["metadata"] = govalidator.Validator(func(str string) bool {
 		return !(strings.Contains(str, ";") || strings.Contains(str, ":") || strings.Contains(str, "\n"))
 	})
+	govalidator.TagMap["safefilename"] = govalidator.Validator(func(str string) bool {
+		return str == govalidator.SafeFileName(str)
+	})
 }
 
 //go:embed swaggerdocs/swagger.json
