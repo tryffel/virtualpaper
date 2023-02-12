@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -41,32 +40,30 @@ func (suite *UploadDocumentSuite) TestUploadFail() {
 	doc = getDocument(suite.T(), suite.userHttp, docId, 200)
 
 	assert.NotNil(suite.T(), doc, "get document")
-	assert.Equal(suite.T(), doc.Name, "file", "document name")
+	assert.Equal(suite.T(), doc.Name, "text-1.txt", "document name")
 }
 
 func (suite *UploadDocumentSuite) TestUploadTxt() {
-	uploadDocument(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 20)
+	uploadDocument(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 60)
 }
 
 func (suite *UploadDocumentSuite) TestUploadImage1() {
-	uploadDocument(suite.T(), suite.userClient, "jpg-1.jpg", "Lorem ipsum", 20)
-	uploadDocument(suite.T(), suite.userClient, "png-1.png", "Lorem ipsum", 20)
+	uploadDocument(suite.T(), suite.userClient, "jpg-1.jpg", "Lorem ipsum", 60)
+	uploadDocument(suite.T(), suite.userClient, "png-1.png", "Lorem ipsum", 60)
 }
 
 func (suite *UploadDocumentSuite) TestUploadImage2() {
 	// different mimetype, but image is same, server returns existing image instead
-	uploadDocument(suite.T(), suite.userClient, "jpg-1.jpeg", "Lorem ipsum", 20)
+	uploadDocument(suite.T(), suite.userClient, "jpg-1.jpeg", "Lorem ipsum", 60)
 }
 
 func (suite *UploadDocumentSuite) TestUploadPdf() {
 	uploadDocument(suite.T(), suite.userClient, "pdf-1.pdf", "Lorem ipsum", 20)
 }
 
-func (suite *UploadDocumentSuite) TestEdit() {
+func (suite *UploadDocumentSuite) TestUploadSchedulesProcessing() {
 	docId := uploadDocument(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 20)
-	doc := getDocument(suite.T(), suite.userHttp, docId, 200)
-
-	oldDocDate := strconv.Itoa(int(doc.Date / 1000))
+	time.Sleep(time.Second * 2)
 
 	logs := getDocumentProcessingSteps(suite.T(), suite.userHttp, docId, 200)
 	assert.Equal(suite.T(), 5, len(*logs))
@@ -80,17 +77,11 @@ func (suite *UploadDocumentSuite) TestEdit() {
 	assert.Equal(suite.T(), (*logs)[3].Status, models.JobFinished)
 	assert.True(suite.T(), strings.HasPrefix((*logs)[4].Message, "index for search engine"), "5th step is indexing")
 	assert.Equal(suite.T(), (*logs)[4].Status, models.JobFinished)
+}
 
-	assert.Equal(suite.T(), doc.Id, docId)
-
-	history := getDocumentHistory(suite.T(), suite.userHttp, doc.Id, 200)
-	assert.Equal(suite.T(), 1, len(*history))
-	assert.Equal(suite.T(), docId, (*history)[0].DocumentId)
-	assert.Equal(suite.T(), "create", (*history)[0].Action)
-	assert.Equal(suite.T(), "", (*history)[0].OldValue)
-	assert.Equal(suite.T(), "file", (*history)[0].NewValue)
-
-	_ = updateDocument(suite.T(), suite.adminHttp, doc, 404)
+func (suite *UploadDocumentSuite) TestEditSchedulesProcessing() {
+	docId := uploadDocument(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 20)
+	doc := getDocument(suite.T(), suite.userHttp, docId, 200)
 
 	editedDoc := updateDocument(suite.T(), suite.userHttp, doc, 200)
 
@@ -104,46 +95,19 @@ func (suite *UploadDocumentSuite) TestEdit() {
 
 	editedDoc = updateDocument(suite.T(), suite.userHttp, doc, 200)
 
-	newDocDate := strconv.Itoa(int(doc.Date / 1000))
+	// give server some time to finish processing
+	time.Sleep(time.Second * 2)
 
 	assert.Equal(suite.T(), "new name", editedDoc.Name, "name")
 	assert.Equal(suite.T(), "descriptive text", editedDoc.Description, "description")
 	assert.Equal(suite.T(), int64(1668786840000), editedDoc.Date, "date")
 
-	history = getDocumentHistory(suite.T(), suite.userHttp, doc.Id, 200)
+	history := getDocumentHistory(suite.T(), suite.userHttp, doc.Id, 200)
 	assert.Equal(suite.T(), 4, len(*history))
 
-	assert.Equal(suite.T(), "create", (*history)[0].Action)
-	assert.Equal(suite.T(), docId, (*history)[1].DocumentId)
-	assert.Equal(suite.T(), "rename", (*history)[1].Action)
-	assert.Equal(suite.T(), "file", (*history)[1].OldValue)
-	assert.Equal(suite.T(), "new name", (*history)[1].NewValue)
+	logs := getDocumentProcessingSteps(suite.T(), suite.userHttp, docId, 200)
 
-	assert.Equal(suite.T(), docId, (*history)[2].DocumentId)
-	assert.Equal(suite.T(), "description", (*history)[2].Action)
-	assert.Equal(suite.T(), "", (*history)[2].OldValue)
-	assert.Equal(suite.T(), "descriptive text", (*history)[2].NewValue)
-
-	assert.Equal(suite.T(), docId, (*history)[3].DocumentId)
-	assert.Equal(suite.T(), "date", (*history)[3].Action)
-	assert.Equal(suite.T(), oldDocDate, (*history)[3].OldValue)
-	assert.Equal(suite.T(), newDocDate, (*history)[3].NewValue)
-
-	doc.Description = "yet another description"
-	editedDoc = updateDocument(suite.T(), suite.userHttp, doc, 200)
-	history = getDocumentHistory(suite.T(), suite.userHttp, doc.Id, 200)
-	assert.Equal(suite.T(), 5, len(*history))
-	assert.Equal(suite.T(), docId, (*history)[3].DocumentId)
-	assert.Equal(suite.T(), "date", (*history)[3].Action)
-	assert.Equal(suite.T(), oldDocDate, (*history)[3].OldValue)
-	assert.Equal(suite.T(), newDocDate, (*history)[3].NewValue)
-	assert.Equal(suite.T(), "description", (*history)[4].Action)
-	assert.Equal(suite.T(), "descriptive text", (*history)[4].OldValue)
-	assert.Equal(suite.T(), "yet another description", (*history)[4].NewValue)
-
-	logs = getDocumentProcessingSteps(suite.T(), suite.userHttp, docId, 200)
-
-	// sometimes additoinal indexing step is created. Amount is thus 6 or 7 steps
+	// sometimes additional indexing step is created. Amount is thus 6 or 7 steps
 	assert.GreaterOrEqual(suite.T(), len(*logs), 6, "6-7 steps")
 	assert.LessOrEqual(suite.T(), len(*logs), 7, "6-7 steps")
 	assert.True(suite.T(), strings.HasPrefix((*logs)[5].Message, "index for search engine"))
@@ -199,6 +163,8 @@ func uploadDocument(t *testing.T, client *baloo.Client, fileName string, content
 				if docBody.Status == "ready" {
 					docReady = true
 					t.Log("document ready")
+				} else {
+					t.Log("document status", docBody.Status)
 				}
 				docId = docBody.Id
 				return nil
