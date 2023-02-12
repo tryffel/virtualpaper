@@ -141,8 +141,13 @@ func callTesseract(args ...string) (string, error) {
 	err := cmd.Run()
 	stdErr := stderr.String()
 	if stdErr != "" {
-		logrus.Warningf("Tesseract failed, stderr: %v", err)
-		return stdErr, err
+		if strings.HasPrefix(stdErr, "Estimating resolution") {
+			// skip
+			logrus.Warningf("Tesseract warning, stderr: %v", stderr)
+		} else {
+			logrus.Warningf("Tesseract failed, stderr: %v", stderr)
+			return stdErr, err
+		}
 	}
 	if err != nil {
 		logrus.Warningf("run %v: %v", args, err)

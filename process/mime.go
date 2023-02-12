@@ -156,6 +156,20 @@ func fileEndingFromName(filename string) string {
 
 }
 
+func MimeTypeFromName(fileName string) string {
+	fileEnding := fileEndingFromName(fileName)
+	if fileEnding == "jpg" {
+		// even if user uploads jpg, mimetype is still jpeg
+		fileEnding = "jpeg"
+	}
+
+	mimetype, ok := fileExtensionToMimeType[fileEnding]
+	if ok {
+		return mimetype
+	}
+	return ""
+}
+
 // SupportedFileTypes returns a list of supported file endings.
 func SupportedFileTypes() (mimetypes []string, filetypes []string) {
 	return mimetypesSupported, fileTypesSupported

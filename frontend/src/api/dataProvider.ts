@@ -305,8 +305,8 @@ export const dataProvider: DataProvider = {
       const file = params.data.file;
 
       let data = new FormData();
-      data.append("name", file.name);
-      data.append("file", file.rawFile);
+      data.append("name", file.rawFile.name);
+      data.append(file.rawFile.name, file.rawFile);
 
       const headers = new Headers({
         Accept: "multipart/form-data",

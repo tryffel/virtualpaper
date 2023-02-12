@@ -285,7 +285,8 @@ func (a *Api) uploadFile(c echo.Context) error {
 		userError.Err = err
 		return userError
 	}
-	reader, header, err := req.FormFile("file")
+	formKey := req.FormValue("name")
+	reader, header, err := req.FormFile(formKey)
 	if err != nil {
 		userError := errors.ErrInvalid
 		userError.ErrMsg = fmt.Sprintf("invalid file: %v", err)
@@ -293,7 +294,7 @@ func (a *Api) uploadFile(c echo.Context) error {
 		return userError
 	}
 
-	mimetype := header.Header.Get("Content-Type")
+	mimetype := process.MimeTypeFromName(formKey)
 
 	if mimetype == "application/octet-stream" {
 		mimetype = "text/plain"

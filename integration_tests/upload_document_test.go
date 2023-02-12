@@ -31,7 +31,7 @@ func (suite *UploadDocumentSuite) SetupTest() {
 	clearDbDocumentTables(suite.T())
 }
 
-func (suite *UploadDocumentSuite) TestUpload() {
+func (suite *UploadDocumentSuite) TestUploadFail() {
 	suite.publicHttp.Post("/api/v1/documents").Json(suite.T(), "").Expect(suite.T()).e.Status(401).Done()
 	docId := uploadDocument(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 20)
 	assert.NotEqual(suite.T(), "", docId, "document id not empty")
@@ -42,6 +42,24 @@ func (suite *UploadDocumentSuite) TestUpload() {
 
 	assert.NotNil(suite.T(), doc, "get document")
 	assert.Equal(suite.T(), doc.Name, "file", "document name")
+}
+
+func (suite *UploadDocumentSuite) TestUploadTxt() {
+	uploadDocument(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 20)
+}
+
+func (suite *UploadDocumentSuite) TestUploadImage1() {
+	uploadDocument(suite.T(), suite.userClient, "jpg-1.jpg", "Lorem ipsum", 20)
+	uploadDocument(suite.T(), suite.userClient, "png-1.png", "Lorem ipsum", 20)
+}
+
+func (suite *UploadDocumentSuite) TestUploadImage2() {
+	// different mimetype, but image is same, server returns existing image instead
+	uploadDocument(suite.T(), suite.userClient, "jpg-1.jpeg", "Lorem ipsum", 20)
+}
+
+func (suite *UploadDocumentSuite) TestUploadPdf() {
+	uploadDocument(suite.T(), suite.userClient, "pdf-1.pdf", "Lorem ipsum", 20)
 }
 
 func (suite *UploadDocumentSuite) TestEdit() {
@@ -140,8 +158,13 @@ func uploadDocument(t *testing.T, client *baloo.Client, fileName string, content
 		return ""
 	}
 	files := []multipart.FormFile{
-		{Name: "file", Reader: reader},
+		{Name: fileName, Reader: reader},
 	}
+	form := multipart.FormData{
+		Data:  multipart.DataFields{},
+		Files: files,
+	}
+	form.Data["name"] = []string{fileName}
 
 	var docId = ""
 	docBody := &api.DocumentResponse{}
@@ -151,7 +174,8 @@ func uploadDocument(t *testing.T, client *baloo.Client, fileName string, content
 	req := client.Post("/api/v1/documents")
 	req.Request.DelHeader("content-type")
 	req.SetHeader("accept", "multipart/form-data").
-		Files(files).Expect(t).Status(200).
+		Form(form).
+		Expect(t).Status(200).
 		AssertFunc(func(r *http.Response, w *http.Request) error {
 			err := json.NewDecoder(r.Body).Decode(&docBody)
 			if err != nil {
