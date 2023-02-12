@@ -306,9 +306,9 @@ func (a *Api) uploadFile(c echo.Context) error {
 	document := &models.Document{
 		Id:       "",
 		UserId:   ctx.UserId,
-		Name:     header.Filename,
+		Name:     govalidator.SafeFileName(header.Filename),
 		Content:  "",
-		Filename: header.Filename,
+		Filename: govalidator.SafeFileName(header.Filename),
 		Hash:     tempHash,
 		Mimetype: mimetype,
 		Size:     header.Size,
