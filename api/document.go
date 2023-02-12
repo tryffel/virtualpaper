@@ -273,7 +273,7 @@ func (a *Api) uploadFile(c echo.Context) error {
 	documentId := ""
 
 	defer func() {
-		logCrudMetadata(ctx.UserId, "upload", &opOk, "document: %s", documentId)
+		logCrudDocument(ctx.UserId, "upload", &opOk, "document: %s", documentId)
 	}()
 
 	req := c.Request()
@@ -294,22 +294,43 @@ func (a *Api) uploadFile(c echo.Context) error {
 		return userError
 	}
 
-	mimetype := process.MimeTypeFromName(formKey)
+	sanitizedFormKey := govalidator.SafeFileName(formKey)
+	name := govalidator.SafeFileName(header.Filename)
+	mimetype := process.MimeTypeFromName(sanitizedFormKey)
 
 	if mimetype == "application/octet-stream" {
 		mimetype = "text/plain"
 	}
 
 	defer reader.Close()
+	buf := make([]byte, 500)
+	_, err = reader.Read(buf)
+	if err != nil {
+		logrus.Errorf("canot peek file contents")
+	}
+
+	_, err = reader.Seek(0, io.SeekStart)
+	if err != nil {
+		logrus.Errorf("canot seek file to start")
+	}
+
+	detectedFileType := http.DetectContentType(buf)
+	if detectedFileType != mimetype {
+		logrus.Warningf("uploaded document detected mimetype does not match reported, given %s, detected %s", header.Filename, detectedFileType)
+		userError := errors.ErrInvalid
+		userError.ErrMsg = fmt.Sprintf("illegal mimetype")
+		userError.Err = err
+		return userError
+	}
 
 	tempHash := config.RandomString(10)
 
 	document := &models.Document{
 		Id:       "",
 		UserId:   ctx.UserId,
-		Name:     govalidator.SafeFileName(header.Filename),
+		Name:     name,
 		Content:  "",
-		Filename: govalidator.SafeFileName(header.Filename),
+		Filename: name,
 		Hash:     tempHash,
 		Mimetype: mimetype,
 		Size:     header.Size,

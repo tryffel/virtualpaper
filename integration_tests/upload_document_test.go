@@ -32,7 +32,7 @@ func (suite *UploadDocumentSuite) SetupTest() {
 
 func (suite *UploadDocumentSuite) TestUploadFail() {
 	suite.publicHttp.Post("/api/v1/documents").Json(suite.T(), "").Expect(suite.T()).e.Status(401).Done()
-	docId := uploadDocument(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 20)
+	docId := uploadDocument(suite.T(), suite.userClient, "pdf-1.pdf", "Lorem ipsum", 20)
 	assert.NotEqual(suite.T(), "", docId, "document id not empty")
 
 	doc := getDocument(suite.T(), suite.adminHttp, docId, 404)
@@ -40,7 +40,9 @@ func (suite *UploadDocumentSuite) TestUploadFail() {
 	doc = getDocument(suite.T(), suite.userHttp, docId, 200)
 
 	assert.NotNil(suite.T(), doc, "get document")
-	assert.Equal(suite.T(), doc.Name, "text-1.txt", "document name")
+	assert.Equal(suite.T(), doc.Name, "pdf-1.pdf", "document name")
+
+	uploadDocumentWithStatus(suite.T(), suite.userClient, "pdf-1-illegal.png", "Lorem ipsum", 20, 400)
 }
 
 func (suite *UploadDocumentSuite) TestUploadTxt() {
@@ -115,6 +117,10 @@ func (suite *UploadDocumentSuite) TestEditSchedulesProcessing() {
 }
 
 func uploadDocument(t *testing.T, client *baloo.Client, fileName string, contentPrefix string, timeoutS int) string {
+	return uploadDocumentWithStatus(t, client, fileName, contentPrefix, timeoutS, 200)
+}
+
+func uploadDocumentWithStatus(t *testing.T, client *baloo.Client, fileName string, contentPrefix string, timeoutS int, httpStatus int) string {
 	dir := "testdata"
 	reader, err := os.Open(path.Join(dir, fileName))
 	if err != nil {
@@ -139,8 +145,11 @@ func uploadDocument(t *testing.T, client *baloo.Client, fileName string, content
 	req.Request.DelHeader("content-type")
 	req.SetHeader("accept", "multipart/form-data").
 		Form(form).
-		Expect(t).Status(200).
+		Expect(t).Status(httpStatus).
 		AssertFunc(func(r *http.Response, w *http.Request) error {
+			if httpStatus != r.StatusCode {
+				t.Fail()
+			}
 			err := json.NewDecoder(r.Body).Decode(&docBody)
 			if err != nil {
 				t.Errorf("parse response json: %v", err)
@@ -151,37 +160,39 @@ func uploadDocument(t *testing.T, client *baloo.Client, fileName string, content
 
 	startTime := time.Now()
 
-	for {
-		t.Log("poll document status")
-		client.Get("/api/v1/documents/" + docId).Expect(t).Status(200).AssertFunc(
-			func(r *http.Response, w *http.Request) error {
-				err := json.NewDecoder(r.Body).Decode(&docBody)
-				if err != nil {
-					t.Errorf("parse response json: %v", err)
-				}
+	if httpStatus == 200 {
+		for {
+			t.Log("poll document status")
+			client.Get("/api/v1/documents/" + docId).Expect(t).Status(200).AssertFunc(
+				func(r *http.Response, w *http.Request) error {
+					err := json.NewDecoder(r.Body).Decode(&docBody)
+					if err != nil {
+						t.Errorf("parse response json: %v", err)
+					}
 
-				if docBody.Status == "ready" {
-					docReady = true
-					t.Log("document ready")
-				} else {
-					t.Log("document status", docBody.Status)
-				}
-				docId = docBody.Id
-				return nil
-			}).Done()
+					if docBody.Status == "ready" {
+						docReady = true
+						t.Log("document ready")
+					} else {
+						t.Log("document status", docBody.Status)
+					}
+					docId = docBody.Id
+					return nil
+				}).Done()
 
-		if docReady {
-			break
+			if docReady {
+				break
+			}
+			if time.Now().Sub(startTime).Seconds() > float64(timeoutS) {
+				t.Errorf("timeout while indexing document")
+				break
+			}
+			time.Sleep(time.Second)
 		}
-		if time.Now().Sub(startTime).Seconds() > float64(timeoutS) {
-			t.Errorf("timeout while indexing document")
-			break
-		}
-		time.Sleep(time.Second)
-	}
 
-	if !strings.HasPrefix(docBody.Content, contentPrefix) {
-		t.Errorf("document content does not match")
+		if !strings.HasPrefix(docBody.Content, contentPrefix) {
+			t.Errorf("document content does not match")
+		}
 	}
 	return docId
 }
