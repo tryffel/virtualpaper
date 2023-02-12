@@ -57,12 +57,11 @@ are not fully searchable by their content.
 # Building
 
 ## Server
-You need Go 1.16 or later installed and configured.
+You need Go 1.19 or later installed and configured.
 
-In addition, you need Tesseract with headers and Imagemagick-v7. 
-See Dockerfile for more info. Some distributions (e.g. Debian) ship Imagemagick-v6 by default. 
-It is recommended to install ```poppler-utils``` for getting reliable results on pdfs that contain text (and not images).
-Also ```pandoc``` is recommended.
+Also for processing the documents you need Tesseract 5, Imagemagick 7, poppler-utils and optionally pandoc.
+See Dockerfile for more info. 
+Some distributions (e.g. Debian) ship Imagemagick-v6 by default. 
 Please configure the locations for these executables in the configuration file. 
 
 Build server with:
@@ -109,8 +108,9 @@ docker-compose up
 copy config.sample.toml to e.g. config-dir/config.toml.
 
 By default, docker file includes only English-dataset for tesseract OCR engine. To use other languages,
-either include them in docker file, or install language packages on host machine and add them as volume to docker
-with: ```-v /usr/share/tessdata:/usr/share/tessdata```. Host machine location may vary depending on distribution used.
+either include them in Dockerfile, or install language packages on host machine and add them as volume to docker
+with: ```-v /usr/share/tessdata:/usr/share/tessdata```. 
+Host machine location may vary depending on distribution used.
 
 Start server (for testing):
 ```docker run -d -v /config-dir:/config/ tryffel/virtualpaper:latest serve```
