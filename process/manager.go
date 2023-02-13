@@ -185,7 +185,7 @@ func (m *Manager) PullDocumentsToProcess() {
 
 					metadata, err := m.db.MetadataStore.GetDocumentMetadata(0, v.DocumentId)
 					if err != nil {
-						logrus.Error("get documetn metadata: %v", err)
+						logrus.Errorf("get documetn metadata: %v", err)
 					} else {
 						doc.Metadata = *metadata
 						docs[v.DocumentId] = doc

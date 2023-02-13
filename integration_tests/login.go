@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
@@ -76,6 +77,7 @@ func SaveTokenToFile() error {
 	if err != nil {
 		return fmt.Errorf("write file: %v", err)
 	}
+	logrus.Infof("Written HTTP auth token to file %s", file)
 	return nil
 }
 

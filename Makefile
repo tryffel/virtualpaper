@@ -22,7 +22,7 @@ run:
 	go run main.go
 
 test-unit: 
-	go test ./... -short
+	go test ./api ./cmd ./config ./errors ./mail ./models ./process ./search ./storage
 
 test-external:
 	# test integration with external programs

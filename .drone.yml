@@ -1,0 +1,87 @@
+---
+kind: pipeline
+  #type: docker
+name: default
+
+steps:
+- name: server
+  image: golang:1.20-alpine3.17 
+  detach: true
+  environment:
+    VIRTUALPAPER_API_STATIC_CONTENT_PATH: "/app/frontend"
+    VIRTUALPAPER_PROCESSING_DATA_DIR: "/data"
+    VIRTUALPAPER_PROCESSING_INPUT_DIR: "/input"
+    VIRTUALPAPER_LOGGING_DIRECTORY: "/log"
+    VIRTUALPAPER_PROCESSING_PANDOC_BIN: "/pandoc-2.18/bin/pandoc"
+    VIRTUALPAPER_PROCESSING_PDFTOTEXT_BIN: "/usr/bin/pdftotext"
+    VIRTUALPAPER_PROCESSING_IMAGICK_BIN: "/usr/bin/convert"
+    VIRTUALPAPER_PROCESSING_TESSERACT_BIN: "/usr/bin/tesseract"
+    VIRTUALPAPER_MEILISEARCH_URL: http://meilisearch:7700
+    VIRTUALPAPER_DATABASE_HOST: postgres
+    VIRTUALPAPER_DATABASE_PASSWORD: virtualpaper
+    VIRTUALPAPER_DATABASE_DATABASE: virtualpaper
+    VIRTUALPAPER_DATABASE_USERNAME: virtualpaper
+    VIRTUALPAPER_DATABASE_NO_SSL: true
+    VIRTUALPAPER_API_HOST: 0.0.0.0
+    VIRTUALPAPER_LOGGING_LOG_LEVEL: DEBUG
+  volumes:
+  - name: deps
+    path: /go
+  commands:
+  - apk update
+  - apk add gcc g++ musl-dev tesseract-ocr imagemagick imagemagick-dev poppler-utils
+  - wget https://github.com/jgm/pandoc/releases/download/2.18/pandoc-2.18-linux-amd64.tar.gz
+  - tar -xvf pandoc-2.18-linux-amd64.tar.gz
+  - cd /drone/src
+  - go mod download
+  - go run . migrate --config config.sample.toml
+  - go run . manage --config config.sample.toml add-user -U user -P user -a false
+  - go run . manage --config config.sample.toml add-user -U admin -P admin -a true
+  - go run . serve --config config.sample.toml
+
+- name: api-tests
+  image: golang:1.20-alpine3.17 
+  environment:
+    VIRTUALPAPER_API_STATIC_CONTENT_PATH: "/app/frontend"
+    VIRTUALPAPER_PROCESSING_DATA_DIR: "/data"
+    VIRTUALPAPER_PROCESSING_INPUT_DIR: "/input"
+    VIRTUALPAPER_LOGGING_DIRECTORY: "/log"
+    VIRTUALPAPER_PROCESSING_PANDOC_BIN: "/pandoc-2.18/bin/pandoc"
+    VIRTUALPAPER_PROCESSING_PDFTOTEXT_BIN: "/usr/bin/pdftotext"
+    VIRTUALPAPER_PROCESSING_IMAGICK_BIN: "/usr/bin/convert"
+    VIRTUALPAPER_PROCESSING_TESSERACT_BIN: "/usr/bin/tesseract"
+    VIRTUALPAPER_MEILISEARCH_URL: http://meilisearch:7700
+    VIRTUALPAPER_DATABASE_HOST: postgres
+    VIRTUALPAPER_DATABASE_PASSWORD: virtualpaper
+    VIRTUALPAPER_DATABASE_DATABASE: virtualpaper
+    VIRTUALPAPER_DATABASE_USERNAME: virtualpaper
+    VIRTUALPAPER_DATABASE_NO_SSL: true
+    VIRTUALPAPER_API_HOST: 0.0.0.0
+    VIRTUALPAPER_LOGGING_LOG_LEVEL: DEBUG
+    VIRTUALPAPER_SERVER_URL: "http://server:8000"
+    VIRTUALPAPER_MEILISEARCH_HOST: "http://meilisearch:7700"
+  commands:
+    - apk update && apk add make
+    - mkdir frontend/build
+    - echo "empty" > frontend/build/gitignore.html
+    - make test-api
+  volumes:
+  - name: deps
+    path: /go
+
+
+services:
+- name: meilisearch
+  image: getmeili/meilisearch:v0.25.2
+    #environment:
+
+- name: postgres
+  image: postgres:14.2-alpine3.15
+  environment:
+    POSTGRES_USER: virtualpaper
+    POSTGRES_PASSWORD: virtualpaper
+    POSTGRES_DB: virtualpaper
+
+volumes:
+- name: deps
+  temp: {}

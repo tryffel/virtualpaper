@@ -11,7 +11,7 @@ import (
 func GetDb() *storage.Database {
 	// docker-compose.yml
 	conf := config.Database{
-		Host:     "localhost",
+		Host:     dbHost,
 		Port:     5432,
 		Username: "virtualpaper",
 		Password: "virtualpaper",
@@ -80,7 +80,7 @@ func clearMeiliIndices(t *testing.T) {
 	defer closeDb(db, t)
 
 	conf := &config.Meilisearch{
-		Url:    "http://localhost:7700",
+		Url:    meiliHost,
 		Index:  "virtualpaper",
 		ApiKey: "",
 	}

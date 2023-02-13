@@ -1,8 +1,15 @@
 package integrationtest
 
-import "gopkg.in/h2non/baloo.v3"
+import (
+	"gopkg.in/h2non/baloo.v3"
+	"os"
+	"strings"
+)
 
-const BASEURL = "http://localhost:8000"
+// loaded from env keys during startup
+var serverUrl = ""
+var dbHost = ""
+var meiliHost = ""
 
 type httpTest struct {
 	client *baloo.Client
@@ -26,4 +33,19 @@ func (t *httpTest) IsJson() *httpTest {
 	}
 }
 
-var client = &httpTest{client: baloo.New(BASEURL)}
+var client = &httpTest{client: baloo.New(serverUrl)}
+
+func initConfig() {
+	serverUrl = getEnv("SERVER_URL", "http://localhost:8000")
+	dbHost = getEnv("DATABASE_HOST", "localhost")
+	meiliHost = getEnv("MEILISEARCH_HOST", "http://localhost:7700")
+	client = &httpTest{client: baloo.New(serverUrl)}
+}
+
+func getEnv(key, defaultValue string) string {
+	raw := os.Getenv("VIRTUALPAPER_" + strings.ToUpper(key))
+	if raw == "" {
+		return defaultValue
+	}
+	return raw
+}
