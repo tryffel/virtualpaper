@@ -38,7 +38,7 @@ var client = &httpTest{client: baloo.New(serverUrl)}
 func initConfig() {
 	serverUrl = getEnv("SERVER_URL", "http://localhost:8000")
 	dbHost = getEnv("DATABASE_HOST", "localhost")
-	meiliHost = getEnv("MEILISEARCH_HOST", "http://localhost:7700")
+	meiliHost = getEnv("MEILISEARCH_URL", "http://localhost:7700")
 	client = &httpTest{client: baloo.New(serverUrl)}
 }
 

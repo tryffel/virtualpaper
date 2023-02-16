@@ -3,9 +3,16 @@ name: default
 
 steps:
 
-- name: server
-  image: golang:1.20-alpine3.17 
-  detach: true
+- name: unit-test
+  image: tryffel/virtualpaper-drone:latest
+  volumes:
+  - name: go-deps
+    path: /go
+  commands:
+  - make ci-test-unit
+
+- name: init-api-tests
+  image: tryffel/virtualpaper-drone:latest
   environment:
     VIRTUALPAPER_API_STATIC_CONTENT_PATH: "/app/frontend"
     VIRTUALPAPER_PROCESSING_DATA_DIR: "/data"
@@ -15,7 +22,7 @@ steps:
     VIRTUALPAPER_PROCESSING_PDFTOTEXT_BIN: "/usr/bin/pdftotext"
     VIRTUALPAPER_PROCESSING_IMAGICK_BIN: "/usr/bin/convert"
     VIRTUALPAPER_PROCESSING_TESSERACT_BIN: "/usr/bin/tesseract"
-    VIRTUALPAPER_MEILISEARCH_URL: http://meilisearch:7700
+    VIRTUALPAPER_MEILISEARCH_URL: "http://meilisearch:7700"
     VIRTUALPAPER_DATABASE_HOST: postgres
     VIRTUALPAPER_DATABASE_PASSWORD: virtualpaper
     VIRTUALPAPER_DATABASE_DATABASE: virtualpaper
@@ -26,24 +33,17 @@ steps:
   volumes:
   - name: go-deps
     path: /go
+  depends_on:
+    - unit-test
   commands:
-  - go install gotest.tools/gotestsum@latest
-  - apk update
-  - apk add gcc g++ musl-dev tesseract-ocr imagemagick imagemagick-dev poppler-utils make
-  - cd /
-  - wget https://github.com/jgm/pandoc/releases/download/2.18/pandoc-2.18-linux-amd64.tar.gz
-  - tar -xvf pandoc-2.18-linux-amd64.tar.gz
-  - cd /drone/src
-  - /pandoc-2.18/bin/pandoc --version
-  - go mod download
-  - make ci-test-unit
+    #- make ci-test-unit
   - go run . migrate --config config.sample.toml
   - go run . manage --config config.sample.toml add-user -U user -P user -a false
   - go run . manage --config config.sample.toml add-user -U admin -P admin -a true
-  - go run . serve --config config.sample.toml
 
-- name: api-tests
-  image: golang:1.20-alpine3.17 
+- name: server
+  image: tryffel/virtualpaper-drone:latest
+  detach: true
   environment:
     VIRTUALPAPER_API_STATIC_CONTENT_PATH: "/app/frontend"
     VIRTUALPAPER_PROCESSING_DATA_DIR: "/data"
@@ -53,7 +53,36 @@ steps:
     VIRTUALPAPER_PROCESSING_PDFTOTEXT_BIN: "/usr/bin/pdftotext"
     VIRTUALPAPER_PROCESSING_IMAGICK_BIN: "/usr/bin/convert"
     VIRTUALPAPER_PROCESSING_TESSERACT_BIN: "/usr/bin/tesseract"
-    VIRTUALPAPER_MEILISEARCH_URL: http://meilisearch:7700
+    VIRTUALPAPER_MEILISEARCH_URL: "http://meilisearch:7700"
+    VIRTUALPAPER_DATABASE_HOST: postgres
+    VIRTUALPAPER_DATABASE_PASSWORD: virtualpaper
+    VIRTUALPAPER_DATABASE_DATABASE: virtualpaper
+    VIRTUALPAPER_DATABASE_USERNAME: virtualpaper
+    VIRTUALPAPER_DATABASE_NO_SSL: true
+    VIRTUALPAPER_API_HOST: 0.0.0.0
+    VIRTUALPAPER_LOGGING_LOG_LEVEL: DEBUG
+  volumes:
+  - name: go-deps
+    path: /go
+  depends_on:
+    - unit-test
+    - init-api-tests
+  commands:
+    #- make ci-test-unit
+  - go run . serve --config config.sample.toml
+
+- name: api-tests
+  image: tryffel/virtualpaper-drone:latest
+  environment:
+    VIRTUALPAPER_API_STATIC_CONTENT_PATH: "/app/frontend"
+    VIRTUALPAPER_PROCESSING_DATA_DIR: "/data"
+    VIRTUALPAPER_PROCESSING_INPUT_DIR: "/input"
+    VIRTUALPAPER_LOGGING_DIRECTORY: "/log"
+    VIRTUALPAPER_PROCESSING_PANDOC_BIN: "/pandoc-2.18/bin/pandoc"
+    VIRTUALPAPER_PROCESSING_PDFTOTEXT_BIN: "/usr/bin/pdftotext"
+    VIRTUALPAPER_PROCESSING_IMAGICK_BIN: "/usr/bin/convert"
+    VIRTUALPAPER_PROCESSING_TESSERACT_BIN: "/usr/bin/tesseract"
+    VIRTUALPAPER_MEILISEARCH_URL: "http://meilisearch:7700"
     VIRTUALPAPER_DATABASE_HOST: postgres
     VIRTUALPAPER_DATABASE_PASSWORD: virtualpaper
     VIRTUALPAPER_DATABASE_DATABASE: virtualpaper
@@ -66,11 +95,9 @@ steps:
   depends_on:
     - server
   commands:
-    - apk update && apk add make
     - mkdir frontend/build
     - echo "empty" > frontend/build/gitignore.html
-    - go install gotest.tools/gotestsum@latest
-    - sleep 60
+    - sleep 10
     - make ci-test-api
   volumes:
   - name: go-deps

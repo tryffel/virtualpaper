@@ -1,0 +1,35 @@
+FROM golang:1.20-alpine3.17
+
+RUN apk update
+RUN apk add gcc g++ musl-dev tesseract-ocr imagemagick imagemagick-dev poppler-utils make
+
+ENV VIRTUALPAPER_API_STATIC_CONTENT_PATH="/app/frontend"
+ENV VIRTUALPAPER_PROCESSING_DATA_DIR="/data"
+ENV VIRTUALPAPER_PROCESSING_INPUT_DIR="/input"
+ENV VIRTUALPAPER_LOGGING_DIRECTORY="/log"
+ENV VIRTUALPAPER_PROCESSING_PANDOC_BIN="/pandoc-2.18/bin/pandoc"
+ENV VIRTUALPAPER_PROCESSING_PDFTOTEXT_BIN="/usr/bin/pdftotext"
+ENV VIRTUALPAPER_PROCESSING_IMAGICK_BIN="/usr/bin/convert"
+ENV VIRTUALPAPER_PROCESSING_TESSERACT_BIN="/usr/bin/tesseract"
+ENV VIRTUALPAPER_MEILISEARCH_URL="http://meilisearch:7700"
+ENV VIRTUALPAPER_DATABASE_HOST=postgres
+ENV VIRTUALPAPER_DATABASE_PASSWORD=virtualpaper
+ENV VIRTUALPAPER_DATABASE_DATABASE=virtualpaper
+ENV VIRTUALPAPER_DATABASE_USERNAME=virtualpaper
+ENV VIRTUALPAPER_DATABASE_NO_SSL=true
+ENV VIRTUALPAPER_API_HOST="0.0.0.0"
+ENV VIRTUALPAPER_LOGGING_LOG_LEVEL="DEBUG"
+
+RUN go install gotest.tools/gotestsum@latest
+
+WORKDIR /virtualpaper
+COPY go.* /virtualpaper
+RUN go mod download
+RUN go install gotest.tools/gotestsum@latest
+
+WORKDIR /
+RUN wget https://github.com/jgm/pandoc/releases/download/2.18/pandoc-2.18-linux-amd64.tar.gz
+RUN tar -xvf pandoc-2.18-linux-amd64.tar.gz
+RUN rm pandoc-2.18-linux-amd64.tar.gz
+
+
