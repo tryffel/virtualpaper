@@ -3,11 +3,13 @@ package integrationtest
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"gopkg.in/h2non/baloo.v3"
 	"io"
 	"net/http"
 	"strconv"
 	"testing"
+	"tryffel.net/go/virtualpaper/errors"
 )
 
 type httpClient struct {
@@ -107,4 +109,26 @@ func queryParams(req *baloo.Request, filter string, page int, pageSize int, sort
 		"sort":    sortKey,
 		"order":   sortOrder,
 	})
+}
+
+func assertHttpCode(t *testing.T, wantCode int, logInvalid, fail bool) func(r *http.Response, w *http.Request) error {
+	return func(r *http.Response, w *http.Request) error {
+		if r.StatusCode != wantCode {
+			msg := fmt.Sprintf("invalid status code: want %d, got %d", wantCode, r.StatusCode)
+			if logInvalid {
+				body, err := io.ReadAll(r.Body)
+				if err != nil {
+					t.Errorf("read body: %v", err)
+				} else {
+					msg += fmt.Sprintf(" body: %v", string(body))
+				}
+			}
+			t.Error(msg)
+			if fail {
+				t.FailNow()
+			}
+			return errors.New(msg)
+		}
+		return nil
+	}
 }

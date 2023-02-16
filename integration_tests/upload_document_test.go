@@ -171,11 +171,9 @@ func uploadDocumentWithStatus(t *testing.T, client *baloo.Client, fileName strin
 	req.Request.DelHeader("content-type")
 	req.SetHeader("accept", "multipart/form-data").
 		Form(form).
-		Expect(t).Status(httpStatus).
+		Expect(t).
+		AssertFunc(assertHttpCode(t, httpStatus, true, true)).
 		AssertFunc(func(r *http.Response, w *http.Request) error {
-			if httpStatus != r.StatusCode {
-				t.Fail()
-			}
 			err := json.NewDecoder(r.Body).Decode(&docBody)
 			if err != nil {
 				t.Errorf("parse response json: %v", err)
@@ -187,8 +185,8 @@ func uploadDocumentWithStatus(t *testing.T, client *baloo.Client, fileName strin
 	startTime := time.Now()
 
 	if httpStatus == 200 {
+		t.Log("start polling document status")
 		for {
-			t.Log("poll document status")
 			client.Get("/api/v1/documents/" + docId).Expect(t).Status(200).AssertFunc(
 				func(r *http.Response, w *http.Request) error {
 					err := json.NewDecoder(r.Body).Decode(&docBody)
@@ -200,7 +198,7 @@ func uploadDocumentWithStatus(t *testing.T, client *baloo.Client, fileName strin
 						docReady = true
 						t.Log("document ready")
 					} else {
-						t.Log("document status", docBody.Status)
+						t.Log("polling document, status", docBody.Status)
 					}
 					docId = docBody.Id
 					return nil
@@ -213,7 +211,7 @@ func uploadDocumentWithStatus(t *testing.T, client *baloo.Client, fileName strin
 				t.Errorf("timeout while indexing document")
 				break
 			}
-			time.Sleep(time.Second)
+			time.Sleep(time.Second * 2)
 		}
 
 		if !strings.HasPrefix(docBody.Content, contentPrefix) {

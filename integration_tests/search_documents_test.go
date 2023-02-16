@@ -32,7 +32,7 @@ func (suite *DocumentSearchSuite) SetupTest() {
 	suite.docs = make(map[string]*api.DocumentResponse)
 	suite.keys, suite.values = initMetadataKeyValues(suite.T(), suite.userHttp)
 
-	text1Id := uploadDocument(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 20)
+	text1Id := uploadDocument(suite.T(), suite.userClient, "jpg-1.jpeg", "Lorem ipsum", 20)
 	text1 := getDocument(suite.T(), suite.userHttp, text1Id, 200)
 
 	text2d := uploadDocument(suite.T(), suite.userClient, "pdf-1.pdf", "Lorem ipsum", 40)
