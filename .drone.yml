@@ -1,9 +1,8 @@
----
 kind: pipeline
-  #type: docker
 name: default
 
 steps:
+
 - name: server
   image: golang:1.20-alpine3.17 
   detach: true
@@ -25,15 +24,17 @@ steps:
     VIRTUALPAPER_API_HOST: 0.0.0.0
     VIRTUALPAPER_LOGGING_LOG_LEVEL: DEBUG
   volumes:
-  - name: deps
+  - name: go-deps
     path: /go
   commands:
+  - go install gotest.tools/gotestsum@latest
   - apk update
-  - apk add gcc g++ musl-dev tesseract-ocr imagemagick imagemagick-dev poppler-utils
+  - apk add gcc g++ musl-dev tesseract-ocr imagemagick imagemagick-dev poppler-utils make
   - wget https://github.com/jgm/pandoc/releases/download/2.18/pandoc-2.18-linux-amd64.tar.gz
   - tar -xvf pandoc-2.18-linux-amd64.tar.gz
   - cd /drone/src
   - go mod download
+  - make ci-test-unit
   - go run . migrate --config config.sample.toml
   - go run . manage --config config.sample.toml add-user -U user -P user -a false
   - go run . manage --config config.sample.toml add-user -U admin -P admin -a true
@@ -59,14 +60,18 @@ steps:
     VIRTUALPAPER_API_HOST: 0.0.0.0
     VIRTUALPAPER_LOGGING_LOG_LEVEL: DEBUG
     VIRTUALPAPER_SERVER_URL: "http://server:8000"
-    VIRTUALPAPER_MEILISEARCH_HOST: "http://meilisearch:7700"
+    VIRTUALPAPER_MEILISEARCH_HOST: "http://server:8000"
+  depends_on:
+    - server
   commands:
     - apk update && apk add make
     - mkdir frontend/build
     - echo "empty" > frontend/build/gitignore.html
-    - make test-api
+    - go install gotest.tools/gotestsum@latest
+    - sleep 60
+    - make ci-test-api
   volumes:
-  - name: deps
+  - name: go-deps
     path: /go
 
 
@@ -83,5 +88,7 @@ services:
     POSTGRES_DB: virtualpaper
 
 volumes:
-- name: deps
+- name: go-deps
   temp: {}
+
+

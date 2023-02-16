@@ -41,7 +41,7 @@ func TestDocument_Diff(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*DocumentHistory
+		want    []DocumentHistory
 		wantErr bool
 	}{
 		{
@@ -51,6 +51,7 @@ func TestDocument_Diff(t *testing.T) {
 			},
 			args:    args{newDocument: &Document{Id: "a"}},
 			wantErr: true,
+			want:    []DocumentHistory{},
 		},
 		{
 			name: "change name",
@@ -60,7 +61,7 @@ func TestDocument_Diff(t *testing.T) {
 			},
 			args:    args{newDocument: &Document{Id: "id", Name: "testing2"}},
 			wantErr: false,
-			want:    []*DocumentHistory{{DocumentId: "id", Action: "rename", OldValue: "testing", NewValue: "testing2"}},
+			want:    []DocumentHistory{{DocumentId: "id", Action: "rename", OldValue: "testing", NewValue: "testing2"}},
 		},
 		{
 			name: "change name and description",
@@ -71,7 +72,7 @@ func TestDocument_Diff(t *testing.T) {
 			},
 			args:    args{newDocument: &Document{Id: "id", Name: "testing2", Description: "description"}},
 			wantErr: false,
-			want: []*DocumentHistory{
+			want: []DocumentHistory{
 				{DocumentId: "id", Action: "rename", OldValue: "testing", NewValue: "testing2"},
 				{DocumentId: "id", Action: "description", OldValue: "empty", NewValue: "description"},
 			},
@@ -88,7 +89,7 @@ func TestDocument_Diff(t *testing.T) {
 			},
 			args:    args{newDocument: &Document{Id: "id", Name: "testing2", Description: "description", Metadata: []Metadata{{Key: "project", Value: "compsci"}}}},
 			wantErr: false,
-			want: []*DocumentHistory{
+			want: []DocumentHistory{
 				{DocumentId: "id", Action: "rename", OldValue: "testing", NewValue: "testing2"},
 				{DocumentId: "id", Action: "description", OldValue: "empty", NewValue: "description"},
 				{DocumentId: "id", Action: "remove metadata", OldValue: "author:Bach", NewValue: ""},
@@ -109,9 +110,8 @@ func TestDocument_Diff(t *testing.T) {
 			got, err := d.Diff(tt.args.newDocument, tt.args.userId)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Document.Diff() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
+
+			} else if err == nil && !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Document.Diff() = %v, want %v", got, tt.want)
 			}
 		})

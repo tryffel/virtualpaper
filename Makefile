@@ -51,6 +51,11 @@ test-start:
 	docker-compose run --rm --entrypoint "/app/virtualpaper --config /config/config.toml" server manage add-user -U admin -P admin -a true
 	docker-compose start server
 
+ci-test-unit:
+	 /go/bin/gotestsum --format testname ./api ./cmd ./config ./errors ./mail ./models ./process ./search ./storage
+
+ci-test-api:
+	/go/bin/gotestsum --format testname ./integration_tests -count=1
 
 #test-start:
 #	export TEST_VOLUME_ID=test
@@ -129,6 +134,20 @@ dev-start-container:
 	docker exec -it virtualpaper-dev \
 		/bin/sh -c "go run . serve --config /config/config.toml"
 	docker kill virtualpaper-dev
+
+dev-start-container-no-server:
+	echo "Starting docker container"
+	docker run --name=virtualpaper-dev \
+		--rm -it \
+		-v `pwd`:/virtualpaper \
+		-v `pwd`/dev/config:/config \
+		-v `pwd`/dev/data:/data \
+		-v `pwd`/dev/logs:/logs \
+		--network virtualpaper_virtualpaper \
+		-v virtualpaper-dev-go:/go/pkg/ \
+		tryffel/virtualpaper-devenv:latest /bin/sh
+
+
 
 
 
