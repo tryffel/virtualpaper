@@ -30,9 +30,11 @@ steps:
   - go install gotest.tools/gotestsum@latest
   - apk update
   - apk add gcc g++ musl-dev tesseract-ocr imagemagick imagemagick-dev poppler-utils make
+  - cd /
   - wget https://github.com/jgm/pandoc/releases/download/2.18/pandoc-2.18-linux-amd64.tar.gz
   - tar -xvf pandoc-2.18-linux-amd64.tar.gz
   - cd /drone/src
+  - /pandoc-2.18/bin/pandoc --version
   - go mod download
   - make ci-test-unit
   - go run . migrate --config config.sample.toml
