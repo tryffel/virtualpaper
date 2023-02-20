@@ -119,8 +119,6 @@ func GetTesseractVersion() string {
 	out, err := callTesseract("--version")
 	if err != nil {
 		logrus.Error(err)
-	} else {
-		logrus.Infof("tesseract version: %s", out)
 	}
 
 	splits := strings.Split(out, "\n")
