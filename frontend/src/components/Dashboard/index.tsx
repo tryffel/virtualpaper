@@ -22,11 +22,10 @@ import { Grid } from "@mui/material";
 import { Stats } from "./Stats";
 import { LastUpdatedDocumentList } from "./DocumentList";
 import { get } from "lodash";
-import { IndexingStatus } from "./Status";
-//import { DocumentTimeline } from "./Timeline";
+import { IndexingStatusRow, IndexingStatusRowSmall } from "./Status";
 
-const Dashboard = () => {
-  const { data, isLoading, error, refetch } = useGetOne("documents/stats", {
+export const Dashboard = () => {
+  const { data, isLoading } = useGetOne("documents/stats", {
     id: "",
   });
   if (isLoading) {
@@ -41,7 +40,7 @@ const Dashboard = () => {
                     <DocumentTimeline stats={data.yearly_stats}/>
                 </Grid> */}
       <Grid item xs={4} sm={4} md={4} lg={12}>
-        <IndexingStatus indexing={get(data, "indexing")} />
+        <IndexingStatusRow indexing={get(data, "indexing")} />
       </Grid>
 
       <Grid item xs={12} sm={10} md={8} lg={3}>
@@ -51,4 +50,14 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export const ShowDocumentsIndexing = () => {
+  const { data, isLoading } = useGetOne("documents/stats", {
+    id: "",
+  });
+  if (isLoading) {
+    return null;
+  }
+  return (
+    <IndexingStatusRowSmall indexing={get(data, "indexing")} hideReady={true} />
+  );
+};

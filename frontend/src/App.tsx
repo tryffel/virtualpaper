@@ -7,13 +7,7 @@ import ArticleIcon from "@mui/icons-material/Article";
 
 import { Route } from "react-router-dom";
 
-import {
-  Admin,
-  ListGuesser,
-  Resource,
-  useTheme,
-  CustomRoutes,
-} from "react-admin";
+import { Admin, Resource, CustomRoutes } from "react-admin";
 import { dataProvider } from "./api/dataProvider";
 import authProvider from "./api/authProvider";
 import documents from "./components/Documents";
@@ -26,7 +20,7 @@ import Rules from "./components/Rules";
 import { ProfileEdit } from "./components/Preferences";
 import AdminView from "./components/Admin";
 import BulkEditDocuments from "./components/Documents/BulkEdit";
-import Dashboard from "./components/Dashboard";
+import { Dashboard } from "./components/Dashboard";
 
 const App = () => (
   <Admin
@@ -57,7 +51,7 @@ const App = () => (
     <Resource name="admin" />
     <Resource name="admin/users" />
     <Resource name="admin/documents/processing" />
-    <Resource name="documents/bulkEdit" create={<BulkEditDocuments/>} />
+    <Resource name="documents/bulkEdit" create={<BulkEditDocuments />} />
     <Resource name="documents/linked" options={{ label: "Linked documents" }} />
 
     <CustomRoutes>
@@ -80,7 +74,6 @@ const App = () => (
         // @ts-ignore
         element={<BulkEditDocuments/>}
       /> */}
-
     </CustomRoutes>
   </Admin>
 );

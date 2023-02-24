@@ -35,7 +35,7 @@ export const DocumentCard = (props: any) => {
     <Card key={record.id} style={{ ...cardStyle }}>
       <CardHeader
         title={<DocumentTitle record={record} />}
-        sx={{ mt: 0.0, pb: 0 }}
+        sx={{ mt: 0, pb: 0 }}
       />
       <DocumentContent record={record} />
       <CardActions style={{ textAlign: "right", paddingTop: "0" }}>
@@ -69,7 +69,13 @@ const DocumentTitle = (props: { record: RaRecord }) => {
 
   return (
     <Typography variant="subtitle2" sx={{ mt: 0.0, mb: 0 }}>
-      <p className="document-title">{record.name}</p>
+      <div className="document-title">
+        <p
+          dangerouslySetInnerHTML={{
+            __html: record.name,
+          }}
+        />
+      </div>
     </Typography>
   );
 };
@@ -120,7 +126,7 @@ const DocumentContent = (props: { record: RaRecord }) => {
       case "image/jpeg":
         return "Image";
       default:
-        return "";
+        return "Misc";
     }
   };
 

@@ -18,10 +18,18 @@
 
 import * as React from "react";
 
-import { Grid, Typography, Box, CircularProgress } from "@mui/material";
+import {
+  Grid,
+  Typography,
+  CircularProgress,
+  useMediaQuery,
+} from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
-export const IndexingStatus = (props: { indexing: boolean }) => {
+export const IndexingStatusRow = (props: {
+  indexing: boolean;
+  hideReady?: boolean;
+}) => {
   const { indexing } = props;
 
   if (indexing) {
@@ -42,7 +50,7 @@ export const IndexingStatus = (props: { indexing: boolean }) => {
         </Grid>
       </Grid>
     );
-  } else {
+  } else if (!props.hideReady) {
     return (
       <Grid container>
         <Grid margin="1em">
@@ -55,5 +63,56 @@ export const IndexingStatus = (props: { indexing: boolean }) => {
         </Grid>
       </Grid>
     );
+  } else {
+    return null;
+  }
+};
+
+export const IndexingStatusRowSmall = (props: {
+  indexing: boolean;
+  hideReady?: boolean;
+}) => {
+  const { indexing } = props;
+
+  // @ts-ignore
+  const isSmall = useMediaQuery((theme) => theme.breakpoints.down("sm"));
+
+  if (indexing) {
+    return (
+      <Grid container sx={{ width: "50%", mb: 0, lineHeight: 1 }}>
+        <Grid margin="0em">
+          <CircularProgress
+            variant="indeterminate"
+            size={22}
+            color="secondary"
+            {...props}
+          />
+        </Grid>
+        <Grid>
+          <Typography
+            variant="body1"
+            color="textSecondary"
+            sx={{ mt: 0, ml: 1 }}
+          >
+            {isSmall ? "Indexing" : "Documents indexing in progress"}
+          </Typography>
+        </Grid>
+      </Grid>
+    );
+  } else if (!props.hideReady) {
+    return (
+      <Grid container sx={{ width: "auto" }}>
+        <Grid item margin="1em">
+          <CheckCircleIcon color="primary" />
+        </Grid>
+        <Grid item>
+          <Typography variant="body1" color="textSecondary" marginTop="0em">
+            All documents indexed
+          </Typography>
+        </Grid>
+      </Grid>
+    );
+  } else {
+    return null;
   }
 };

@@ -43,6 +43,7 @@ import ClearIcon from "@mui/icons-material/Clear";
 import EditIcon from "@mui/icons-material/Edit";
 import { Link } from "react-router-dom";
 import { DocumentCard } from "./DocumentCard";
+import { ShowDocumentsIndexing } from "../Dashboard";
 
 const DocumentPagination = () => (
   <Pagination rowsPerPageOptions={[10, 25, 50, 100]} />
@@ -50,6 +51,7 @@ const DocumentPagination = () => (
 
 const DocumentListActions = () => (
   <TopToolbar>
+    <ShowDocumentsIndexing />
     <DocumentHelp />
     <SortButton
       label="Sort"
