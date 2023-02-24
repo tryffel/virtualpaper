@@ -21,8 +21,7 @@ import * as React from "react";
 import { Loading, useGetMany } from "react-admin";
 
 import { useTheme, Grid, Typography, Box, Paper } from "@mui/material";
-import { isDOMComponent } from "react-dom/test-utils";
-import { DocumentCard } from "../Documents/List";
+import { DocumentCard } from "../Documents/DocumentCard";
 
 export const LastUpdatedDocumentList = (props: { ids: string[] }) => {
   const theme = useTheme();

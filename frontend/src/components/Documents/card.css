@@ -1,0 +1,13 @@
+
+.document-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+
+    margin-bottom: 0;
+    margin-top: 0;
+    min-height: 65px;
+    max-height: 65px;
+}

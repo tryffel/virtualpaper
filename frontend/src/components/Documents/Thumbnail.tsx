@@ -78,8 +78,21 @@ export function ThumbnailSmall(props: ThumbnailProps) {
   });
 
   return (
-    <div style={{ overflow: "hidden", maxHeight: "200px", minHeight: "200px" }}>
-      <img src={imgData} style={{ maxWidth: "250px" }} alt={props.label} />
+    <div
+      style={{
+        overflow: "hidden",
+        maxHeight: "200px",
+        minHeight: "150px",
+        minWidth: "150px",
+        maxWidth: "200px",
+        borderRadius: "5%",
+      }}
+    >
+      <img
+        src={imgData}
+        style={{ maxWidth: "200px", background: "white" }}
+        alt={props.label}
+      />
     </div>
   );
 }

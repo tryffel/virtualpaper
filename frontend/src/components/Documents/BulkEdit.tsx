@@ -17,7 +17,6 @@
  */
 
 import * as React from "react";
-import { useParams, useSearchParams } from "react-router-dom";
 import {
   useGetMany,
   Loading,
@@ -29,13 +28,10 @@ import {
   SimpleFormIterator,
   FormDataConsumer,
   SelectInput,
-  TextInput,
-  TextField,
   useStore,
   useNotify,
   useRedirect,
   TopToolbar,
-  CreateButton,
 } from "react-admin";
 import {
   Typography,
@@ -46,7 +42,7 @@ import {
 } from "@mui/material";
 import { ExpandMore, Clear } from "@mui/icons-material";
 import { HelpButton } from "../Help";
-import { DocumentCard } from "./List";
+import { DocumentCard } from "./DocumentCard";
 import { MetadataValueInput } from "./Edit";
 
 interface Metadata {
