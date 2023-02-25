@@ -33,7 +33,7 @@ import {
   TopToolbar,
   useRecordContext,
 } from "react-admin";
-import { Box, Grid, Typography, useMediaQuery } from "@mui/material";
+import { Box, Grid, Typography, useMediaQuery, Divider } from "@mui/material";
 import { Repeat } from "@mui/icons-material";
 import HistoryIcon from "@mui/icons-material/History";
 import { requestDocumentProcessing } from "../../../api/dataProvider";
@@ -194,23 +194,45 @@ const DocumentContentTab = () => {
   };
 
   return (
-    <>
-      <Button
-        color="primary"
-        size="medium"
-        variant="contained"
-        onClick={toggleFormatting}
-      >
-        <Typography variant="h6">
-          {enableFormatting ? "Enable formatting" : "Disable formatting"}
-        </Typography>
-      </Button>
-      {enableFormatting ? (
-        <TextField source="content" label="Raw parsed text content" />
-      ) : (
-        <MarkdownField source="content" label="Raw parsed text content" />
-      )}
-    </>
+    <Grid container maxWidth={800}>
+      <Grid item sx={{ pb: 3, pt: 2 }}>
+        <Box
+          style={{
+            display: "flex",
+            flexFlow: " row",
+            justifyContent: "flex-end",
+          }}
+        >
+          <Button
+            color="primary"
+            size="small"
+            variant="contained"
+            onClick={toggleFormatting}
+            sx={{ mr: 4 }}
+          >
+            <div>
+              {enableFormatting ? "Enable formatting" : "Disable formatting"}
+            </div>
+          </Button>
+          <div style={{ maxWidth: 400 }}>
+            <Typography variant="body2">
+              This page show automatically extracted content for the document.
+              The quality and accuracy may vary depending on document type and
+              quality.
+            </Typography>
+          </div>
+        </Box>
+      </Grid>
+      <Grid item>
+        <Typography variant="h5">Document content</Typography>
+        <Divider sx={{ pt: 1 }} />
+        {enableFormatting ? (
+          <TextField source="content" label="Raw parsed text content" />
+        ) : (
+          <MarkdownField source="content" label="Raw parsed text content" />
+        )}
+      </Grid>
+    </Grid>
   );
 };
 
