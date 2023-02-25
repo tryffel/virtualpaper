@@ -26,6 +26,7 @@ export const ActionTypeInput = (props: any) => {
         { id: "metadata_remove", name: "Remove metadata" },
         { id: "date_set", name: "Set date" },
       ]}
+      required
     />
   );
 };
@@ -37,73 +38,97 @@ export const ActionEdit = () => {
       <FormDataConsumer>
         {({ formData, scopedFormData, getSource }) => {
           return getSource ? (
-            <Grid container>
-              <Grid container>
-                <Grid container display="flex" spacing={2}>
-                  <Grid item flex={1} ml="0.5em">
-                    <ActionTypeInput
-                      //label="Type"
-                      // @ts-ignore
-                      source={getSource("action")}
-                      record={scopedFormData}
-                    />
-                  </Grid>
-                  <Grid item flex={1} ml="0.5em">
-                    <BooleanInput
-                      label="Enabled"
-                      source={getSource("enabled")}
-                      // @ts-ignore
-                      record={scopedFormData}
-                    />
-                  </Grid>
-                  <Grid item flex={1} mr="0.5em">
-                    <CheckBoxInput
-                      source={getSource("on_condition")}
-                      label={"On condition"}
-                      defaultValue={true}
-                    />
-                  </Grid>
-                </Grid>
-                {scopedFormData &&
-                scopedFormData.action &&
-                !scopedFormData.action.startsWith("metadata") ? (
-                  <Grid container display="flex" spacing={2}>
-                    <Grid item flex={1} ml="0.5em">
-                      <TextInput label="Value" source={getSource("value")} />
-                    </Grid>
-                  </Grid>
-                ) : null}
-                {scopedFormData &&
-                scopedFormData.action &&
-                scopedFormData.action.startsWith("metadata") ? (
-                  <Grid container display="flex" spacing={2}>
-                    <Grid item xs={8} md={4} lg={3}>
-                      <ReferenceInput
-                        label="Key"
-                        source={getSource("metadata.key_id")}
-                        record={scopedFormData}
-                        reference="metadata/keys"
-                        fullWidth
-                      >
-                        <SelectInput optionText="key" fullWidth />
-                      </ReferenceInput>
-                    </Grid>
-                    <Grid item xs={8} md={4} lg={3}>
-                      <MetadataValueInput
-                        source={getSource("metadata.value_id")}
-                        keySource={"metadata.key_id"}
-                        record={scopedFormData}
-                        label={"Value"}
-                        fullWidth
-                      />
-                    </Grid>
-                  </Grid>
-                ) : null}
-              </Grid>
-            </Grid>
+            <ScopedActionEdit
+              scopedFormData={scopedFormData}
+              getSource={getSource}
+            />
           ) : null;
         }}
       </FormDataConsumer>
     </SimpleFormIterator>
   ) : null;
+};
+
+const ScopedActionEdit = (props: { scopedFormData: any; getSource: any }) => {
+  const { scopedFormData, getSource } = props;
+
+  const hasAction = !!scopedFormData.action;
+  const editingMetadata = scopedFormData?.action?.startsWith("metadata");
+
+  return (
+    <Grid
+      container
+      lg={12}
+      md={10}
+      direction="row"
+      justifyContent="space-evenly"
+      alignItems="center"
+      sx={{ mt: 0.5 }}
+    >
+      <Grid
+        container
+        xs={8}
+        sm={8}
+        md={3}
+        alignItems={"flex-start"}
+        justifyContent={"flex-start"}
+      >
+        <Grid item>
+          <BooleanInput
+            label="Enabled"
+            source={getSource("enabled")}
+            // @ts-ignore
+            record={scopedFormData}
+          />
+        </Grid>
+        <Grid item>
+          <CheckBoxInput
+            source={getSource("on_condition")}
+            label={"On condition"}
+            defaultValue={true}
+          />
+        </Grid>
+      </Grid>
+
+      <Grid item sm={6} md={8} lg={8}>
+        <Grid container>
+          <Grid item xs={12} sm={12} md={6} sx={{ pr: 1 }}>
+            <ActionTypeInput
+              //label="Type"
+              // @ts-ignore
+              source={getSource("action")}
+              record={scopedFormData}
+            />
+          </Grid>
+          <Grid item xs={12} sm={12} md={6} lg={6}>
+            {hasAction && !editingMetadata && (
+              <Grid item sm={12}>
+                <TextInput label="Value" source={getSource("value")} />
+              </Grid>
+            )}
+            {hasAction && editingMetadata && (
+              <Grid item sm={12} md={6} lg={6}>
+                <ReferenceInput
+                  label="Key"
+                  source={getSource("metadata.key_id")}
+                  record={scopedFormData}
+                  reference="metadata/keys"
+                  fullWidth
+                >
+                  <SelectInput optionText="key" fullWidth />
+                </ReferenceInput>
+                <MetadataValueInput
+                  source={getSource("metadata.value_id")}
+                  keySource={"metadata.key_id"}
+                  record={scopedFormData}
+                  label={"Value"}
+                  fullWidth
+                />
+              </Grid>
+            )}
+          </Grid>
+        </Grid>
+      </Grid>
+    </Grid>
+  );
 };

@@ -1,5 +1,10 @@
 import get from "lodash/get";
-import { AutocompleteInput, Loading, useGetManyReference } from "react-admin";
+import {
+  AutocompleteInput,
+  Loading,
+  SelectInput,
+  useGetManyReference,
+} from "react-admin";
 import { Typography } from "@mui/material";
 import * as React from "react";
 import { MetadataValueInputProps } from "../../Documents/Edit";
@@ -28,7 +33,8 @@ export const MetadataValueInput = (props: InputProps) => {
     return null;
   }
 
-  if (isLoading) return <Loading />;
+  if (isLoading)
+    return <AutocompleteInput disabled choices={[]} source={props.source} />;
   if (error) return <Typography>Error {error.message}</Typography>;
 
   if (data) {

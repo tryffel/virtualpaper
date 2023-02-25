@@ -42,64 +42,60 @@ export const RuleEdit = () => {
   return (
     <Edit title={"Edit process rule"}>
       <SimpleForm>
-        <div>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={8} lg={12}>
-              <Box display={{ xs: "block", sm: "flex" }}>
-                <Typography variant="h5">Edit Processing Rule</Typography>
-                <RuleEditHelp />
-                <TestButton record={record} />
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={12} md={12} lg={10}>
+            <Box display={{ xs: "block", sm: "flex" }}>
+              <Typography variant="h5">Edit Processing Rule</Typography>
+              <RuleEditHelp />
+              <TestButton record={record} />
+            </Box>
+            <Box display={{ xs: "block", sm: "flex" }}>
+              <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
+                <TextInput source="name" />
               </Box>
-              <Box display={{ xs: "block", sm: "flex" }}>
-                <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
-                  <TextInput source="name" />
-                </Box>
-                <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
-                  <BooleanInput label="Enabled" source="enabled" />
-                </Box>
+              <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
+                <BooleanInput label="Enabled" source="enabled" />
               </Box>
-              <Typography variant="body2">Created at</Typography>
-              <DateField source="created_at" />
+            </Box>
+            <Typography variant="body2">Created at</Typography>
+            <DateField source="created_at" />
 
-              <Box display={{ xs: "block", sm: "flex" }}>
-                <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-                  <MarkdownInput source="description" />
-                  <MatchTypeSelectInput source="mode" />
-                  <Typography variant="h5">Rule Conditions</Typography>
-                  <ArrayInput
-                    source="conditions"
-                    label=""
-                    sx={{
-                      background: theme.palette.background.default,
-                      border: "1px",
-                      borderRadius: "5px",
-                      margin: "1em",
-                      padding: "1em",
-                      boxShadow: "1",
-                    }}
-                  >
-                    <ConditionEdit />
-                  </ArrayInput>
-                  <Typography variant="h5">Rule Actions</Typography>
-                  <ArrayInput
-                    source="actions"
-                    label=""
-                    sx={{
-                      background: theme.palette.background.default,
-                      border: "1px",
-                      borderRadius: "5px",
-                      margin: "1em",
-                      padding: "1em",
-                      boxShadow: "1",
-                    }}
-                  >
-                    <ActionEdit />
-                  </ArrayInput>
-                </Box>
-              </Box>
-            </Grid>
+            <Box flex={1}>
+              <MarkdownInput source="description" />
+              <MatchTypeSelectInput source="mode" />
+              <Typography variant="h5">Rule Conditions</Typography>
+              <ArrayInput
+                source="conditions"
+                label=""
+                sx={{
+                  background: theme.palette.background.default,
+                  border: "1px",
+                  borderRadius: "5px",
+                  margin: "1em",
+                  padding: "1em",
+                  boxShadow: "1",
+                }}
+              >
+                <ConditionEdit />
+              </ArrayInput>
+              <Typography variant="h5">Rule Actions</Typography>
+              <ArrayInput
+                source="actions"
+                label=""
+                sx={{
+                  background: theme.palette.background.default,
+                  border: "1px",
+                  borderRadius: "5px",
+                  margin: "1em",
+                  padding: "1em",
+                  boxShadow: "1",
+                }}
+              >
+                <ActionEdit />
+              </ArrayInput>
+            </Box>
           </Grid>
-        </div>
+        </Grid>
       </SimpleForm>
     </Edit>
   );
@@ -123,8 +119,3 @@ const MatchTypeSelectInput = (props: SourceProps) => {
     />
   );
 };
-
-// case-insensitive
-// inverted
-// regex
-// on-condition

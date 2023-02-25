@@ -39,125 +39,120 @@ export const ConditionTypeInput = (props: any) => {
         { id: "metadata_count_less_than", name: " Metadata count less than" },
         { id: "metadata_count_more_than", name: " Metadata count more than" },
       ]}
+      required
     />
   );
 };
+
 export const ConditionEdit = () => {
   return (
     <SimpleFormIterator source={"conditions"}>
       <FormDataConsumer>
-        {({ formData, scopedFormData, getSource }) => {
+        {({ scopedFormData, getSource }) => {
           return getSource ? (
             <div>
-              <Grid container>
+              <Grid container sx={{ flexFlow: "row" }}>
                 <Grid item xs={12} md={8} lg={12}>
-                  <Box display={{ xs: "block", sm: "flex" }}>
-                    <Box flex={2}>
-                      <BooleanInput
-                        label="Enabled"
-                        source={getSource("enabled")}
-                        // @ts-ignore
-                        record={scopedFormData}
-                        initialValue={true}
-                      />
-                    </Box>
-                    <Box flex={2}>
-                      <CheckBoxInput
-                        label="Case insensitive"
-                        source={getSource("case_insensitive")}
-                        // @ts-ignore
-                        record={scopedFormData}
-                        defaultValue={true}
-                      />
-                    </Box>
-                    <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-                      <CheckBoxInput
-                        label="Inverted"
-                        source={getSource("inverted")}
-                        // @ts-ignore
-                        record={scopedFormData}
-                        defaultValue={true}
-                      />
-                    </Box>
-                    <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-                      <CheckBoxInput
-                        label="Regex"
-                        source={getSource("is_regex")}
-                        // @ts-ignore
-                        record={scopedFormData}
-                      />
-                    </Box>
+                  <Box flex={2}>
+                    <BooleanInput
+                      label="Enabled"
+                      source={getSource("enabled")}
+                      // @ts-ignore
+                      record={scopedFormData}
+                      initialValue={true}
+                    />
                   </Box>
-                  <Box display={{ xs: "block", sm: "flex" }}>
-                    <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-                      <ConditionTypeInput
-                        //label="Type"
-                        source={getSource("condition_type")}
-                        record={scopedFormData}
-                      />
-                    </Box>
-                    {scopedFormData &&
-                    scopedFormData.condition_type &&
-                    (scopedFormData.condition_type.startsWith("date") ||
-                      !scopedFormData.condition_type.startsWith(
-                        "metadata_has_key"
-                      )) ? (
-                      <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-                        <TextInput
-                          label="Filter"
-                          source={getSource("value")}
-                          // @ts-ignore
-                          record={scopedFormData}
-                          fullWidth
-                          resettable
-                        />
-                      </Box>
-                    ) : null}
-                    {scopedFormData &&
-                    scopedFormData.condition_type &&
-                    scopedFormData.condition_type.startsWith("date") ? (
-                      <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-                        <TextInput
-                          label="Date format"
-                          source={getSource("date_fmt")}
-                          // @ts-ignore
-                          record={scopedFormData}
-                          fullWidth
-                        />
-                      </Box>
-                    ) : null}
-                    {scopedFormData &&
-                    scopedFormData.condition_type &&
-                    scopedFormData.condition_type.startsWith(
+                  <Box flex={2} sx={{ pb: 2 }}>
+                    <CheckBoxInput
+                      label="Case insensitive"
+                      source={getSource("case_insensitive")}
+                      // @ts-ignore
+                      record={scopedFormData}
+                      defaultValue={true}
+                    />
+                    <CheckBoxInput
+                      label="Inverted"
+                      source={getSource("inverted")}
+                      // @ts-ignore
+                      record={scopedFormData}
+                      defaultValue={true}
+                    />
+                    <CheckBoxInput
+                      label="Regex"
+                      source={getSource("is_regex")}
+                      // @ts-ignore
+                      record={scopedFormData}
+                    />
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={8} lg={12}>
+                  <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
+                    <ConditionTypeInput
+                      //label="Type"
+                      source={getSource("condition_type")}
+                      record={scopedFormData}
+                    />
+                  </Box>
+                  {scopedFormData &&
+                  scopedFormData.condition_type &&
+                  (scopedFormData.condition_type.startsWith("date") ||
+                    !scopedFormData.condition_type.startsWith(
                       "metadata_has_key"
-                    ) ? (
-                      <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-                        <ReferenceInput
-                          label="Key"
-                          source={getSource("metadata.key_id")}
-                          record={scopedFormData}
-                          reference="metadata/keys"
-                          fullWidth
-                        >
-                          <SelectInput optionText="key" fullWidth />
-                        </ReferenceInput>
-                      </Box>
-                    ) : null}
-                    {scopedFormData &&
-                    scopedFormData.condition_type &&
-                    scopedFormData.condition_type ===
-                      "metadata_has_key_value" ? (
-                      <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-                        <MetadataValueInput
-                          source={getSource("metadata.value_id")}
-                          keySource={"metadata.key_id"}
-                          record={scopedFormData}
-                          label={"Value"}
-                          fullWidth
-                        />
-                      </Box>
-                    ) : null}
-                  </Box>
+                    )) ? (
+                    <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
+                      <TextInput
+                        label="Filter"
+                        source={getSource("value")}
+                        // @ts-ignore
+                        record={scopedFormData}
+                        fullWidth
+                        resettable
+                      />
+                    </Box>
+                  ) : null}
+                  {scopedFormData &&
+                  scopedFormData.condition_type &&
+                  scopedFormData.condition_type.startsWith("date") ? (
+                    <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
+                      <TextInput
+                        label="Date format"
+                        source={getSource("date_fmt")}
+                        // @ts-ignore
+                        record={scopedFormData}
+                        fullWidth
+                      />
+                    </Box>
+                  ) : null}
+                  {scopedFormData &&
+                  scopedFormData.condition_type &&
+                  scopedFormData.condition_type.startsWith(
+                    "metadata_has_key"
+                  ) ? (
+                    <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
+                      <ReferenceInput
+                        label="Key"
+                        source={getSource("metadata.key_id")}
+                        record={scopedFormData}
+                        reference="metadata/keys"
+                        fullWidth
+                      >
+                        <SelectInput optionText="key" fullWidth />
+                      </ReferenceInput>
+                    </Box>
+                  ) : null}
+                  {scopedFormData &&
+                  scopedFormData.condition_type &&
+                  scopedFormData.condition_type === "metadata_has_key_value" ? (
+                    <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
+                      <MetadataValueInput
+                        source={getSource("metadata.value_id")}
+                        keySource={"metadata.key_id"}
+                        record={scopedFormData}
+                        label={"Value"}
+                        fullWidth
+                      />
+                    </Box>
+                  ) : null}
                 </Grid>
               </Grid>
             </div>
