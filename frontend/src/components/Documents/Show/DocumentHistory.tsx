@@ -16,13 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import React, { useRef, useState } from "react";
-import {
-  useRecordContext,
-  useGetManyReference,
-  Loading,
-  Button,
-} from "react-admin";
+import React from "react";
+import { useRecordContext, useGetManyReference, Loading } from "react-admin";
 import {
   useMediaQuery,
   Box,
@@ -36,14 +31,13 @@ import {
   Typography,
   Tooltip,
 } from "@mui/material";
-import { PrettifyTime } from "../util";
+import { PrettifyTime } from "../../util";
 
 import AddCircleIcon from "@mui/icons-material/AddCircle";
-import UpdateIcon from "@mui/icons-material/Update";
 import ArticleIcon from "@mui/icons-material/Article";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import TagIcon from "@mui/icons-material/Tag";
-import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
+import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
 
 export const ShowDocumentsEditHistory = () => {
   const record = useRecordContext();
@@ -137,7 +131,10 @@ const ShowDocumentsEditHistoryItem = (props: { item: DocumentHistoryItem }) => {
       );
     case "modified linked documents":
       return (
-          <DocumentHistoryModifyLinkedDocuments pretty_time={timeString} item={item} />
+        <DocumentHistoryModifyLinkedDocuments
+          pretty_time={timeString}
+          item={item}
+        />
       );
   }
 
@@ -272,16 +269,17 @@ const DocumentHistoryDate = (props: HistoryProps) => {
   );
 };
 
-
 const DocumentHistoryModifyLinkedDocuments = (props: HistoryProps) => {
   const { item, pretty_time } = props;
   return (
-      <Step key={`${item.id}`} expanded active completed>
-        <StepLabel icon={<FormatListBulletedIcon/>}>Modified linked documents</StepLabel>
-        <StepContent>
-          <ItemLabel {...props} />
-          <Typography variant="body1">{item.new_value}</Typography>
-        </StepContent>
-      </Step>
+    <Step key={`${item.id}`} expanded active completed>
+      <StepLabel icon={<FormatListBulletedIcon />}>
+        Modified linked documents
+      </StepLabel>
+      <StepContent>
+        <ItemLabel {...props} />
+        <Typography variant="body1">{item.new_value}</Typography>
+      </StepContent>
+    </Step>
   );
 };

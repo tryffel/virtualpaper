@@ -152,7 +152,7 @@ export function EmbedFile({ source = "" }) {
       sx={{
         width: "100%",
         margin: "0.5em",
-        height: "40em",
+        height: "80vh",
       }}
     >
       <iframe style={style} title="Preview" src={imgData} />

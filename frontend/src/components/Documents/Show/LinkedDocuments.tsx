@@ -19,7 +19,7 @@
 import React, { useState } from "react";
 import { Link} from 'react-router-dom';
 import {useGetManyReference, useRecordContext, Loading} from "react-admin";
-import {LimitStringLength} from "../util";
+import {LimitStringLength} from "../../util";
 import {Typography} from "@mui/material";
 
 export const LinkedDocumentList = () => {

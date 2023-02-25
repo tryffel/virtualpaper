@@ -17,9 +17,9 @@
  */
 
 import { DocumentShow } from "./Show";
-import { DocumentEdit} from "./Edit";
+import { DocumentEdit } from "./Edit";
 import { DocumentList } from "./List";
-import { DocumentCreate} from "./Create";
+import { DocumentCreate } from "./Create";
 
 const documents = {
   create: DocumentCreate,

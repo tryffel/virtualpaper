@@ -69,87 +69,88 @@ export const DocumentEdit = () => {
   });
 
   const [previewOpen, setPreviewOpen] = React.useState(false);
+  const isMedium = useMediaQuery((theme: any) => theme.breakpoints.up("md"));
 
   return (
     <Edit
       transform={transform}
       title="Edit document"
-      aside={<ToggledEmbedFile source="download_url" shown={previewOpen} />}
+      aside={
+        <ToggledEmbedFile
+          source="download_url"
+          shown={previewOpen && isMedium}
+        />
+      }
       actions={
         <DocumentEditActions open={previewOpen} setOpen={setPreviewOpen} />
       }
     >
       <SimpleForm warnWhenUnsavedChanges toolbar={<EditToolBar />}>
-        <div>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={8} lg={12}>
-              <Typography variant="h6">Basic Info</Typography>
-              <Labeled label="Document id">
-                <TextField label="Id" source="id" id="document-id" />
-              </Labeled>
-              <Box display={{ xs: "block", sm: "flex" }}>
-                <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-                  <TextInput source="name" fullWidth />
-                </Box>
-                <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
-                  <DateInput source="date" />
-                </Box>
-                <IndexingStatusField source="status" />
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={10} lg={10}>
+            <Typography variant="h6">Basic Info</Typography>
+            <Labeled label="Document id">
+              <TextField label="Id" source="id" id="document-id" />
+            </Labeled>
+            <Box display={{ xs: "block", sm: "flex" }}>
+              <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
+                <TextInput source="name" fullWidth />
               </Box>
-              <Box display={{ xs: "block", sm: "flex" }}>
-                <MarkdownInput source="description" label="Description" />
+              <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
+                <DateInput source="date" />
               </Box>
-              <Box display={{ xs: "block", sm: "bloxk" }}>
-                <ReferenceArrayInput
-                  source="tags"
-                  reference="tags"
-                  allowEmpty
-                  label={"Tags"}
-                >
-                  <SelectArrayInput optionText="key" />
-                </ReferenceArrayInput>
-              </Box>
-              <Box display={{ xs: "block", sm: "block" }}>
-                <ArrayInput source="metadata" label={"Metadata"}>
-                  <SimpleFormIterator inline disableReordering fullWidth>
-                    <ReferenceInput
-                      label="Key"
-                      source="key_id"
-                      reference="metadata/keys"
-                      fullWidth
-                      className="MuiBox"
-                    >
-                      <SelectInput
-                        optionText="key"
-                        data-testid="metadata-key"
-                      />
-                    </ReferenceInput>
+              <IndexingStatusField source="status" />
+            </Box>
+            <Box display={{ xs: "block", sm: "flex" }}>
+              <MarkdownInput source="description" label="Description" />
+            </Box>
+            <Box display={{ xs: "block", sm: "bloxk" }}>
+              <ReferenceArrayInput
+                source="tags"
+                reference="tags"
+                allowEmpty
+                label={"Tags"}
+              >
+                <SelectArrayInput optionText="key" />
+              </ReferenceArrayInput>
+            </Box>
+            <Box display={{ xs: "block", sm: "block" }}>
+              <ArrayInput source="metadata" label={"Metadata"}>
+                <SimpleFormIterator inline disableReordering fullWidth>
+                  <ReferenceInput
+                    label="Key"
+                    source="key_id"
+                    reference="metadata/keys"
+                    fullWidth
+                    className="MuiBox"
+                  >
+                    <SelectInput optionText="key" data-testid="metadata-key" />
+                  </ReferenceInput>
 
-                    <FormDataConsumer>
-                      {({ formData, scopedFormData, getSource }) =>
-                        scopedFormData && scopedFormData.key_id ? (
-                          <MetadataValueInput
-                            source={getSource ? getSource("value_id") : ""}
-                            record={scopedFormData}
-                            label={"Value"}
-                          />
-                        ) : null
-                      }
-                    </FormDataConsumer>
-                  </SimpleFormIterator>
-                </ArrayInput>
-              </Box>
-              <Box display={{ xs: "block", sm: "block" }}>
-                <Labeled label="Created at">
-                  <DateField source="created_at" />
-                </Labeled>
-                <Labeled label="Updated at">
-                  <DateField source="updated_at" />
-                </Labeled>
-              </Box>
-            </Grid>
+                  <FormDataConsumer>
+                    {({ formData, scopedFormData, getSource }) =>
+                      scopedFormData && scopedFormData.key_id ? (
+                        <MetadataValueInput
+                          source={getSource ? getSource("value_id") : ""}
+                          record={scopedFormData}
+                          label={"Value"}
+                        />
+                      ) : null
+                    }
+                  </FormDataConsumer>
+                </SimpleFormIterator>
+              </ArrayInput>
+            </Box>
+            <Box display={{ xs: "block", sm: "block" }}>
+              <Labeled label="Created at">
+                <DateField source="created_at" />
+              </Labeled>
+              <Labeled label="Updated at">
+                <DateField source="updated_at" />
+              </Labeled>
+            </Box>
           </Grid>
-        </div>
+        </Grid>
       </SimpleForm>
     </Edit>
   );
@@ -201,7 +202,13 @@ export const MetadataValueInput = (props: MetadataValueInputProps) => {
 const ToggledEmbedFile = (props: any) => {
   const { shown, source } = props;
   if (!shown) return null;
-  return <EmbedFile source={source} />;
+  const isLg = useMediaQuery((theme: any) => theme.breakpoints.up("lg"));
+
+  return (
+    <Box sx={{ width: isLg ? "900px" : "400px" }}>
+      <EmbedFile source={source} />
+    </Box>
+  );
 };
 
 const DocumentEditActions = (props: { open: any; setOpen: any }) => {
