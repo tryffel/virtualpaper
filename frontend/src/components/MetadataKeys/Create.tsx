@@ -23,7 +23,7 @@ export const MetadataKeyCreate = () => (
   <Create>
     <SimpleForm>
       <TextInput source="key" label="Name" />
-      <TextInput source="description" label="Description" />
+      <TextInput source="comment" label="Description" />
     </SimpleForm>
   </Create>
 );
