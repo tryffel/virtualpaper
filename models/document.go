@@ -137,12 +137,21 @@ type Metadata struct {
 }
 
 type MetadataKey struct {
-	Id           int       `db:"id" json:"id"`
-	UserId       int       `db:"user_id" json:"-"`
-	Key          string    `db:"key" json:"key"`
-	CreatedAt    time.Time `db:"created_at" json:"created_at"`
-	Comment      string    `db:"comment" json:"comment"`
-	NumDocuments int       `db:"documents_count" json:"documents_count"`
+	Id        int       `db:"id" json:"id"`
+	UserId    int       `db:"user_id" json:"-"`
+	Key       string    `db:"key" json:"key"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	Comment   string    `db:"comment" json:"comment"`
+}
+
+type MetadataKeyStatistics struct {
+	NumDocuments      int `db:"documents_count" json:"documents_count"`
+	NumMetadataValues int `db:"values_count" json:"metadata_values_count"`
+}
+
+type MetadataKeyAnnotated struct {
+	MetadataKey
+	MetadataKeyStatistics
 }
 
 func (m *MetadataKey) Update() {}

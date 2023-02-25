@@ -216,21 +216,23 @@ func (s *MetadataStore) GetUserKeyValuesCached(userId int, key string) (*[]model
 }
 
 // GetKeys returns all possible metadata-keys for user.
-func (s *MetadataStore) GetKeys(userId int, ids []int, sort SortKey, paging Paging) (*[]models.MetadataKey, error) {
+func (s *MetadataStore) GetKeys(userId int, ids []int, sort SortKey, paging Paging) (*[]models.MetadataKeyAnnotated, error) {
 	paging.Validate()
 	sort.Validate("id")
 	query := s.sq.Select("mk.id as id", "mk.key as key", "mk.comment as comment",
-		"mk.created_at as created_at", "COUNT(dm.document_id) as documents_count").
-		From("metadata_keys mk").LeftJoin("document_metadata dm ON mk.id = dm.key_id").
-		Where(squirrel.Eq{"user_id": userId}).GroupBy("mk.id")
+		"mk.created_at as created_at", "COUNT(distinct(dm.document_id)) as documents_count", "COUNT(distinct(mv.id)) as values_count").
+		From("metadata_keys mk").
+		LeftJoin("document_metadata dm ON mk.id = dm.key_id").
+		LeftJoin("metadata_values mv on mk.id = mv.key_id").
+		Where(squirrel.Eq{"mk.user_id": userId}).GroupBy("mk.id")
 
 	if len(ids) > 0 {
-		query = query.Where(squirrel.Eq{"id": ids})
+		query = query.Where(squirrel.Eq{"mv.id": ids})
 	}
 
 	query = query.Limit(uint64(paging.Limit)).Offset(uint64(paging.Offset))
 	query = query.OrderBy(sort.QueryKey() + " " + sort.SortOrder())
-	keys := &[]models.MetadataKey{}
+	keys := &[]models.MetadataKeyAnnotated{}
 
 	sql, args, err := query.ToSql()
 	if err != nil {

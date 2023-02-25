@@ -40,6 +40,7 @@ export const MetadataKeyList = () => {
         {!isSmall ? (
           <DateField source="created_at" label={"Created at"} />
         ) : null}
+        <NumberField source="metadata_values_count" label={"Total keys"} />
         <NumberField source="documents_count" label={"Total documents"} />
       </Datagrid>
     </List>
