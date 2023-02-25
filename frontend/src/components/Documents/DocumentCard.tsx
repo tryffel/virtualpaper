@@ -12,7 +12,7 @@ import { ThumbnailSmall } from "./Thumbnail";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import * as React from "react";
-import "./card.css";
+import "./document.css";
 
 const cardStyle = {
   width: 230,
@@ -35,7 +35,7 @@ export const DocumentCard = (props: any) => {
     <Card key={record.id} style={{ ...cardStyle }}>
       <CardHeader
         title={<DocumentTitle record={record} />}
-        sx={{ mt: 0, pb: 0 }}
+        sx={{ mt: 0, pb: 0, pt: 0, height: 85 }}
       />
       <DocumentContent record={record} />
       <CardActions style={{ textAlign: "right", paddingTop: "0" }}>
@@ -68,7 +68,7 @@ const DocumentTitle = (props: { record: RaRecord }) => {
   if (!record) return null;
 
   return (
-    <Typography variant="subtitle2" sx={{ mt: 0.0, mb: 0 }}>
+    <Typography variant="subtitle2" sx={{ mt: 0.0, mb: 0, pt: 0 }}>
       <div className="document-title">
         <p
           dangerouslySetInnerHTML={{

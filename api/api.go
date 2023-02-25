@@ -22,16 +22,16 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"net/http"
-	"os"
-	"os/signal"
-	"strings"
-	"time"
-
 	"github.com/asaskevich/govalidator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
+	"net/http"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/process"
 	"tryffel.net/go/virtualpaper/search"
@@ -92,13 +92,16 @@ func (a *Api) Serve() error {
 		addr := fmt.Sprintf("%s:%d", config.C.Api.Host, config.C.Api.Port)
 		logrus.Infof("listen http on %s", addr)
 		err := a.echo.Start(addr)
-		if err != nil && err != http.ErrServerClosed {
-			a.echo.Logger.Fatal("shutting down")
+		if err != nil {
+			if err != http.ErrServerClosed {
+				logrus.Errorf("http server closed: %v", err)
+			}
 		}
 	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
+	signal.Notify(quit, syscall.SIGTERM)
 	<-quit
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

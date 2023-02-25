@@ -20,31 +20,98 @@ import * as React from "react";
 
 import { Loading, useGetMany } from "react-admin";
 
-import { useTheme, Grid, Typography, Box, Paper } from "@mui/material";
+import {
+  useTheme,
+  Typography,
+  Box,
+  Paper,
+  ToggleButtonGroup,
+  ToggleButton,
+  useMediaQuery,
+} from "@mui/material";
 import { DocumentCard } from "../Documents/DocumentCard";
 
-export const LastUpdatedDocumentList = (props: { ids: string[] }) => {
+export const LastUpdatedDocumentList = (props: {
+  lastUpdatedIds: string[];
+  lastAddedIds: string[];
+}) => {
   const theme = useTheme();
-  const { ids } = props;
+  const isNotSmall = useMediaQuery((theme: any) => theme.breakpoints.up("sm"));
+  const { lastUpdatedIds, lastAddedIds } = props;
+  const [showMode, setShowMode] = React.useState<ShowMode>("lastUpdated");
   const { data, isLoading, error, refetch } = useGetMany("documents", {
-    ids: ids.slice(0, 5),
+    ids:
+      showMode === "lastUpdated"
+        ? lastUpdatedIds
+          ? lastUpdatedIds.slice(0, 5)
+          : []
+        : lastAddedIds
+        ? lastAddedIds.slice(0, 5)
+        : [],
   });
 
   if (isLoading) {
     return <Loading />;
   }
 
-  if (data) {
+  if (props.lastUpdatedIds && data) {
     return (
       <Paper elevation={2}>
-        <Typography variant="h5" gutterBottom marginLeft="1em">
-          Latest documents
-        </Typography>
-        {data.map((document) => (
-          <DocumentCard record={document} />
-        ))}
+        <Box
+          sx={{
+            pt: 2,
+            pb: 2,
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "space-between",
+          }}
+        >
+          <Typography variant="h5" gutterBottom sx={{ ml: 2, mr: 1 }}>
+            Latest documents
+          </Typography>
+          {isNotSmall && (
+            <ShowModeButton showMode={showMode} setShowMode={setShowMode} />
+          )}
+        </Box>
+        <Box sx={{ pt: 2, pb: 2 }}>
+          {data.map((document) => (
+            <DocumentCard record={document} />
+          ))}
+        </Box>
       </Paper>
     );
   }
   return null;
+};
+
+type ShowMode = "lastUpdated" | "lastAdded";
+
+const ShowModeButton = (props: {
+  showMode: ShowMode;
+  setShowMode: (mode: ShowMode) => void;
+}) => {
+  const { showMode, setShowMode } = props;
+
+  const handleAlignment = (
+    event: React.MouseEvent<HTMLElement>,
+    newAlignment: ShowMode
+  ) => {
+    setShowMode(newAlignment);
+  };
+
+  return (
+    <ToggleButtonGroup
+      value={showMode}
+      exclusive
+      onChange={handleAlignment}
+      sx={{ pr: 1 }}
+    >
+      <ToggleButton size="small" value="lastAdded">
+        Updated
+      </ToggleButton>
+      <ToggleButton size="small" value="lastUpdated">
+        Added
+      </ToggleButton>
+    </ToggleButtonGroup>
+  );
 };

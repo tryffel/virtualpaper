@@ -74,10 +74,10 @@ export const DocumentCreate = () => {
 
   return (
     // @ts-ignore
-    <Create mutationOptions={{ onError }}>
+    <Create mutationOptions={{ onError }} title="Upload document">
       <SimpleForm title={"Upload new document"}>
         <Typography variant="body2">
-          Supported file types: <em>{fileNames}</em>
+          Supported file types: <em className="mimetypes">{fileNames}</em>
         </Typography>
         <FileInput
           accept={mimeTypes}

@@ -32,14 +32,16 @@ import { useMediaQuery } from "@mui/material";
 export const MetadataKeyList = () => {
   const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
 
- return ( 
-  <List title="All metadata keys">
-    <Datagrid rowClick="edit" bulkActionButtons={false}>
-      <ChipField source="key" label={"Name"} />
-      <TextField source="comment" label={"Description"} />
-      {!isSmall? <DateField source="created_at" label={"Created at"} />: null}
-      <NumberField source="documents_count" label={"Total documents"} />
-    </Datagrid>
-  </List>
-);
-}
+  return (
+    <List title="Metadata">
+      <Datagrid rowClick="edit" bulkActionButtons={false}>
+        <ChipField source="key" label={"Name"} />
+        <TextField source="comment" label={"Description"} />
+        {!isSmall ? (
+          <DateField source="created_at" label={"Created at"} />
+        ) : null}
+        <NumberField source="documents_count" label={"Total documents"} />
+      </Datagrid>
+    </List>
+  );
+};

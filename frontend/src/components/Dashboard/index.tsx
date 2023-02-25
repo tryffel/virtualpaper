@@ -16,13 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useGetOne, Loading } from "react-admin";
-import { Grid } from "@mui/material";
+import { useGetOne, Loading, CreateButton } from "react-admin";
+import { Box, Grid, Typography, Container } from "@mui/material";
 
 import { Stats } from "./Stats";
 import { LastUpdatedDocumentList } from "./DocumentList";
 import { get } from "lodash";
 import { IndexingStatusRow, IndexingStatusRowSmall } from "./Status";
+import * as React from "react";
 
 export const Dashboard = () => {
   const { data, isLoading } = useGetOne("documents/stats", {
@@ -34,20 +35,27 @@ export const Dashboard = () => {
 
   const direction = "column";
 
-  return (
-    <Grid spacing={1} direction={direction} flexGrow={1} alignItems="stretch">
-      {/* <Grid item xl={2} lg={5} xs={12} sm={10}>
+  if (data.num_documents > 0) {
+    return (
+      <Grid spacing={1} direction={direction} flexGrow={1} alignItems="stretch">
+        {/* <Grid item xl={2} lg={5} xs={12} sm={10}>
                     <DocumentTimeline stats={data.yearly_stats}/>
                 </Grid> */}
-      <Grid item xs={4} sm={4} md={4} lg={12}>
-        <IndexingStatusRow indexing={get(data, "indexing")} />
-      </Grid>
+        <Grid item xs={4} sm={4} md={4} lg={12}>
+          <IndexingStatusRow indexing={get(data, "indexing")} />
+        </Grid>
 
-      <Grid item xs={12} sm={10} md={8} lg={3}>
-        <LastUpdatedDocumentList ids={get(data, "last_documents_updated")} />
+        <Grid item xs={12} sm={10} md={8} lg={3}>
+          <LastUpdatedDocumentList
+            lastUpdatedIds={get(data, "last_documents_updated")}
+            lastAddedIds={get(data, "last_documents_added")}
+          />
+        </Grid>
       </Grid>
-    </Grid>
-  );
+    );
+  } else {
+    return <EmptyDashboard />;
+  }
 };
 
 export const ShowDocumentsIndexing = () => {
@@ -59,5 +67,28 @@ export const ShowDocumentsIndexing = () => {
   }
   return (
     <IndexingStatusRowSmall indexing={get(data, "indexing")} hideReady={true} />
+  );
+};
+
+const EmptyDashboard = () => {
+  return (
+    <Grid
+      container
+      direction="column"
+      justifyContent="center"
+      alignItems="center"
+    >
+      <Grid item md={5}>
+        <Box sx={{ mt: 10 }}>
+          <Typography variant="h4" paragraph>
+            No documents yet
+          </Typography>
+          <Typography variant="body1" paragraph>
+            Upload some documents first!
+          </Typography>
+          <CreateButton resource="documents" />
+        </Box>
+      </Grid>
+    </Grid>
   );
 };

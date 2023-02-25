@@ -8,10 +8,20 @@
 
     margin-bottom: 0;
     margin-top: 0;
-    min-height: 65px;
-    max-height: 65px;
+    max-height: 85px;
 }
 
-em {
+div.document-title > p > em {
     background: #FFB74D;
 }
+
+
+div.document-title > p > em {
+    background: #FFB74D;
+}
+
+em.mimetypes {
+    font-style: italic;
+    font-weight: 200;
+}
+

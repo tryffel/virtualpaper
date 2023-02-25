@@ -71,7 +71,7 @@ export const DocumentList = () => {
 const SmallDocumentList = () => {
   return (
     <List
-      title="All documents"
+      title="Documents"
       actions={<DocumentListActions />}
       pagination={<DocumentPagination />}
     >
@@ -83,7 +83,7 @@ const SmallDocumentList = () => {
 const LargeDocumentList = () => {
   return (
     <List
-      title="All documents"
+      title="Documents"
       pagination={<DocumentPagination />}
       actions={<DocumentListActions />}
       sort={{ field: "date", order: "DESC" }}

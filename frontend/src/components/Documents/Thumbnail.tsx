@@ -82,7 +82,7 @@ export function ThumbnailSmall(props: ThumbnailProps) {
       style={{
         overflow: "hidden",
         maxHeight: "200px",
-        minHeight: "150px",
+        minHeight: "200px",
         minWidth: "150px",
         maxWidth: "200px",
         borderRadius: "5%",

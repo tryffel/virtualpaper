@@ -113,6 +113,15 @@ order by updated_at desc limit 10;
 `
 
 	err = s.db.Select(&stats.LastDocumentsUpdated, sql, userId)
+
+	sql = `
+select id
+from documents
+where user_id = $1
+order by created_at desc limit 10;
+`
+
+	err = s.db.Select(&stats.LastDocumentsAdded, sql, userId)
 	return stats, s.parseError(err, "get last updated docs")
 }
 
