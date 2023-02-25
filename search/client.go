@@ -107,6 +107,7 @@ func (e *Engine) ensureIndexExists() error {
 				"tags",
 				"metadata_key",
 				"metadata_value",
+				"mimetype",
 			}
 			_, err = e.client.Index(indices[i]).UpdateFilterableAttributes(fields)
 			if err != nil {
@@ -193,6 +194,7 @@ func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 			"metadata":    metadata,
 			"date":        v.Date.Unix(),
 			"description": v.Description,
+			"mimetype":    v.Mimetype,
 		}
 	}
 

@@ -117,10 +117,10 @@ func (s *searchQuery) prepareMeiliQuery(userId int, sort storage.SortKey, paging
 	request := &meilisearch.SearchRequest{
 		Offset:                int64(paging.Offset),
 		Limit:                 int64(paging.Limit),
-		AttributesToRetrieve:  []string{"document_id", "name", "content", "description", "date"},
+		AttributesToRetrieve:  []string{"document_id", "name", "content", "description", "date", "mimetype"},
 		AttributesToCrop:      []string{"content"},
 		CropLength:            1000,
-		AttributesToHighlight: []string{"content", "name", "description"},
+		AttributesToHighlight: []string{"name"},
 		Matches:               false,
 		FacetsDistribution:    nil,
 		PlaceholderSearch:     false,

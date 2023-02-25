@@ -88,6 +88,7 @@ func (e *Engine) SearchDocuments(userId int, query string, sort storage.SortKey,
 			doc.Content = getString("content", isMap)
 			doc.Description = getString("description", isMap)
 			doc.Date = time.Unix(int64(getInt("date", isMap)), 0)
+			doc.Mimetype = getString("mimetype", isMap)
 			docs[i] = doc
 
 			formatted := isMap["_formatted"]
