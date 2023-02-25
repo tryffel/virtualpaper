@@ -95,11 +95,11 @@ export const dataProvider: DataProvider = {
     const options =
       countHeader === "Content-Range"
         ? {
-          // Chrome doesn't return `Content-Range` header if no `Range` is provided in the request.
-          headers: new Headers({
-            Range: `${resource}=${rangeStart}-${rangeEnd}`,
-          }),
-        }
+            // Chrome doesn't return `Content-Range` header if no `Range` is provided in the request.
+            headers: new Headers({
+              Range: `${resource}=${rangeStart}-${rangeEnd}`,
+            }),
+          }
         : {};
 
     if (resource === "documents") {
@@ -148,12 +148,12 @@ export const dataProvider: DataProvider = {
         total:
           countHeader === "Content-Range"
             ? parseInt(
-              // @ts-ignore
-              headers.get("content-range").split("/").pop(),
-              10
-            )
+                // @ts-ignore
+                headers.get("content-range").split("/").pop(),
+                10
+              )
             : // @ts-ignore
-            parseInt(headers.get(countHeader.toLowerCase())),
+              parseInt(headers.get(countHeader.toLowerCase())),
       };
     });
   },
@@ -164,18 +164,40 @@ export const dataProvider: DataProvider = {
       return httpClient(`${apiUrl}/${resource}`).then(({ json }) => ({
         data: json,
       }));
+    } else if (resource === "documents") {
+      let urlParams = new URLSearchParams();
+      if (!params.meta?.noVisit) {
+        urlParams.append("visit", "1");
+      }
+      const rawUrlParams = urlParams.toString() && "?" + urlParams.toString();
+      return httpClient(
+        `${apiUrl}/${resource}/${params.id}${rawUrlParams}`
+      ).then(({ json }) => ({
+        data: { ...json, id: json.id ? json.id : params.id },
+      }));
     } else if (resource === "preferences") {
-      return httpClient(`${apiUrl}/${resource}/${params.id}`).then(({ json }) => {
-        // @ts-ignore
-        const isAdmin = json.is_admin;
-        // @ts-ignore
-        localStorage.setItem("is_admin", isAdmin == true);
+      return httpClient(`${apiUrl}/${resource}/${params.id}`)
+        .then(({ json }) => {
+          // @ts-ignore
+          const isAdmin = json.is_admin;
+          // @ts-ignore
+          localStorage.setItem("is_admin", isAdmin == true);
 
-        // @ts-ignore
-        return {
-          data: { ...json, id: "user" },
-        }
-      })
+          // @ts-ignore
+          return {
+            data: { ...json, id: "user" },
+          };
+        })
+        .catch((error) => {
+          console.log(error);
+          // bad query
+          if (error.status === 401) {
+            // user needs to login if they can't load their user data
+            throw error;
+          } else {
+            throw error;
+          }
+        });
     } else {
       if (params.id === null || params.id === "") {
         return httpClient(`${apiUrl}/${resource}`).then(({ json }) => ({
@@ -214,8 +236,10 @@ export const dataProvider: DataProvider = {
             method: "GET",
           })
         )
-      ).then((responses) => ({ data: responses.map(({ json }) => ({ ...json, id: json.id })) }))
-    };
+      ).then((responses) => ({
+        data: responses.map(({ json }) => ({ ...json, id: json.id })),
+      }));
+    }
     return httpClient(url).then(({ json }) => ({ data: json }));
   },
 
@@ -245,16 +269,18 @@ export const dataProvider: DataProvider = {
     } else if (resource === "documents/edithistory" && params.id) {
       url = `${apiUrl}/documents/${params.id}/history?${stringify(query)}`;
     } else if (resource === "documents/linked" && params.id) {
-      url = `${apiUrl}/documents/${params.id}/linked-documents?${stringify(query)}`;
+      url = `${apiUrl}/documents/${params.id}/linked-documents?${stringify(
+        query
+      )}`;
     }
     const options =
       countHeader === "Content-Range"
         ? {
-          // Chrome doesn't return `Content-Range` header if no `Range` is provided in the request.
-          headers: new Headers({
-            Range: `${resource}=${rangeStart}-${rangeEnd}`,
-          }),
-        }
+            // Chrome doesn't return `Content-Range` header if no `Range` is provided in the request.
+            headers: new Headers({
+              Range: `${resource}=${rangeStart}-${rangeEnd}`,
+            }),
+          }
         : {};
 
     return httpClient(url, options).then(({ headers, json }) => {
@@ -268,12 +294,12 @@ export const dataProvider: DataProvider = {
         total:
           countHeader === "Content-Range"
             ? parseInt(
-              // @ts-ignore
-              headers.get("content-range").split("/").pop(),
-              10
-            )
+                // @ts-ignore
+                headers.get("content-range").split("/").pop(),
+                10
+              )
             : // @ts-ignore
-            parseInt(headers.get(countHeader.toLowerCase())),
+              parseInt(headers.get(countHeader.toLowerCase())),
       };
     });
   },
@@ -321,7 +347,6 @@ export const dataProvider: DataProvider = {
       }).then(({ json }) => ({
         data: { ...params.data, id: json.id },
       }));
-
     }
     // @ts-ignore
     if (resource === "metadata/values" && params.data) {
@@ -331,14 +356,14 @@ export const dataProvider: DataProvider = {
       }).then(({ json }) => ({
         data: json,
       }));
-    } if (resource === "documents/bulkEdit") {
+    }
+    if (resource === "documents/bulkEdit") {
       return httpClient(`${apiUrl}/${resource}`, {
         method: "POST",
         body: JSON.stringify(params.data),
       }).then(({ json }) => ({
-        data: { id: 'empty' },
+        data: { id: "empty" },
       }));
-
     } else {
       return httpClient(`${apiUrl}/${resource}`, {
         method: "POST",
@@ -384,15 +409,14 @@ export const dataProvider: DataProvider = {
     }).then(({ json }) => ({
       data: { ...params.data, ...json },
     })),
-    
-    suggestSearch: (params: any) => 
+
+  suggestSearch: (params: any) =>
     httpClient(`${apiUrl}/documents/search/suggest`, {
       method: "POST",
       body: JSON.stringify(params.data),
     }).then(({ json }) => ({
       data: { ...json },
     })),
-
 };
 
 export const requestDocumentProcessing = (documentId: string) => {

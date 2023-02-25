@@ -50,6 +50,7 @@ type UserDocumentStatistics struct {
 	// Example: [abcd]
 	LastDocumentsUpdated []string `json:"last_documents_updated"`
 	LastDocumentsAdded   []string `json:"last_documents_added"`
+	LastDocumentsViewed  []string `json:"last_documents_viewed"`
 
 	Indexing bool `json:"indexing"`
 }
@@ -63,6 +64,7 @@ func docStatsToUserStats(stats *models.UserDocumentStatistics) *UserDocumentStat
 		NumMetadataValues:    stats.NumMetadataValues,
 		LastDocumentsUpdated: stats.LastDocumentsUpdated,
 		LastDocumentsAdded:   stats.LastDocumentsAdded,
+		LastDocumentsViewed:  stats.LastDocumentsViewed,
 	}
 
 	if uds.YearlyStats == nil {

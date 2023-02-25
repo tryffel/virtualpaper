@@ -122,6 +122,21 @@ order by created_at desc limit 10;
 `
 
 	err = s.db.Select(&stats.LastDocumentsAdded, sql, userId)
+	sql = `
+select document_id
+from (
+    select document_id, created_at,
+        row_number() over (
+            partition by document_id
+            order by created_at desc
+            ) as rn
+        from document_view_history
+        where user_id = $1) t
+    where rn =1
+order by created_at desc
+limit 10
+`
+	err = s.db.Select(&stats.LastDocumentsViewed, sql, userId)
 	return stats, s.parseError(err, "get last updated docs")
 }
 

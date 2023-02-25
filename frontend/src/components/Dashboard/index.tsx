@@ -49,6 +49,7 @@ export const Dashboard = () => {
           <LastUpdatedDocumentList
             lastUpdatedIds={get(data, "last_documents_updated")}
             lastAddedIds={get(data, "last_documents_added")}
+            lastViewedIds={get(data, "last_documents_viewed")}
           />
         </Grid>
       </Grid>

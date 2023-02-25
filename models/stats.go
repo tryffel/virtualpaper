@@ -31,6 +31,7 @@ type UserDocumentStatistics struct {
 	NumMetadataValues    int      `json:"num_metadata_values"`
 	LastDocumentsUpdated []string `json:"last_documents_updated"`
 	LastDocumentsAdded   []string `json:"last_documents_added"`
+	LastDocumentsViewed  []string `json:"last_documents_viewed"`
 }
 
 type SystemStatistics struct {

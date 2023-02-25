@@ -96,6 +96,9 @@ const TestDialog = (props: any) => {
 
   const { data, isLoading, error, refetch } = useGetOne("documents", {
     id: documentId,
+    meta: {
+      noVisit: true,
+    },
   });
 
   const onDocIdchanged = (e: any) => {

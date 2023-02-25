@@ -34,20 +34,28 @@ import { DocumentCard } from "../Documents/DocumentCard";
 export const LastUpdatedDocumentList = (props: {
   lastUpdatedIds: string[];
   lastAddedIds: string[];
+  lastViewedIds: string[];
 }) => {
   const theme = useTheme();
   const isNotSmall = useMediaQuery((theme: any) => theme.breakpoints.up("sm"));
-  const { lastUpdatedIds, lastAddedIds } = props;
+  const { lastUpdatedIds, lastAddedIds, lastViewedIds } = props;
   const [showMode, setShowMode] = React.useState<ShowMode>("lastUpdated");
+
+  const getDocumentIds = () => {
+    switch (showMode) {
+      case "lastUpdated":
+        return lastUpdatedIds;
+      case "lastAdded":
+        return lastAddedIds;
+      case "lastViewed":
+        return lastViewedIds;
+      default:
+        return lastUpdatedIds;
+    }
+  };
+
   const { data, isLoading, error, refetch } = useGetMany("documents", {
-    ids:
-      showMode === "lastUpdated"
-        ? lastUpdatedIds
-          ? lastUpdatedIds.slice(0, 5)
-          : []
-        : lastAddedIds
-        ? lastAddedIds.slice(0, 5)
-        : [],
+    ids: getDocumentIds()?.slice(0, 10) ?? [],
   });
 
   if (isLoading) {
@@ -84,7 +92,7 @@ export const LastUpdatedDocumentList = (props: {
   return null;
 };
 
-type ShowMode = "lastUpdated" | "lastAdded";
+type ShowMode = "lastUpdated" | "lastAdded" | "lastViewed";
 
 const ShowModeButton = (props: {
   showMode: ShowMode;
@@ -106,11 +114,14 @@ const ShowModeButton = (props: {
       onChange={handleAlignment}
       sx={{ pr: 1 }}
     >
+      <ToggleButton size="small" value="lastUpdated">
+        Added
+      </ToggleButton>
       <ToggleButton size="small" value="lastAdded">
         Updated
       </ToggleButton>
-      <ToggleButton size="small" value="lastUpdated">
-        Added
+      <ToggleButton size="small" value="lastViewed">
+        Viewed
       </ToggleButton>
     </ToggleButtonGroup>
   );

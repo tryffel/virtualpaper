@@ -151,6 +151,13 @@ func (a *Api) getDocument(c echo.Context) error {
 
 	ctx := c.(UserContext)
 	id := c.Param("id")
+
+	visit := c.QueryParam("visit")
+	if visit != "1" && visit != "0" && visit != "" {
+		err := errors.ErrInvalid
+		err.ErrMsg = "query parameter 'visit' must be either 1 or 0"
+		return err
+	}
 	doc, err := a.db.DocumentStore.GetDocument(ctx.UserId, id)
 	if err != nil {
 		return err
@@ -175,6 +182,13 @@ func (a *Api) getDocument(c echo.Context) error {
 
 	respDoc := responseFromDocument(doc)
 	respDoc.Status = status
+
+	if visit == "1" {
+		err := a.db.DocumentStore.AddVisited(ctx.UserId, id)
+		if err != nil {
+			logrus.Errorf("add document_visited record: %v", err)
+		}
+	}
 	return c.JSON(http.StatusOK, respDoc)
 }
 

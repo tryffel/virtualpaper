@@ -382,3 +382,13 @@ func (s *DocumentStore) GetDocumentHistory(userId int, docId string) (*[]models.
 	err := s.db.Select(data, sql, docId)
 	return data, s.parseError(err, "get document history")
 }
+
+func (s *DocumentStore) AddVisited(userId int, documentId string) error {
+	query := s.sq.Insert("document_view_history").Columns("user_id", "document_id").Values(userId, documentId)
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return fmt.Errorf("parse sql: %v", err)
+	}
+	_, err = s.db.Exec(sql, args...)
+	return s.parseError(err, "add document_view_history")
+}
