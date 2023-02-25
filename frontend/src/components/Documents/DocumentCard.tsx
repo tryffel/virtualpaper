@@ -92,43 +92,8 @@ const DocumentContent = (props: { record: RaRecord }) => {
     return date.toLocaleDateString();
   };
 
-  const getMimetypeColor = (): colorTypes => {
-    if (!record) {
-      return "primary";
-    }
-
-    switch (record?.mimetype) {
-      case "application/pdf":
-        return "primary";
-      case "text/plain":
-        return "secondary";
-      case "image/png":
-      case "image/jpg":
-      case "image/jpeg":
-        return "success";
-      default:
-        return "warning";
-    }
-  };
-
-  const getMimeTypeName = (): string => {
-    if (!record) {
-      return "";
-    }
-
-    switch (record?.mimetype) {
-      case "application/pdf":
-        return "PDF";
-      case "text/plain":
-        return "Text";
-      case "image/png":
-      case "image/jpg":
-      case "image/jpeg":
-        return "Image";
-      default:
-        return "Misc";
-    }
-  };
+  const getMimetypeColor = (): colorTypes => mimetypeToColor(record?.mimetype);
+  const getMimeTypeName = (): string => mimetypeToText(record?.mimetype);
 
   return (
     <CardContent style={{ position: "relative" }} sx={{ pt: 0.5 }}>
@@ -137,13 +102,18 @@ const DocumentContent = (props: { record: RaRecord }) => {
         label={getDateString()}
         variant="outlined"
         color={"primary"}
-        style={{ top: "4px", left: "16px", background: "white" }}
+        style={{
+          top: "4px",
+          left: "16px",
+          background: "white",
+          position: "absolute",
+        }}
       />
       <Badge
         label={getMimeTypeName()}
         variant="filled"
         color={getMimetypeColor()}
-        style={{ top: "4px", right: "16px" }}
+        style={{ top: "4px", right: "16px", position: "absolute" }}
       />
     </CardContent>
   );
@@ -158,17 +128,44 @@ type colorTypes =
   | "success"
   | "warning";
 
-const Badge = (props: {
+export const Badge = (props: {
   label: string;
   variant?: "filled" | "outlined";
   style?: object;
   color: colorTypes;
+  sx?: object;
 }) => {
   return (
-    <Chip
-      {...props}
-      style={{ ...props.style, position: "absolute" }}
-      size="small"
-    />
+    <Chip {...props} style={{ ...props.style }} size="small" sx={props.sx} />
   );
+};
+
+export const mimetypeToText = (mimetype: string) => {
+  switch (mimetype) {
+    case "application/pdf":
+      return "PDF";
+    case "text/plain":
+      return "Text";
+    case "image/png":
+    case "image/jpg":
+    case "image/jpeg":
+      return "Image";
+    default:
+      return "Misc";
+  }
+};
+
+export const mimetypeToColor = (mimetype: string) => {
+  switch (mimetype) {
+    case "application/pdf":
+      return "primary";
+    case "text/plain":
+      return "secondary";
+    case "image/png":
+    case "image/jpg":
+    case "image/jpeg":
+      return "success";
+    default:
+      return "warning";
+  }
 };

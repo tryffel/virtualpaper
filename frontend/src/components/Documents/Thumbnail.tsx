@@ -19,7 +19,7 @@
 import * as React from "react";
 import get from "lodash/get";
 import { RaRecord, useRecordContext } from "react-admin";
-import { Paper } from "@mui/material";
+import { Paper, useMediaQuery, useTheme } from "@mui/material";
 
 export function downloadFile(url: string) {
   const token = localStorage.getItem("auth");
@@ -36,9 +36,12 @@ export interface ThumbnailProps {
 }
 
 export const ThumbnailField = (props: any) => {
+  const theme = useTheme();
   const record = useRecordContext();
   const url = get(record, props.source || "");
   const [imgData, setImage] = React.useState("");
+  const isMedium = useMediaQuery((theme: any) => theme.breakpoints.down("md"));
+  const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
 
   React.useEffect(() => {
     const url = get(record, props.source || "");
@@ -56,8 +59,27 @@ export const ThumbnailField = (props: any) => {
   if (!record) return null;
 
   return record ? (
-    <div>
-      <img src={imgData} alt={props.label} />
+    <div
+      style={{
+        overflow: "hidden",
+        maxHeight: "600px",
+        minHeight: "500px",
+        minWidth: "300px",
+        maxWidth: "600px",
+      }}
+    >
+      <img
+        src={imgData}
+        alt={props.label}
+        style={{
+          maxWidth: isSmall ? "350px" : isMedium ? "450px" : "600px",
+          background: "white",
+          borderRadius: "5%",
+          borderWidth: "thin",
+          borderStyle: "solid",
+          borderColor: "#ECEFF1",
+        }}
+      />
     </div>
   ) : null;
 };

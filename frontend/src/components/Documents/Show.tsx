@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import React, { useState } from "react";
+import React from "react";
 import {
   Show,
   TabbedShowLayout,
@@ -34,7 +34,6 @@ import {
   Loading,
   useGetManyReference,
   useRecordContext,
-  useGetList,
 } from "react-admin";
 import {
   Accordion,
@@ -43,12 +42,6 @@ import {
   AccordionDetails,
   Grid,
   Box,
-  Card,
-  CardContent,
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
   useMediaQuery,
 } from "@mui/material";
 import { Repeat, ExpandMore } from "@mui/icons-material";
@@ -57,10 +50,9 @@ import { requestDocumentProcessing } from "../../api/dataProvider";
 import { ThumbnailField, EmbedFile } from "./Thumbnail";
 import { IndexingStatusField } from "./IndexingStatus";
 import { MarkdownField } from "../Markdown";
-import { number } from "prop-types";
-import { PrettifyTime } from "../util";
 import { ShowDocumentsEditHistory } from "./DocumentHistory";
 import { LinkedDocumentList } from "./LinkedDocuments";
+import { Badge, mimetypeToColor, mimetypeToText } from "./DocumentCard";
 
 export const DocumentShow = () => {
   const [enableFormatting, setState] = React.useState(true);
@@ -91,21 +83,7 @@ export const DocumentShow = () => {
           <div>
             <Grid container spacing={2}>
               <Grid item xs={12} md={8} lg={12}>
-                <Box display={{ xs: "block", sm: "flex" }}>
-                  <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-                    <Typography>Name</Typography>
-                    <TextField
-                      source="name"
-                      label=""
-                      style={{ fontSize: "2em" }}
-                    />
-                  </Box>
-
-                  <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-                    <Typography>Date</Typography>
-                    <DateField source="date" showTime={false} label="Date" />
-                  </Box>
-                </Box>
+                <DocumentTopRow />
                 <IndexingStatusField source="status" label="" />
                 <Box display={{ xs: "block", sm: "flex" }}>
                   <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
@@ -133,15 +111,7 @@ export const DocumentShow = () => {
                     </Labeled>
                   </Box>
                 </Box>
-                <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-                  <Typography variant="body2">Id: </Typography>
-                  <TextField source="id" label="" variant="caption" />
-                </Box>
 
-                <Box display={{ xs: "block", sm: "flex" }}>
-                  <Typography>Type</Typography>
-                  <ChipField source="type"></ChipField>
-                </Box>
                 <Box display={{ xs: "block", sm: "flex" }}>
                   <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
                     <Typography>Metadata</Typography>
@@ -323,3 +293,62 @@ function DocumentJobListItem(props: any) {
 }
 
 export default DocumentShow;
+
+const DocumentTopRow = () => {
+  const record = useRecordContext();
+
+  const getDateString = (): string => {
+    if (!record) {
+      return "";
+    }
+    const date = new Date(record.date);
+    return date.toLocaleDateString();
+  };
+
+  const getMimetypeColor = () => mimetypeToColor(record?.mimetype);
+  const getMimeTypeName = (): string => mimetypeToText(record?.mimetype);
+
+  return (
+    <Grid container justifyContent={"align-center"}>
+      <Grid item>
+        <TextField source="name" label="" style={{ fontSize: "2em" }} />
+      </Grid>
+
+      <Grid item>
+        <Badge
+          label={getDateString()}
+          variant="outlined"
+          color={"primary"}
+          style={{
+            top: "4px",
+            left: "16px",
+            background: "white",
+          }}
+          sx={{ m: 1 }}
+        />
+        <Badge
+          label={getMimeTypeName()}
+          variant="filled"
+          color={getMimetypeColor()}
+          style={{ top: "4px", right: "16px" }}
+          sx={{ m: 1 }}
+        />
+      </Grid>
+      <Grid item xs={12}>
+        <DocumentId />
+      </Grid>
+    </Grid>
+  );
+};
+
+const DocumentId = () => {
+  const record = useRecordContext();
+
+  const id = record ? record.id : "";
+
+  return (
+    <div style={{ marginLeft: "10px", fontWeight: 100, fontSize: "small" }}>
+      <span style={{ userSelect: "none" }}>Id:</span> <span>{id}</span>
+    </div>
+  );
+};
