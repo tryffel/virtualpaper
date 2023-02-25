@@ -23,28 +23,19 @@ import {
   useDataProvider,
   useGetOne,
   useRecordContext,
-  useRecordSelection,
 } from "react-admin";
 
 import {
   Typography,
-  Grid,
-  Box,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogContentText,
   DialogActions,
-  useTheme,
   TextField,
 } from "@mui/material";
 
-import ReactMarkdown from "react-markdown";
-import { get } from "lodash";
-
 import { Settings as SettingsIcon } from "@mui/icons-material";
-import internal from "stream";
-import { ConditionEdit } from "./Edit";
 
 interface RuleTestResult {
   conditions: {
@@ -155,8 +146,13 @@ const TestDialog = (props: any) => {
           </Button>
 
           {
-              // @ts-ignore
-          data ? (<Typography variant="body2">Document name: '{data.name}'</Typography>) : null}
+            // @ts-ignore
+            data ? (
+              <Typography variant="body2">
+                Document name: '{data.name}'
+              </Typography>
+            ) : null
+          }
 
           {result ? (
             <>
