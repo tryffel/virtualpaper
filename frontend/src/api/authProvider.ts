@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { AuthProvider, UserIdentity } from "react-admin";
+import { AuthProvider, HttpError, UserIdentity } from "react-admin";
 import { config } from "../env";
 
 interface LoginFields {
@@ -59,7 +59,12 @@ const authProvider: AuthProvider = {
   checkAuth: () =>
     localStorage.getItem("auth") ? Promise.resolve() : Promise.reject(),
   // @ts-ignore
-  checkError: (error) => Promise.resolve(),
+  checkError: (error: HttpError) => {
+    if (error.status === 401) {
+      return Promise.reject();
+    }
+    return Promise.resolve();
+  },
   getPermissions: () => {
     const isAdmin = localStorage.getItem("is_admin");
     const permissions = {
@@ -71,7 +76,7 @@ const authProvider: AuthProvider = {
     const user = localStorage.getItem("userId");
     return Promise.resolve({
       id: user ? user : "",
-      fullName: ""
+      fullName: "",
     });
   },
   isAdmin: () => {
@@ -79,8 +84,8 @@ const authProvider: AuthProvider = {
     return admin === "true";
   },
   getToken: () => {
-    return localStorage.getItem("auth")
-  }
+    return localStorage.getItem("auth");
+  },
 };
 
 export default authProvider;
