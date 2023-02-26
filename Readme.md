@@ -44,7 +44,7 @@ uses one index. The benefit for own index is that each user can now configure th
 ## Requirements
 Required 3rd party applications (run in docker, host, or another host machine):
 * Postgresql
-* Meilisearch v0.25.2
+* Meilisearch v1.X
 
 Create postgresql database and make sure to **initialize database as utf8** with e.g.: 
 ```CREATE DATABASE virtualpaper WITH ENCODING='utf8' TEMPLATE template0;```

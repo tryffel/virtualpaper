@@ -312,7 +312,7 @@ func (e *Engine) GetUserIndexStatus(userId int) (UserIndexStatus, error) {
 // GetUserIndicesStatus returns list of indices, total db size in bytes and possible error.
 func (e *Engine) GetUserIndicesStatus() (map[int]*UserIndexStatus, int64, error) {
 	var err errors.Error
-	stats, meiliErr := e.client.GetAllStats()
+	stats, meiliErr := e.client.GetStats()
 	if meiliErr != nil {
 		err = errors.ErrInternalError
 		err.Err = meiliErr

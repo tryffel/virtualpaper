@@ -107,7 +107,7 @@ func (e *Engine) SearchDocuments(userId int, query string, sort storage.SortKey,
 	}
 	// If there are only filters and no query, meilisearch returns larger nbHits, probably count of all documents,
 	// which is incorrect for given filter.
-	nHits := int(res.NbHits)
+	nHits := int(res.TotalHits)
 	return docs, nHits, nil
 }
 

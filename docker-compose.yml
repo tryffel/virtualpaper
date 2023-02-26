@@ -27,7 +27,7 @@ services:
       - virtualpaper_config:/config
 
   meilisearch:
-    image: getmeili/meilisearch:v0.25.2
+    image: getmeili/meilisearch:v1.0.2
     networks:
       - virtualpaper
     volumes:

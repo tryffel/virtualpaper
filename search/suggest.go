@@ -121,8 +121,6 @@ func (s *searchQuery) prepareMeiliQuery(userId int, sort storage.SortKey, paging
 		AttributesToCrop:      []string{"content"},
 		CropLength:            1000,
 		AttributesToHighlight: []string{"name"},
-		Matches:               false,
-		FacetsDistribution:    nil,
 		PlaceholderSearch:     false,
 	}
 	filter := s.MetadataString
