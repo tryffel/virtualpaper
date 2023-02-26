@@ -161,10 +161,10 @@ func (s *MetadataStore) GetUserKeysCached(userId int) (*[]models.MetadataKey, er
 	}
 
 	query := s.sq.Select("mk.id as id", "lower(mk.key) as key", "mk.comment as comment",
-		"mk.created_at as created_at", "COUNT(dm.document_id) as documents_count").
+		"mk.created_at as created_at").
 		From("metadata_keys mk").LeftJoin("document_metadata dm ON mk.id = dm.key_id").
 		Where(squirrel.Eq{"user_id": userId}).GroupBy("mk.id").
-		OrderBy("documents_count DESC").Limit(config.MaxRows)
+		OrderBy("COUNT(dm.document_id) DESC").Limit(config.MaxRows)
 
 	sql, args, err := query.ToSql()
 	if err != nil {
