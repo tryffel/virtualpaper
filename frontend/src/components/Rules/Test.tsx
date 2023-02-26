@@ -79,7 +79,7 @@ const TestButton = (record: any) => {
 
 const TestDialog = (props: any) => {
   const record = useRecordContext();
-  const [scroll, setScroll] = React.useState("paper");
+  const [scroll] = React.useState("paper");
 
   const dataProvider = useDataProvider();
 
@@ -89,20 +89,26 @@ const TestDialog = (props: any) => {
   };
 
   const [documentId, setDocumentId] = React.useState("");
-  const [document, setDocument] = React.useState();
   const [result, setResult] = React.useState<RuleTestResult>();
 
   const [textResult, setTextResult] = React.useState("");
 
-  const { data, isLoading, error, refetch } = useGetOne("documents", {
-    id: documentId,
-    meta: {
-      noVisit: true,
-    },
-  });
+  const { data, refetch, isError, isLoadingError, failureCount } = useGetOne(
+    "documents",
+    {
+      id: documentId,
+      meta: {
+        noVisit: true,
+      },
+    }
+  );
+
+  console.log("fetch error", isError, isLoadingError, failureCount);
 
   const onDocIdchanged = (e: any) => {
-    setDocumentId(e.target.value);
+    const raw = e.target.value;
+    const id = raw.trim();
+    setDocumentId(id);
     refetch();
   };
 
@@ -137,29 +143,53 @@ const TestDialog = (props: any) => {
       <DialogTitle id="simple-dialog-title">Test Processing Rule</DialogTitle>
       <DialogContent dividers={scroll === "paper"}>
         <DialogContentText>
+          <Typography variant="body2">
+            <p>
+              Processing rule can be tested against a document to see if the
+              document matches the conditions that the rule has been configured
+              with.
+            </p>
+            <p>
+              No changes to the document will be made. This tool is only for
+              debugging purposes.
+            </p>
+
+            <p>
+              To test a rule enter a document's id below and click{" "}
+              <em>Run test</em>. After running the test a list of entries that
+              describes the execution, is shown below.
+            </p>
+          </Typography>
+
           <TextField
+            helperText={
+              (isError || failureCount > 1) && "Id does not match any document"
+            }
+            fullWidth
             id="document_id"
             label="Document id"
             variant="outlined"
             // @ts-ignore
             onChange={onDocIdchanged}
+            color={isError ? "error" : "primary"}
           />
-          <Button onClick={exec} variant="contained">
-            <Typography>Execute</Typography>
-          </Button>
 
           {
             // @ts-ignore
             data ? (
-              <Typography variant="body2">
+              <Typography variant="body2" sx={{ pt: 1 }}>
                 Document name: '{data.name}'
               </Typography>
             ) : null
           }
 
+          <Button onClick={exec} variant="contained" sx={{ mt: 1 }}>
+            <Typography>Run test</Typography>
+          </Button>
+
           {result ? (
             <>
-              <Typography variant="h5" color="textPrimary">
+              <Typography variant="h5" color="textPrimary" sx={{ pt: 1 }}>
                 Results
               </Typography>
               <p>Match: {result.matched ? "yes" : "no"}</p>
