@@ -84,9 +84,33 @@ var testDocuments = []*models.Document{
 	testDocumentTransistorCountAdminUser,
 }
 
+var testDocumentIds = []string{
+	testDocumentTransistorCountAdminUser.Id,
+	testDocumentTransistorCount.Id,
+	testDocumentYear1962.Id,
+	testDocumentMetamorphosis.Id,
+	testDocumentJupiterMoons.Id,
+	testDocumentX86Intel.Id,
+	testDocumentX86.Id,
+}
+
+var testDocumentIdsUser = []string{
+	testDocumentTransistorCount.Id,
+	testDocumentYear1962.Id,
+	testDocumentMetamorphosis.Id,
+	testDocumentJupiterMoons.Id,
+	testDocumentX86Intel.Id,
+	testDocumentX86.Id,
+}
+
+var testDocumentIdsAdmin = []string{
+	testDocumentTransistorCountAdminUser.Id,
+}
+
 func insertTestDocuments(t *testing.T) error {
 	db := GetDb()
 	for _, v := range testDocuments {
+		time.Sleep(time.Millisecond)
 		err := db.DocumentStore.Create(v)
 		if err != nil {
 			t.Errorf("insert test document %s: %v", v.Id, err)

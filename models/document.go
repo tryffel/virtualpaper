@@ -66,6 +66,9 @@ func (d *Document) Init() {
 		logrus.Errorf("generate uuid: %v. Assign random string as id ", err)
 		d.Id = config.RandomString(16)
 	}
+	if d.Date.IsZero() {
+		d.Date = time.Now()
+	}
 }
 
 // IsImage returns true if document file is image.

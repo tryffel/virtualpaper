@@ -67,6 +67,16 @@ func docStatsToUserStats(stats *models.UserDocumentStatistics) *UserDocumentStat
 		LastDocumentsViewed:  stats.LastDocumentsViewed,
 	}
 
+	if uds.LastDocumentsUpdated == nil {
+		uds.LastDocumentsUpdated = []string{}
+	}
+	if uds.LastDocumentsAdded == nil {
+		uds.LastDocumentsAdded = []string{}
+	}
+	if uds.LastDocumentsViewed == nil {
+		uds.LastDocumentsViewed = []string{}
+	}
+
 	if uds.YearlyStats == nil {
 		uds.YearlyStats = []struct {
 			Year         int `json:"year" db:"year"`

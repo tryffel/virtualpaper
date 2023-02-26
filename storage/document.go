@@ -194,13 +194,13 @@ func (s *DocumentStore) GetByHash(userId int, hash string) (*models.Document, er
 
 func (s *DocumentStore) Create(doc *models.Document) error {
 	sql := `
-INSERT INTO documents (id, user_id, name, content, filename, hash, mimetype, size, description)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id;`
+INSERT INTO documents (id, user_id, name, content, filename, hash, mimetype, size, description, date)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id;`
 
 	doc.Init()
 
 	rows, err := s.db.Query(sql, doc.Id, doc.UserId, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
-		doc.Description)
+		doc.Description, doc.Date)
 	if err != nil {
 		return s.parseError(err, "created")
 	}

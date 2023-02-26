@@ -69,6 +69,10 @@ func (h *httpRequest) ExpectName(t *testing.T, name string, logResp bool) *httpR
 	return &httpResponse{req}
 }
 
+func (h *httpRequest) SetQueryParam(key, value string) *httpRequest {
+	return &httpRequest{h.req.SetQuery(key, value)}
+}
+
 func (h *httpResponse) Json(t *testing.T, data interface{}) *httpResponse {
 	return &httpResponse{h.e.AssertFunc(readBodyFunc(t, data))}
 }
