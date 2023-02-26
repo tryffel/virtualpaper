@@ -18,20 +18,26 @@
 
 package models
 
+type UserDocumentYearStat struct {
+	// year
+	// Example: 2020
+	Year int `json:"year" db:"year"`
+	// number of documents
+	// Example: 49
+	NumDocuments int `json:"num_documents" db:"count"`
+}
+
 // UserDocumentStatistics contains various about user's
 // documents.
 type UserDocumentStatistics struct {
-	UserId       int `json:"id"`
-	NumDocuments int `json:"num_documents"`
-	YearlyStats  []struct {
-		Year         int `json:"year" db:"year"`
-		NumDocuments int `json:"num_documents" db:"count"`
-	} `json:"yearly_stats"`
-	NumMetadataKeys      int      `json:"num_metadata_keys"`
-	NumMetadataValues    int      `json:"num_metadata_values"`
-	LastDocumentsUpdated []string `json:"last_documents_updated"`
-	LastDocumentsAdded   []string `json:"last_documents_added"`
-	LastDocumentsViewed  []string `json:"last_documents_viewed"`
+	UserId               int                    `json:"id"`
+	NumDocuments         int                    `json:"num_documents"`
+	YearlyStats          []UserDocumentYearStat `json:"yearly_stats"`
+	NumMetadataKeys      int                    `json:"num_metadata_keys"`
+	NumMetadataValues    int                    `json:"num_metadata_values"`
+	LastDocumentsUpdated []string               `json:"last_documents_updated"`
+	LastDocumentsAdded   []string               `json:"last_documents_added"`
+	LastDocumentsViewed  []string               `json:"last_documents_viewed"`
 }
 
 type SystemStatistics struct {

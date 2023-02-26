@@ -20,7 +20,7 @@ func TestProcessingRules(t *testing.T) {
 
 func (suite *RuleTestSuite) SetupTest() {
 	suite.Init()
-	clearDbMetadataTables(suite.T())
+	clearDbMetadataTables(suite.T(), suite.db)
 	clearDbProcessingRuleTables(suite.T())
 }
 

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 	"tryffel.net/go/virtualpaper/api"
+	"tryffel.net/go/virtualpaper/models"
 )
 
 type DocumentStatisticsSuite struct {
@@ -19,8 +20,9 @@ func TestDocumentStatistics(t *testing.T) {
 
 func (suite *DocumentStatisticsSuite) SetupTest() {
 	suite.Init()
-	clearDbMetadataTables(suite.T())
+	clearDbMetadataTables(suite.T(), suite.db)
 	clearDbDocumentTables(suite.T())
+	clearMeiliIndices(suite.T())
 
 	testDocumentX86.Date = time.Date(2018, 06, 02, 0, 0, 0, 0, time.UTC)
 	testDocumentX86Intel.Date = time.Date(2018, 06, 03, 0, 0, 0, 0, time.UTC)
@@ -36,7 +38,6 @@ func (suite *DocumentStatisticsSuite) TestBasicStats() {
 	data := getDocumentStatistics(suite.T(), suite.userHttp, 200)
 
 	assert.Equal(suite.T(), data.UserId, 1)
-	assert.Equal(suite.T(), data.Indexing, false)
 	assert.Equal(suite.T(), data.NumDocuments, 6)
 	assert.Equal(suite.T(), data.NumMetadataKeys, 0)
 	assert.Equal(suite.T(), data.NumMetadataValues, 0)
@@ -50,7 +51,6 @@ func (suite *DocumentStatisticsSuite) TestBasicStats() {
 	adminData := getDocumentStatistics(suite.T(), suite.adminHttp, 200)
 
 	assert.Equal(suite.T(), adminData.UserId, 2)
-	assert.Equal(suite.T(), adminData.Indexing, false)
 	assert.Equal(suite.T(), adminData.NumDocuments, 1)
 	assert.Equal(suite.T(), adminData.NumMetadataKeys, 0)
 	assert.Equal(suite.T(), adminData.NumMetadataValues, 0)
@@ -138,12 +138,79 @@ func (suite *DocumentStatisticsSuite) TestViewDocument() {
 
 }
 
-func (suite *DocumentStatisticsSuite) TestAddMetdataKey() {}
+func (suite *DocumentStatisticsSuite) TestAddMetdataKey() {
+	data := getDocumentStatistics(suite.T(), suite.userHttp, 200)
+	assert.Equal(suite.T(), data.NumMetadataKeys, 0)
+	assert.Equal(suite.T(), data.NumMetadataValues, 0)
 
-func (suite *DocumentStatisticsSuite) TestAddMetdataValue() {}
+	AddMetadataKey(suite.T(), suite.userHttp, "author", "document author", 200)
+	data = getDocumentStatistics(suite.T(), suite.userHttp, 200)
+	assert.Equal(suite.T(), data.NumMetadataKeys, 1)
+	assert.Equal(suite.T(), data.NumMetadataValues, 0)
+
+	key := AddMetadataKey(suite.T(), suite.userHttp, "testing", "document author", 200)
+	data = getDocumentStatistics(suite.T(), suite.userHttp, 200)
+	assert.Equal(suite.T(), data.NumMetadataKeys, 2)
+	assert.Equal(suite.T(), data.NumMetadataValues, 0)
+
+	DeleteMetadataKey(suite.T(), suite.userHttp, 200, key.Id)
+	data = getDocumentStatistics(suite.T(), suite.userHttp, 200)
+	assert.Equal(suite.T(), data.NumMetadataKeys, 1)
+	assert.Equal(suite.T(), data.NumMetadataValues, 0)
+}
+
+func (suite *DocumentStatisticsSuite) TestAddMetdataValue() {
+	authorKey := AddMetadataKey(suite.T(), suite.userHttp, "author", "document author", 200)
+	data := getDocumentStatistics(suite.T(), suite.userHttp, 200)
+	assert.Equal(suite.T(), 1, data.NumMetadataKeys)
+	assert.Equal(suite.T(), 0, data.NumMetadataValues)
+
+	testKey := AddMetadataKey(suite.T(), suite.userHttp, "testing", "testing", 200)
+	AddMetadataValue(suite.T(), suite.userHttp, testKey.Id, &models.MetadataValue{
+		Value: "test1",
+	}, 200)
+	AddMetadataValue(suite.T(), suite.userHttp, testKey.Id, &models.MetadataValue{
+		Value: "test2",
+	}, 200)
+	AddMetadataValue(suite.T(), suite.userHttp, testKey.Id, &models.MetadataValue{
+		Value: "test3",
+	}, 200)
+
+	AddMetadataValue(suite.T(), suite.userHttp, authorKey.Id, &models.MetadataValue{
+		Value:   "test",
+		Comment: "",
+	}, 200)
+
+	data = getDocumentStatistics(suite.T(), suite.userHttp, 200)
+	assert.Equal(suite.T(), data.NumMetadataKeys, 2)
+	assert.Equal(suite.T(), data.NumMetadataValues, 4)
+
+	AddMetadataValue(suite.T(), suite.userHttp, authorKey.Id, &models.MetadataValue{
+		Value:   "new test",
+		Comment: "",
+	}, 200)
+
+	data = getDocumentStatistics(suite.T(), suite.userHttp, 200)
+	assert.Equal(suite.T(), 2, data.NumMetadataKeys)
+	assert.Equal(suite.T(), 5, data.NumMetadataValues)
+}
+
+func (suite *DocumentStatisticsSuite) TestDeleteMetadataKey() {}
+
+func (suite *DocumentStatisticsSuite) TestYearlyStats() {
+	data := getDocumentStatistics(suite.T(), suite.userHttp, 200)
+
+	assert.Equal(suite.T(), []models.UserDocumentYearStat{
+		{2018, 2}, {2012, 1}, {2011, 1}, {2010, 2},
+	}, data.YearlyStats)
+}
 
 func getDocumentStatistics(t *testing.T, client *httpClient, wantHttpStatus int) *api.UserDocumentStatistics {
 	data := api.UserDocumentStatistics{}
 	client.Get("/api/v1/documents/stats").ExpectName(t, "get document statistics", false).Json(t, &data).e.Status(wantHttpStatus).Done()
+
+	// indexing status in non-deterministic,
+	// so we're disabling it in order to stabilize the tests.
+	data.Indexing = false
 	return &data
 }

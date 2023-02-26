@@ -5,6 +5,7 @@ import (
 	"gopkg.in/h2non/baloo.v3"
 	"testing"
 	"time"
+	"tryffel.net/go/virtualpaper/storage"
 )
 
 type ApiTestSuite struct {
@@ -15,6 +16,16 @@ type ApiTestSuite struct {
 	publicHttp *httpClient
 	userHttp   *httpClient
 	adminHttp  *httpClient
+
+	db *storage.Database
+}
+
+func (suite *ApiTestSuite) SetupSuite() {
+	suite.db = GetDb()
+}
+
+func (suite *ApiTestSuite) TearDownSuite() {
+	suite.db.Close()
 }
 
 func (suite *ApiTestSuite) SetupTest() {
@@ -35,7 +46,7 @@ func (suite *ApiTestSuite) Init() {
 	suite.publicHttp = &httpClient{baloo.New(serverUrl)}
 	suite.userHttp = &httpClient{suite.userClient}
 	suite.adminHttp = &httpClient{suite.adminClient}
-	clearDbMetadataTables(suite.T())
+	clearDbMetadataTables(suite.T(), suite.db)
 }
 
 func isToday(date time.Time) bool {

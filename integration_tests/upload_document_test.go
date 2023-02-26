@@ -26,7 +26,7 @@ func TestUploadDocument(t *testing.T) {
 
 func (suite *UploadDocumentSuite) SetupTest() {
 	suite.Init()
-	clearDbMetadataTables(suite.T())
+	clearDbMetadataTables(suite.T(), suite.db)
 	clearDbDocumentTables(suite.T())
 }
 

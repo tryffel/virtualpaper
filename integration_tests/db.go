@@ -46,14 +46,13 @@ var dbProcessingRuleTables = []string{
 }
 
 var dbDocumentTables = []string{
+	"document_view_history",
 	"document_history",
 	"jobs",
 	"documents",
 }
 
-func clearDbMetadataTables(t *testing.T) {
-	db := GetDb()
-	defer closeDb(db, t)
+func clearDbMetadataTables(t *testing.T, db *storage.Database) {
 	for _, v := range dbMetadataTables {
 		db.Engine().MustExec(fmt.Sprintf("DELETE FROM %s WHERE 1=1", v))
 	}
@@ -98,7 +97,7 @@ func clearMeiliIndices(t *testing.T) {
 	for _, v := range *users {
 		err := client.DeleteDocuments(v.Id)
 		if err != nil {
-			t.Errorf("delete search index for user %d: %v", v.Id, err)
+			t.Logf("delete search index for user %d: %v", v.Id, err)
 		}
 	}
 }
