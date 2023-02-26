@@ -27,7 +27,7 @@ func TestUploadDocument(t *testing.T) {
 func (suite *UploadDocumentSuite) SetupTest() {
 	suite.Init()
 	clearDbMetadataTables(suite.T(), suite.db)
-	clearDbDocumentTables(suite.T())
+	clearDbDocumentTables(suite.T(), suite.db)
 }
 
 func (suite *UploadDocumentSuite) TestUploadFail() {
@@ -46,7 +46,7 @@ func (suite *UploadDocumentSuite) TestUploadFail() {
 }
 
 func (suite *UploadDocumentSuite) TestEditDocFail() {
-	_ = insertTestDocuments(suite.T())
+	_ = insertTestDocuments(suite.T(), suite.db)
 	doc := getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
 	doc.Name = "empty"
 	updateDocument(suite.T(), suite.userHttp, doc, 200)

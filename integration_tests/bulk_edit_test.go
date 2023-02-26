@@ -19,7 +19,7 @@ type BulkEditTestSuite struct {
 
 func (suite *BulkEditTestSuite) SetupTest() {
 	suite.Init()
-	clearDbDocumentTables(suite.T())
+	clearDbDocumentTables(suite.T(), suite.db)
 
 	suite.user1Keys, suite.user1Values = initMetadataKeyValues(suite.T(), suite.userHttp)
 
@@ -48,7 +48,7 @@ func (suite *BulkEditTestSuite) SetupTest() {
 		MatchFilter:    "",
 	}, 200)
 
-	err := insertTestDocuments(suite.T())
+	err := insertTestDocuments(suite.T(), suite.db)
 	if err != nil {
 		suite.T().Errorf("insert test documents: %v", err)
 		suite.T().Fail()

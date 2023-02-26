@@ -21,7 +21,7 @@ func TestProcessingRules(t *testing.T) {
 func (suite *RuleTestSuite) SetupTest() {
 	suite.Init()
 	clearDbMetadataTables(suite.T(), suite.db)
-	clearDbProcessingRuleTables(suite.T())
+	clearDbProcessingRuleTables(suite.T(), suite.db)
 }
 
 func (suite *RuleTestSuite) AddRules() {
@@ -315,7 +315,7 @@ func (suite *RuleTestSuite) GetRule() {
 }
 
 func (suite *RuleTestSuite) TestRuleTesting() {
-	_ = insertTestDocuments(suite.T())
+	_ = insertTestDocuments(suite.T(), suite.db)
 	doc := getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
 	assert.Equal(suite.T(), testDocumentX86Intel.Name, doc.Name)
 

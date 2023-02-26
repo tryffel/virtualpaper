@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/storage"
 )
 
 var defaultDate = time.Date(2023, 1, 21, 13, 5, 0, 0, time.UTC)
@@ -107,8 +108,7 @@ var testDocumentIdsAdmin = []string{
 	testDocumentTransistorCountAdminUser.Id,
 }
 
-func insertTestDocuments(t *testing.T) error {
-	db := GetDb()
+func insertTestDocuments(t *testing.T, db *storage.Database) error {
 	for _, v := range testDocuments {
 		time.Sleep(time.Millisecond)
 		err := db.DocumentStore.Create(v)

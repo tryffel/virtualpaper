@@ -26,7 +26,7 @@ func TestDocumentSearch(t *testing.T) {
 
 func (suite *DocumentSearchSuite) SetupTest() {
 	suite.Init()
-	clearDbDocumentTables(suite.T())
+	clearDbDocumentTables(suite.T(), suite.db)
 	clearMeiliIndices(suite.T())
 	waitIndexingReady(suite.T(), suite.userHttp, 20)
 	suite.docs = make(map[string]*api.DocumentResponse)

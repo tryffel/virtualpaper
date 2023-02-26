@@ -18,8 +18,8 @@ type DocumentHistoryTestSuite struct {
 
 func (suite *DocumentHistoryTestSuite) SetupTest() {
 	suite.Init()
-	clearDbDocumentTables(suite.T())
-	_ = insertTestDocuments(suite.T())
+	clearDbDocumentTables(suite.T(), suite.db)
+	_ = insertTestDocuments(suite.T(), suite.db)
 }
 
 func (suite *DocumentHistoryTestSuite) TestInitialHistory() {

@@ -21,7 +21,7 @@ func TestDocumentStatistics(t *testing.T) {
 func (suite *DocumentStatisticsSuite) SetupTest() {
 	suite.Init()
 	clearDbMetadataTables(suite.T(), suite.db)
-	clearDbDocumentTables(suite.T())
+	clearDbDocumentTables(suite.T(), suite.db)
 	clearMeiliIndices(suite.T())
 
 	testDocumentX86.Date = time.Date(2018, 06, 02, 0, 0, 0, 0, time.UTC)
@@ -31,7 +31,7 @@ func (suite *DocumentStatisticsSuite) SetupTest() {
 	testDocumentMetamorphosis.Date = time.Date(2011, 06, 03, 11, 59, 0, 0, time.UTC)
 	testDocumentTransistorCount.Date = time.Date(2012, 06, 03, 11, 59, 0, 0, time.UTC)
 	testDocumentTransistorCountAdminUser.Date = time.Date(2008, 06, 03, 11, 59, 0, 0, time.UTC)
-	insertTestDocuments(suite.T())
+	insertTestDocuments(suite.T(), suite.db)
 }
 
 func (suite *DocumentStatisticsSuite) TestBasicStats() {

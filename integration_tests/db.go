@@ -58,17 +58,13 @@ func clearDbMetadataTables(t *testing.T, db *storage.Database) {
 	}
 }
 
-func clearDbProcessingRuleTables(t *testing.T) {
-	db := GetDb()
-	defer closeDb(db, t)
+func clearDbProcessingRuleTables(t *testing.T, db *storage.Database) {
 	for _, v := range dbProcessingRuleTables {
 		db.Engine().MustExec(fmt.Sprintf("DELETE FROM %s WHERE 1=1", v))
 	}
 }
 
-func clearDbDocumentTables(t *testing.T) {
-	db := GetDb()
-	defer closeDb(db, t)
+func clearDbDocumentTables(t *testing.T, db *storage.Database) {
 	for _, v := range dbDocumentTables {
 		db.Engine().MustExec(fmt.Sprintf("DELETE FROM %s WHERE 1=1", v))
 	}
