@@ -145,7 +145,8 @@ const DocumentIdField = () => {
 
   return (
     <div style={{ marginLeft: "10px", fontWeight: 100, fontSize: "small" }}>
-      <span style={{ userSelect: "none" }}>Id:</span> <span>{id}</span>
+      <span style={{ userSelect: "none" }}>Id: </span>
+      <span>{id}</span>
     </div>
   );
 };

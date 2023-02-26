@@ -67,10 +67,10 @@ export const ShowDocumentsEditHistory = () => {
   }
 
   return (
-    <Box ml={1}>
+    <Box ml={1} sx={{ maxWidth: "30%" }}>
       <Card>
         <CardContent>
-          <Grid container flex={1}>
+          <Grid container>
             <Grid item xs={8} md={8}>
               <Typography variant="overline">Document edit history</Typography>
             </Grid>
@@ -191,7 +191,6 @@ const DocumentHistoryDescription = (props: HistoryProps) => {
       <StepLabel icon={<ArticleIcon />}>Changed description</StepLabel>
       <StepContent>
         <ItemLabel {...props} />
-        <Typography variant="body1">From: {item.old_value}</Typography>
         <Typography variant="body1">To: {item.new_value}</Typography>
       </StepContent>
     </Step>
@@ -205,7 +204,6 @@ const DocumentHistoryRename = (props: HistoryProps) => {
       <StepLabel icon={<ArticleIcon />}>Renamed document</StepLabel>
       <StepContent>
         <ItemLabel {...props} />
-        <Typography variant="body1">From: {item.old_value}</Typography>
         <Typography variant="body1">To: {item.new_value}</Typography>
       </StepContent>
     </Step>
@@ -262,7 +260,6 @@ const DocumentHistoryDate = (props: HistoryProps) => {
       <StepLabel icon={<ScheduleIcon />}>Changed date</StepLabel>
       <StepContent>
         <ItemLabel {...props} />
-        <Typography variant="body1">From: {oldDate}</Typography>
         <Typography variant="body1">To: {newDate}</Typography>
       </StepContent>
     </Step>
