@@ -31,8 +31,7 @@ services:
     networks:
       - virtualpaper
     volumes:
-      - meilisearch:/data
-
+      - meilisearch:/meili_data
 
   postgres:
     image: postgres:14.2-alpine3.15
