@@ -37,7 +37,9 @@ import AddCircleIcon from "@mui/icons-material/AddCircle";
 import ArticleIcon from "@mui/icons-material/Article";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import TagIcon from "@mui/icons-material/Tag";
+import ContentCut from "@mui/icons-material/ContentCut";
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
+import get from "lodash/get";
 
 export const ShowDocumentsEditHistory = () => {
   const record = useRecordContext();
@@ -212,12 +214,36 @@ const DocumentHistoryRename = (props: HistoryProps) => {
 
 const DocumentHistoryAddMetadata = (props: HistoryProps) => {
   const { item, pretty_time } = props;
+  let keyId = "";
+  let valueId = "";
+  let parsed = {};
+  let jsonMode = true;
+  try {
+    parsed = JSON.parse(item.new_value);
+    keyId = get(parsed, "key_id");
+    valueId = get(parsed, "value_id");
+  } catch (e) {
+    // old mode without json and notation is key_name:value_name
+    [keyId, valueId] = item.new_value.split(":");
+    jsonMode = false;
+  }
+
   return (
     <Step key={`${item.id}`} expanded active completed>
       <StepLabel icon={<TagIcon />}>Added metadata</StepLabel>
       <StepContent>
         <ItemLabel {...props} />
-        <Typography variant="body1">Metadata: {item.new_value}</Typography>
+        {jsonMode ? (
+          <Tooltip
+            title={`Metadata info: key_id: ${keyId}, value_id: ${valueId}`}
+          >
+            <Typography variant="body1">No data</Typography>
+          </Tooltip>
+        ) : (
+          <Typography variant="body1">
+            Metadata: {keyId}:{valueId}
+          </Typography>
+        )}
       </StepContent>
     </Step>
   );
@@ -225,12 +251,34 @@ const DocumentHistoryAddMetadata = (props: HistoryProps) => {
 
 const DocumentHistoryRemoveMetadata = (props: HistoryProps) => {
   const { item, pretty_time } = props;
+  let keyId = "";
+  let valueId = "";
+  let parsed = {};
+  let jsonMode = true;
+  try {
+    parsed = JSON.parse(item.old_value);
+    keyId = get(parsed, "key_id");
+    valueId = get(parsed, "value_id");
+  } catch (e) {
+    [keyId, valueId] = item.old_value.split(":");
+    jsonMode = false;
+  }
   return (
     <Step key={`${item.id}`} expanded active completed>
-      <StepLabel icon={<TagIcon />}>Added metadata</StepLabel>
+      <StepLabel icon={<ContentCut />}>Removed metadata</StepLabel>
       <StepContent>
         <ItemLabel {...props} />
-        <Typography variant="body1">Metadata: {item.new_value}</Typography>
+        {jsonMode ? (
+          <Tooltip
+            title={`Metadata info: key_id: ${keyId}, value_id: ${valueId}`}
+          >
+            <Typography variant="body1">No data</Typography>
+          </Tooltip>
+        ) : (
+          <Typography variant="body1">
+            Metadata: {keyId}:{valueId}
+          </Typography>
+        )}
       </StepContent>
     </Step>
   );

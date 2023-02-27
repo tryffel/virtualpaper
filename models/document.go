@@ -20,8 +20,8 @@ package models
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -147,6 +147,61 @@ type MetadataKey struct {
 	Comment   string    `db:"comment" json:"comment"`
 }
 
+func MetadataDiff(id string, userId int, original, updated *[]Metadata) []DocumentHistory {
+	history := make([]DocumentHistory, 0)
+
+	addHistoryItem := func(action, oldValue, newValue string) {
+		history = append(history, DocumentHistory{
+			DocumentId: id,
+			Action:     action,
+			OldValue:   oldValue,
+			NewValue:   newValue,
+			UserId:     userId,
+		})
+	}
+
+	if len(*original) == 0 && len(*updated) == 0 {
+		return history
+	}
+
+	oldMetadata := map[string]Metadata{}
+	newMetadata := map[string]Metadata{}
+
+	for _, v := range *original {
+		oldMetadata[v.Key+"-"+v.Value] = v
+	}
+
+	for _, v := range *updated {
+		newMetadata[v.Key+"-"+v.Value] = v
+	}
+
+	formatMetadata := func(m Metadata) string {
+		data := DocumentMetadataHistoryEntry{
+			KeyId:   m.KeyId,
+			ValueId: m.ValueId,
+		}
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			logrus.Errorf("metadatadiff, marshal metadata to json, key: %d, value: %d: %v", m.KeyId, m.ValueId, err)
+			return "error"
+		}
+		return string(bytes)
+	}
+
+	for keyValue, oldVal := range oldMetadata {
+		if _, found := newMetadata[keyValue]; !found {
+			addHistoryItem("remove metadata", formatMetadata(oldVal), "")
+		}
+	}
+
+	for keyValue, newVal := range newMetadata {
+		if _, found := oldMetadata[keyValue]; !found {
+			addHistoryItem("add metadata", "", formatMetadata(newVal))
+		}
+	}
+	return history
+}
+
 type MetadataKeyStatistics struct {
 	NumDocuments      int `db:"documents_count" json:"documents_count"`
 	NumMetadataValues int `db:"values_count" json:"metadata_values_count"`
@@ -227,7 +282,13 @@ func (dh *DocumentHistory) SortNoCase() []string {
 	return dh.FilterAttributes()
 }
 
+type DocumentMetadataHistoryEntry struct {
+	KeyId   int `json:"key_id"`
+	ValueId int `json:"value_id"`
+}
+
 // Diffs returns a list of DocumentHistory items from d -> newDocument.
+// Metadata changes are not evaluated.
 func (d *Document) Diff(newDocument *Document, userId int) ([]DocumentHistory, error) {
 	history := make([]DocumentHistory, 0)
 	d2 := newDocument
@@ -260,38 +321,6 @@ func (d *Document) Diff(newDocument *Document, userId int) ([]DocumentHistory, e
 	if d.Content != d2.Content {
 		addHistoryItem("content", d.Content, d2.Content)
 	}
-
-	if len(d.Metadata) == 0 && len(d2.Metadata) == 0 {
-		return history, nil
-	}
-
-	oldMetadata := map[string]Metadata{}
-	newMetadata := map[string]Metadata{}
-
-	for _, v := range d.Metadata {
-		oldMetadata[v.Key+"-"+v.Value] = v
-	}
-
-	for _, v := range d2.Metadata {
-		newMetadata[v.Key+"-"+v.Value] = v
-	}
-
-	formatMetadata := func(m Metadata) string {
-		return fmt.Sprintf("%s:%s", m.Key, m.Value)
-	}
-
-	for keyValue, oldVal := range oldMetadata {
-		if _, found := newMetadata[keyValue]; !found {
-			addHistoryItem("remove metadata", formatMetadata(oldVal), "")
-		}
-	}
-
-	for keyValue, newVal := range newMetadata {
-		if _, found := oldMetadata[keyValue]; !found {
-			addHistoryItem("add metadata", "", formatMetadata(newVal))
-		}
-	}
-
 	return history, nil
 }
 

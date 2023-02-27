@@ -321,6 +321,11 @@ END;
 		}
 	}
 
+	originalMetadata, err := s.GetDocumentMetadata(userId, documentId)
+	if err != nil {
+		return s.parseError(err, "get document")
+	}
+
 	tx, err := s.db.Beginx()
 	if err != nil {
 		return s.parseError(err, "update document, start tx")
@@ -363,7 +368,20 @@ END;
 	} else {
 		err = tx.Commit()
 	}
-	return s.parseError(err, "update document key-values")
+
+	if err != nil {
+		return s.parseError(err, "update document key-values")
+	}
+
+	updatedMetadata, err := s.GetDocumentMetadata(userId, documentId)
+	if err != nil {
+		return s.parseError(err, "get updated document metadata")
+	}
+
+	diff := models.MetadataDiff(documentId, userId, originalMetadata, updatedMetadata)
+	err = addDocumentHistoryAction(s.db, s.sq, diff, userId)
+	logrus.Infof("User %d edited document %s with %d actions", userId, documentId, len(diff))
+	return err
 }
 
 // GetUserValuesWithMatching retusn all metadata values that

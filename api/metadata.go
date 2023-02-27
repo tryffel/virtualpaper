@@ -35,7 +35,7 @@ type MetadataRequest struct {
 
 type MetadataKeyRequest struct {
 	Key     string `json:"key" valid:"required,metadata,stringlength(1|30)"`
-	Comment string `json:"comment" valid:"stringlength(0|1000)"`
+	Comment string `json:"comment" valid:"stringlength(0|1000),optional"`
 }
 
 type MetadataValueRequest struct {
