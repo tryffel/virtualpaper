@@ -18,7 +18,6 @@
 
 import * as React from "react";
 
-import get from "lodash/get";
 import {
   List,
   Datagrid,
@@ -31,17 +30,30 @@ import {
 
 import { Chip, Typography, Box, Grid } from "@mui/material";
 import { MarkdownField } from "../Markdown";
+import get from "lodash/get";
 
 export const RuleList = () => (
   <List>
     <Datagrid bulkActionButtons={false} expand={ExpandRule}>
-      <TextField source="name" />
+      <RuleTitle />
       <TextField source="order" />
       <BooleanField label="Enabled" source="enabled" />
       <EditButton />
     </Datagrid>
   </List>
 );
+
+const RuleTitle = (props: object = {}) => {
+  const record = useRecordContext(props);
+  if (!record) {
+    return null;
+  }
+
+  const enabled = get(record, "enabled");
+  return (
+    <TextField sx={{ fontWeight: enabled ? "500" : "50" }} source="name" />
+  );
+};
 
 const RuleModeField = (props: any) => {
   const { source } = props;
