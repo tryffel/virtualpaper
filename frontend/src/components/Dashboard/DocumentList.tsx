@@ -18,7 +18,7 @@
 
 import * as React from "react";
 
-import { Loading, useGetMany } from "react-admin";
+import { Loading, useGetMany, useStore } from "react-admin";
 
 import {
   useTheme,
@@ -28,6 +28,7 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   useMediaQuery,
+  Divider,
 } from "@mui/material";
 import { DocumentCard } from "../Documents/DocumentCard";
 
@@ -39,7 +40,10 @@ export const LastUpdatedDocumentList = (props: {
   const theme = useTheme();
   const isNotSmall = useMediaQuery((theme: any) => theme.breakpoints.up("xs"));
   const { lastUpdatedIds, lastAddedIds, lastViewedIds } = props;
-  const [showMode, setShowMode] = React.useState<ShowMode>("lastUpdated");
+  const [showMode, setShowMode] = useStore<ShowMode>(
+    "dashboard.latest_documents.mode",
+    "lastUpdated"
+  );
 
   const getDocumentIds = () => {
     switch (showMode) {
@@ -114,13 +118,13 @@ const ShowModeButton = (props: {
       onChange={handleAlignment}
       sx={{ pr: 1 }}
     >
-      <ToggleButton size="small" value="lastUpdated">
+      <ToggleButton size="small" value="lastUpdated" color="primary">
         Added
       </ToggleButton>
-      <ToggleButton size="small" value="lastAdded">
+      <ToggleButton size="small" value="lastAdded" color="primary">
         Updated
       </ToggleButton>
-      <ToggleButton size="small" value="lastViewed">
+      <ToggleButton size="small" value="lastViewed" color="primary">
         Viewed
       </ToggleButton>
     </ToggleButtonGroup>
