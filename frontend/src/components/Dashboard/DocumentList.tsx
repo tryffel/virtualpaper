@@ -37,7 +37,7 @@ export const LastUpdatedDocumentList = (props: {
   lastViewedIds: string[];
 }) => {
   const theme = useTheme();
-  const isNotSmall = useMediaQuery((theme: any) => theme.breakpoints.up("sm"));
+  const isNotSmall = useMediaQuery((theme: any) => theme.breakpoints.up("xs"));
   const { lastUpdatedIds, lastAddedIds, lastViewedIds } = props;
   const [showMode, setShowMode] = React.useState<ShowMode>("lastUpdated");
 
