@@ -29,7 +29,7 @@ import {
   NumberField,
   useEditController,
   CreateButton,
-  TextInput
+  TextInput,
 } from "react-admin";
 
 import { MarkdownInput } from "../Markdown";
@@ -74,8 +74,10 @@ export const MetadataKeyEdit = () => {
           resource="metadata/values"
           {...valueToUpdate}
         />
-          <TextInput source="key" id="key-name" label="metadata key name"/>
+        <TextInput source="key" id="key-name" label="metadata key name" />
+        <Labeled label={"Description"}>
           <MarkdownInput source="comment" />
+        </Labeled>
         <ReferenceManyField
           label="Values"
           reference={"metadata/values"}
