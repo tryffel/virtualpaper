@@ -7,7 +7,7 @@ import {
   TextInput,
 } from "react-admin";
 import * as React from "react";
-import { Box, Grid } from "@mui/material";
+import { Box, Grid, Tooltip, Typography } from "@mui/material";
 import { CheckBoxInput } from "../../primitives/CheckBox";
 import { MetadataValueInput } from "./Metadata";
 
@@ -71,17 +71,18 @@ export const ConditionEdit = () => {
                       defaultValue={true}
                     />
                     <CheckBoxInput
-                      label="Inverted"
-                      source={getSource("inverted")}
+                      label="Negate"
+                      source={getSource("inverted_match")}
                       // @ts-ignore
                       record={scopedFormData}
-                      defaultValue={true}
+                      defaultValue={false}
                     />
                     <CheckBoxInput
                       label="Regex"
                       source={getSource("is_regex")}
                       // @ts-ignore
                       record={scopedFormData}
+                      defaultValue={false}
                     />
                   </Box>
                 </Grid>
