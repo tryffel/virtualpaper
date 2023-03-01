@@ -24,6 +24,7 @@ import {
   useGetList,
   Loading,
   CardContentInner,
+  SelectInput,
 } from "react-admin";
 
 import {
@@ -49,6 +50,7 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import { fstat } from "fs";
+import { RequestIndexSelect } from "../Documents/RequestIndexing";
 
 export const Processing = () => {
   return (
@@ -90,8 +92,8 @@ const RequestSingleDocumentProcessing = () => {
   const dataProvider = useDataProvider();
   const [documentId, setDocumentId] = useState("");
   const [step, setStep] = useState("content");
-  const [stepOk, setStepOk] = useState(true);
   const [userId, setUserId] = useState("");
+  const notify = useNotify();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -108,18 +110,8 @@ const RequestSingleDocumentProcessing = () => {
     exec();
   };
 
-  const notify = useNotify();
-
-  const onChangeStep = (e: any) => {
-    setStep(e.target.value);
-    let ok = false;
-    steps.map((step) => {
-      // @ts-ignore
-      if (step.id == e.target.value) {
-        ok = true;
-      }
-    });
-    setStepOk(ok);
+  const onChangeStep = (val: string) => {
+    setStep(val);
   };
   const onChangeDocumentId = (e: any) => {
     setDocumentId(e.target.value);
@@ -142,7 +134,7 @@ const RequestSingleDocumentProcessing = () => {
       })
       // @ts-ignore
       .then((data: { data: any }) => {
-        notify("Processing scheduled");
+        notify(`Processing scheduled`, { type: "success" });
       });
   };
 
@@ -215,7 +207,9 @@ const RequestSingleDocumentProcessing = () => {
         variant="outlined"
         value={documentId}
         onChange={onChangeDocumentId}
+        disabled={!!userId}
       />
+      <Typography>OR</Typography>
 
       <TextField
         id="user"
@@ -223,16 +217,9 @@ const RequestSingleDocumentProcessing = () => {
         variant="outlined"
         value={userId}
         onChange={onChangeUserId}
+        disabled={!!documentId}
       />
-      <TextField
-        id="step"
-        label="Step"
-        variant="outlined"
-        value={step}
-        onChange={onChangeStep}
-        color={stepOk ? "primary" : "secondary"}
-      />
-
+      <RequestIndexSelect step={step} setStep={onChangeStep} enabledAll />
       <Button
         onClick={onClickExec}
         variant="contained"

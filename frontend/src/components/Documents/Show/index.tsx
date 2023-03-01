@@ -43,6 +43,7 @@ import { MarkdownField } from "../../Markdown";
 import { ShowDocumentsEditHistory } from "./DocumentHistory";
 import { LinkedDocumentList } from "./LinkedDocuments";
 import { DocumentJobsHistory, DocumentTopRow } from "./Show";
+import { RequestIndexingModal } from "../RequestIndexing";
 
 export const DocumentShow = () => {
   const [historyEnabled, toggleHistory] = React.useState(false);
@@ -84,13 +85,6 @@ interface ActionsProps {
 function DocumentShowActions(props: ActionsProps) {
   const record = useRecordContext();
   const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
-  const requestProcessing = () => {
-    if (record) {
-      // @ts-ignore
-      requestDocumentProcessing(record.id);
-    }
-  };
-
   const { historyShown, showHistory } = props;
   const toggleHistory = () => {
     showHistory(!historyShown);
@@ -99,13 +93,7 @@ function DocumentShowActions(props: ActionsProps) {
   return (
     <TopToolbar>
       <EditButton />
-      <Button
-        color="primary"
-        onClick={requestProcessing}
-        label="Request re-processing"
-      >
-        <Repeat />
-      </Button>
+      <RequestIndexingModal />
       {!isSmall && (
         <Button
           color="primary"
