@@ -20,10 +20,14 @@ import * as React from "react";
 
 import {
   Button,
+  RecordContextProvider,
   useDataProvider,
   useGetOne,
   useRecordContext,
 } from "react-admin";
+
+import CancelIcon from "@mui/icons-material/Cancel";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 import {
   Typography,
@@ -33,15 +37,20 @@ import {
   DialogContentText,
   DialogActions,
   TextField,
+  Box,
+  Grid,
 } from "@mui/material";
 
 import { Settings as SettingsIcon } from "@mui/icons-material";
+import { DocumentCard } from "../Documents/DocumentCard";
+
+interface ConditionResult {
+  condition_id: number;
+  matched: boolean;
+}
 
 interface RuleTestResult {
-  conditions: {
-    condition_id: number;
-    matched: boolean;
-  }[];
+  conditions: ConditionResult[];
   rule_id: number;
   matched: boolean;
   took_ms: number;
@@ -93,15 +102,13 @@ const TestDialog = (props: any) => {
 
   const [textResult, setTextResult] = React.useState("");
 
-  const { data, refetch, isError, isLoadingError, failureCount } = useGetOne(
-    "documents",
-    {
+  const { data, isSuccess, refetch, isError, isLoadingError, failureCount } =
+    useGetOne("documents", {
       id: documentId,
       meta: {
         noVisit: true,
       },
-    }
-  );
+    });
 
   console.log("fetch error", isError, isLoadingError, failureCount);
 
@@ -165,7 +172,7 @@ const TestDialog = (props: any) => {
             helperText={
               (isError || failureCount > 1) && "Id does not match any document"
             }
-            fullWidth
+            sx={{ minWidth: "75%" }}
             id="document_id"
             label="Document id"
             variant="outlined"
@@ -173,51 +180,24 @@ const TestDialog = (props: any) => {
             onChange={onDocIdchanged}
             color={isError ? "error" : "primary"}
           />
-
-          {
-            // @ts-ignore
-            data ? (
-              <Typography variant="body2" sx={{ pt: 1 }}>
-                Document name: '{data.name}'
-              </Typography>
-            ) : null
-          }
-
-          <Button onClick={exec} variant="contained" sx={{ mt: 1 }}>
+          <Button onClick={exec} variant="contained" sx={{ mt: 1, ml: 1 }}>
             <Typography>Run test</Typography>
           </Button>
 
+          {isSuccess && data && (
+            <RecordContextProvider value={data}>
+              <DocumentCard record={data} />
+            </RecordContextProvider>
+          )}
+
           {result ? (
             <>
-              <Typography variant="h5" color="textPrimary" sx={{ pt: 1 }}>
-                Results
-              </Typography>
-              <p>Match: {result.matched ? "yes" : "no"}</p>
+              <Grid>
+                <StatusRow match={result.matched} />
+              </Grid>
 
-              <Typography variant="h5" color="textPrimary">
-                Log
-              </Typography>
-              <ul>
-                {" "}
-                {result
-                  ? result.log
-                      .split("\n")
-                      // @ts-ignore
-                      .map((line) => (line !== "" ? <li>{line}</li> : null))
-                  : null}
-              </ul>
-
-              <Typography variant="h5" color="textPrimary">
-                Conditions
-              </Typography>
-              <ul>
-                {result.conditions.map((condition, index) => (
-                  <li>
-                    condition {index + 1} matched:{" "}
-                    {condition.matched ? "yes" : "no"}
-                  </li>
-                ))}
-              </ul>
+              <Log log={result && result.log} />
+              <ConditionList conditions={result.conditions} />
             </>
           ) : null}
         </DialogContentText>
@@ -239,3 +219,75 @@ const Test = () => {
 };
 
 export default TestButton;
+
+const StatusRow = (props: { match: boolean }) => {
+  const { match } = props;
+
+  return (
+    <Grid container flexDirection="row" sx={{ pt: 1 }}>
+      <Typography variant="body1" color="textPrimary" sx={{ mt: 0.2, mr: 1 }}>
+        Result:
+      </Typography>
+      {match ? (
+        <>
+          <Typography variant="body2" sx={{ mr: 1, mt: 0.4 }}>
+            Document matched
+          </Typography>
+          <CheckCircleIcon color="success" />
+        </>
+      ) : (
+        <>
+          <Typography variant="body2" sx={{ mr: 1, mt: 0.4 }}>
+            No match
+          </Typography>
+          <CancelIcon color="error" />
+        </>
+      )}
+    </Grid>
+  );
+};
+
+const Log = (props: { log: string }) => {
+  const { log } = props;
+
+  const rows = log.split("\n");
+
+  return (
+    <Grid>
+      <Typography variant="h5" color="textPrimary" sx={{ mt: 1 }}>
+        Processing log:
+      </Typography>
+
+      <ol>
+        {rows.map((line) =>
+          line !== "" ? (
+            <li>
+              <Typography variant="body2">{line}</Typography>
+            </li>
+          ) : null
+        )}
+      </ol>
+    </Grid>
+  );
+};
+
+const ConditionList = (props: { conditions: ConditionResult[] }) => {
+  const { conditions } = props;
+
+  return (
+    <Grid>
+      <Typography variant="h5" color="textPrimary">
+        Conditions:
+      </Typography>
+      <ol>
+        {conditions.map((condition) => (
+          <li>
+            <div>
+              <p>Condition {condition.matched ? "matched" : "did not match"}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </Grid>
+  );
+};
