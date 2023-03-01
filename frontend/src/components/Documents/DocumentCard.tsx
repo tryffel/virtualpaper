@@ -24,12 +24,18 @@ const cardStyle = {
   background: "#fafafc",
 };
 
-export const DocumentCard = (props: any) => {
+export interface DocumentCardProps {
+  record: RaRecord;
+  selected?: (id: string) => boolean;
+  setSelected?: (id: string) => void;
+}
+
+export const DocumentCard = (props: DocumentCardProps) => {
   const { record } = props;
   const { selected, setSelected } = props;
 
-  const isSelected = selected ? selected(record.id) : false;
-  const select = () => (setSelected ? setSelected(record.id) : null);
+  const isSelected = selected ? selected(String(record.id)) : false;
+  const select = () => (setSelected ? setSelected(String(record.id)) : null);
 
   return (
     <Card key={record.id} style={{ ...cardStyle }}>
@@ -41,23 +47,25 @@ export const DocumentCard = (props: any) => {
       <CardActions style={{ textAlign: "right", paddingTop: "0" }}>
         <ShowButton resource="documents" record={record} />
         <EditButton resource="documents" record={record} />
-        <ToggleButton
-          size="small"
-          value={record.id}
-          selected={isSelected}
-          onChange={select}
-          sx={{
-            borderWidth: "0px",
-            background: "primary",
-            marginLeft: "auto",
-          }}
-        >
-          {isSelected ? (
-            <CheckCircleIcon color="primary" />
-          ) : (
-            <RadioButtonUncheckedIcon />
-          )}
-        </ToggleButton>
+        {setSelected && (
+          <ToggleButton
+            size="small"
+            value={record.id}
+            selected={isSelected}
+            onChange={select}
+            sx={{
+              borderWidth: "0px",
+              background: "primary",
+              marginLeft: "auto",
+            }}
+          >
+            {isSelected ? (
+              <CheckCircleIcon color="primary" />
+            ) : (
+              <RadioButtonUncheckedIcon />
+            )}
+          </ToggleButton>
+        )}
       </CardActions>
     </Card>
   );
