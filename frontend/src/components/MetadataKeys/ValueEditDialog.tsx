@@ -30,6 +30,7 @@ import {
   Form,
   useDelete,
   Confirm,
+  RaRecord,
 } from "react-admin";
 
 import { Cancel } from "@mui/icons-material";
@@ -40,41 +41,57 @@ import {
   DialogActions,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { useFormState } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { EscapeWhitespace } from "../util";
 
-const MetadataValueUpdateDialog = (props: any) => {
-  const [update, { data, isLoading, error }] = useUpdate("metadata/values", {
-    id: props.record?.id,
-    data: undefined,
-    previousData: props.record,
-  });
+export interface MetadataValueUpdateDialogProps {
+  showDialog: boolean;
+  setShowDialog: (show: boolean) => void;
+  basePath: string;
+  resource: string;
+  record?: RaRecord;
+  keyId: number;
+}
 
-  const [deleteOne, { isLoading: deleteIsLoading, error: deleteError }] =
-    useDelete("metadata/values", {
-      id: props.record?.id,
-      previousData: props.record,
-    });
+const MetadataValueUpdateDialog = (props: MetadataValueUpdateDialogProps) => {
+  // temporary fix to break recursive loop inside Form component since React Admin 4.
+  if (!props.showDialog) {
+    return null;
+  }
+
+  const { showDialog, setShowDialog, basePath, record, keyId } = props;
+
+  const [update, { data, error, isSuccess: updateSuccess }] = useUpdate(
+    "metadata/values",
+    {
+      id: record?.id,
+      data: {},
+      previousData: record,
+    }
+  );
+
+  const [deleteOne, { error: deleteError }] = useDelete("metadata/values", {
+    id: record?.id,
+    previousData: record,
+  });
 
   const notify = useNotify();
   const refresh = useRefresh();
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
 
   const handleCloseClick = () => {
-    props.setShowDialog(false);
+    setShowDialog(false);
   };
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = (values: any) => {
     update("metadata/values", {
       data: values,
-      id: props.record.id,
+      id: record?.id,
       // @ts-ignore
-      key_id: props.key_id,
-      meta: { key_id: props.key_id },
+      key_id: keyId,
+      meta: { key_id: keyId },
     });
   };
-
-  const [confirmOpen, setConfirmOpen] = React.useState(false);
 
   const onCancel = () => {
     setConfirmOpen(false);
@@ -82,10 +99,10 @@ const MetadataValueUpdateDialog = (props: any) => {
 
   const onConfirm = () => {
     deleteOne("metadata/values", {
-      id: props.record.id,
+      id: record?.id,
       // @ts-ignore
-      key_id: props.key_id,
-      meta: { key_id: props.key_id },
+      key_id: keyId,
+      meta: { key_id: keyId },
     });
     setConfirmOpen(false);
     handleCloseClick();
@@ -96,19 +113,19 @@ const MetadataValueUpdateDialog = (props: any) => {
     setConfirmOpen(true);
   };
 
-  if (isLoading) {
-    props.setShowDialog(false);
+  if (updateSuccess) {
+    setShowDialog(false);
     refresh();
   }
 
   if (error) {
-    console.info(error);
+    console.error(error);
     // @ts-ignore
     notify(error.message, "error");
   }
 
   if (deleteError) {
-    console.info(deleteError);
+    console.error(deleteError);
     // @ts-ignore
     notify(deleteError.message, "error");
   }
@@ -125,7 +142,10 @@ const MetadataValueUpdateDialog = (props: any) => {
     to = {
       pathname: "/documents",
       search: `filter=${JSON.stringify({
-        q: EscapeWhitespace(props.record.key) + ":" + EscapeWhitespace(props.record.value),
+        q:
+          EscapeWhitespace(props.record.key) +
+          ":" +
+          EscapeWhitespace(props.record.value),
       })}`,
     };
   }
@@ -142,18 +162,12 @@ const MetadataValueUpdateDialog = (props: any) => {
 
       <Dialog
         fullWidth
-        open={props.showDialog}
+        open={showDialog}
         onClose={handleCloseClick}
         aria-label="Update metadata value"
       >
         <DialogTitle>Update metadata</DialogTitle>
-        <Form
-          resource="metadata/value"
-          onSubmit={handleSubmit}
-          onSub
-          warnWhenUnsavedChanges={true}
-          {...props}
-        >
+        <Form onSubmit={handleSubmit} warnWhenUnsavedChanges={true} {...props}>
           <DialogContent>
             <TextInput source="value" validate={required()} fullWidth />
             <TextInput label="description" source="comment" fullWidth />

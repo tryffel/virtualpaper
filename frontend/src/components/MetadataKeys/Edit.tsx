@@ -43,25 +43,25 @@ export const MetadataKeyEdit = () => {
   const { record } = useEditController();
   const [keyId, setKeyId] = useState(0);
 
-  if (record && keyId == 0) {
-    setKeyId(record.id);
-  }
-
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
-  const [valueToUpdate, setValueToUpdate] = useState({ id: 35 });
+  const [valueToUpdate, setValueToUpdate] = useState({ id: 0, keyId: -1 });
 
   // @ts-ignore
   const onClickValue = (id, resource, record) => {
     setValueToUpdate({
       // @ts-ignore
       record: record,
-      key_id: keyId,
+      keyId: keyId,
       id: record.id,
       basePath: "metadata/keys/" + keyId + "/values",
     });
     setShowUpdateDialog(true);
   };
   const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
+
+  if (record && keyId == 0) {
+    setKeyId(record.id);
+  }
 
   return (
     <Edit>
@@ -83,6 +83,8 @@ export const MetadataKeyEdit = () => {
           reference={"metadata/values"}
           target={"key_id"}
           perPage={500}
+          sortBy="Name"
+          sortByOrder="ASC"
         >
           <Datagrid
             // @ts-ignore
