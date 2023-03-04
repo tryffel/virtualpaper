@@ -35,19 +35,19 @@ type MetadataRequest struct {
 
 type MetadataKeyRequest struct {
 	Key     string `json:"key" valid:"required,metadata,stringlength(1|30)"`
-	Comment string `json:"comment" valid:"stringlength(0|1000),optional"`
+	Comment string `json:"comment" valid:"maxstringlength(1000),optional"`
 }
 
 type MetadataValueRequest struct {
 	// Value of new metadata
 	Value string `json:"value" valid:"required,metadata,stringlength(1|30)"`
 	// Optional comment
-	Comment string `json:"comment" valid:"stringlength(0|1000),optional"`
+	Comment string `json:"comment" valid:"maxstringlength(1000),optional"`
 	// MatchDocuments instructs to try to match documents for this value.
 	MatchDocuments bool `json:"match_documents" valid:"-"`
 	// validate MatchType when creating, allowing default to be empty string
 	MatchType   string `json:"match_type" valid:"in(regex|exact),optional"`
-	MatchFilter string `json:"match_filter" valid:"stringlength(0,50),optional"`
+	MatchFilter string `json:"match_filter" valid:"maxstringlength(100),optional"`
 }
 
 type MetadataUpdateRequest struct {

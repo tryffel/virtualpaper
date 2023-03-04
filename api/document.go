@@ -92,7 +92,7 @@ type DocumentExistsResponse struct {
 // swagger:model DocumentUpdateRequestBody
 type DocumentUpdateRequest struct {
 	Name        string            `json:"name" valid:"required,stringlength(1|200)"`
-	Description string            `json:"description" valid:"stringlength(0|1000),optional"`
+	Description string            `json:"description" valid:"maxstringlength(1000),optional"`
 	Filename    string            `json:"filename" valid:"optional"`
 	Date        int64             `json:"date" valid:"optional,range(0|4106139691000)"` // year 2200 in ms
 	Metadata    []MetadataRequest `json:"metadata" valid:"-"`
