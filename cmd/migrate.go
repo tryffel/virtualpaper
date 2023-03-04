@@ -34,12 +34,13 @@ var migrateCmd = &cobra.Command{
 		}
 
 		if currentSchema.Level == config.SchemaVersion {
-			logrus.Info("Already up to date")
+			logrus.Info("Database schema up to date")
 			return
 		}
 
 		if currentSchema.Level > config.SchemaVersion {
-			logrus.Warningf("Schema level too high!")
+			logrus.Fatalf("Database schema level too high! Supported level %d, but db already has %d",
+				config.SchemaVersion, currentSchema.Level)
 			return
 		}
 
