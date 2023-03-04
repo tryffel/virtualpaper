@@ -33,7 +33,7 @@ export const MetadataKeyList = () => {
   const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
 
   return (
-    <List title="Metadata">
+    <List title="Metadata" sort={{ field: "key", order: "ASC" }}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <ChipField source="key" label={"Name"} />
         <TextField source="comment" label={"Description"} />
