@@ -240,7 +240,7 @@ user agent: %s,
 type ResetPasswordRequest struct {
 	Token    string `json:"token" valid:"minstringlength(4)"`
 	Id       int    `json:"id" valid:"required"`
-	Password string `json:"password" valid:"stringlength(8,150)"`
+	Password string `json:"password" valid:"stringlength(8|150)"`
 }
 
 func (a *Api) ResetPassword(c echo.Context) error {

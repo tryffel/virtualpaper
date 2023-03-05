@@ -16,7 +16,7 @@ If you did not request password reset link, no further actions are required.
 
 	link := fmt.Sprintf("%s/#/auth/reset-password?token=%s&id=%d", config.C.Api.PublicUrl, token, tokenId)
 
-	logrus.Warningf("password reset link: %s", link)
+	//logrus.Debugf("password reset link: %s", link)
 	text := fmt.Sprintf(textFmt, link)
 
 	err := SendMail("Password reset link for Virtualpaper", text, email)
