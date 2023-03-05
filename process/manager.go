@@ -91,6 +91,11 @@ func NewManager(database *storage.Database, search *search.Engine) (*Manager, er
 }
 
 func (m *Manager) Start() error {
+	if config.C.Processing.Disabled {
+		logrus.Warningf("processing disabled, refuse to start process manager")
+		return nil
+	}
+
 	if m.isRunning() {
 		return errors.New("already running")
 	}

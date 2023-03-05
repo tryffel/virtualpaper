@@ -38,6 +38,7 @@ index = "virtualpaper"
 
 # Processing / application data.
 [processing]
+disabled = false
 input_dir = "input"
 tmp_dir = "/tmp"
 # output directory is where all documents / data is persisted.
@@ -54,6 +55,9 @@ pandoc_bin = ""
 tesseract_bin = ""
 # location of imagemagick's convert binary
 imagick_bin = ""
+
+[cronjobs]
+disabled = false
 
 # Mail configuration. Uncomment to enable setings mails.
 # Host must be smtp server that is accessible with authentication.

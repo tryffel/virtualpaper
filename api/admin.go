@@ -183,6 +183,9 @@ type SystemInfo struct {
 
 	ProcessingStatus   []process.QueueStatus `json:"processing_queue"`
 	SearchEngineStatus search.EngineStatus   `json:"search_engine_status"`
+
+	ProcessingEnabled bool `json:"processing_enabled"`
+	CronJobsEnabled   bool `json:"cronjobs_enabled"`
 }
 
 func (a *Api) getSystemInfo(c echo.Context) error {
@@ -206,6 +209,8 @@ func (a *Api) getSystemInfo(c echo.Context) error {
 		Uptime:             config.UptimeString(),
 		PandocInstalled:    process.GetPandocInstalled(),
 		ProcessingStatus:   a.process.ProcessingStatus(),
+		ProcessingEnabled:  !config.C.Processing.Disabled,
+		CronJobsEnabled:    !config.C.CronJobs.Disabled,
 	}
 
 	stats, err := a.db.StatsStore.GetSystemStats()

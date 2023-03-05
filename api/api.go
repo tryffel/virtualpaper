@@ -49,6 +49,7 @@ type Api struct {
 	db      *storage.Database
 	search  *search.Engine
 	process *process.Manager
+	cron    *process.CronJobs
 }
 
 // NewApi initializes new api instance. It connects to database and opens http port.
@@ -78,6 +79,11 @@ func NewApi(database *storage.Database) (*Api, error) {
 		return api, err
 	}
 
+	api.cron, err = process.NewCron(database)
+	if err != nil {
+		return api, err
+	}
+
 	api.addRoutesV2()
 	return api, err
 }
@@ -87,6 +93,8 @@ func (a *Api) Serve() error {
 	if err != nil {
 		return err
 	}
+
+	a.cron.Start()
 
 	go func() {
 		addr := fmt.Sprintf("%s:%d", config.C.Api.Host, config.C.Api.Port)
@@ -110,6 +118,9 @@ func (a *Api) Serve() error {
 	if err := a.echo.Shutdown(ctx); err != nil {
 		a.echo.Logger.Fatal(err)
 	}
+
+	a.cron.Stop()
+
 	logrus.Info("server stopped")
 	return nil
 }

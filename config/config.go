@@ -26,6 +26,7 @@ type Config struct {
 	Meilisearch Meilisearch
 	Mail        Mail
 	Logging     Logging
+	CronJobs    CronJobs
 }
 
 // Api contains http server config
@@ -58,6 +59,7 @@ type Database struct {
 
 // Processing contains document-processing settings
 type Processing struct {
+	Disabled     bool
 	InputDir     string
 	TmpDir       string
 	DataDir      string
@@ -112,6 +114,10 @@ type Logging struct {
 	HttpLog *logrus.Logger
 }
 
+type CronJobs struct {
+	Disabled bool
+}
+
 // ConfigFromViper initializes Config.C, reads all config values from viper and stores them to Config.C.
 func ConfigFromViper() error {
 
@@ -135,6 +141,7 @@ func ConfigFromViper() error {
 			NoSSL:    viper.GetBool("database.no_ssl"),
 		},
 		Processing: Processing{
+			Disabled:     viper.GetBool("processing.disabled"),
 			InputDir:     viper.GetString("processing.input_dir"),
 			TmpDir:       viper.GetString("processing.tmp_dir"),
 			DataDir:      viper.GetString("processing.data_dir"),
@@ -167,6 +174,7 @@ func ConfigFromViper() error {
 			LogFile:       viper.GetString("logging.log_file"),
 			LogStdout:     viper.GetBool("logging.log_stdout"),
 		},
+		CronJobs: CronJobs{Disabled: viper.GetBool("cronjobs.disabled")},
 	}
 
 	var err error

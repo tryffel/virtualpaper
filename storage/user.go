@@ -21,6 +21,7 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -376,4 +377,18 @@ func (s *UserStore) DeletePasswordResetToken(tokenId int) error {
 	sql := `DELETE FROM password_reset_tokens WHERE id = $1`
 	_, err := s.db.Exec(sql, tokenId)
 	return s.parseError(err, "delete password reset token")
+}
+
+func (s *UserStore) DeleteExpiredPasswordResetTokens() (int, error) {
+	sql := `DELETE FROM password_reset_tokens WHERE expires_at < now()`
+	out, err := s.db.Exec(sql)
+	if err != nil {
+		return 0, s.parseError(err, "delete expired tokens")
+	}
+
+	affected, err := out.RowsAffected()
+	if err != nil {
+		logrus.Warning("get rows affected for deleting expired tokens: %v", err)
+	}
+	return int(affected), nil
 }
