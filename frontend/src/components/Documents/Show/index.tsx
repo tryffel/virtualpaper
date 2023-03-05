@@ -34,9 +34,7 @@ import {
   useRecordContext,
 } from "react-admin";
 import { Box, Grid, Typography, useMediaQuery, Divider } from "@mui/material";
-import { Repeat } from "@mui/icons-material";
 import HistoryIcon from "@mui/icons-material/History";
-import { requestDocumentProcessing } from "../../../api/dataProvider";
 import { EmbedFile, ThumbnailField } from "../Thumbnail";
 import { IndexingStatusField } from "../IndexingStatus";
 import { MarkdownField } from "../../Markdown";
@@ -83,12 +81,16 @@ interface ActionsProps {
 }
 
 function DocumentShowActions(props: ActionsProps) {
-  const record = useRecordContext();
   const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
   const { historyShown, showHistory } = props;
   const toggleHistory = () => {
     showHistory(!historyShown);
   };
+
+  const record = useRecordContext();
+  if (!record) {
+    return null;
+  }
 
   return (
     <TopToolbar>

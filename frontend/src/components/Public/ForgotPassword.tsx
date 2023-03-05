@@ -9,11 +9,9 @@ import {
   useRedirect,
 } from "react-admin";
 import { Card, CardContent, Grid, Typography } from "@mui/material";
-import { useSearchParams } from "react-router-dom";
-import { doForgotPassword, doResetPassword } from "../../api/public";
+import { doForgotPassword } from "../../api/public";
 
 export const ForgotPassword = () => {
-  const [params] = useSearchParams();
   const redirect = useRedirect();
   const notify = useNotify();
 

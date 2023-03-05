@@ -31,7 +31,6 @@ const App = () => (
     dataProvider={dataProvider}
     authProvider={authProvider}
     dashboard={Dashboard}
-    requireAuth
   >
     <Resource name="documents" {...documents} icon={ArticleIcon} />
     <Resource
