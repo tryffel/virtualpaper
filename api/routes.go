@@ -18,6 +18,11 @@
 
 package api
 
+import (
+	"golang.org/x/time/rate"
+	"time"
+)
+
 func (api *Api) addRoutesV2() {
 	api.publicRouter = api.echo.Group("")
 	api.apiRouter = api.publicRouter.Group("/api")
@@ -32,9 +37,13 @@ func (api *Api) addRoutesV2() {
 	api.publicRouter.GET("/api/v1/swagger.json", serverSwaggerDoc)
 	api.publicRouter.GET("/api/v1/version", api.getVersionV2)
 
-	api.apiRouter.POST("/v1/auth/login", api.LoginV2)
-	api.apiRouter.POST("/v1/auth/reset-password", api.ResetPassword)
-	api.apiRouter.POST("/v1/auth/forgot-password", api.CreateResetPasswordToken)
+	// allow one auth operation per minute for past 15 minutes, with burst of 15 requests.
+	authRateLimiter := newRateLimiter(rate.Every(time.Second*60), 15, time.Minute*15)
+	authGroup := api.apiRouter.Group("/v1/auth", authRateLimiter)
+
+	authGroup.POST("/login", api.LoginV2)
+	authGroup.POST("/reset-password", api.ResetPassword)
+	authGroup.POST("/forgot-password", api.CreateResetPasswordToken)
 
 	api.privateRouter.GET("/filetypes", api.getSupportedFileTypes)
 	api.privateRouter.GET("/admin/systeminfo", api.getSystemInfo)
