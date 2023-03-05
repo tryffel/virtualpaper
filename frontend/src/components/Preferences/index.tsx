@@ -20,21 +20,17 @@ import React from "react";
 import {
   Edit,
   TextInput,
-  SimpleForm,
   DateField,
   TextField,
-  DateInput,
   useAuthProvider,
   email,
   Labeled,
-  EditActions,
   SaveButton,
   Form,
+  Button,
 } from "react-admin";
 
 import {
-  Box,
-  Button,
   Typography,
   Grid,
   InputLabel,
@@ -47,6 +43,7 @@ import {
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { JsonInput } from "react-admin-json-view";
+import { Link } from "react-router-dom";
 
 export const ProfileEdit = (staticContext: any, ...props: any) => {
   return (
@@ -103,8 +100,12 @@ export const ProfileEdit = (staticContext: any, ...props: any) => {
                 />
               </Labeled>
             </Grid>
-            <Grid item xs={12} sx={{ m: 3 }}>
-              <ProfileEditActions />
+            <Grid item></Grid>
+            <Grid item xs={12} sx={{ m: 3 }} justifyContent={"flex-end"}>
+              <Grid container justifyContent={"space-between"}>
+                <ProfileEditActions />
+                <ResetPasswordButton />
+              </Grid>
             </Grid>
           </Grid>
         </Paper>
@@ -115,6 +116,19 @@ export const ProfileEdit = (staticContext: any, ...props: any) => {
 
 const ProfileEditActions = () => {
   return <SaveButton />;
+};
+
+const ResetPasswordButton = () => {
+  return (
+    <Link
+      to={"/auth/forgot-password"}
+      style={{ fontSize: 16, textDecoration: "none", paddingLeft: 2 }}
+    >
+      <Button size="small">
+        <span>Set password</span>
+      </Button>
+    </Link>
+  );
 };
 
 const ShowToken = () => {
