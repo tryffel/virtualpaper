@@ -237,7 +237,7 @@ func (a *Api) getUserRules(c echo.Context) error {
 		return err
 	}
 
-	rules, err := a.db.RuleStore.GetUserRules(ctx.UserId, paging)
+	rules, total, err := a.db.RuleStore.GetUserRules(ctx.UserId, paging)
 	if err != nil {
 		return err
 	}
@@ -246,7 +246,7 @@ func (a *Api) getUserRules(c echo.Context) error {
 	for i, v := range rules {
 		processingRules[i] = ruleToResp(v)
 	}
-	return resourceList(c, processingRules, len(processingRules))
+	return resourceList(c, processingRules, total)
 }
 
 func (a *Api) getUserRule(c echo.Context) error {

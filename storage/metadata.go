@@ -216,7 +216,7 @@ func (s *MetadataStore) GetUserKeyValuesCached(userId int, key string) (*[]model
 }
 
 // GetKeys returns all possible metadata-keys for user.
-func (s *MetadataStore) GetKeys(userId int, ids []int, sort SortKey, paging Paging) (*[]models.MetadataKeyAnnotated, error) {
+func (s *MetadataStore) GetKeys(userId int, ids []int, sort SortKey, paging Paging) (*[]models.MetadataKeyAnnotated, int, error) {
 	paging.Validate()
 	sort.Validate("id")
 	query := s.sq.Select("mk.id as id", "mk.key as key", "mk.comment as comment",
@@ -236,10 +236,18 @@ func (s *MetadataStore) GetKeys(userId int, ids []int, sort SortKey, paging Pagi
 
 	sql, args, err := query.ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("construct sql: %v", err)
+		return nil, 0, fmt.Errorf("construct sql: %v", err)
 	}
 	err = s.db.Select(keys, sql, args...)
-	return keys, s.parseError(err, "get keys")
+
+	if err != nil {
+		return keys, 0, s.parseError(err, "get keys")
+	}
+
+	countSql := "SELECT count(id) as count FROM metadata_keys WHERE user_id = $1"
+	count := 0
+	err = s.db.Get(&count, countSql, userId)
+	return keys, count, s.parseError(err, "get keys")
 }
 
 // GetKeys returns all possible metadata-keys for user.

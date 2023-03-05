@@ -127,14 +127,14 @@ func (a *Api) getMetadataKeys(c echo.Context) error {
 		return err
 	}
 
-	keys, err := a.db.MetadataStore.GetKeys(ctx.UserId, filter,
+	keys, count, err := a.db.MetadataStore.GetKeys(ctx.UserId, filter,
 		storage.NewSortKey(sortfield, "key", sortOrder, caseInsensitive),
 		paging)
 	if err != nil {
 		return err
 	}
 
-	return resourceList(c, keys, len(*keys))
+	return resourceList(c, keys, count)
 }
 
 func (a *Api) getMetadataKey(c echo.Context) error {

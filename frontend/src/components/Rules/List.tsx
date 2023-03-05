@@ -33,7 +33,7 @@ import { MarkdownField } from "../Markdown";
 import get from "lodash/get";
 
 export const RuleList = () => (
-  <List perPage={50}>
+  <List>
     <Datagrid bulkActionButtons={false} expand={ExpandRule}>
       <RuleTitle />
       <TextField source="order" />

@@ -73,7 +73,7 @@ func (s *RuleStore) setRuleCached(rule *models.Rule) {
 	s.cache.Set(fmt.Sprintf("rule-%d", rule.Id), rule, cache.DefaultExpiration)
 }
 
-func (s *RuleStore) GetUserRules(userId int, paging Paging) ([]*models.Rule, error) {
+func (s *RuleStore) GetUserRules(userId int, paging Paging) ([]*models.Rule, int, error) {
 	sql := `
 SELECT *
 FROM rules
@@ -86,21 +86,29 @@ LIMIT $3
 	rules := &[]models.Rule{}
 	err := s.db.Select(rules, sql, userId, paging.Offset, paging.Limit)
 	if err != nil {
-		return nil, s.parseError(err, "get user rules")
+		return nil, 0, s.parseError(err, "get user rules")
 	}
 	ruleArr := make([]*models.Rule, len(*rules))
 	for i, _ := range *rules {
 		ruleArr[i] = &(*rules)[i]
 	}
+
+	totalRulesSql := `SELECT count(id) as total FROM RULES WHERE user_id=$1`
+	totalRules := 1
+	err = s.db.Get(&totalRules, totalRulesSql, userId)
+	if err != nil {
+		return nil, 0, s.parseError(err, "get number of rules for user")
+	}
+
 	err = s.getUserRuleConditionsForRules(userId, ruleArr)
 	if err != nil {
-		return ruleArr, fmt.Errorf("get conditions: %v", err)
+		return ruleArr, 0, fmt.Errorf("get conditions: %v", err)
 	}
 	err = s.getUserRuleActionsForRules(userId, ruleArr)
 	if err != nil {
-		return ruleArr, fmt.Errorf("get actions: %v", err)
+		return ruleArr, 0, fmt.Errorf("get actions: %v", err)
 	}
-	return ruleArr, nil
+	return ruleArr, totalRules, nil
 }
 
 func (s *RuleStore) GetUserRule(userId, ruleId int) (*models.Rule, error) {
