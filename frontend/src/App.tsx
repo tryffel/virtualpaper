@@ -21,6 +21,7 @@ import { ProfileEdit } from "./components/Preferences";
 import AdminView from "./components/Admin";
 import BulkEditDocuments from "./components/Documents/BulkEdit";
 import { Dashboard } from "./components/Dashboard";
+import { ResetPasswordForm } from "./components/Public/ResetPassword";
 
 const App = () => (
   <Admin
@@ -54,6 +55,8 @@ const App = () => (
     <Resource name="documents/bulkEdit" create={<BulkEditDocuments />} />
     <Resource name="documents/linked" options={{ label: "Linked documents" }} />
 
+    <Resource name="reset-password" />
+
     <CustomRoutes>
       <Route
         key="preferences"
@@ -68,12 +71,9 @@ const App = () => (
         // @ts-ignore
         element={<AdminView />}
       />
-      {/* <Route
-        key="bulkEditDocuments"
-        path={"/documents/bulkEdit/:ids"}
-        // @ts-ignore
-        element={<BulkEditDocuments/>}
-      /> */}
+    </CustomRoutes>
+    <CustomRoutes noLayout>
+      <Route path={"/auth/reset-password"} element={<ResetPasswordForm />} />
     </CustomRoutes>
   </Admin>
 );

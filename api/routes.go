@@ -33,6 +33,7 @@ func (api *Api) addRoutesV2() {
 	api.publicRouter.GET("/api/v1/version", api.getVersionV2)
 
 	api.apiRouter.POST("/v1/auth/login", api.LoginV2)
+	api.apiRouter.POST("/v1/auth/reset-password", api.ResetPassword)
 
 	api.privateRouter.GET("/filetypes", api.getSupportedFileTypes)
 	api.privateRouter.GET("/admin/systeminfo", api.getSystemInfo)

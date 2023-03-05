@@ -234,3 +234,26 @@ user agent: %s,
 
 	return c.JSON(http.StatusOK, respBody)
 }
+
+type ResetPasswordRequest struct {
+	Token    string `json:"token" valid:"minstringlength(4)"`
+	Password string `json:"password" valid:"minstringlength(6)"`
+}
+
+func (a *Api) ResetPassword(c echo.Context) error {
+	// swagger:route POST /api/v1/auth/reset-password Authentication Reset password
+	// ResetPassword
+	//
+	// responses:
+	//   200:
+
+	req := c.Request()
+	dto := &ResetPasswordRequest{}
+	err := unMarshalBody(req, dto)
+	if err != nil {
+		return c.String(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(200, "ok")
+
+}
