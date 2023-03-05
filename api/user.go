@@ -19,6 +19,7 @@
 package api
 
 import (
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"tryffel.net/go/virtualpaper/models"
@@ -97,8 +98,9 @@ func (a *Api) getUserPreferences(c echo.Context) error {
 
 // swagger:model UserPreferences
 type ReqUserPreferences struct {
-	StopWords []string   `json:"stop_words" valid:"-"`
-	Synonyms  [][]string `json:"synonyms" valid:"-"`
+	StopWords []string   `json:"stop_words" valid:"optional"`
+	Synonyms  [][]string `json:"synonyms" valid:"optional"`
+	Email     string     `json:"email" valid:"email,optional"`
 }
 
 func (a *Api) updateUserPreferences(c echo.Context) error {
@@ -110,14 +112,39 @@ func (a *Api) updateUserPreferences(c echo.Context) error {
 		return err
 	}
 
-	err = a.db.UserStore.UpdatePreferences(ctx.UserId, dto.StopWords, dto.Synonyms)
+	user, err := a.db.UserStore.GetUser(ctx.UserId)
 	if err != nil {
-		return err
+		return fmt.Errorf("get user: %v", err)
+	}
+	attributeChanged := false
+	searchParamsChanged := false
+	if len(dto.StopWords) > 0 || len(dto.Synonyms) > 0 {
+		searchParamsChanged = true
+		err = a.db.UserStore.UpdatePreferences(ctx.UserId, dto.StopWords, dto.Synonyms)
+		if err != nil {
+			return err
+		}
+
+		err = a.search.UpdateUserPreferences(ctx.UserId)
+		if err != nil {
+			return err
+		}
+	}
+	if dto.Email != "" {
+		user.Email = dto.Email
+		attributeChanged = true
 	}
 
-	err = a.search.UpdateUserPreferences(ctx.UserId)
-	if err != nil {
-		return err
+	if searchParamsChanged || attributeChanged {
+		user.Update()
+		err = a.db.UserStore.Update(user)
+		if err != nil {
+			return err
+		}
 	}
-	return c.String(http.StatusOK, "")
+
+	if !attributeChanged && !searchParamsChanged {
+		return c.String(http.StatusNotModified, "")
+	}
+	return a.getUserPreferences(c)
 }

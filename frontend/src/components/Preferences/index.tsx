@@ -25,6 +25,11 @@ import {
   TextField,
   DateInput,
   useAuthProvider,
+  email,
+  Labeled,
+  EditActions,
+  SaveButton,
+  Form,
 } from "react-admin";
 
 import {
@@ -37,6 +42,7 @@ import {
   InputAdornment,
   IconButton,
   Tooltip,
+  Paper,
 } from "@mui/material";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
@@ -52,64 +58,63 @@ export const ProfileEdit = (staticContext: any, ...props: any) => {
       title="Profile"
       {...props}
     >
-      <SimpleForm>
-        <div>
+      <Form warnWhenUnsavedChanges>
+        <Paper sx={{ p: 3 }}>
           <Grid container width={{ xs: "100%", xl: 800 }} spacing={2}>
             <Grid item xs={12} md={8}>
-              <Typography variant="h5">Basic info</Typography>
-              <TextInput disabled source="user_id" label={"User Id"} />
-
-              <Box display={{ xs: "block", sm: "flex" }}>
-                <Box mr={{ xs: 0, sm: "0.5em" }}>
-                  <TextInput source="email" />
-                </Box>
-                <Box mr={{ xs: 0, sm: "0.5em" }}>
-                  <TextInput disabled source="user_name" label={"Username"} />
-                </Box>
-              </Box>
-              <Box display={{ xs: "block", sm: "flex" }}>
-                <Box mr={{ xs: 0, sm: "0.5em" }}>
-                  <DateInput disabled source="created_at" label={"Joined at"} />
-                </Box>
-                <Box mr={{ xs: 0, sm: "0.5em" }}>
-                  <DateInput
-                    disabled
-                    source="updated_at"
-                    label={"Last updated"}
-                  />
-                </Box>
-              </Box>
-              <Box display={{ xs: "block", sm: "flex" }}>
-                <Box mr={{ xs: 0, sm: "0.5em" }}>
-                  <ShowToken />
-                </Box>
-              </Box>
+              <Typography variant="h5">User settings</Typography>
             </Grid>
             <Grid item xs={12} md={8}>
-              <Typography variant="h5">Statistics</Typography>
-              <Box flex={1} ml={{ xs: 0, sm: "0.5em" }}>
-                <Box mr={{ xs: 0, sm: "0.5em" }}>
-                  <Typography variant="h6">Total documents</Typography>
+              <Labeled label="User id">
+                <TextField source="user_id" />
+              </Labeled>
+            </Grid>
+            <Grid item xs={12} md={8}>
+              <TextInput source="email" validate={email()} />
+            </Grid>
+            <Grid item xs={12} md={8}>
+              <Labeled label="Username">
+                <TextField source="user_name" />
+              </Labeled>
+            </Grid>
+            <Grid item xs={12} md={8}>
+              <Labeled label="Joined at">
+                <DateField source="created_at" />
+              </Labeled>
+              <span style={{ marginLeft: 20 }} />
 
-                  <TextField
-                    source="documents_count"
-                    label={"Documents count"}
-                  />
-                </Box>
-                <Box mr={{ xs: 0, sm: "0.5em" }}>
-                  <Typography variant="h6">Total size</Typography>
-                  <TextField
-                    source="documents_size_string"
-                    label={"Total size of documents"}
-                  />
-                </Box>
-              </Box>
+              <Labeled label="Settings last changed at">
+                <DateField source="updated_at" />
+              </Labeled>
+            </Grid>
+            <Grid item xs={12} md={8}>
+              <ShowToken />
+            </Grid>
+            <Grid item xs={12} md={8} sx={{ mt: 4 }}>
+              <Typography variant="h5">Statistics</Typography>
+              <Labeled label="Number of documents">
+                <TextField source="documents_count" label={"Documents count"} />
+              </Labeled>
+              <span style={{ marginLeft: 20 }} />
+              <Labeled label="Total size of all documents">
+                <TextField
+                  source="documents_size_string"
+                  label={"Total size of documents"}
+                />
+              </Labeled>
+            </Grid>
+            <Grid item xs={12} sx={{ m: 3 }}>
+              <ProfileEditActions />
             </Grid>
           </Grid>
-        </div>
-      </SimpleForm>
+        </Paper>
+      </Form>
     </Edit>
   );
+};
+
+const ProfileEditActions = () => {
+  return <SaveButton />;
 };
 
 const ShowToken = () => {

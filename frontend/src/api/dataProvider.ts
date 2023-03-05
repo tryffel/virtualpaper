@@ -313,7 +313,13 @@ export const dataProvider: DataProvider = {
     return httpClient(url, {
       method: "PUT",
       body: JSON.stringify(params.data),
-    }).then(({ json }) => ({ data: json }));
+    }).then(({ json }) => {
+      if (resource === "preferences") {
+        return { data: { ...json, id: json.user_id } };
+      } else {
+        return { data: json };
+      }
+    });
   },
 
   // simple-rest doesn't handle provide an updateMany route, so we fallback to calling update n times instead
