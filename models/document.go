@@ -64,7 +64,11 @@ func (d *Document) Init() {
 			return
 		}
 		logrus.Errorf("generate uuid: %v. Assign random string as id ", err)
-		d.Id = config.RandomString(16)
+		d.Id, err = config.RandomString(16)
+		if err != nil {
+			// this is okay, if the id exists in db then the document will be discarded.
+			logrus.Errorf("generate document id by random string %v", err)
+		}
 	}
 	if d.Date.IsZero() {
 		d.Date = time.Now()

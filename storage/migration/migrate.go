@@ -83,6 +83,11 @@ var Migrations = []Migrator{
 		Level:  11,
 		Schema: schemaV11,
 	},
+	&Migration{
+		Name:   "add table for password resets",
+		Level:  12,
+		Schema: schemaV12,
+	},
 }
 
 type Schema struct {

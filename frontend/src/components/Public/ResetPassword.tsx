@@ -17,18 +17,19 @@ interface PasswordFields {
   password_confirmation?: string;
 }
 
-export const ResetPasswordForm = () => {
+export const ResetPassword = () => {
   const [params] = useSearchParams();
   const redirect = useRedirect();
   const notify = useNotify();
   const token = params.get("token");
+  const id = params.get("id");
 
-  /*
-  if (!token) {
+  if (!token || !id) {
+    notify("Reset link seems invalid. Please create a new link.", {
+      type: "error",
+    });
     redirect("/#");
   }
-
-   */
 
   const validateForm = (values: ValidateForm) => {
     const form = values as unknown as PasswordFields;
@@ -36,8 +37,8 @@ export const ResetPasswordForm = () => {
       return { error: "error" };
     }
 
-    if (form.password?.length <= 6) {
-      return { password: "Minimum of 6 characters is required" };
+    if (form.password?.length <= 8) {
+      return { password: "Minimum of 8 characters is required" };
     }
 
     if (form.password !== form.password_confirmation) {
@@ -47,13 +48,15 @@ export const ResetPasswordForm = () => {
   };
 
   const handleSubmit = (data: PasswordFields) => {
-    doResetPassword(token as string, data.password!)
+    doResetPassword(token as string, id as string, data.password!)
       .then(() => {
-        notify("Password has been reset. Please login to continue.");
+        notify("Password has been reset. Please login to continue.", {
+          type: "warning",
+        });
         redirect("/#");
       })
-      .catch(() => {
-        notify("Server error. Please try again later.");
+      .catch((err) => {
+        notify(String(err), { type: "error" });
       });
   };
 

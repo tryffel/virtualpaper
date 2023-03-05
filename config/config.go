@@ -1,9 +1,10 @@
 package config
 
 import (
+	crypto "crypto/rand"
 	"errors"
 	"fmt"
-	"math/rand"
+	math "math/rand"
 	"os"
 	"path"
 	"runtime"
@@ -180,7 +181,11 @@ func InitConfig() error {
 
 	if C.Api.Key == "" {
 		logrus.Info("create api key of 50 characters")
-		C.Api.Key = RandomString(50)
+		var err error
+		C.Api.Key, err = RandomStringCrypt(50)
+		if err != nil {
+			return fmt.Errorf("generate api key: %v", err)
+		}
 		viper.Set("api.secret_key", C.Api.Key)
 		changed = true
 	}
@@ -274,16 +279,28 @@ func InitConfig() error {
 	return nil
 }
 
-// RandomString creates new random string of given length in characters.
+// RandomStringCrypt creates new random string of given length in characters (cryptographic).
 // Modified from https://socketloop.com/tutorials/golang-derive-cryptographic-key-from-passwords-with-argon2
-func RandomString(size int) string {
+func RandomStringCrypt(size int) (string, error) {
 	dict := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	var bytes = make([]byte, size)
-	rand.Read(bytes)
+	_, err := crypto.Read(bytes)
 	for k, v := range bytes {
 		bytes[k] = dict[v%byte(len(dict))]
 	}
-	return string(bytes)
+	return string(bytes), err
+}
+
+// RandomString creates new random string of given length in characters (not cryptographic).
+// Modified from https://socketloop.com/tutorials/golang-derive-cryptographic-key-from-passwords-with-argon2
+func RandomString(size int) (string, error) {
+	dict := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	var bytes = make([]byte, size)
+	_, err := math.Read(bytes)
+	for k, v := range bytes {
+		bytes[k] = dict[v%byte(len(dict))]
+	}
+	return string(bytes), err
 }
 
 // setVar returns currentVal and false if currentVal is not "", else return newVal and true

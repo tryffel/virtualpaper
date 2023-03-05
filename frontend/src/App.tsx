@@ -21,7 +21,8 @@ import { ProfileEdit } from "./components/Preferences";
 import AdminView from "./components/Admin";
 import BulkEditDocuments from "./components/Documents/BulkEdit";
 import { Dashboard } from "./components/Dashboard";
-import { ResetPasswordForm } from "./components/Public/ResetPassword";
+import { ResetPassword } from "./components/Public/ResetPassword";
+import { ForgotPassword } from "./components/Public/ForgotPassword";
 
 const App = () => (
   <Admin
@@ -56,6 +57,7 @@ const App = () => (
     <Resource name="documents/linked" options={{ label: "Linked documents" }} />
 
     <Resource name="reset-password" />
+    <Resource name="forgot-password" />
 
     <CustomRoutes>
       <Route
@@ -73,7 +75,8 @@ const App = () => (
       />
     </CustomRoutes>
     <CustomRoutes noLayout>
-      <Route path={"/auth/reset-password"} element={<ResetPasswordForm />} />
+      <Route path={"/auth/reset-password"} element={<ResetPassword />} />
+      <Route path={"/auth/forgot-password"} element={<ForgotPassword />} />
     </CustomRoutes>
   </Admin>
 );

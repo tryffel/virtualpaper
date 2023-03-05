@@ -211,6 +211,18 @@ func (s *UserStore) GetUserByName(username string) (*models.User, error) {
 	return user, s.parseError(err, "get by name")
 }
 
+func (s *UserStore) GetUserByEmail(email string) (*models.User, error) {
+	sql := `
+	SELECT *
+	FROM users
+	WHERE email = $1;
+	`
+
+	user := &models.User{}
+	err := s.db.Get(user, sql, email)
+	return user, s.parseError(err, "get by email")
+}
+
 // Update existing user. Username cannot be changed,
 func (s *UserStore) Update(user *models.User) error {
 	if user.Id < 1 {
@@ -333,4 +345,35 @@ func (s *UserStore) UpdatePreferences(userId int, stopWords []string, synonyms [
 		return fmt.Errorf("save synonyms: %v", err)
 	}
 	return nil
+}
+
+func (s *UserStore) AddPasswordResetToken(token *models.PasswordResetToken) error {
+	err := token.Validate()
+	if err != nil {
+		return err
+	}
+
+	sql := `INSERT INTO password_reset_tokens (token, user_id, created_at, updated_at, expires_at) 
+VALUES ($1, $2, $3, $4, $5) RETURNING id`
+
+	id := 0
+	err = s.db.Get(&id, sql, token.Token, token.UserId, token.CreatedAt, token.UpdatedAt, token.ExpiresAt)
+	if err == nil {
+		token.Id = id
+	}
+	return s.parseError(err, "save password reset token")
+}
+
+func (s *UserStore) GetPasswordResetTokenByHash(tokenId int) (*models.PasswordResetToken, error) {
+	sql := `SELECT * FROM password_reset_tokens WHERE id=$1`
+
+	token := &models.PasswordResetToken{}
+	err := s.db.Get(token, sql, tokenId)
+	return token, s.parseError(err, "get by id")
+}
+
+func (s *UserStore) DeletePasswordResetToken(tokenId int) error {
+	sql := `DELETE FROM password_reset_tokens WHERE id = $1`
+	_, err := s.db.Exec(sql, tokenId)
+	return s.parseError(err, "delete password reset token")
 }

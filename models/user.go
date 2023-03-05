@@ -37,6 +37,12 @@ type User struct {
 }
 
 func (u *User) SetPassword(newPassw string) error {
+	if len(newPassw) < 8 {
+		return errors.New("password must be minimum of 8 characters")
+	} else if len(newPassw) > 150 {
+		return errors.New("password must be maximum of 150 characters")
+	}
+
 	bytes, err := bcrypt.GenerateFromPassword([]byte(newPassw), 14)
 	if err != nil {
 		return err
@@ -90,4 +96,49 @@ type UserInfo struct {
 
 	Indexing              bool `json:"indexing"`
 	TotalDocumentsIndexed int  `json:"documents_indexed_count"`
+}
+
+type PasswordResetToken struct {
+	Timestamp
+	Id        int       `db:"id"`
+	UserId    int       `db:"user_id"`
+	Token     string    `db:"token"`
+	ExpiresAt time.Time `db:"expires_at"`
+}
+
+func (p *PasswordResetToken) HasExpired() bool {
+	now := time.Now()
+	return now.After(p.ExpiresAt)
+}
+
+func (p *PasswordResetToken) Validate() error {
+	if p.UserId == 0 {
+		return fmt.Errorf("no userid")
+	}
+	if len(p.Token) < 20 {
+		return fmt.Errorf("token is too short")
+	}
+	if p.HasExpired() {
+		return fmt.Errorf("token has expired")
+	}
+	return nil
+}
+
+func (p *PasswordResetToken) TokenMatches(token string) (bool, error) {
+	if token == "" {
+		return false, fmt.Errorf("empty token")
+	}
+	if p.Token == "" {
+		return false, fmt.Errorf("password not set")
+	}
+	hash := []byte(p.Token)
+	err := bcrypt.CompareHashAndPassword(hash, []byte(token))
+	if err == nil {
+		return true, nil
+	}
+
+	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+		return false, nil
+	}
+	return false, err
 }

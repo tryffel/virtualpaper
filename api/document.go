@@ -340,7 +340,11 @@ func (a *Api) uploadFile(c echo.Context) error {
 		return userError
 	}
 
-	tempHash := config.RandomString(10)
+	tempHash, err := config.RandomString(10)
+	if err != nil {
+		logrus.Errorf("generate temporary hash for document: %v", err)
+		return errors.ErrInternalError
+	}
 
 	document := &models.Document{
 		Id:       "",

@@ -23,6 +23,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -30,6 +31,7 @@ import (
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/mail"
+	"tryffel.net/go/virtualpaper/models"
 )
 
 const (
@@ -237,7 +239,8 @@ user agent: %s,
 
 type ResetPasswordRequest struct {
 	Token    string `json:"token" valid:"minstringlength(4)"`
-	Password string `json:"password" valid:"minstringlength(6)"`
+	Id       int    `json:"id" valid:"required"`
+	Password string `json:"password" valid:"stringlength(8,150)"`
 }
 
 func (a *Api) ResetPassword(c echo.Context) error {
@@ -254,6 +257,149 @@ func (a *Api) ResetPassword(c echo.Context) error {
 		return c.String(http.StatusBadRequest, err.Error())
 	}
 
-	return c.JSON(200, "ok")
+	token, err := a.db.UserStore.GetPasswordResetTokenByHash(dto.Id)
+	if err != nil {
+		if errors.Is(err, errors.ErrRecordNotFound) {
+			e := errors.ErrForbidden
+			logrus.Warningf("password reset token not found by id %d", dto.Id)
+			return e
+		}
+		return err
+	}
 
+	if token.HasExpired() {
+		logrus.Warningf("user %d attempted to change password with expired reset token %d, expired at %s",
+			token.UserId, token.Id, token.ExpiresAt)
+		e := errors.ErrInvalid
+		e.ErrMsg = "Token has expired. Please create a new reset link."
+		return e
+	}
+
+	match, err := token.TokenMatches(dto.Token)
+	if err != nil {
+		logrus.Warningf("user %d attempted to change password with bad reset token %d: %v", token.UserId, token.Id, err)
+		return fmt.Errorf("compare token to hash: %v", err)
+	}
+	if !match {
+		e := errors.ErrForbidden
+		e.ErrMsg = "Invalid token"
+		return e
+	}
+
+	user, err := a.db.UserStore.GetUser(token.UserId)
+	if err != nil {
+		logrus.Errorf("user %d not found for password reset token %d", token.UserId, token.Id)
+	}
+
+	if user != nil {
+		err = user.SetPassword(dto.Password)
+		if err != nil {
+			return fmt.Errorf("set new password: %v", err)
+		}
+
+		err = a.db.UserStore.Update(user)
+		if err != nil {
+			return fmt.Errorf("update user's passowrd: %v", err)
+		}
+	}
+
+	logrus.Warningf("Reset user's (%d) password with reset token %d", user.Id, token.Id)
+
+	logrus.Warningf("Create password reset token %d for user %d, expires at %s", token.Id, user.Id, token.ExpiresAt)
+	err = a.db.UserStore.DeletePasswordResetToken(token.Id)
+	if err != nil {
+		logrus.Errorf("delete password token %d: %v", token.Id, err)
+	}
+	return c.JSON(200, "ok")
+}
+
+type ForgottenPasswordRequest struct {
+	Email string `json:"email" valid:"email"`
+}
+
+func (a *Api) CreateResetPasswordToken(c echo.Context) error {
+	// swagger:route POST /api/v1/auth/reset-password-token Authentication Forgot password
+	// ForgotPassword
+	//
+	// responses:
+	//   200:
+
+	req := c.Request()
+	dto := &ForgottenPasswordRequest{}
+	err := unMarshalBody(req, dto)
+	if err != nil {
+		e := errors.ErrInvalid
+		e.ErrMsg = err.Error()
+		e.Err = err
+		return e
+	}
+
+	user, err := a.db.UserStore.GetUserByEmail(dto.Email)
+	userOk := user != nil && err == nil
+	if err != nil {
+		logrus.Warningf("user by email '%s' not found when creating reset password link", dto.Email)
+	}
+
+	// don't allow inactive users to reset passwords
+	if user != nil && userOk {
+		if !user.IsActive {
+			logrus.Warningf("user %d is not active, refure to send password reset link", user.Id)
+			userOk = false
+		}
+		if user.Email == "" {
+			logrus.Warningf("user %d does not have valid email, cannot send password reset link", user.Id)
+			userOk = false
+		}
+	}
+
+	token := &models.PasswordResetToken{}
+	rawToken, hash, err := newPasswordToken()
+	if err != nil {
+		return fmt.Errorf("generate random string for password reset token: %v", err)
+	}
+	token.Token = hash
+
+	msg := map[string]string{"status": "Password reset email has been sent"}
+
+	if !userOk {
+		// about the time it would take to save the token in db
+		time.Sleep(time.Millisecond * 2)
+		return c.JSON(200, msg)
+	}
+
+	// token is valid for 24 hours
+	token.ExpiresAt = time.Now().Add(time.Hour * 24)
+	token.Update()
+	token.CreatedAt = token.UpdatedAt
+
+	token.UserId = user.Id
+	err = a.db.UserStore.AddPasswordResetToken(token)
+	if err != nil {
+		return fmt.Errorf("save password reset token: %v", err)
+	}
+
+	logrus.Warningf("Create password reset token %d for user %d, expires at %s", token.Id, user.Id, token.ExpiresAt)
+	go mail.ResetPassword(user.Email, rawToken, token.Id)
+	return c.JSON(200, msg)
+}
+
+// get new password token, returns token, hashed token and error
+func newPasswordToken() (string, string, error) {
+	rawToken, err := config.RandomStringCrypt(80)
+	if err != nil {
+		return "", "", fmt.Errorf("generate random token: %v", err)
+	}
+	hash, err := hashPasswordResetToken(rawToken)
+	if err != nil {
+		return "", "", fmt.Errorf("hash token: %v", err)
+	}
+	return rawToken, hash, nil
+}
+
+func hashPasswordResetToken(token string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(token), 14)
+	if err != nil {
+		return "", fmt.Errorf("hash token: %v", err)
+	}
+	return string(bytes), nil
 }
