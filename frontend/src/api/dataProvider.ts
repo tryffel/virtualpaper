@@ -309,6 +309,10 @@ export const dataProvider: DataProvider = {
     if (resource === "metadata/values") {
       url = `${apiUrl}/metadata/keys/${params.meta.key_id}/values/${params.data.id}`;
     }
+    if (resource === "documents/linked") {
+      url = `${apiUrl}/documents/${params.id}/linked-documents`;
+      console.log("update", resource);
+    }
 
     return httpClient(url, {
       method: "PUT",

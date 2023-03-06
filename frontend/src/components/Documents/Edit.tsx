@@ -41,14 +41,17 @@ import {
   Button,
   TopToolbar,
   ShowButton,
+  useRecordContext,
 } from "react-admin";
 
 import { MarkdownInput } from "../Markdown";
 import { Typography, Grid, Box, useMediaQuery } from "@mui/material";
+import LinkIcon from "@mui/icons-material/Link";
 import ArticleIcon from "@mui/icons-material/Article";
 import get from "lodash/get";
 import { IndexingStatusField } from "./IndexingStatus";
 import { EmbedFile } from "./Thumbnail";
+import { EditLinkedDocuments } from "./EditLinkedDocuments";
 
 const EditToolBar = () => {
   return (
@@ -105,14 +108,7 @@ export const DocumentEdit = () => {
               <MarkdownInput source="description" label="Description" />
             </Box>
             <Box display={{ xs: "block", sm: "bloxk" }}>
-              <ReferenceArrayInput
-                source="tags"
-                reference="tags"
-                allowEmpty
-                label={"Tags"}
-              >
-                <SelectArrayInput optionText="key" />
-              </ReferenceArrayInput>
+              <EditLinkedDocumentsButton />
             </Box>
             <Box display={{ xs: "block", sm: "block" }}>
               <ArrayInput source="metadata" label={"Metadata"}>
@@ -230,5 +226,23 @@ const DocumentEditActions = (props: { open: any; setOpen: any }) => {
       ) : null}
       <ShowButton />
     </TopToolbar>
+  );
+};
+
+const EditLinkedDocumentsButton = () => {
+  const record = useRecordContext();
+  const [open, setOpen] = React.useState(false);
+
+  return (
+    <>
+      <EditLinkedDocuments
+        modalOpen={open}
+        setModalOpen={setOpen}
+        documentId={String(record.id)}
+      />
+      <Button onClick={() => setOpen(true)} label={"Linked documents"}>
+        <LinkIcon />
+      </Button>
+    </>
   );
 };
