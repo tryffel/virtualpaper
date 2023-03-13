@@ -11,11 +11,13 @@ RUN apk --no-cache add \
     nodejs \
     npm
 
+
 RUN yarn add react-scripts
 
 WORKDIR /virtualpaper
 COPY . /virtualpaper
 
+RUN yarn config set network-timeout 600000 -g
 RUN cd frontend; yarn install
 RUN make build-frontend
 
@@ -47,10 +49,9 @@ RUN apk add \
     imagemagick-dev \
     poppler-utils
 
-RUN wget https://github.com/jgm/pandoc/releases/download/2.18/pandoc-2.18-linux-amd64.tar.gz
-RUN tar -xvf pandoc-2.18-linux-amd64.tar.gz
-RUN rm pandoc-2.18-linux-amd64.tar.gz
-
+RUN wget https://github.com/jgm/pandoc/releases/download/2.18/pandoc-2.18-linux-arm64.tar.gz
+RUN tar -xvf pandoc-2.18-linux-arm64.tar.gz
+RUN rm pandoc-2.18-linux-arm64.tar.gz
 
 RUN addgroup -S -g 1000 virtualpaper && \
     adduser -S -H -D -h /data -u 1000 -G virtualpaper virtualpaper
