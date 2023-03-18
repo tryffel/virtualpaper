@@ -19,27 +19,22 @@ The interactive search suggests you with keywords as you type.
 
 Rather than storing documents in a traditional folder structure,
 the documents are simply stored in a single directory. 
-The idea is to use metadata for storing the same data that the folder structure would encapsulate.
+The idea is to use metadata for storing the same relational information that the folder structure would encapsulate.
+Instead of putting related documents to same folder or subfolder, 
+Virtualpaper uses metadata key-values to indicate that the documents are somehow related.
 
-For instance, instead of using folder structures like year and month, category, alphabets, etc, 
+For instance, instead of using folder structures like year and month, category, alphabets, 
 all of this data can be stored in each document's metadata.
-While this seems complicated, the benefit is clear:
-we now have not just a single folder-like structure for the documents, 
-but we actually have created several context-dependent structures.
+While this seems complicated and unintuitive, the benefit is clear:
+instead of storing the documents in a single folder structure,
+the documents now exist in several parallel contexts, just like folders.
+Now documents can be filtered and sorted with any metadata or dates or their combinations.
 Instead of navigating to the document by the folder structure like "it was probably under year 2022 and under invoices"
-we can just query it with "date:2022 type:invoice", which will result in the same documents being listed.
-
-The problem with folders is that they can only cover one context. 
-Using the key-value metadata it is, however, possible to store several contexts.
-This is very beneficial, because now we have essentially, not just a single folder structure for the files,
-but several virtual folder structures.
-Now we can navigate the files with any of the metadata, or their combinations, using a simple query language.
-
-
-Think of it as not having a single hierarchy, but as many views to 
-documents as you wish: 
-* List all invoices from last year
-* List all documents from company x that have also key y
+we can just query it with "date:2022 type:invoice", 
+which will result in the same documents being listed.
+Examples for multiple contexts are:
+* List all 'invoices' from last year
+* List all inquiries from company x that has value completed:false that are dated to time range
 * List all documents related to a project
    
 If you wish to benefit from this kind of filtering, you need to assign at least a few of these meaningful 
@@ -177,7 +172,7 @@ docker run -it \
 4. Upload documents on web page, let server index them and search for some documents.
 
 # Development
-
+See official docs for more info on how to get started.
 
 Start frontend in development mode:
 ```make run-frontend```
@@ -185,7 +180,7 @@ Start frontend in development mode:
 Start backend:
 ```make run```
 
-Spin up a development stack:
+Spin up a development stack (this will start the server too, which can be stopped afterwards):
 ```make test-start```
 
 Stop development stack:
