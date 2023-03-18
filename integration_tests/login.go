@@ -16,9 +16,9 @@ import (
 
 const (
 	UserName      = "user"
-	UserPassword  = "user"
+	UserPassword  = "superstronguser"
 	AdminName     = "admin"
-	AdminPassword = "admin"
+	AdminPassword = "superstrongadmin"
 )
 
 var (

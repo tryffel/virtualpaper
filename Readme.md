@@ -1,22 +1,45 @@
 # Virtualpaper
 
 Virtualpaper is a document archiving solution that is heavily optimized for searching documents.
+The biggest difference with Virtualpaper to many other solutions is that
+Virtualpaper does not store the documents in folders. 
+In fact there's no such entity as a folder in Virtualpaper.
+How are documents located and filtered then?
+Virtualpaper features user-configurable key-value metadata along with a very powerful and 
+fast full-text-search to achieve the same effect, and much more.
+
 For more information see the [official documentation](https://virtualpaper.tryffel.net).
 
 The screenshot below showcases the most important aspect of Virtualpaper:
-find the documents you're looking by typing any keywords or time ranges imaginable:
+finding the documents you're looking for by typing any keywords, metadata or time ranges:
 The interactive search suggests you with keywords as you type. 
 
 ![Screenshot](screenshot-document-search.png)
 
-Virtualpaper is a text document archiving solution, featuring automatic content extraction and 
-powerful search for all content. 
-Documents are not stored in hierarchical directories, instead it relies
-on completely user-editable key-value metadata. 
+
+Rather than storing documents in a traditional folder structure,
+the documents are simply stored in a single directory. 
+The idea is to use metadata for storing the same data that the folder structure would encapsulate.
+
+For instance, instead of using folder structures like year and month, category, alphabets, etc, 
+all of this data can be stored in each document's metadata.
+While this seems complicated, the benefit is clear:
+we now have not just a single folder-like structure for the documents, 
+but we actually have created several context-dependent structures.
+Instead of navigating to the document by the folder structure like "it was probably under year 2022 and under invoices"
+we can just query it with "date:2022 type:invoice", which will result in the same documents being listed.
+
+The problem with folders is that they can only cover one context. 
+Using the key-value metadata it is, however, possible to store several contexts.
+This is very beneficial, because now we have essentially, not just a single folder structure for the files,
+but several virtual folder structures.
+Now we can navigate the files with any of the metadata, or their combinations, using a simple query language.
+
+
 Think of it as not having a single hierarchy, but as many views to 
 documents as you wish: 
 * List all invoices from last year
-* List all documents from company x
+* List all documents from company x that have also key y
 * List all documents related to a project
    
 If you wish to benefit from this kind of filtering, you need to assign at least a few of these meaningful 
@@ -25,7 +48,7 @@ Virtualpaper tries to automatically match these values from document content whe
 In addition to filtering content according by metadata, Virtualpaper features full-text-search powered by Meilisearch,
 which covers all metadata as well as content of the document itself.
 
-This project is in **beta phase** and help with testing is much appreciated.
+This project is in **beta phase** and help with testing and general feedback is much appreciated.
 
 ## Features
 * Store text documents (pdf, image files are extracted for text content)
