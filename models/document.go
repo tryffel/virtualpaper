@@ -22,6 +22,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -172,11 +173,11 @@ func MetadataDiff(id string, userId int, original, updated *[]Metadata) []Docume
 	newMetadata := map[string]Metadata{}
 
 	for _, v := range *original {
-		oldMetadata[v.Key+"-"+v.Value] = v
+		oldMetadata[fmt.Sprintf("%d-%d", v.KeyId, v.ValueId)] = v
 	}
 
 	for _, v := range *updated {
-		newMetadata[v.Key+"-"+v.Value] = v
+		newMetadata[fmt.Sprintf("%d-%d", v.KeyId, v.ValueId)] = v
 	}
 
 	formatMetadata := func(m Metadata) string {

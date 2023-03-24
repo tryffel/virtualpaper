@@ -61,8 +61,12 @@ func (suite *UploadDocumentSuite) TestEditDocFail() {
 	doc.Name = "valid"
 	updateDocument(suite.T(), suite.userHttp, doc, 200)
 
-	doc.Filename = "unsafe/filename//."
-	updateDocument(suite.T(), suite.userHttp, doc, 400)
+	// unsafe name succeeds but is being sanitized
+	doc.Filename = "unsafe/filename//.md"
+	updateDocument(suite.T(), suite.userHttp, doc, 200)
+
+	unsafeDocName := getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
+	assert.Equal(suite.T(), ".md", unsafeDocName.Filename)
 
 	doc.Filename = "file.txt"
 	updateDocument(suite.T(), suite.userHttp, doc, 200)

@@ -388,7 +388,7 @@ func (s *UserStore) DeleteExpiredPasswordResetTokens() (int, error) {
 
 	affected, err := out.RowsAffected()
 	if err != nil {
-		logrus.Warning("get rows affected for deleting expired tokens: %v", err)
+		logrus.Warningf("get rows affected for deleting expired tokens: %v", err)
 	}
 	return int(affected), nil
 }
