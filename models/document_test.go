@@ -19,6 +19,7 @@
 package models
 
 import (
+	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
 	"time"
@@ -92,8 +93,6 @@ func TestDocument_Diff(t *testing.T) {
 			want: []DocumentHistory{
 				{DocumentId: "id", Action: "rename", OldValue: "testing", NewValue: "testing2"},
 				{DocumentId: "id", Action: "description", OldValue: "empty", NewValue: "description"},
-				{DocumentId: "id", Action: "remove metadata", OldValue: "author:Bach", NewValue: ""},
-				{DocumentId: "id", Action: "add metadata", OldValue: "", NewValue: "project:compsci"},
 			},
 		},
 	}
@@ -114,6 +113,66 @@ func TestDocument_Diff(t *testing.T) {
 			} else if err == nil && !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Document.Diff() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestDocument_Metadata_Diff(t *testing.T) {
+	docId := "1234"
+	userId := 10
+	type fields struct {
+		Metadata []Metadata
+	}
+	type args struct {
+		metadata []Metadata
+		userId   int
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []DocumentHistory
+		wantErr bool
+	}{
+		{
+			name: "modify metadata",
+			fields: fields{
+				Metadata: []Metadata{
+					{KeyId: 2, ValueId: 4},
+				},
+			},
+			args:    args{metadata: []Metadata{{KeyId: 10, ValueId: 15}}},
+			wantErr: false,
+			want: []DocumentHistory{
+				{DocumentId: docId, UserId: userId, Action: "remove metadata", OldValue: `{"key_id":2,"value_id":4}`, NewValue: ""},
+				{DocumentId: docId, UserId: userId, Action: "add metadata", OldValue: "", NewValue: `{"key_id":10,"value_id":15}`},
+			},
+		},
+		{
+			name: "modify partial metadata",
+			fields: fields{
+				Metadata: []Metadata{
+					{KeyId: 2, ValueId: 4},
+					{KeyId: 10, ValueId: 20},
+					{KeyId: 11, ValueId: 21},
+				},
+			},
+			args: args{metadata: []Metadata{
+				{KeyId: 2, ValueId: 4},
+				{KeyId: 10, ValueId: 22},
+			}},
+			wantErr: false,
+			want: []DocumentHistory{
+				{DocumentId: docId, UserId: userId, Action: "remove metadata", OldValue: `{"key_id":10,"value_id":20}`, NewValue: ""},
+				{DocumentId: docId, UserId: userId, Action: "remove metadata", OldValue: `{"key_id":11,"value_id":21}`, NewValue: ""},
+				{DocumentId: docId, UserId: userId, Action: "add metadata", OldValue: "", NewValue: `{"key_id":10,"value_id":22}`},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := MetadataDiff(docId, userId, &tt.fields.Metadata, &tt.args.metadata)
+			assert.Equal(t, got, tt.want)
 		})
 	}
 }

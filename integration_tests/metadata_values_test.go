@@ -73,7 +73,7 @@ func (suite *MetadataValueSuite) TestInvalidValues() {
 		Value:          "toolong",
 		MatchDocuments: false,
 		MatchType:      "",
-		MatchFilter:    testDocumentX86Intel.Description,
+		MatchFilter:    testDocumentX86Intel.Content,
 	}, 400)
 }
 
