@@ -1,4 +1,4 @@
-name: Api tests
+name: Tests
 on: push
 
 env:
@@ -48,8 +48,8 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
-          #- name: Unit tests
-          #run: make ci-test-unit
+      - name: Unit tests
+        run: make ci-test-unit
 
       - name: Init API tests
         run: |
