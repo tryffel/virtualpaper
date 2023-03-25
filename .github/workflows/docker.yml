@@ -4,9 +4,9 @@ on:
   push:
     tags:
       - "v*.*.*"
-  pull_request:
-    branches:
-      - "master"
+    paths:
+      - Dockefile
+      - docker/**
   workflow_dispatch:
 
 
