@@ -159,3 +159,20 @@ func DoAdminLogin(t *testing.T) {
 		BodyString(fmt.Sprintf(`{"Username": "%s", "Password": "%s"}`, AdminName, AdminPassword)).
 		Expect(t).Type("json").AssertFunc(assertToken(200, true, true)).Done()
 }
+
+func LoginRequest(t *testing.T, userName, password string, wantCode int) (string, int) {
+	data := api.LoginRequest{Username: userName, Password: password}
+	c := &httpClient{client: client.client}
+	resp := c.Post("/api/v1/auth/login").Json(t, data).Expect(t)
+
+	token := ""
+	userId := 0
+	if wantCode == 200 {
+		body := &api.LoginResponse{}
+		err := resp.Json(t, body)
+		assert.Nil(t, err)
+		token = body.Token
+		userId = body.UserId
+	}
+	return token, userId
+}

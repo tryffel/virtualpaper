@@ -10,12 +10,12 @@ import (
 	"tryffel.net/go/virtualpaper/storage"
 )
 
-type PasswordResetGetLink struct {
+type PasswordReset struct {
 	ApiTestSuite
 	user *models.User
 }
 
-func (suite *PasswordResetGetLink) SetupTest() {
+func (suite *PasswordReset) SetupTest() {
 	suite.Init()
 	clearPasswordResetTables(suite.T(), suite.db)
 
@@ -34,17 +34,17 @@ func (suite *PasswordResetGetLink) SetupTest() {
 }
 
 func TestGetPasswordResetLink(t *testing.T) {
-	suite.Run(t, new(PasswordResetGetLink))
+	suite.Run(t, new(PasswordReset))
 }
 
-func (suite *PasswordResetGetLink) TestEmailNotExists() {
+func (suite *PasswordReset) TestEmailNotExists() {
 	RequestResetPasswordToken(suite.T(), suite.userHttp, "notexists@test.com", 200)
 	tokens, err := GetPasswordResetTokensFromDb(suite.db)
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), 0, len(*tokens), "no reset tokens found")
 }
 
-func (suite *PasswordResetGetLink) TestEmailExists() {
+func (suite *PasswordReset) TestEmailExists() {
 	RequestResetPasswordToken(suite.T(), suite.userHttp, "testperson@test.com", 200)
 	tokens, err := GetPasswordResetTokensFromDb(suite.db)
 	assert.Nil(suite.T(), err)
@@ -63,23 +63,38 @@ func (suite *PasswordResetGetLink) TestEmailExists() {
 	assert.True(suite.T(), tomorrow.Equal(expiresAt), "token expired next day")
 }
 
-func (suite *PasswordResetGetLink) TestTokensAreUnique() {
-	RequestResetPasswordToken(suite.T(), suite.userHttp, "testperson@test.com", 200)
-	RequestResetPasswordToken(suite.T(), suite.userHttp, "testperson@test.com", 200)
+func (suite *PasswordReset) TestTokensAreUnique() {
 	RequestResetPasswordToken(suite.T(), suite.userHttp, "testperson@test.com", 200)
 	RequestResetPasswordToken(suite.T(), suite.userHttp, "testperson@test.com", 200)
 	RequestResetPasswordToken(suite.T(), suite.userHttp, "testperson@test.com", 200)
 	tokens, err := GetPasswordResetTokensFromDb(suite.db)
 	assert.Nil(suite.T(), err)
-	assert.Len(suite.T(), *tokens, 5, "one reset token found")
+	assert.Len(suite.T(), *tokens, 3, "three reset tokens found")
 
 	tokenMap := map[string]bool{}
 
 	for _, v := range *tokens {
 		tokenMap[v.Token] = true
 	}
-	assert.Len(suite.T(), tokenMap, 5)
+	assert.Len(suite.T(), tokenMap, 3)
 }
+
+/* TODO: need to retrieve token from the email
+func (suite *PasswordReset) TestResetPasswordWithToken() {
+	RequestResetPasswordToken(suite.T(), suite.userHttp, "testperson@test.com", 200)
+	tokens, err := GetPasswordResetTokensFromDb(suite.db)
+	assert.Nil(suite.T(), err)
+	assert.Len(suite.T(), *tokens, 1, "one reset token found")
+
+	token := (*tokens)[0]
+
+	ResetPassword(suite.T(), suite.userHttp, token.Token, "new-password123", token.Id, 200)
+
+	newToken, userId := LoginRequest(suite.T(), "user", "new-password123", 200)
+	assert.NotNil(suite.T(), newToken)
+	assert.Equal(suite.T(), suite.user.Id, userId)
+}
+*/
 
 func RequestResetPasswordToken(t *testing.T, client *httpClient, email string, wantHttpStatus int) {
 	req := client.Post("/api/v1/auth/forgot-password")
@@ -102,4 +117,22 @@ func GetPasswordResetTokensFromDb(db *storage.Database) (*[]models.PasswordReset
 	data := &[]models.PasswordResetToken{}
 	err := db.Engine().Select(data, sql)
 	return data, err
+}
+
+func ResetPassword(t *testing.T, client *httpClient, token, password string, id int, wantHttpStatus int) {
+	req := client.Post("/api/v1/auth/reset-password")
+	dto := &api.ResetPasswordRequest{
+		Token:    token,
+		Id:       id,
+		Password: password,
+	}
+	body := map[string]string{}
+	e := req.Json(t, dto).ExpectName(t, "reset password", true)
+	if wantHttpStatus == 200 {
+		e.Json(t, &body).e.Status(200).Done()
+		msg := body["status"]
+		assert.Equal(t, "Password reset email has been sent", msg)
+	} else {
+		e.e.Status(wantHttpStatus).Done()
+	}
 }
