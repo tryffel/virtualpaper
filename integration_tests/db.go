@@ -52,6 +52,10 @@ var dbDocumentTables = []string{
 	"documents",
 }
 
+var dbPasswordResetTables = []string{
+	"password_reset_tokens",
+}
+
 func clearDbMetadataTables(t *testing.T, db *storage.Database) {
 	for _, v := range dbMetadataTables {
 		db.Engine().MustExec(fmt.Sprintf("DELETE FROM %s WHERE 1=1", v))
@@ -66,6 +70,12 @@ func clearDbProcessingRuleTables(t *testing.T, db *storage.Database) {
 
 func clearDbDocumentTables(t *testing.T, db *storage.Database) {
 	for _, v := range dbDocumentTables {
+		db.Engine().MustExec(fmt.Sprintf("DELETE FROM %s WHERE 1=1", v))
+	}
+}
+
+func clearPasswordResetTables(t *testing.T, db *storage.Database) {
+	for _, v := range dbPasswordResetTables {
 		db.Engine().MustExec(fmt.Sprintf("DELETE FROM %s WHERE 1=1", v))
 	}
 }
