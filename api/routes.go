@@ -42,6 +42,7 @@ func (api *Api) addRoutesV2() {
 	authGroup := api.apiRouter.Group("/v1/auth", authRateLimiter)
 
 	authGroup.POST("/login", api.LoginV2)
+	api.privateRouter.POST("/auth/logout", api.Logout)
 	authGroup.POST("/reset-password", api.ResetPassword)
 	authGroup.POST("/forgot-password", api.CreateResetPasswordToken)
 

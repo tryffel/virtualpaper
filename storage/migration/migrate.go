@@ -88,6 +88,11 @@ var Migrations = []Migrator{
 		Level:  12,
 		Schema: schemaV12,
 	},
+	&Migration{
+		Name:   "add support for persisted auth tokens",
+		Level:  13,
+		Schema: schemaV13,
+	},
 }
 
 type Schema struct {

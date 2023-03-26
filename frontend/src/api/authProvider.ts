@@ -18,6 +18,9 @@
 
 import { AuthProvider, HttpError, UserIdentity } from "react-admin";
 import { config } from "../env";
+import { httpClient } from "./dataProvider";
+
+const apiUrl = config.url;
 
 interface LoginFields {
   username: string;
@@ -50,12 +53,14 @@ const authProvider: AuthProvider = {
         localStorage.setItem("userId", userId);
       });
   },
-  logout: () => {
-    localStorage.removeItem("auth");
-    localStorage.removeItem("is_admin");
-    localStorage.removeItem("userId");
-    return Promise.resolve();
-  },
+  logout: () =>
+    httpClient(`${apiUrl}/auth/logout`, { method: "POST" })
+      .catch(() => {})
+      .then(() => {
+        localStorage.removeItem("auth");
+        localStorage.removeItem("is_admin");
+        localStorage.removeItem("userId");
+      }),
   checkAuth: () =>
     localStorage.getItem("auth") ? Promise.resolve() : Promise.reject(),
   // @ts-ignore
