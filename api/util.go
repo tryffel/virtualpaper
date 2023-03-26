@@ -114,7 +114,8 @@ type Context struct {
 
 type UserContext struct {
 	Context
-	Admin  bool
-	UserId int
-	User   *models.User
+	Admin    bool
+	UserId   int
+	User     *models.User
+	TokenKey string
 }

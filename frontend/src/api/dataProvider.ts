@@ -54,7 +54,7 @@ const fetchJson = (url: string, options = {}) => {
     });
 };
 
-const httpClient = (url: string, options: fetchUtils.Options = {}) => {
+export const httpClient = (url: string, options: fetchUtils.Options = {}) => {
   if (!options.headers) {
     options.headers = new Headers({ Accept: "application/json" });
   }
@@ -311,7 +311,6 @@ export const dataProvider: DataProvider = {
     }
     if (resource === "documents/linked") {
       url = `${apiUrl}/documents/${params.id}/linked-documents`;
-      console.log("update", resource);
     }
 
     return httpClient(url, {
