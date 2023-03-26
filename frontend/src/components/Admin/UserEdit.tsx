@@ -23,6 +23,12 @@ export const AdminEditUser = () => {
         <BooleanInput source={"is_active"} label={"Active"} />
         <BooleanInput source={"is_admin"} label={"Administrator"} />
         <PasswordInput source={"password"} label={"Reset Password"} />
+        <Labeled label={"Created at"}>
+          <TextField source={"created_at"} />
+        </Labeled>
+        <Labeled label={"Last updated"}>
+          <TextField source={"updated_at"} />
+        </Labeled>
       </SimpleForm>
     </Edit>
   );

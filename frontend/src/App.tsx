@@ -24,6 +24,7 @@ import { Dashboard } from "./components/Dashboard";
 import { ResetPassword } from "./components/Public/ResetPassword";
 import { ForgotPassword } from "./components/Public/ForgotPassword";
 import { AdminEditUser } from "./components/Admin/UserEdit";
+import { AdminCreateUser } from "./components/Admin/UserCreate";
 
 const App = () => (
   <Admin
@@ -54,6 +55,7 @@ const App = () => (
     <Resource
       name="admin/users"
       edit={<AdminEditUser />}
+      create={<AdminCreateUser />}
       options={{ label: "Users" }}
     />
     <Resource name="admin/documents/processing" />

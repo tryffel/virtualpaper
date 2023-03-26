@@ -63,69 +63,12 @@ func (e *Engine) ensureIndexExists() error {
 		return fmt.Errorf("get users: %v", err)
 	}
 
-	indices := make([]string, len(*users))
-	for i, v := range *users {
-		indices[i] = indexName(v.Id)
-		indexExists := false
-		logrus.Debugf("ensure meilisearch index %s exists", indices[i])
-		var err error
-		_, err = e.client.GetIndex(indices[i])
+	for _, v := range *users {
+		err = e.AddUserIndex(v.Id)
 		if err != nil {
-			if e, ok := err.(*meilisearch.Error); ok {
-				if e.StatusCode == 404 {
-					err = nil
-					indexExists = false
-				}
-			}
-		} else {
-			indexExists = true
-		}
-		if err != nil {
-			return fmt.Errorf("get indexes: %v", err)
+			logrus.Errorf("error checking & creating index for user %d: %v", v.Id, err)
 		}
 
-		if !indexExists {
-			logrus.Warningf("Creating new meilisearch index '%s'", indices[i])
-			_, err = e.client.CreateIndex(&meilisearch.IndexConfig{
-				Uid:        indices[i],
-				PrimaryKey: "document_id",
-			})
-
-			fields := &[]string{
-				"document_id",
-				"user_id",
-				"name",
-				"file_name",
-				"content",
-				"hash",
-				"created_at",
-				"updated_at",
-				"tags",
-				"metadata",
-				"date",
-				"description",
-				"tags",
-				"metadata_key",
-				"metadata_value",
-				"mimetype",
-			}
-			_, err = e.client.Index(indices[i]).UpdateFilterableAttributes(fields)
-			if err != nil {
-				logrus.Errorf("meilisearch set filterable attributes: %v", err)
-			}
-
-			_, err = e.client.Index(indices[i]).UpdateSortableAttributes(fields)
-			if err != nil {
-				logrus.Errorf("meilisearch set sortable attributes: %v", err)
-			}
-			_, err = e.client.Index(indices[i]).UpdateSearchableAttributes(fields)
-			if err != nil {
-				logrus.Errorf("meilisearch set searchable attributes: %v", err)
-			}
-		}
-		if err != nil {
-			return fmt.Errorf("create index: %v", err)
-		}
 	}
 	return nil
 }
@@ -350,6 +293,71 @@ func (e *Engine) DeleteDocuments(userId int) error {
 	_, err := e.client.Index(index).DeleteAllDocuments()
 	if err != nil {
 		return fmt.Errorf("delete index: %v", err)
+	}
+	return nil
+}
+
+func (e *Engine) AddUserIndex(userId int) error {
+	index := indexName(userId)
+	indexExists := false
+	logrus.Debugf("ensure meilisearch index %s exists", index)
+	var err error
+	_, err = e.client.GetIndex(index)
+	if err != nil {
+		if e, ok := err.(*meilisearch.Error); ok {
+			if e.StatusCode == 404 {
+				err = nil
+				indexExists = false
+			}
+		}
+	} else {
+		indexExists = true
+	}
+	if err != nil {
+		return fmt.Errorf("get indexes: %v", err)
+	}
+
+	if !indexExists {
+		logrus.Warningf("Creating new meilisearch index '%s'", index)
+		_, err = e.client.CreateIndex(&meilisearch.IndexConfig{
+			Uid:        index,
+			PrimaryKey: "document_id",
+		})
+
+		fields := &[]string{
+			"document_id",
+			"user_id",
+			"name",
+			"file_name",
+			"content",
+			"hash",
+			"created_at",
+			"updated_at",
+			"tags",
+			"metadata",
+			"date",
+			"description",
+			"tags",
+			"metadata_key",
+			"metadata_value",
+			"mimetype",
+		}
+		_, err = e.client.Index(index).UpdateFilterableAttributes(fields)
+		if err != nil {
+			logrus.Errorf("meilisearch set filterable attributes: %v", err)
+		}
+
+		_, err = e.client.Index(index).UpdateSortableAttributes(fields)
+		if err != nil {
+			logrus.Errorf("meilisearch set sortable attributes: %v", err)
+		}
+		_, err = e.client.Index(index).UpdateSearchableAttributes(fields)
+		if err != nil {
+			logrus.Errorf("meilisearch set searchable attributes: %v", err)
+		}
+	}
+	if err != nil {
+		return fmt.Errorf("create index: %v", err)
 	}
 	return nil
 }

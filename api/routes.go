@@ -96,6 +96,7 @@ func (api *Api) addRoutesV2() {
 	api.privateRouter.PUT("/preferences/user", api.updateUserPreferences)
 
 	api.adminRouter.GET("/users", api.adminGetUsers)
+	api.adminRouter.POST("/users", api.adminAddUser)
 	api.adminRouter.GET("/users/:id", api.adminGetUser)
 	api.adminRouter.PUT("/users/:id", api.adminUpdateUser)
 }

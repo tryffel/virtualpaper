@@ -284,6 +284,7 @@ func (a *Api) adminGetUsers(c echo.Context) error {
 			(*info)[i].TotalDocumentsIndexed = indexStatus.NumDocuments
 		}
 	}
+	opOk = true
 	return resourceList(c, info, len(*info))
 }
 
@@ -328,7 +329,7 @@ func (a *Api) adminGetUser(c echo.Context) error {
 		Indexing:              searchStatus.Indexing,
 		TotalDocumentsIndexed: searchStatus.NumDocuments,
 	}
-
+	opOk = true
 	return c.JSON(200, info)
 }
 
@@ -418,11 +419,83 @@ func (a *Api) adminUpdateUser(c echo.Context) error {
 				Indexing:              false,
 				TotalDocumentsIndexed: 0,
 			}
+			opOk = true
 			return c.JSON(200, info)
 		}
 	} else {
+		opOk = true
 		return c.JSON(http.StatusNotModified, user)
 	}
-
 	return err
+}
+
+type AdminAddUserRequest struct {
+	UserName      string `json:"user_name" valid:"stringlength(4|30)"`
+	Email         string `json:"email" valid:"email,optional"`
+	Password      string `json:"password" valid:"stringlength(8|150)"`
+	Active        bool   `json:"is_active" valid:"optional"`
+	Administrator bool   `json:"is_admin" valid:"optional"`
+}
+
+func (a *Api) adminAddUser(c echo.Context) error {
+	// swagger:route POST /api/v1/admin/users/ Admin AdminAddUser
+	// Add new user
+	//
+	// responses:
+	//   200: RespUserInfo
+
+	ctx := c.(UserContext)
+	request := &AdminAddUserRequest{}
+	err := unMarshalBody(c.Request(), request)
+	if err != nil {
+		return err
+	}
+
+	opOk := false
+	userId := -1
+	defer func() {
+		logCrudAdminUsers(ctx.UserId, "create", &opOk, "add user %d", userId)
+	}()
+
+	user := &models.User{
+		Timestamp: models.Timestamp{},
+		Id:        0,
+		Name:      request.UserName,
+		Email:     request.Email,
+		IsAdmin:   request.Administrator,
+		IsActive:  request.Active,
+	}
+	err = user.SetPassword(request.Password)
+	if err != nil {
+		return fmt.Errorf("set password: %v", err)
+	}
+	user.CreatedAt = time.Now()
+	user.Update()
+
+	err = a.db.UserStore.AddUser(user)
+	if err != nil {
+		return err
+	}
+
+	if user.IsAdmin {
+		logrus.Infof("admin user %d created new user %d with admin privileges", ctx.UserId, user.Id)
+	}
+
+	err = a.search.AddUserIndex(user.Id)
+	info := &models.UserInfo{
+		UserId:                user.Id,
+		UserName:              user.Name,
+		Email:                 user.Email,
+		IsActive:              user.IsActive,
+		UpdatedAt:             user.UpdatedAt,
+		CreatedAt:             user.CreatedAt,
+		DocumentCount:         0,
+		DocumentsSize:         0,
+		IsAdmin:               user.IsAdmin,
+		LastSeen:              time.Time{},
+		Indexing:              false,
+		TotalDocumentsIndexed: 0,
+	}
+	opOk = true
+	return c.JSON(200, info)
 }

@@ -28,6 +28,7 @@ import {
   useRecordContext,
   DateField,
   EditButton,
+  Button,
 } from "react-admin";
 import {
   Box,
@@ -39,6 +40,7 @@ import {
   useMediaQuery,
 } from "@mui/material";
 
+import AddIcon from "@mui/icons-material/Add";
 import { ExpandMore } from "@mui/icons-material";
 import {
   Processing,
@@ -48,6 +50,8 @@ import {
 } from "./Processing";
 import { ByteToString } from "../util";
 import { BooleanIndexingStatusField } from "../IndexingStatus";
+import * as React from "react";
+import { useNavigate } from "react-router-dom";
 
 export const AdminView = (props: any) => {
   const { record, refetch, isLoading } = useShowController({
@@ -143,6 +147,7 @@ export const AdminView = (props: any) => {
           <Typography variant="h5">Manage users</Typography>
         </AccordionSummary>
         <AccordionDetails style={{ flexDirection: "column" }}>
+          <AddUserButton />
           <AdminShowUsers />
         </AccordionDetails>
       </Accordion>
@@ -163,6 +168,15 @@ export const AdminView = (props: any) => {
         </AccordionDetails>
       </Accordion>
     </>
+  );
+};
+
+const AddUserButton = () => {
+  const navigate = useNavigate();
+  return (
+    <Button onClick={() => navigate("/admin/users/create")} label={"Add user"}>
+      <AddIcon />
+    </Button>
   );
 };
 
