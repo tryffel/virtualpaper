@@ -103,7 +103,7 @@ func (s *AuthStore) GetToken(key string, updateLastSeen bool) (*models.Token, er
 
 	if updateLastSeen {
 		token.LastSeen = time.Now()
-		updatebuilder := s.sq.Update("auth_tokens").Set("last_seen", token.LastSeen)
+		updatebuilder := s.sq.Update("auth_tokens").Set("last_seen", token.LastSeen).Where("key = ?", key)
 		sql, args, err = updatebuilder.ToSql()
 		if err != nil {
 			return nil, fmt.Errorf("build sql: %v", err)
