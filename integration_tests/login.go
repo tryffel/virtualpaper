@@ -163,16 +163,22 @@ func DoAdminLogin(t *testing.T) {
 func LoginRequest(t *testing.T, userName, password string, wantCode int) (string, int) {
 	data := api.LoginRequest{Username: userName, Password: password}
 	c := &httpClient{client: client.client}
-	resp := c.Post("/api/v1/auth/login").Json(t, data).Expect(t)
+	resp := c.Post("/api/v1/auth/login").Json(t, data).ExpectName(t, "login", false)
 
 	token := ""
 	userId := 0
 	if wantCode == 200 {
 		body := &api.LoginResponse{}
-		err := resp.Json(t, body)
+		err := resp.Json(t, body).e.Status(wantCode).Done()
+		if err != nil {
+			t.Error("read json", err)
+		}
 		assert.Nil(t, err)
 		token = body.Token
 		userId = body.UserId
+	} else {
+		err := resp.e.Status(wantCode).Done()
+		assert.Nil(t, err)
 	}
 	return token, userId
 }

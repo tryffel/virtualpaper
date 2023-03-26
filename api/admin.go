@@ -430,7 +430,7 @@ func (a *Api) adminUpdateUser(c echo.Context) error {
 }
 
 type AdminAddUserRequest struct {
-	UserName      string `json:"user_name" valid:"stringlength(4|30)"`
+	UserName      string `json:"user_name" valid:"username"`
 	Email         string `json:"email" valid:"email,optional"`
 	Password      string `json:"password" valid:"stringlength(8|150)"`
 	Active        bool   `json:"is_active" valid:"optional"`

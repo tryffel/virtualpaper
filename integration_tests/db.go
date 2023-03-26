@@ -2,6 +2,7 @@ package integrationtest
 
 import (
 	"fmt"
+	"github.com/Masterminds/squirrel"
 	"testing"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/search"
@@ -78,6 +79,36 @@ func clearPasswordResetTables(t *testing.T, db *storage.Database) {
 	for _, v := range dbPasswordResetTables {
 		db.Engine().MustExec(fmt.Sprintf("DELETE FROM %s WHERE 1=1", v))
 	}
+}
+
+func clearTestUsersTables(t *testing.T, db *storage.Database) {
+	users, err := db.UserStore.GetUsers()
+	if err != nil {
+		t.Errorf("get users: %v", err)
+		return
+	}
+
+	ids := make([]int, 0, 10)
+	for _, user := range *users {
+		if user.Name != "user" && user.Name != "admin" {
+			ids = append(ids, user.Id)
+		}
+	}
+	builder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+
+	query := builder.Delete("user_preferences").Where(squirrel.Eq{"user_id": ids})
+	sql, args, err := query.ToSql()
+	if err != nil {
+		t.Errorf("build delete query: %v", err)
+	}
+	db.Engine().MustExec(sql, args...)
+
+	query = builder.Delete("users").Where(squirrel.Eq{"id": ids})
+	sql, args, err = query.ToSql()
+	if err != nil {
+		t.Errorf("build delete query: %v", err)
+	}
+	db.Engine().MustExec(sql, args...)
 }
 
 func clearMeiliIndices(t *testing.T) {

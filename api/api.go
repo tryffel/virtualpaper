@@ -177,6 +177,17 @@ func init() {
 	govalidator.TagMap["safefilename"] = govalidator.Validator(func(str string) bool {
 		return str == govalidator.SafeFileName(str)
 	})
+	govalidator.TagMap["username"] = govalidator.Validator(func(str string) bool {
+		// allow whitespaces inside the username
+		if strings.HasPrefix(str, " ") || strings.HasSuffix(str, " ") {
+			return false
+		}
+		if len(str) < 4 || len(str) > 30 {
+			return false
+		}
+		trimmed := strings.ReplaceAll(str, " ", "")
+		return govalidator.IsUTFLetterNumeric(trimmed)
+	})
 }
 
 //go:embed swaggerdocs/swagger.json

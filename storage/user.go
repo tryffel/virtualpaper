@@ -91,7 +91,8 @@ func (s *UserStore) TryLogin(username, password string) (int, error) {
 		`
 SELECT id, name, password
 FROM users
-WHERE name = $1;
+WHERE name = $1
+AND active = TRUE;
 `
 
 	user := &models.User{}

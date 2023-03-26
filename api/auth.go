@@ -171,7 +171,7 @@ func validateToken(tokenString string, privateKey string) (string, error) {
 }
 
 type LoginRequest struct {
-	Username string `valid:"alphanum,required"`
+	Username string `valid:"username,required"`
 	Password string `valid:"required"`
 }
 
