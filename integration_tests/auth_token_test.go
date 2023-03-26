@@ -103,7 +103,7 @@ func (suite *AuthTokenTest) TestExpire() {
 	token := (*tokens)[0]
 
 	token.ExpiresAt = time.Now().Add(-time.Hour - 24)
-	_, err := suite.db.Engine().Exec("update auth_tokens set expires_at = $1", token.ExpiresAt)
+	_, err := suite.db.Engine().Exec("update auth_tokens set expires_at = $1 where key = $2", token.ExpiresAt, token.Key)
 	assert.NoError(suite.T(), err)
 
 	assertAuthTokensCount(&suite.ApiTestSuite, user.UserId, 1)
@@ -127,7 +127,7 @@ func assertAuthTokensCount(suite *ApiTestSuite, userId int, tokensCount int) {
 func deleteAuthTokens(suite *ApiTestSuite) {
 	suite.db.Engine().MustExec(`DELETE FROM auth_tokens 
        WHERE user_id NOT IN (
-             SELECT user_id 
+             SELECT id
              FROM users 
              WHERE users.name IN ('user', 'admin')
     )`)
