@@ -21,6 +21,7 @@ package api
 import (
 	"golang.org/x/time/rate"
 	"time"
+	"tryffel.net/go/virtualpaper/config"
 )
 
 func (api *Api) addRoutesV2() {
@@ -38,8 +39,12 @@ func (api *Api) addRoutesV2() {
 	api.publicRouter.GET("/api/v1/version", api.getVersionV2)
 
 	// allow one auth operation per minute for past 15 minutes, with burst of 15 requests.
-	authRateLimiter := newRateLimiter(rate.Every(time.Second*60), 15, time.Minute*15)
-	authGroup := api.apiRouter.Group("/v1/auth", authRateLimiter)
+
+	authGroup := api.apiRouter.Group("/v1/auth")
+	if !config.C.Api.AuthRatelimitDisabled {
+		authRateLimiter := newRateLimiter(rate.Every(time.Second*60), 15, time.Minute*15)
+		authGroup = api.apiRouter.Group("/v1/auth", authRateLimiter)
+	}
 
 	authGroup.POST("/login", api.LoginV2)
 	api.privateRouter.POST("/auth/logout", api.Logout)

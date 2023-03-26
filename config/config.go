@@ -40,7 +40,8 @@ type Api struct {
 	PublicUrl string
 	CorsHosts []string
 
-	StaticContentPath string
+	StaticContentPath     string
+	AuthRatelimitDisabled bool
 }
 
 func (a *Api) CorsHostList() string {
@@ -123,13 +124,14 @@ func ConfigFromViper() error {
 
 	c := &Config{
 		Api: Api{
-			Host:              viper.GetString("api.host"),
-			Port:              viper.GetInt("api.port"),
-			Key:               viper.GetString("api.secret_key"),
-			PublicUrl:         viper.GetString("api.public_url"),
-			CorsHosts:         viper.GetStringSlice("api.cors_hosts"),
-			StaticContentPath: viper.GetString("api.static_content_path"),
-			TokenExpireSec:    viper.GetInt("api.token_expire_sec"),
+			Host:                  viper.GetString("api.host"),
+			Port:                  viper.GetInt("api.port"),
+			Key:                   viper.GetString("api.secret_key"),
+			PublicUrl:             viper.GetString("api.public_url"),
+			CorsHosts:             viper.GetStringSlice("api.cors_hosts"),
+			StaticContentPath:     viper.GetString("api.static_content_path"),
+			TokenExpireSec:        viper.GetInt("api.token_expire_sec"),
+			AuthRatelimitDisabled: viper.GetBool("api.disable_auth_ratelimit"),
 		},
 
 		Database: Database{
