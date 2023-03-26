@@ -15,6 +15,9 @@ public_url = "http://localhost:8000"
 # Token expire time in seconds. Set to 0 to disable. Default value is 1 week.
 token_expire_sec = 579600
 
+# disable auth endpoint ratelimits. only disable for testing purposes.
+disable_auth_ratelimit = false
+
 
 # Database, only postgres is supported.
 [database]
