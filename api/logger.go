@@ -47,6 +47,10 @@ func logCrudRule(userId int, action string, success *bool, fmt string, args ...i
 	logCrudOp("processing-rule", action, userId, success).Infof(fmt, args...)
 }
 
+func logCrudAdminUsers(userId int, action string, success *bool, fmt string, args ...interface{}) {
+	logCrudOp("admin-users", action, userId, success).Infof(fmt, args...)
+}
+
 func loggingMiddlware() echo.MiddlewareFunc {
 	var logger *logrus.Logger
 

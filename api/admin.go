@@ -20,13 +20,14 @@ package api
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"os/exec"
 	"runtime"
 	"strings"
-
-	"github.com/sirupsen/logrus"
+	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/process"
@@ -254,12 +255,17 @@ func (a *Api) getSystemInfo(c echo.Context) error {
 	return c.JSON(http.StatusOK, info)
 }
 
-func (a *Api) getUsers(c echo.Context) error {
+func (a *Api) adminGetUsers(c echo.Context) error {
 	// swagger:route GET /api/v1/admin/users Admin AdminGetUsers
 	// Get detailed users info.
 	//
 	// responses:
 	//   200: RespUserInfo
+	ctx := c.(UserContext)
+	opOk := false
+	defer func() {
+		logCrudAdminUsers(ctx.UserId, "list", &opOk, "get users")
+	}()
 
 	info, err := a.db.UserStore.GetUsersInfo()
 	if err != nil {
@@ -279,4 +285,144 @@ func (a *Api) getUsers(c echo.Context) error {
 		}
 	}
 	return resourceList(c, info, len(*info))
+}
+
+func (a *Api) adminGetUser(c echo.Context) error {
+	// swagger:route GET /api/v1/admin/user Admin AdminGetUser
+	// Get detailed user info
+	//
+	// responses:
+	//   200: RespUserInfo
+	ctx := c.(UserContext)
+	userId, err := bindPathIdInt(c)
+	if err != nil {
+		return err
+	}
+
+	opOk := false
+	defer func() {
+		logCrudAdminUsers(ctx.UserId, "get", &opOk, "get user %d", userId)
+	}()
+
+	userInfo, err := a.db.UserStore.GetUser(userId)
+	if err != nil {
+		return err
+	}
+
+	searchStatus, err := a.search.GetUserIndexStatus(userId)
+	if err != nil {
+		return err
+	}
+
+	info := models.UserInfo{
+		UserId:                userInfo.Id,
+		UserName:              userInfo.Name,
+		Email:                 userInfo.Email,
+		IsActive:              userInfo.IsActive,
+		UpdatedAt:             userInfo.UpdatedAt,
+		CreatedAt:             userInfo.CreatedAt,
+		DocumentCount:         0,
+		DocumentsSize:         0,
+		IsAdmin:               userInfo.IsAdmin,
+		LastSeen:              time.Time{},
+		Indexing:              searchStatus.Indexing,
+		TotalDocumentsIndexed: searchStatus.NumDocuments,
+	}
+
+	return c.JSON(200, info)
+}
+
+type AdminUpdateUserRequest struct {
+	Email         string `json:"email" valid:"optional,email"`
+	Password      string `json:"password" valid:"optional,stringlength(8|150)"`
+	Active        bool   `json:"is_active" valid:"optional"`
+	Administrator bool   `json:"is_admin" valid:"optional"`
+}
+
+func (a *Api) adminUpdateUser(c echo.Context) error {
+	// swagger:route PUT /api/v1/admin/users/:id Admin AdminUpdateUser
+	// Update user
+	//
+	// responses:
+	//   200: RespUserInfo
+
+	ctx := c.(UserContext)
+	request := &AdminUpdateUserRequest{}
+	err := unMarshalBody(c.Request(), request)
+	if err != nil {
+		return err
+	}
+
+	userId, err := bindPathIdInt(c)
+	if err != nil {
+		return err
+	}
+
+	opOk := false
+	defer func() {
+		logCrudAdminUsers(ctx.UserId, "update", &opOk, "update user, user_id: %d", userId)
+	}()
+
+	user, err := a.db.UserStore.GetUser(userId)
+	if err != nil {
+		return fmt.Errorf("get user %d: %v", userId, err)
+	}
+
+	dataChanged := false
+	if user.IsActive != request.Active {
+		if request.Active {
+			logrus.Infof("Activate user %d by admin user %d", user.Id, ctx.UserId)
+		} else {
+			logrus.Infof("Deactivate user %d by admin user %d", user.Id, ctx.UserId)
+		}
+		user.IsActive = request.Active
+		dataChanged = true
+	}
+	if user.IsAdmin != request.Administrator {
+		if request.Administrator {
+			logrus.Infof("Add user %d to administrators by admin user %d", user.Id, ctx.UserId)
+		} else {
+			logrus.Infof("Remove user %d from administrators by admin user %d", user.Id, ctx.UserId)
+		}
+		user.IsAdmin = request.Administrator
+		dataChanged = true
+	}
+	if user.Email != request.Email {
+		logrus.Infof("Change user's %d email by admin user %d", user.Id, ctx.UserId)
+		user.Email = request.Email
+		dataChanged = true
+	}
+	if request.Password != "" {
+		logrus.Infof("Change user's %d password by admin user %d", user.Id, ctx.UserId)
+		err = user.SetPassword(request.Password)
+		if err != nil {
+			return fmt.Errorf("set user's password: %v", err)
+		}
+		dataChanged = true
+	}
+	if dataChanged {
+		user.Update()
+		err = a.db.UserStore.Update(user)
+		if err == nil {
+			info := models.UserInfo{
+				UserId:                user.Id,
+				UserName:              user.Name,
+				Email:                 user.Email,
+				IsActive:              user.IsActive,
+				UpdatedAt:             user.UpdatedAt,
+				CreatedAt:             user.CreatedAt,
+				DocumentCount:         0,
+				DocumentsSize:         0,
+				IsAdmin:               user.IsAdmin,
+				LastSeen:              time.Time{},
+				Indexing:              false,
+				TotalDocumentsIndexed: 0,
+			}
+			return c.JSON(200, info)
+		}
+	} else {
+		return c.JSON(http.StatusNotModified, user)
+	}
+
+	return err
 }

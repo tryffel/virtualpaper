@@ -23,6 +23,7 @@ import BulkEditDocuments from "./components/Documents/BulkEdit";
 import { Dashboard } from "./components/Dashboard";
 import { ResetPassword } from "./components/Public/ResetPassword";
 import { ForgotPassword } from "./components/Public/ForgotPassword";
+import { AdminEditUser } from "./components/Admin/UserEdit";
 
 const App = () => (
   <Admin
@@ -50,7 +51,11 @@ const App = () => (
     <Resource name="user" />
     <Resource name="preferences" />
     <Resource name="admin" />
-    <Resource name="admin/users" />
+    <Resource
+      name="admin/users"
+      edit={<AdminEditUser />}
+      options={{ label: "Users" }}
+    />
     <Resource name="admin/documents/processing" />
     <Resource name="documents/bulkEdit" create={<BulkEditDocuments />} />
     <Resource name="documents/linked" options={{ label: "Linked documents" }} />

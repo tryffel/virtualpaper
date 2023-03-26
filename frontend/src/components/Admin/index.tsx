@@ -27,20 +27,16 @@ import {
   BooleanField,
   useRecordContext,
   DateField,
-  Labeled,
+  EditButton,
 } from "react-admin";
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
-  CardHeader,
   Grid,
   Accordion,
   AccordionSummary,
   AccordionDetails,
   useMediaQuery,
-  TextField as MuiTextField,
 } from "@mui/material";
 
 import { ExpandMore } from "@mui/icons-material";
@@ -195,7 +191,7 @@ const ShowExpandedUser = () => {
       <Grid item xs={6} md={6} lg={6}>
         <Box display={{ xs: "block", sm: "flex" }}>
           <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
-          <BooleanIndexingStatusField source="indexing"/>
+            <BooleanIndexingStatusField source="indexing" />
           </Box>
           <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
             <Typography variant="body2">Created at</Typography>
@@ -216,6 +212,9 @@ const ShowExpandedUser = () => {
           <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
             <Typography variant="body2">Storage size</Typography>
             <Typography variant="body1">{documentsSize}</Typography>
+          </Box>
+          <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
+            <EditButton resource={"admin/users"} />
           </Box>
         </Box>
       </Grid>

@@ -95,5 +95,7 @@ func (api *Api) addRoutesV2() {
 	api.privateRouter.GET("/preferences/user", api.getUserPreferences).Name = "get-user-preferences"
 	api.privateRouter.PUT("/preferences/user", api.updateUserPreferences)
 
-	api.adminRouter.GET("/users", api.getUsers)
+	api.adminRouter.GET("/users", api.adminGetUsers)
+	api.adminRouter.GET("/users/:id", api.adminGetUser)
+	api.adminRouter.PUT("/users/:id", api.adminUpdateUser)
 }
