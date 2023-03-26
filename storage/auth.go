@@ -63,8 +63,8 @@ func (s *AuthStore) setTokenCache(token *models.Token) {
 
 func (s *AuthStore) InsertToken(token *models.Token) error {
 	builder := s.sq.Insert("auth_tokens").
-		Columns("user_id", "key", "name", "expires_at", "last_seen").
-		Values(token.UserId, token.Key, token.Name, token.ExpiresAt, token.LastSeen).Suffix("RETURNING id")
+		Columns("user_id", "key", "name", "expires_at", "last_seen", "ip_address").
+		Values(token.UserId, token.Key, token.Name, token.ExpiresAt, token.LastSeen, token.IpAddr).Suffix("RETURNING id")
 
 	sql, args, err := builder.ToSql()
 	if err != nil {

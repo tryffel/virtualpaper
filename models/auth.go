@@ -13,6 +13,7 @@ type Token struct {
 	UserId    int       `json:"user_id" db:"user_id"`
 	Key       string    `json:"key" db:"key"`
 	Name      string    `json:"name" db:"name"`
+	IpAddr    string    `json:"ip_addr" db:"ip_address"`
 	ExpiresAt time.Time `json:"expires_at" db:"expires_at"`
 	LastSeen  time.Time `json:"last_seen" db:"last_seen"`
 }
