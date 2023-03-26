@@ -14,6 +14,7 @@ type CronJobs struct {
 	db *storage.Database
 
 	removeExpiredPasswordPresets cron.EntryID
+	removeExpiredAuthTokens      cron.EntryID
 }
 
 func NewCron(db *storage.Database) (*CronJobs, error) {
@@ -25,6 +26,10 @@ func NewCron(db *storage.Database) (*CronJobs, error) {
 	cj.removeExpiredPasswordPresets, err = cj.c.AddFunc("*/15 * * * *", cj.JobRemoveExpiredPasswordResets)
 	if err != nil {
 		return cj, fmt.Errorf("create removeExpiredPasswordPresets job: %v", err)
+	}
+	cj.removeExpiredAuthTokens, err = cj.c.AddFunc("*/15 * * * *", cj.JobRemoveExpiredAuthTokens)
+	if err != nil {
+		return cj, fmt.Errorf("create removeExpiredAuthTokens job: %v", err)
 	}
 	return cj, nil
 }
@@ -72,8 +77,19 @@ func logCronOp(action string, success bool) *logrus.Entry {
 
 func (c *CronJobs) JobRemoveExpiredPasswordResets() {
 	defer c.recover()
-	action := "remove password reset tokens"
+	action := "remove expired password reset tokens"
 	count, err := c.db.UserStore.DeleteExpiredPasswordResetTokens()
+	if err != nil {
+		logCronOp(action, false).Error(err)
+	} else {
+		logCronOp(action, true).Debugf("deleted %d tokens", count)
+	}
+}
+
+func (c *CronJobs) JobRemoveExpiredAuthTokens() {
+	defer c.recover()
+	action := "remove expired auth tokens"
+	count, err := c.db.AuthStore.DeleteExpiredAuthTokens()
 	if err != nil {
 		logCronOp(action, false).Error(err)
 	} else {

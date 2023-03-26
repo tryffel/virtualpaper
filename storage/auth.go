@@ -5,6 +5,7 @@ import (
 	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/patrickmn/go-cache"
+	"github.com/sirupsen/logrus"
 	"time"
 	"tryffel.net/go/virtualpaper/models"
 )
@@ -127,4 +128,19 @@ func (s *AuthStore) RevokeToken(key string) error {
 
 	_, err = s.db.Exec(sql, args...)
 	return s.parseError(err, "delete token")
+}
+
+func (s *AuthStore) DeleteExpiredAuthTokens() (int, error) {
+	// expires_at must be non-zero value and expired
+	sql := `DELETE FROM auth_tokens WHERE expires_at < now() AND EXTRACT(EPOCH from expires_at) > 1`
+	out, err := s.db.Exec(sql)
+	if err != nil {
+		return 0, s.parseError(err, "delete expired tokens")
+	}
+
+	affected, err := out.RowsAffected()
+	if err != nil {
+		logrus.Warningf("get rows affected for deleting expired tokens: %v", err)
+	}
+	return int(affected), nil
 }

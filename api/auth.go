@@ -235,6 +235,10 @@ func (a *Api) LoginV2(c echo.Context) error {
 		UserId: userId,
 	}
 
+	if config.C.Api.TokenExpireSec != 0 {
+		authToken.ExpiresAt = time.Now().Add(config.C.Api.TokenExpire)
+	}
+
 	err = authToken.Init()
 	if err != nil {
 		return fmt.Errorf("init token: %v", err)
