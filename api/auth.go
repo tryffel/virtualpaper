@@ -288,7 +288,11 @@ type ResetPasswordRequest struct {
 }
 
 func (a *Api) Logout(c echo.Context) error {
-	ctx := c.(UserContext)
+	ctx, ok := c.(UserContext)
+	if !ok {
+		// should not happen, user is required to authenticate
+		return c.JSON(200, map[string]string{"status": "ok"})
+	}
 	err := a.db.AuthStore.RevokeToken(ctx.TokenKey)
 	if err != nil {
 		if errors.Is(err, errors.ErrRecordNotFound) {
