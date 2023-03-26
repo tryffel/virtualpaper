@@ -35,6 +35,10 @@ type UserStore struct {
 	cache *cache.Cache
 }
 
+func (s *UserStore) FlushCache() {
+	s.cache.Flush()
+}
+
 func (s *UserStore) Name() string {
 	return "Users"
 }
@@ -242,6 +246,9 @@ where id = $1
 `
 
 	_, err := s.db.Exec(sql, user.Id, user.Email, user.UpdatedAt, user.Password, user.IsActive, user.IsAdmin)
+	if err == nil {
+		s.setUserCache(user)
+	}
 	return s.parseError(err, "update")
 }
 
