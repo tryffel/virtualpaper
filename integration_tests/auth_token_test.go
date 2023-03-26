@@ -1,0 +1,63 @@
+package integrationtest
+
+import (
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+	"gopkg.in/h2non/baloo.v3"
+	"testing"
+	"tryffel.net/go/virtualpaper/api"
+)
+
+type AuthTokenTest struct {
+	ApiTestSuite
+}
+
+func (suite *AuthTokenTest) SetupTest() {
+	suite.Init()
+}
+
+func (suite *AuthTokenTest) TearDownSuite() {
+	clearTestUsersTables(suite.T(), suite.db)
+	suite.ApiTestSuite.TearDownSuite()
+}
+
+func (suite *AuthTokenTest) TestLogin() {
+	data := &api.AdminAddUserRequest{
+		UserName:      "valid name",
+		Email:         "",
+		Password:      "passwordlongenough",
+		Active:        true,
+		Administrator: false,
+	}
+	user := AdminCreateUser(suite.T(), suite.adminHttp, data, 200)
+	token, _ := LoginRequest(suite.T(), data.UserName, data.Password, 200)
+	assertAuthTokensCount(&suite.ApiTestSuite, user.UserId, 1)
+	balooClient := baloo.New(serverUrl).SetHeader("Authorization", "Bearer "+token)
+	client := &httpClient{client: balooClient}
+
+	GetMetadataKeys(suite.T(), client, 200, nil)
+	LogoutRequest(suite.T(), client, 200)
+	assertAuthTokensCount(&suite.ApiTestSuite, user.UserId, 0)
+	// token's invalid
+	LogoutRequest(suite.T(), client, 401)
+	GetMetadataKeys(suite.T(), client, 401, nil)
+}
+
+func TestAuthTokenSuite(t *testing.T) {
+	suite.Run(t, new(AuthTokenTest))
+}
+
+func assertAuthTokensCount(suite *ApiTestSuite, userId int, tokensCount int) {
+	count := 0
+	err := suite.db.Engine().Get(&count, "SELECT COUNT(id) FROM auth_tokens WHERE user_id = $1", userId)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), count, tokensCount)
+}
+
+func deleteAuthTokens(suite *ApiTestSuite, userId int) {
+	suite.db.Engine().MustExec("DELETE FROM auth_tokens WHERE user_id=$1", userId)
+}
+
+func LogoutRequest(t *testing.T, client *httpClient, wantHttpStatus int) {
+	client.Post("/api/v1/auth/logout").ExpectName(t, "logout", false).e.Status(wantHttpStatus).Done()
+}
