@@ -44,6 +44,7 @@ require (
 	github.com/mattn/go-colorable v0.1.11 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
+	github.com/mileusna/useragent v1.2.1 // indirect
 	github.com/mitchellh/mapstructure v1.3.2 // indirect
 	github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect

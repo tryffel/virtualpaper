@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
+	"github.com/mileusna/useragent"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
@@ -233,7 +234,11 @@ func (a *Api) LoginV2(c echo.Context) error {
 	authToken := &models.Token{
 		Id:     0,
 		UserId: userId,
+		IpAddr: c.RealIP(),
 	}
+
+	ua := useragent.Parse(c.Request().Header.Get("User-Agent"))
+	authToken.Name = fmt.Sprintf("%s %s, %s %s", ua.OS, ua.OSVersion, ua.Name, ua.Version)
 
 	if config.C.Api.TokenExpireSec != 0 {
 		authToken.ExpiresAt = time.Now().Add(config.C.Api.TokenExpire)

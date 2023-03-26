@@ -24,6 +24,7 @@ CREATE TABLE auth_tokens (
     user_id INT NOT NULL,
     key TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL DEFAULT '',
+    ip_address TEXT NOT NULL DEFAULT '',
     
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
