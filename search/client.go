@@ -267,7 +267,6 @@ func (e *Engine) GetUserIndicesStatus() (map[int]*UserIndexStatus, int64, error)
 	indices := make(map[int]*UserIndexStatus, len(stats.Indexes))
 	counter := 0
 	for i, v := range stats.Indexes {
-		logrus.Infof("parse %s %v", i, v)
 		user := indexNameToUserIdRegex.FindStringSubmatch(i)
 		if len(user) != 2 {
 			logrus.Warningf("not virtualpaper index: %s, skipping", user)
