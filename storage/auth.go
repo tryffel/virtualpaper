@@ -119,7 +119,7 @@ func (s *AuthStore) GetToken(key string, updateLastSeen bool) (*models.Token, er
 }
 
 func (s *AuthStore) UpdateTokenConfirmation(key string, confirmed time.Time) error {
-	builder := s.sq.Update("auth_tokens").Set("last_confirmed = ?", confirmed).Where("key = ?", key)
+	builder := s.sq.Update("auth_tokens").Set("last_confirmed", confirmed).Where("key = ?", key)
 	sql, args, err := builder.ToSql()
 	if err != nil {
 		return fmt.Errorf("build sql: %v", err)

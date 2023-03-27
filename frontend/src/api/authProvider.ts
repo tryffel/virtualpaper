@@ -27,6 +27,11 @@ interface LoginFields {
   password: string;
 }
 
+export interface AuthPermissions {
+  admin: boolean;
+  requiresReauthentication: boolean;
+}
+
 const authProvider: AuthProvider = {
   login: (login: LoginFields) => {
     const request = new Request(config.url + "/auth/login", {
@@ -66,14 +71,25 @@ const authProvider: AuthProvider = {
   // @ts-ignore
   checkError: (error: HttpError) => {
     if (error.status === 401) {
+      if (error.message === "invalid token") {
+        return Promise.reject();
+      } else if (error.message === "authentication required") {
+        localStorage.setItem("requires_reauthentication", "true");
+        return Promise.resolve();
+      }
       return Promise.reject();
     }
     return Promise.resolve();
   },
-  getPermissions: () => {
+  getPermissions: (params: any) => {
     const isAdmin = localStorage.getItem("is_admin");
+    const authRequired = localStorage.getItem("requires_reauthentication");
+    const requiresReauthentication = authRequired
+      ? authRequired === "true" && true
+      : false;
     const permissions = {
       admin: isAdmin,
+      requiresReauthentication,
     };
     return Promise.resolve(permissions);
   },

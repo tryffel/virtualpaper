@@ -43,7 +43,9 @@ const (
 func (a *Api) authorizeUserV2() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) (authErr error) {
-			authErr = echo.ErrUnauthorized
+			e := errors.ErrUnauthorized
+			e.ErrMsg = "invalid token"
+			authErr = e
 
 			key := c.Request().Header.Get("Authorization")
 			if key == "" {
@@ -115,8 +117,8 @@ func (a *Api) ConfirmAuthorizedToken() echo.MiddlewareFunc {
 				return err
 			}
 			if token.ConfirmationExpired() {
-				err := errors.ErrForbidden
-				err.ErrMsg = "authentication confirmation needed"
+				err := errors.ErrUnauthorized
+				err.ErrMsg = "authentication required"
 				return err
 			}
 			return next(c)
@@ -468,7 +470,7 @@ func (a *Api) CreateResetPasswordToken(c echo.Context) error {
 }
 
 type AuthConfirmationRequest struct {
-	Password string `json:"password"`
+	Password string `json:"password" valid:"stringlength(8|150)"`
 }
 
 func (a *Api) ConfirmAuthentication(c echo.Context) error {
@@ -485,8 +487,8 @@ func (a *Api) ConfirmAuthentication(c echo.Context) error {
 	userId, err := a.db.UserStore.TryLogin(strings.ToLower(user.User.Name), dto.Password)
 	remoteAddr := getRemoteAddr(req)
 	if userId == -1 || err != nil {
-		logrus.Infof("Failed authentication confirmation for user %s, token %s, from remote %s", user.UserId, user.TokenKey, remoteAddr)
-		return echo.ErrUnauthorized
+		logrus.Infof("Failed authentication confirmation for user %d, token %s, from remote %s", user.UserId, user.TokenKey, remoteAddr)
+		return echo.ErrForbidden
 	}
 
 	token, err := a.db.AuthStore.GetToken(user.TokenKey, true)
