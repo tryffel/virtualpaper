@@ -117,6 +117,7 @@ func (a *Api) ConfirmAuthorizedToken() echo.MiddlewareFunc {
 				return err
 			}
 			if token.ConfirmationExpired() {
+				logrus.Infof("user's token needs confirmation, token %d", token.Id)
 				err := errors.ErrUnauthorized
 				err.ErrMsg = "authentication required"
 				return err
@@ -501,6 +502,7 @@ func (a *Api) ConfirmAuthentication(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+	logrus.Infof("Authentication confirmation successful for user %d, token %s, from remote %s", user.UserId, user.TokenKey, remoteAddr)
 	return c.JSON(200, "")
 }
 
