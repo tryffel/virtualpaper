@@ -16,9 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/* Package errors contains application specific error specification
-and resolution.
+/*
+	Package errors contains application specific error specification
 
+and resolution.
 */
 package errors
 
@@ -90,6 +91,7 @@ func (e Error) Is(target error) bool {
 
 var ErrRecordNotFound = newError("not found")
 var ErrForbidden = newError("forbidden")
+var ErrUnauthorized = newError("unauthorized")
 var ErrAlreadyExists = newError("already exists")
 var ErrInternalError = newError("internal error")
 var ErrInvalid = newError("invalid request")

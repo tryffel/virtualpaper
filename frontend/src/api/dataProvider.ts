@@ -426,6 +426,16 @@ export const dataProvider: DataProvider = {
     }).then(({ json }) => ({
       data: { ...json },
     })),
+  confirmAuthentication: (params: any) =>
+    httpClient(`${apiUrl}/auth/confirm`, {
+      method: "POST",
+      body: JSON.stringify(params.data),
+    }).then(({ status, json }) => {
+      if (status == 200) {
+        localStorage.setItem("requires_reauthentication", "false");
+      }
+      return { data: { ...json } };
+    }),
 };
 
 export const requestDocumentProcessing = (documentId: string) => {

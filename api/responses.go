@@ -149,7 +149,9 @@ func httpErrorHandler(err error, c echo.Context) {
 			} else if appError.ErrType == errors.ErrForbidden.ErrType {
 				statuscode = http.StatusForbidden
 				reason = appError.ErrMsg
-				logrus.Errorf("internal error: %v", err)
+			} else if appError.ErrType == errors.ErrUnauthorized.ErrType {
+				statuscode = http.StatusUnauthorized
+				reason = appError.ErrMsg
 			} else if appError.ErrType == errors.ErrInvalid.ErrType {
 				statuscode = http.StatusBadRequest
 				reason = appError.ErrMsg

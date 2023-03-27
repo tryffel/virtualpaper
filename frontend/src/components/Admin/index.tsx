@@ -29,6 +29,7 @@ import {
   DateField,
   EditButton,
   Button,
+  useAuthProvider,
 } from "react-admin";
 import {
   Box,
@@ -52,6 +53,7 @@ import { ByteToString } from "../util";
 import { BooleanIndexingStatusField } from "../IndexingStatus";
 import * as React from "react";
 import { useNavigate } from "react-router-dom";
+import { AuthPermissions } from "../../api/authProvider";
 
 export const AdminView = (props: any) => {
   const { record, refetch, isLoading } = useShowController({
@@ -60,6 +62,9 @@ export const AdminView = (props: any) => {
     basePath: "/admin",
     id: "systeminfo",
   });
+
+  const authProvider = useAuthProvider();
+  const navigate = useNavigate();
 
   let interval: number = 0;
 
@@ -74,6 +79,12 @@ export const AdminView = (props: any) => {
     return function cleanup() {
       clearInterval(interval);
     };
+  });
+
+  authProvider.getPermissions({}).then((permissions: AuthPermissions) => {
+    if (permissions.requiresReauthentication) {
+      navigate("/auth/confirm-authentication");
+    }
   });
 
   if (!record) return null;

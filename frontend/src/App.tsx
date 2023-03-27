@@ -25,6 +25,7 @@ import { ResetPassword } from "./components/Public/ResetPassword";
 import { ForgotPassword } from "./components/Public/ForgotPassword";
 import { AdminEditUser } from "./components/Admin/UserEdit";
 import { AdminCreateUser } from "./components/Admin/UserCreate";
+import { ConfirmAuthentication } from "./components/Authentication/AuthConfirmationDialog";
 
 const App = () => (
   <Admin
@@ -83,6 +84,10 @@ const App = () => (
     <CustomRoutes noLayout>
       <Route path={"/auth/reset-password"} element={<ResetPassword />} />
       <Route path={"/auth/forgot-password"} element={<ForgotPassword />} />
+      <Route
+        path={"/auth/confirm-authentication"}
+        element={<ConfirmAuthentication />}
+      />
     </CustomRoutes>
   </Admin>
 );
