@@ -93,6 +93,11 @@ var Migrations = []Migrator{
 		Level:  13,
 		Schema: schemaV13,
 	},
+	&Migration{
+		Name:   "auth_tokens store last_confirmed status",
+		Level:  14,
+		Schema: schemaV14,
+	},
 }
 
 type Schema struct {
