@@ -699,7 +699,7 @@ func TestDocumentRule_extractDates(t *testing.T) {
 				Document: &models.Document{
 					Content: `2021-07-30  Lorem ipsum dolor sit amet, 
 	consectetur adipiscing elit, 2021-07-31`,
-					Name: "2021-08-05",
+					Name: "2021-08-05 2021-08-05",
 				},
 				date: time.Time{},
 			},
