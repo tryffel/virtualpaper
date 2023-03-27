@@ -9,13 +9,14 @@ import (
 
 type Token struct {
 	Timestamp
-	Id        int       `json:"id" db:"id"`
-	UserId    int       `json:"user_id" db:"user_id"`
-	Key       string    `json:"key" db:"key"`
-	Name      string    `json:"name" db:"name"`
-	IpAddr    string    `json:"ip_addr" db:"ip_address"`
-	ExpiresAt time.Time `json:"expires_at" db:"expires_at"`
-	LastSeen  time.Time `json:"last_seen" db:"last_seen"`
+	Id            int       `json:"id" db:"id"`
+	UserId        int       `json:"user_id" db:"user_id"`
+	Key           string    `json:"key" db:"key"`
+	Name          string    `json:"name" db:"name"`
+	IpAddr        string    `json:"ip_addr" db:"ip_address"`
+	ExpiresAt     time.Time `json:"expires_at" db:"expires_at"`
+	LastSeen      time.Time `json:"last_seen" db:"last_seen"`
+	LastConfirmed time.Time `json:"last_confirmed" db:"last_confirmed"`
 }
 
 func (t *Token) Init() error {
@@ -39,4 +40,11 @@ func (t *Token) HasExpired() bool {
 		return false
 	}
 	return t.ExpiresAt.Before(time.Now())
+}
+
+func (t *Token) ConfirmationExpired() bool {
+	if t.LastConfirmed.IsZero() {
+		return true
+	}
+	return t.LastConfirmed.Add(time.Minute * 15).Before(time.Now())
 }

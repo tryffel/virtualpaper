@@ -63,8 +63,9 @@ func (s *AuthStore) setTokenCache(token *models.Token) {
 
 func (s *AuthStore) InsertToken(token *models.Token) error {
 	builder := s.sq.Insert("auth_tokens").
-		Columns("user_id", "key", "name", "expires_at", "last_seen", "ip_address").
-		Values(token.UserId, token.Key, token.Name, token.ExpiresAt, token.LastSeen, token.IpAddr).Suffix("RETURNING id")
+		Columns("user_id", "key", "name", "expires_at", "last_seen", "ip_address", "last_confirmed").
+		Values(token.UserId, token.Key, token.Name, token.ExpiresAt, token.LastSeen, token.IpAddr, token.LastConfirmed).
+		Suffix("RETURNING id")
 
 	sql, args, err := builder.ToSql()
 	if err != nil {
@@ -86,7 +87,7 @@ func (s *AuthStore) GetToken(key string, updateLastSeen bool) (*models.Token, er
 		return cached, nil
 	}
 
-	builder := s.sq.Select("id", "user_id", "key", "name", "created_at", "updated_at", "expires_at", "last_seen").
+	builder := s.sq.Select("id", "user_id", "key", "name", "created_at", "updated_at", "expires_at", "last_seen", "last_confirmed").
 		From("auth_tokens").
 		Where("key=?", key)
 
@@ -115,6 +116,21 @@ func (s *AuthStore) GetToken(key string, updateLastSeen bool) (*models.Token, er
 	}
 	s.setTokenCache(token)
 	return token, nil
+}
+
+func (s *AuthStore) UpdateTokenConfirmation(key string, confirmed time.Time) error {
+	builder := s.sq.Update("auth_tokens").Set("last_confirmed = ?", confirmed).Where("key = ?", key)
+	sql, args, err := builder.ToSql()
+	if err != nil {
+		return fmt.Errorf("build sql: %v", err)
+	}
+
+	_, err = s.db.Exec(sql, args...)
+	if err != nil {
+		return s.parseError(err, "update token last_confirmed")
+	}
+	s.deleteTokenFromCache(key)
+	return nil
 }
 
 func (s *AuthStore) RevokeToken(key string) error {

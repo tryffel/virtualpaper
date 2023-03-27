@@ -48,6 +48,7 @@ func (api *Api) addRoutesV2() {
 
 	authGroup.POST("/login", api.LoginV2)
 	api.privateRouter.POST("/auth/logout", api.Logout)
+	api.privateRouter.POST("/auth/confirm", api.ConfirmAuthentication)
 	authGroup.POST("/reset-password", api.ResetPassword)
 	authGroup.POST("/forgot-password", api.CreateResetPasswordToken)
 
@@ -102,7 +103,7 @@ func (api *Api) addRoutesV2() {
 	api.privateRouter.PUT("/preferences/user", api.updateUserPreferences)
 
 	api.adminRouter.GET("/users", api.adminGetUsers)
-	api.adminRouter.POST("/users", api.adminAddUser)
+	api.adminRouter.POST("/users", api.adminAddUser, api.ConfirmAuthorizedToken())
 	api.adminRouter.GET("/users/:id", api.adminGetUser)
-	api.adminRouter.PUT("/users/:id", api.adminUpdateUser)
+	api.adminRouter.PUT("/users/:id", api.adminUpdateUser, api.ConfirmAuthorizedToken())
 }

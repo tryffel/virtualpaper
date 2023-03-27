@@ -102,6 +102,28 @@ func (a *Api) authorizeUserV2() echo.MiddlewareFunc {
 	}
 }
 
+func (a *Api) ConfirmAuthorizedToken() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			ctx, ok := c.(UserContext)
+			if !ok {
+				c.Logger().Error("no UserContext found")
+				return echo.ErrInternalServerError
+			}
+			token, err := a.db.AuthStore.GetToken(ctx.TokenKey, false)
+			if err != nil {
+				return err
+			}
+			if token.ConfirmationExpired() {
+				err := errors.ErrForbidden
+				err.ErrMsg = "authentication confirmation needed"
+				return err
+			}
+			return next(c)
+		}
+	}
+}
+
 func (a *Api) corsHeader(next http.Handler) http.Handler {
 	hosts := config.C.Api.CorsHostList()
 
@@ -232,9 +254,11 @@ func (a *Api) LoginV2(c echo.Context) error {
 
 	c.Logger().Infof("User %d '%s' logged in from %s", userId, dto.Username, remoteAddr)
 	authToken := &models.Token{
-		Id:     0,
-		UserId: userId,
-		IpAddr: c.RealIP(),
+		Id:            0,
+		UserId:        userId,
+		IpAddr:        c.RealIP(),
+		LastConfirmed: time.Now(),
+		LastSeen:      time.Now(),
 	}
 
 	ua := useragent.Parse(c.Request().Header.Get("User-Agent"))
@@ -441,6 +465,41 @@ func (a *Api) CreateResetPasswordToken(c echo.Context) error {
 	logrus.Warningf("Create password reset token %d for user %d, expires at %s", token.Id, user.Id, token.ExpiresAt)
 	go mail.ResetPassword(user.Email, rawToken, token.Id)
 	return c.JSON(200, msg)
+}
+
+type AuthConfirmationRequest struct {
+	Password string `json:"password"`
+}
+
+func (a *Api) ConfirmAuthentication(c echo.Context) error {
+	req := c.Request()
+	dto := &AuthConfirmationRequest{}
+	err := unMarshalBody(req, dto)
+	if err != nil {
+		e := errors.ErrInvalid
+		e.ErrMsg = err.Error()
+		e.Err = err
+		return e
+	}
+	user := c.(UserContext)
+	userId, err := a.db.UserStore.TryLogin(strings.ToLower(user.User.Name), dto.Password)
+	remoteAddr := getRemoteAddr(req)
+	if userId == -1 || err != nil {
+		logrus.Infof("Failed authentication confirmation for user %s, token %s, from remote %s", user.UserId, user.TokenKey, remoteAddr)
+		return echo.ErrUnauthorized
+	}
+
+	token, err := a.db.AuthStore.GetToken(user.TokenKey, true)
+	if err != nil {
+		return err
+	}
+
+	token.LastConfirmed = time.Now()
+	err = a.db.AuthStore.UpdateTokenConfirmation(user.TokenKey, token.LastConfirmed)
+	if err != nil {
+		return err
+	}
+	return c.JSON(200, "")
 }
 
 // get new password token, returns token, hashed token and error
