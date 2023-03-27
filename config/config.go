@@ -192,7 +192,7 @@ func InitConfig() error {
 	if C.Api.Key == "" {
 		logrus.Info("create api key of 50 characters")
 		var err error
-		C.Api.Key, err = RandomStringCrypt(50)
+		C.Api.Key, err = RandomStringCrypt(200)
 		if err != nil {
 			return fmt.Errorf("generate api key: %v", err)
 		}
