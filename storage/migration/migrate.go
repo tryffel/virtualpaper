@@ -98,6 +98,11 @@ var Migrations = []Migrator{
 		Level:  14,
 		Schema: schemaV14,
 	},
+	&Migration{
+		Name:   "enforce case-insensitive unique user names and emails",
+		Level:  15,
+		Schema: schemaV15,
+	},
 }
 
 type Schema struct {
