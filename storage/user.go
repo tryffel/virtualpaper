@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -95,17 +96,17 @@ func (s *UserStore) TryLogin(username, password string) (int, error) {
 		`
 SELECT id, name, password
 FROM users
-WHERE name = $1
+WHERE LOWER(name) =$1
 AND active = TRUE;
 `
 
 	user := &models.User{}
-	err := s.db.Get(user, sql, username)
+	err := s.db.Get(user, sql, strings.ToLower(username))
 	if err != nil {
 		return -1, s.parseError(err, "get user by username")
 	}
 
-	if user.Name != username {
+	if strings.ToLower(user.Name) != strings.ToLower(username) {
 		return -1, fmt.Errorf("user not found")
 	}
 

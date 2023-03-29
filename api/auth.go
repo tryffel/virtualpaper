@@ -247,7 +247,6 @@ func (a *Api) LoginV2(c echo.Context) error {
 		return c.String(http.StatusBadRequest, err.Error())
 	}
 
-	dto.Username = strings.ToLower(dto.Username)
 	userId, err := a.db.UserStore.TryLogin(dto.Username, dto.Password)
 	remoteAddr := getRemoteAddr(req)
 	if userId == -1 || err != nil {
@@ -488,7 +487,7 @@ func (a *Api) ConfirmAuthentication(c echo.Context) error {
 		return e
 	}
 	user := c.(UserContext)
-	userId, err := a.db.UserStore.TryLogin(strings.ToLower(user.User.Name), dto.Password)
+	userId, err := a.db.UserStore.TryLogin(user.User.Name, dto.Password)
 	remoteAddr := getRemoteAddr(req)
 	if userId == -1 || err != nil {
 		logrus.Infof("Failed authentication confirmation for user %d, token %s, from remote %s", user.UserId, user.TokenKey, remoteAddr)
