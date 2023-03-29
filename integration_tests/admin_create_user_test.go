@@ -51,6 +51,16 @@ func (suite *AdminCreateUserTest) TestCreateBadInput() {
 	assertUsersCount(&suite.ApiTestSuite, 2)
 
 	data = &api.AdminAddUserRequest{
+		UserName:      "valid user",
+		Email:         "",
+		Password:      "0f209a29-6db3-45c2-828c-11a81f3b3035-0f209a29-6db3-45c2-828c-11a81f3b3035-0f209a29-6db3-45c2-828c-11a81f3b3035-0f209a29-6db3-45c2-828c-11a81f3b3035f209a29-6db3-45c2-828c-11a81f3b3035-0f209a29-6db3-45c2-828c",
+		Active:        true,
+		Administrator: false,
+	}
+	AdminCreateUser(suite.T(), suite.adminHttp, data, 400)
+	assertUsersCount(&suite.ApiTestSuite, 2)
+
+	data = &api.AdminAddUserRequest{
 		UserName:      "a",
 		Email:         "",
 		Password:      "passwordlongenough",

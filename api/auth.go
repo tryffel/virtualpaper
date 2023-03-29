@@ -311,7 +311,7 @@ user agent: %s,
 type ResetPasswordRequest struct {
 	Token    string `json:"token" valid:"minstringlength(4)"`
 	Id       int    `json:"id" valid:"required"`
-	Password string `json:"password" valid:"stringlength(8|150)"`
+	Password string `json:"password" valid:"required"`
 }
 
 func (a *Api) Logout(c echo.Context) error {
@@ -342,6 +342,9 @@ func (a *Api) ResetPassword(c echo.Context) error {
 	err := unMarshalBody(req, dto)
 	if err != nil {
 		return c.String(http.StatusBadRequest, err.Error())
+	}
+	if err = ValidatePassword(dto.Password); err != nil {
+		return err
 	}
 
 	token, err := a.db.UserStore.GetPasswordResetTokenByHash(dto.Id)
@@ -525,4 +528,13 @@ func hashPasswordResetToken(token string) (string, error) {
 		return "", fmt.Errorf("hash token: %v", err)
 	}
 	return string(bytes), nil
+}
+
+func ValidatePassword(password string) error {
+	err := errors.ErrInvalid
+	if len(password) < 8 || len(password) > 100 {
+		err.ErrMsg = "password's length must be 8 - 100 characters"
+		return err
+	}
+	return nil
 }
