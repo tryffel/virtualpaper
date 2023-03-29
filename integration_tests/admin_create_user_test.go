@@ -79,37 +79,6 @@ func (suite *AdminCreateUserTest) TestCreateBadInput() {
 	}
 	AdminCreateUser(suite.T(), suite.adminHttp, data, 400)
 	assertUsersCount(&suite.ApiTestSuite, 2)
-
-	data = &api.AdminAddUserRequest{
-		UserName:      "existing user",
-		Email:         "useremail@email.com",
-		Password:      "utf8-ɑ-ȗ-Ǹ-ǉ",
-		Active:        true,
-		Administrator: false,
-	}
-	AdminCreateUser(suite.T(), suite.adminHttp, data, 200)
-	assertUsersCount(&suite.ApiTestSuite, 3)
-
-	data = &api.AdminAddUserRequest{
-		UserName:      "Existing USER",
-		Email:         "",
-		Password:      "utf8-ɑ-ȗ-Ǹ-ǉ",
-		Active:        true,
-		Administrator: false,
-	}
-	AdminCreateUser(suite.T(), suite.adminHttp, data, 304)
-	assertUsersCount(&suite.ApiTestSuite, 3)
-
-	data = &api.AdminAddUserRequest{
-		UserName:      "new user",
-		Email:         "USEREMAIL@email.com",
-		Password:      "utf8-ɑ-ȗ-Ǹ-ǉ",
-		Active:        true,
-		Administrator: false,
-	}
-	AdminCreateUser(suite.T(), suite.adminHttp, data, 304)
-	assertUsersCount(&suite.ApiTestSuite, 3)
-
 }
 
 func (suite *AdminCreateUserTest) TestCreateOk() {
@@ -195,18 +164,49 @@ func (suite *AdminCreateUserTest) TestCreateUserExists() {
 	AdminCreateUser(suite.T(), suite.adminHttp, data, http.StatusNotModified)
 	assertUsersCount(&suite.ApiTestSuite, 3)
 
-	/*
-		uncomment when #7 fixed
-		data = &api.AdminAddUserRequest{
-			UserName:      "new name",
-			Email:         "validemail2@email.com",
-			Password:      "passwordlongenough",
-			Active:        true,
-			Administrator: false,
-		}
-		AdminCreateUser(suite.T(), suite.adminHttp, data, http.StatusNotModified)
-		assertUsersCount(&suite.ApiTestSuite, 3)
-	*/
+	data = &api.AdminAddUserRequest{
+		UserName:      "existing user",
+		Email:         "useremail@email.com",
+		Password:      "utf8-ɑ-ȗ-Ǹ-ǉ",
+		Active:        true,
+		Administrator: false,
+	}
+	AdminCreateUser(suite.T(), suite.adminHttp, data, 200)
+	assertUsersCount(&suite.ApiTestSuite, 4)
+
+	data = &api.AdminAddUserRequest{
+		UserName:      "Existing USER",
+		Email:         "",
+		Password:      "utf8-ɑ-ȗ-Ǹ-ǉ",
+		Active:        true,
+		Administrator: false,
+	}
+	AdminCreateUser(suite.T(), suite.adminHttp, data, 304)
+	assertUsersCount(&suite.ApiTestSuite, 4)
+
+	data = &api.AdminAddUserRequest{
+		UserName:      "new user",
+		Email:         "USEREMAIL@email.com",
+		Password:      "utf8-ɑ-ȗ-Ǹ-ǉ",
+		Active:        true,
+		Administrator: false,
+	}
+	AdminCreateUser(suite.T(), suite.adminHttp, data, 304)
+	assertUsersCount(&suite.ApiTestSuite, 4)
+}
+
+func (suite *AdminCreateUserTest) TestLoginCaseInsensitive() {
+	data := &api.AdminAddUserRequest{
+		UserName:      "valid name",
+		Email:         "",
+		Password:      "passwordlongenough",
+		Active:        true,
+		Administrator: false,
+	}
+	user := AdminCreateUser(suite.T(), suite.adminHttp, data, 200)
+	token, id := LoginRequest(suite.T(), "VALID name", data.Password, 200)
+	assert.Equal(suite.T(), user.UserId, id)
+	assert.NotEqual(suite.T(), "", token)
 }
 
 func AdminCreateUser(t *testing.T, client *httpClient, data *api.AdminAddUserRequest, wantHttpStatus int) *models.UserInfo {
