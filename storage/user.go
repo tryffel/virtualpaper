@@ -122,9 +122,16 @@ func (s *UserStore) AddUser(user *models.User) error {
 	sql := `
 INSERT INTO users (name, email, updated_at, password, active, admin)
 VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;
-
 `
-	rows, err := s.db.Query(sql, user.Name, "", time.Now(), user.Password, user.IsActive, user.IsAdmin)
+
+	var email interface{}
+	if user.Email == "" {
+		email = nil
+	} else {
+		email = user.Email
+	}
+
+	rows, err := s.db.Query(sql, user.Name, email, time.Now(), user.Password, user.IsActive, user.IsAdmin)
 	if err != nil {
 		return s.parseError(err, "add")
 	}
@@ -147,9 +154,17 @@ VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;
 // GetUsers returns all users.
 func (s *UserStore) GetUsers() (*[]models.User, error) {
 	sql := `
-	SELECT *
-	FROM users
-	LIMIT 1000;
+SELECT 
+	id,
+	name,
+	COALESCE(email, '') AS email, 
+	password,
+	active,
+	admin,
+	created_at,
+	updated_at
+FROM users
+LIMIT 1000;
 	`
 
 	users := &[]models.User{}
@@ -160,21 +175,21 @@ func (s *UserStore) GetUsers() (*[]models.User, error) {
 func (s *UserStore) GetUsersInfo() (*[]models.UserInfo, error) {
 
 	sql := `
-	SELECT 
-		u.id as user_id, 
-		u.name as username, 
-		email, 
-		active, 
-		admin, 
-		u.created_at as created_at, 
-		u.updated_at as updated_at, 
-		count(d) as documents_count, 
-		sum(d."size") as documents_size 
-	from users u 
-	left join documents d on u.id = d.user_id 
-	group by u.id
-	order by u.name asc
-	limit 1000;`
+SELECT 
+	u.id as user_id, 
+	u.name as username, 
+	COALESCE(email, '') AS email, 
+	active, 
+	admin, 
+	u.created_at as created_at, 
+	u.updated_at as updated_at, 
+	count(d) as documents_count, 
+	sum(d."size") as documents_size 
+from users u 
+left join documents d on u.id = d.user_id 
+group by u.id
+order by u.name asc
+limit 1000;`
 
 	info := &[]models.UserInfo{}
 	err := s.db.Select(info, sql)
@@ -189,9 +204,17 @@ func (s *UserStore) GetUser(userid int) (*models.User, error) {
 	}
 
 	sql := `
-	SELECT *
-	FROM users
-	WHERE id = $1;
+SELECT 
+	id,
+	name,
+	COALESCE(email, '') AS email, 
+	password,
+	active,
+	admin,
+	created_at,
+	updated_at
+FROM users
+WHERE id = $1;
 	`
 
 	user = &models.User{}
@@ -207,9 +230,17 @@ func (s *UserStore) GetUser(userid int) (*models.User, error) {
 // GetUserByName returns user matching username
 func (s *UserStore) GetUserByName(username string) (*models.User, error) {
 	sql := `
-	SELECT *
-	FROM users
-	WHERE name = $1;
+SELECT 
+	id,
+	name,
+	COALESCE(email, '') AS email, 
+	password,
+	active,
+	admin,
+	created_at,
+	updated_at
+FROM users
+WHERE name = $1;
 	`
 
 	user := &models.User{}
@@ -219,10 +250,17 @@ func (s *UserStore) GetUserByName(username string) (*models.User, error) {
 
 func (s *UserStore) GetUserByEmail(email string) (*models.User, error) {
 	sql := `
-	SELECT *
-	FROM users
-	WHERE email = $1;
-	`
+SELECT
+   	id,
+	name,
+	COALESCE(email, '') AS email, 
+	password,
+	active,
+	admin,
+	created_at,
+	updated_at
+FROM users
+WHERE email = $1`
 
 	user := &models.User{}
 	err := s.db.Get(user, sql, email)
@@ -245,7 +283,14 @@ email=$2, updated_at=$3, password=$4, active=$5, admin=$6
 where id = $1
 `
 
-	_, err := s.db.Exec(sql, user.Id, user.Email, user.UpdatedAt, user.Password, user.IsActive, user.IsAdmin)
+	var email interface{}
+	if user.Email == "" {
+		email = nil
+	} else {
+		email = user.Email
+	}
+
+	_, err := s.db.Exec(sql, user.Id, email, user.UpdatedAt, user.Password, user.IsActive, user.IsAdmin)
 	if err == nil {
 		s.setUserCache(user)
 	}
