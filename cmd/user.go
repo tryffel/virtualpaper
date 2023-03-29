@@ -24,6 +24,7 @@ import (
 	"os"
 	"strings"
 	"syscall"
+	"tryffel.net/go/virtualpaper/api"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -90,6 +91,11 @@ var addUserCmd = &cobra.Command{
 			if firstPw != secondPw {
 				logrus.Fatalf("passwords do not match.")
 			}
+			err = api.ValidatePassword(firstPw)
+			if err != nil {
+				logrus.Fatalf("error: %v", err)
+			}
+
 			password = firstPw
 		}
 
@@ -171,6 +177,10 @@ var resetPwCMd = &cobra.Command{
 		secondPw, err := readUserInput("repeat password", true)
 		if firstPw != secondPw {
 			logrus.Fatalf("passwords do not match.")
+		}
+		err = api.ValidatePassword(firstPw)
+		if err != nil {
+			logrus.Fatalf("error: %v", err)
 		}
 
 		user, err := db.UserStore.GetUserByName(userName)

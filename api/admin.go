@@ -335,7 +335,7 @@ func (a *Api) adminGetUser(c echo.Context) error {
 
 type AdminUpdateUserRequest struct {
 	Email         string `json:"email" valid:"optional,email"`
-	Password      string `json:"password" valid:"optional,stringlength(8|150)"`
+	Password      string `json:"password" valid:"optional"`
 	Active        bool   `json:"is_active" valid:"optional"`
 	Administrator bool   `json:"is_admin" valid:"optional"`
 }
@@ -352,6 +352,11 @@ func (a *Api) adminUpdateUser(c echo.Context) error {
 	err := unMarshalBody(c.Request(), request)
 	if err != nil {
 		return err
+	}
+	if request.Password != "" {
+		if err = ValidatePassword(request.Password); err != nil {
+			return err
+		}
 	}
 
 	userId, err := bindPathIdInt(c)
@@ -432,7 +437,7 @@ func (a *Api) adminUpdateUser(c echo.Context) error {
 type AdminAddUserRequest struct {
 	UserName      string `json:"user_name" valid:"username"`
 	Email         string `json:"email" valid:"email,optional"`
-	Password      string `json:"password" valid:"stringlength(8|150)"`
+	Password      string `json:"password" valid:"required"`
 	Active        bool   `json:"is_active" valid:"optional"`
 	Administrator bool   `json:"is_admin" valid:"optional"`
 }
@@ -448,6 +453,10 @@ func (a *Api) adminAddUser(c echo.Context) error {
 	request := &AdminAddUserRequest{}
 	err := unMarshalBody(c.Request(), request)
 	if err != nil {
+		return err
+	}
+
+	if err = ValidatePassword(request.Password); err != nil {
 		return err
 	}
 
