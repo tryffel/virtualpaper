@@ -58,9 +58,11 @@ func (api *Api) addRoutesV2() {
 	api.privateRouter.GET("/documents/stats", api.getUserDocumentStatistics)
 	api.privateRouter.POST("/documents", api.uploadFile)
 	api.privateRouter.GET("/documents", api.getDocuments).Name = "get-documents"
+	api.privateRouter.GET("/documents/deleted", api.getDeletedDocuments).Name = "get-deleted-documents"
 	api.privateRouter.GET("/documents/:id", api.getDocument).Name = "get-document"
 	api.privateRouter.PUT("/documents/:id", api.updateDocument)
 	api.privateRouter.DELETE("/documents/:id", api.deleteDocument)
+	api.privateRouter.POST("/documents/deleted/:id/restore", api.restoreDeletedDocument)
 	api.privateRouter.GET("/documents/:id/show", api.getDocument).Name = "get-document"
 	api.privateRouter.GET("/documents/:id/preview", api.getDocumentPreview)
 	api.privateRouter.GET("/documents/:id/content", api.getDocumentContent)

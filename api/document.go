@@ -41,13 +41,15 @@ import (
 // DocumentResponse
 type DocumentResponse struct {
 	// swagger:strfmt uuid
-	Id          string            `json:"id"`
-	Name        string            `json:"name"`
-	Filename    string            `json:"filename"`
-	Content     string            `json:"content"`
-	Description string            `json:"description"`
-	CreatedAt   int64             `json:"created_at"`
-	UpdatedAt   int64             `json:"updated_at"`
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Filename    string `json:"filename"`
+	Content     string `json:"content"`
+	Description string `json:"description"`
+	CreatedAt   int64  `json:"created_at"`
+	UpdatedAt   int64  `json:"updated_at"`
+	// swagger:strfmt either null or unix epoch in milliseconds
+	DeletedAt   interface{}       `json:"deleted_at"`
 	Date        int64             `json:"date"`
 	PreviewUrl  string            `json:"preview_url"`
 	DownloadUrl string            `json:"download_url"`
@@ -78,6 +80,11 @@ func responseFromDocument(doc *models.Document) *DocumentResponse {
 		PrettySize:  doc.GetSize(),
 		Metadata:    doc.Metadata,
 		Tags:        doc.Tags,
+	}
+	if doc.DeletedAt.Valid {
+		resp.DeletedAt = doc.DeletedAt.Time.Unix() * 1000
+	} else {
+		resp.DeletedAt = nil
 	}
 	return resp
 }
@@ -130,7 +137,40 @@ func (a *Api) getDocuments(c echo.Context) error {
 		sort = append(sort, storage.SortKey{})
 	}
 
-	docs, count, err := a.db.DocumentStore.GetDocuments(ctx.UserId, paging, sort[0], true)
+	docs, count, err := a.db.DocumentStore.GetDocuments(ctx.UserId, paging, sort[0], true, false)
+	if err != nil {
+		logrus.Errorf("get documents: %v", err)
+		return err
+	}
+	respDocs := make([]*DocumentResponse, len(*docs))
+
+	for i, v := range *docs {
+		respDocs[i] = responseFromDocument(&v)
+	}
+	return resourceList(c, respDocs, count)
+}
+
+func (a *Api) getDeletedDocuments(c echo.Context) error {
+	// swagger:route GET /api/v1/documents/deleted Documents GetDeletedDocuments
+	// Get deleted documents
+	//
+	// responses:
+	//   200: DocumentResponse
+	ctx := c.(UserContext)
+	paging, err := bindPaging(c)
+	if err != nil {
+		return err
+	}
+
+	sort, err := getSortParams(c.Request(), &models.Document{})
+	if err != nil {
+		return err
+	}
+
+	if len(sort) == 0 {
+		sort = append(sort, storage.SortKey{})
+	}
+	docs, count, err := a.db.DocumentStore.GetDocuments(ctx.UserId, paging, sort[0], true, true)
 	if err != nil {
 		logrus.Errorf("get documents: %v", err)
 		return err
@@ -842,4 +882,43 @@ func (a *Api) getDocumentHistory(c echo.Context) error {
 	}
 
 	return resourceList(c, data, len(*data))
+}
+
+func (a *Api) restoreDeletedDocument(c echo.Context) error {
+	// swagger:route PUT /api/v1/documents/deleted/:id/restore User UserRestoreDeletedDocument
+	// Restore deleted document
+	//
+	// responses:
+	//   200: RespUserInfo
+
+	ctx := c.(UserContext)
+	docId := bindPathId(c)
+
+	opOk := false
+	defer func() {
+		logCrudDocument(ctx.UserId, "restore deleted document", &opOk, "restore document %d", docId)
+	}()
+
+	document, err := a.db.DocumentStore.GetDocument(0, docId)
+	if err != nil {
+		return err
+	}
+	if !document.DeletedAt.Valid {
+		return errors.ErrRecordNotFound
+	}
+	document.Update()
+
+	err = a.db.DocumentStore.MarkDocumentNonDeleted(0, docId)
+	if err != nil {
+		return err
+	}
+
+	doc, err := a.db.DocumentStore.GetDocument(0, docId)
+	err = a.search.IndexDocuments(&[]models.Document{*doc}, doc.UserId)
+	if err != nil {
+		logrus.Errorf("delete document from search index: %v", err)
+		return respInternalErrorV2("delete from search index", err)
+	}
+	opOk = true
+	return c.JSON(200, responseFromDocument(doc))
 }

@@ -54,7 +54,7 @@ func (s DocumentStore) parseError(err error, action string) error {
 }
 
 // GetDocuments returns user's documents according to paging. In addition, return total count of documents available.
-func (s *DocumentStore) GetDocuments(userId int, paging Paging, sort SortKey, limitContent bool) (*[]models.Document, int, error) {
+func (s *DocumentStore) GetDocuments(userId int, paging Paging, sort SortKey, limitContent bool, showTrash bool) (*[]models.Document, int, error) {
 	sort.SetDefaults("date", false)
 
 	var contenSelect string
@@ -65,15 +65,22 @@ func (s *DocumentStore) GetDocuments(userId int, paging Paging, sort SortKey, li
 	}
 
 	sql := `
-SELECT id, name, ` + contenSelect + `, filename, created_at, updated_at
-hash, mimetype, size, date, description, deleted_at
+SELECT id, name, ` + contenSelect + `, 
+	filename, created_at, updated_at,
+	hash, mimetype, size, date, description, deleted_at
 FROM documents
-WHERE user_id = $1
-AND deleted_at = null
+WHERE user_id = $1 AND deleted_at %s
 ORDER BY ` + sort.QueryKey() + " " + sort.SortOrder() + `
 OFFSET $2
-LIMIT $3;
+LIMIT $3
 `
+
+	var deletedAt = "IS NULL"
+	if showTrash {
+		deletedAt = "IS NOT NULL"
+	}
+
+	sql = fmt.Sprintf(sql, deletedAt)
 
 	dest := &[]models.Document{}
 	err := s.db.Select(dest, sql, userId, paging.Offset, paging.Limit)
@@ -301,20 +308,6 @@ WHERE awaits_indexing=True
 
 	err := s.db.Select(docs, sql, args...)
 	return docs, s.parseError(err, "get needs indexing")
-}
-
-// BulkUpdateIndexingStatus sets indexing status for all documents that are defined in ids-array.
-func (s *DocumentStore) BulkUpdateIndexingStatus(indexed bool, at time.Time, ids []string) error {
-
-	sql := `
-UPDATE documents SET
-awaits_indexing = $1,
-indexed_at = $2,
-WHERE id IN ($3);
-`
-
-	_, err := s.db.Exec(sql, !indexed, at, ids)
-	return s.parseError(err, "bulk update indexing status")
 }
 
 // Update sets complete document record, not just changed attributes. Thus document must be read before updating.

@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import React from "react";
 import { ExpandMore } from "@mui/icons-material";
+import get from "lodash/get";
 
 export function DocumentJobsHistory() {
   const record = useRecordContext();
@@ -93,6 +94,7 @@ function DocumentJobListItem(props: any) {
 
 export const DocumentTopRow = () => {
   const record = useRecordContext();
+  const isDeleted = get(record, "deleted_at") !== null;
 
   const getDateString = (): string => {
     if (!record) {
@@ -130,6 +132,15 @@ export const DocumentTopRow = () => {
           style={{ top: "4px", right: "16px" }}
           sx={{ m: 1 }}
         />
+        {isDeleted && (
+          <Badge
+            label={"Document is deleted"}
+            variant="filled"
+            color={"error"}
+            style={{ top: "4px", right: "16px" }}
+            sx={{ m: 1 }}
+          />
+        )}
       </Grid>
       <Grid item xs={12}>
         <DocumentIdField />

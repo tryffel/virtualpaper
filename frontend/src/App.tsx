@@ -4,6 +4,7 @@ import "./App.css";
 import TagIcon from "@mui/icons-material/Tag";
 import ConstructionIcon from "@mui/icons-material/Construction";
 import ArticleIcon from "@mui/icons-material/Article";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 import { Route } from "react-router-dom";
 
@@ -26,6 +27,7 @@ import { ForgotPassword } from "./components/Public/ForgotPassword";
 import { AdminEditUser } from "./components/Admin/UserEdit";
 import { AdminCreateUser } from "./components/Admin/UserCreate";
 import { ConfirmAuthentication } from "./components/Authentication/AuthConfirmationDialog";
+import { DeletedDocumentList } from "./components/Documents/Deleted";
 
 const App = () => (
   <Admin
@@ -36,6 +38,12 @@ const App = () => (
     dashboard={Dashboard}
   >
     <Resource name="documents" {...documents} icon={ArticleIcon} />
+    <Resource
+      name="documents/deleted"
+      list={<DeletedDocumentList />}
+      icon={DeleteIcon}
+      options={{ label: "Trashbin" }}
+    />
     <Resource
       name="metadata/keys"
       options={{ label: "Metadata" }}
