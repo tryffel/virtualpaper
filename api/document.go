@@ -672,16 +672,15 @@ func (a *Api) deleteDocument(c echo.Context) error {
 
 	logrus.Infof("Request user %d removing document %s", ctx.UserId, id)
 
+	err = a.db.DocumentStore.MarkDocumentDeleted(ctx.UserId, id)
+	if err != nil {
+		return err
+	}
+
 	err = a.search.DeleteDocument(id, ctx.UserId)
 	if err != nil {
 		logrus.Errorf("delete document from search index: %v", err)
 		return respInternalErrorV2("delete from search index", err)
-	}
-
-	_ = process.DeleteDocument(id)
-	err = a.db.DocumentStore.DeleteDocument(ctx.UserId, id)
-	if err != nil {
-		return err
 	}
 	opOk = true
 	return c.JSON(http.StatusOK, nil)

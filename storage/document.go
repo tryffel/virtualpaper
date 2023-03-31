@@ -66,9 +66,10 @@ func (s *DocumentStore) GetDocuments(userId int, paging Paging, sort SortKey, li
 
 	sql := `
 SELECT id, name, ` + contenSelect + `, filename, created_at, updated_at
-hash, mimetype, size, date, description
+hash, mimetype, size, date, description, deleted_at
 FROM documents
 WHERE user_id = $1
+AND deleted_at = null
 ORDER BY ` + sort.QueryKey() + " " + sort.SortOrder() + `
 OFFSET $2
 LIMIT $3;
@@ -348,16 +349,36 @@ WHERE id=$1
 	return err
 }
 
-func (s *DocumentStore) DeleteDocument(userId int, docId string) error {
-	sql := `
-	DELETE FROM 
-	documents 
-	WHERE
-	user_id = $1 AND id = $2
-	`
+func (s *DocumentStore) MarkDocumentDeleted(userId int, docId string) error {
+	query := s.sq.Update("documents").Set("deleted_at", time.Now()).Where("id=?", docId)
+	if userId != 0 {
+		query = query.Where("user_id = ?", userId)
+	}
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return fmt.Errorf("sql: %v", err)
+	}
+	_, err = s.db.Exec(sql, args...)
+	return s.parseError(err, "mark document deleted")
+}
 
-	_, err := s.db.Exec(sql, userId, docId)
-	return s.parseError(err, "update")
+func (s *DocumentStore) MarkDocumentNonDeleted(userId int, docId string) error {
+	query := s.sq.Update("documents").Set("deleted_at", nil).Where("id=?", docId)
+	if userId != 0 {
+		query = query.Where("user_id = ?", userId)
+	}
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return fmt.Errorf("sql: %v", err)
+	}
+	_, err = s.db.Exec(sql, args...)
+	return s.parseError(err, "mark document deleted")
+}
+
+func (s *DocumentStore) DeleteDocument(docId string) error {
+	sql := `DELETE FROM documents WHERE id = $1`
+	_, err := s.db.Exec(sql, docId)
+	return s.parseError(err, "delete")
 }
 
 func (s *DocumentStore) GetDocumentHistory(userId int, docId string) (*[]models.DocumentHistory, error) {
@@ -391,4 +412,30 @@ func (s *DocumentStore) AddVisited(userId int, documentId string) error {
 	}
 	_, err = s.db.Exec(sql, args...)
 	return s.parseError(err, "add document_view_history")
+}
+
+func (s *DocumentStore) GetDocumentsInTrashbin(deletedAt time.Time) ([]string, error) {
+	query := s.sq.Select("id").
+		From("documents").
+		Where("deleted_at < ?", deletedAt)
+	sql, args, err := query.ToSql()
+	ids := make([]string, 0)
+	if err != nil {
+		return ids, fmt.Errorf("sql: %v", err)
+	}
+
+	rows, err := s.db.Query(sql, args...)
+	if err != nil {
+		return ids, s.parseError(err, "get deleted documents")
+	}
+
+	for rows.Next() {
+		var id = ""
+		err = rows.Scan(&id)
+		if err != nil {
+			return ids, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
 }

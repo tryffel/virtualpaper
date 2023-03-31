@@ -29,6 +29,7 @@ import (
 	"strings"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
+	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/process"
 	"tryffel.net/go/virtualpaper/search"
@@ -507,4 +508,42 @@ func (a *Api) adminAddUser(c echo.Context) error {
 	}
 	opOk = true
 	return c.JSON(200, info)
+}
+
+func (a *Api) adminRestoreDeletedDocument(c echo.Context) error {
+	// swagger:route PUT /api/v1/admin/documents/trashbin/:id/restore Admin AdminRestoreDeletedDocument
+	// Restore deleted document
+	//
+	// responses:
+	//   200: RespUserInfo
+
+	ctx := c.(UserContext)
+	docId := bindPathId(c)
+
+	opOk := false
+	defer func() {
+		logCrudAdminUsers(ctx.UserId, "restore deleted document", &opOk, "restore document %d", docId)
+	}()
+
+	document, err := a.db.DocumentStore.GetDocument(0, docId)
+	if err != nil {
+		return err
+	}
+	if !document.DeletedAt.Valid {
+		return errors.ErrRecordNotFound
+	}
+
+	err = a.db.DocumentStore.MarkDocumentNonDeleted(0, docId)
+	if err != nil {
+		return err
+	}
+
+	doc, err := a.db.DocumentStore.GetDocument(0, docId)
+	err = a.search.IndexDocuments(&[]models.Document{*doc}, doc.UserId)
+	if err != nil {
+		logrus.Errorf("delete document from search index: %v", err)
+		return respInternalErrorV2("delete from search index", err)
+	}
+	opOk = true
+	return c.JSON(200, nil)
 }
