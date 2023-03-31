@@ -15,6 +15,7 @@ type CronJobs struct {
 
 	removeExpiredPasswordPresets cron.EntryID
 	removeExpiredAuthTokens      cron.EntryID
+	cleanupDocumenTrashbins      cron.EntryID
 }
 
 func NewCron(db *storage.Database) (*CronJobs, error) {
@@ -28,6 +29,10 @@ func NewCron(db *storage.Database) (*CronJobs, error) {
 		return cj, fmt.Errorf("create removeExpiredPasswordPresets job: %v", err)
 	}
 	cj.removeExpiredAuthTokens, err = cj.c.AddFunc("*/15 * * * *", cj.JobRemoveExpiredAuthTokens)
+	if err != nil {
+		return cj, fmt.Errorf("create removeExpiredAuthTokens job: %v", err)
+	}
+	cj.cleanupDocumenTrashbins, err = cj.c.AddFunc("*/1 * * * *", cj.JobCleanupDocumenTrashbins)
 	if err != nil {
 		return cj, fmt.Errorf("create removeExpiredAuthTokens job: %v", err)
 	}
@@ -95,4 +100,53 @@ func (c *CronJobs) JobRemoveExpiredAuthTokens() {
 	} else {
 		logCronOp(action, true).Debugf("deleted %d tokens", count)
 	}
+}
+
+func (c *CronJobs) JobCleanupDocumenTrashbins() {
+	defer c.recover()
+	action := "remove documents marked as deleted"
+	if config.C.CronJobs.DocumentsTrashbinDuration.Milliseconds() == 0 {
+		logrus.Debugf("deleted documents cleanup period is set to 0, skip removing deleted documents")
+		return
+	}
+	timestamp := time.Now().Add(-config.C.CronJobs.DocumentsTrashbinDuration)
+
+	logrus.Debugf("delete documents marked deleted_as before '%s'", timestamp.String())
+	documentsToDelete, err := c.db.DocumentStore.GetDocumentsInTrashbin(timestamp)
+	if err != nil {
+		logrus.Errorf("find documents to delete: %v", err)
+		return
+	}
+	deletedCount := 0
+	for i, v := range documentsToDelete {
+		logrus.Debugf("delete %d / %d documents from trashbin", i+1, len(documentsToDelete))
+		err = c.deleteDocument(v)
+		if err != nil {
+			logrus.Errorf("cleanup trashbin: %v", err)
+		} else {
+			logrus.Debugf("successfully deleted document %s", v)
+			deletedCount += 1
+		}
+	}
+	if len(documentsToDelete) > 0 {
+		if deletedCount > 0 {
+			logrus.Infof("successfully deleted %d documents", deletedCount)
+		}
+		if deletedCount < len(documentsToDelete) {
+			logrus.Errorf("only %d / %d documents were successfully deleted. this might need manual fixing.", deletedCount, len(documentsToDelete))
+		}
+	}
+	logCronOp(action, deletedCount == len(documentsToDelete))
+}
+
+func (c *CronJobs) deleteDocument(docId string) error {
+	err := DeleteDocument(docId)
+	if err != nil {
+		return fmt.Errorf("delete document %s: %v", docId, err)
+	}
+	err = c.db.DocumentStore.DeleteDocument(docId)
+	if err != nil {
+		return err
+	}
+	return nil
 }

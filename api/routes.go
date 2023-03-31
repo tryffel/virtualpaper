@@ -54,11 +54,8 @@ func (api *Api) addRoutesV2() {
 
 	api.privateRouter.GET("/filetypes", api.getSupportedFileTypes)
 	api.privateRouter.GET("/admin/systeminfo", api.getSystemInfo)
-	api.adminRouter.GET("/documents/process", api.getDocumentProcessQueue)
-	api.adminRouter.POST("/documents/process", api.forceDocumentProcessing)
 
 	api.privateRouter.GET("/documents/stats", api.getUserDocumentStatistics)
-
 	api.privateRouter.POST("/documents", api.uploadFile)
 	api.privateRouter.GET("/documents", api.getDocuments).Name = "get-documents"
 	api.privateRouter.GET("/documents/:id", api.getDocument).Name = "get-document"
@@ -101,6 +98,10 @@ func (api *Api) addRoutesV2() {
 
 	api.privateRouter.GET("/preferences/user", api.getUserPreferences).Name = "get-user-preferences"
 	api.privateRouter.PUT("/preferences/user", api.updateUserPreferences)
+
+	api.adminRouter.GET("/documents/process", api.getDocumentProcessQueue)
+	api.adminRouter.POST("/documents/process", api.forceDocumentProcessing)
+	api.adminRouter.POST("/documents/deleted/:id/restore", api.adminRestoreDeletedDocument)
 
 	api.adminRouter.GET("/users", api.adminGetUsers)
 	api.adminRouter.POST("/users", api.adminAddUser, api.ConfirmAuthorizedToken())

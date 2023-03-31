@@ -61,6 +61,9 @@ imagick_bin = ""
 
 [cronjobs]
 disabled = false
+# permanently remove deleted documents after 336h or 14 days
+documents_trashbin_cleanup_duration = "336h"
+
 
 # Mail configuration. Uncomment to enable setings mails.
 # Host must be smtp server that is accessible with authentication.

@@ -915,12 +915,22 @@ func DeleteDocument(docId string) error {
 	logrus.Debugf("delete preview file %s", previewPath)
 	err := os.Remove(previewPath)
 	if err != nil {
-		return fmt.Errorf("remove thumbnail: %v", err)
+		if errors.Is(err, os.ErrNotExist) {
+			err = nil
+			logrus.Warnf("document %s preview file not found, continuing delete operation...", docId)
+		} else {
+			return fmt.Errorf("remove thumbnail: %v", err)
+		}
 	}
 	logrus.Debugf("delete document file %s", previewPath)
 	err = os.Remove(docPath)
 	if err != nil {
-		return fmt.Errorf("remove document file: %v", err)
+		if errors.Is(err, os.ErrNotExist) {
+			err = nil
+			logrus.Warnf("document %s file not found, continuing delete operation...", docId)
+		} else {
+			return fmt.Errorf("remove document file: %v", err)
+		}
 	}
 	return nil
 }

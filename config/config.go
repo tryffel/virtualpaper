@@ -116,7 +116,8 @@ type Logging struct {
 }
 
 type CronJobs struct {
-	Disabled bool
+	Disabled                  bool
+	DocumentsTrashbinDuration time.Duration
 }
 
 // ConfigFromViper initializes Config.C, reads all config values from viper and stores them to Config.C.
@@ -176,7 +177,10 @@ func ConfigFromViper() error {
 			LogFile:       viper.GetString("logging.log_file"),
 			LogStdout:     viper.GetBool("logging.log_stdout"),
 		},
-		CronJobs: CronJobs{Disabled: viper.GetBool("cronjobs.disabled")},
+		CronJobs: CronJobs{
+			Disabled:                  viper.GetBool("cronjobs.disabled"),
+			DocumentsTrashbinDuration: viper.GetDuration("cronjobs.documents_trashbin_cleanup_duration"),
+		},
 	}
 
 	var err error
