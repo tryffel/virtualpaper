@@ -7,12 +7,24 @@ import {
   Typography,
   Chip,
 } from "@mui/material";
-import { EditButton, RaRecord, ShowButton } from "react-admin";
+import RestoreIcon from "@mui/icons-material/Restore";
+import {
+  Button,
+  Confirm,
+  EditButton,
+  RaRecord,
+  ShowButton,
+  useNotify,
+  useRefresh,
+  useUpdate,
+} from "react-admin";
 import { ThumbnailSmall } from "./Thumbnail";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import * as React from "react";
 import "./document.css";
+import get from "lodash/get";
+import { useState } from "react";
 
 const cardStyle = {
   width: 230,
@@ -33,6 +45,7 @@ export interface DocumentCardProps {
 export const DocumentCard = (props: DocumentCardProps) => {
   const { record } = props;
   const { selected, setSelected } = props;
+  const isDeleted = get(record, "deleted_at") !== null;
 
   const isSelected = selected ? selected(String(record.id)) : false;
   const select = () => (setSelected ? setSelected(String(record.id)) : null);
@@ -46,8 +59,8 @@ export const DocumentCard = (props: DocumentCardProps) => {
       <DocumentContent record={record} />
       <CardActions style={{ textAlign: "right", paddingTop: "0" }}>
         <ShowButton resource="documents" record={record} />
-        <EditButton resource="documents" record={record} />
-        {setSelected && (
+        {!isDeleted && <EditButton resource="documents" record={record} />}
+        {!isDeleted && setSelected && (
           <ToggleButton
             size="small"
             value={record.id}
@@ -66,6 +79,7 @@ export const DocumentCard = (props: DocumentCardProps) => {
             )}
           </ToggleButton>
         )}
+        {isDeleted && <RestoreDocumentButton record={record} />}
       </CardActions>
     </Card>
   );
@@ -176,4 +190,52 @@ export const mimetypeToColor = (mimetype: string) => {
     default:
       return "warning";
   }
+};
+
+const RestoreDocumentButton = (props: { record: RaRecord }) => {
+  const { record } = props;
+
+  const refresh = useRefresh();
+  const notify = useNotify();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const [update, { isLoading, error, isSuccess }] = useUpdate(
+    "documents/deleted",
+    {
+      id: get(record, "id"),
+      data: {},
+      previousData: record,
+      meta: { action: "restore" },
+    }
+  );
+
+  const handleClick = () => setConfirmOpen(true);
+  const handleDialogClose = () => setConfirmOpen(false);
+  const handleConfirm = async () => {
+    await update();
+    setTimeout(() => refresh(), 1000);
+    if (error) {
+      // @ts-ignore
+      notify(error.toString(), { type: "error" });
+    } else {
+      setConfirmOpen(false);
+      notify("Document restored");
+    }
+  };
+
+  return (
+    <>
+      <Button label={"Restore"} color={"secondary"} onClick={handleClick}>
+        <RestoreIcon />
+      </Button>
+      <Confirm
+        isOpen={confirmOpen}
+        loading={isLoading}
+        title="Restore document"
+        content="Are you sure you want to restore the document?"
+        onConfirm={handleConfirm}
+        onClose={handleDialogClose}
+      />
+    </>
+  );
 };

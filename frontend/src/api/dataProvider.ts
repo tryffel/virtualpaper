@@ -306,15 +306,22 @@ export const dataProvider: DataProvider = {
 
   update: (resource, params) => {
     let url = `${apiUrl}/${resource}/${params.id}`;
+    let method = "PUT";
     if (resource === "metadata/values") {
       url = `${apiUrl}/metadata/keys/${params.meta.key_id}/values/${params.data.id}`;
+    }
+    if (resource === "documents/deleted") {
+      if (params.meta?.action === "restore") {
+        url = `${apiUrl}/documents/deleted/${params.id}/restore`;
+        method = "POST";
+      }
     }
     if (resource === "documents/linked") {
       url = `${apiUrl}/documents/${params.id}/linked-documents`;
     }
 
     return httpClient(url, {
-      method: "PUT",
+      method,
       body: JSON.stringify(params.data),
     }).then(({ json }) => {
       if (resource === "preferences") {
