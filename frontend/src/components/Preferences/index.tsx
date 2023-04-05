@@ -39,11 +39,15 @@ import {
   IconButton,
   Tooltip,
   Paper,
+  AccordionSummary,
+  Accordion,
+  AccordionDetails,
 } from "@mui/material";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
-import { JsonInput } from "react-admin-json-view";
 import { Link } from "react-router-dom";
+import { StopWordsInput, SynonymsInput } from "./Settings";
+import { ExpandMore } from "@mui/icons-material";
 
 export const ProfileEdit = (staticContext: any, ...props: any) => {
   return (
@@ -101,6 +105,44 @@ export const ProfileEdit = (staticContext: any, ...props: any) => {
               </Labeled>
             </Grid>
             <Grid item></Grid>
+            <Grid item xs={12} md={4}>
+              <Typography variant="h4">Search customization</Typography>
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMore />}>
+                  <Typography variant="h6">Stop words</Typography>
+                </AccordionSummary>
+                <AccordionDetails style={{ flexDirection: "column" }}>
+                  <Typography variant="body2">
+                    Stop words are words that are excluded when ranking
+                    documents during search query. They will not modify the
+                    documents in any way, they are only meant to improve the
+                    relevancy of search results.
+                  </Typography>
+                  <Typography variant="body2">
+                    Format: one stop word per line
+                  </Typography>
+                  <StopWordsInput />
+                </AccordionDetails>
+              </Accordion>
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMore />}>
+                  <Typography variant="h6">Synonyms</Typography>
+                </AccordionSummary>
+                <AccordionDetails style={{ flexDirection: "column" }}>
+                  <Typography variant="body2">
+                    Synonyms are words that are treated as same when searching
+                    documents. They will not modify the contents of documents in
+                    any way, they will only improve the relevancy of the search
+                    results.
+                  </Typography>
+                  <Typography variant="body2">
+                    Format: list of synonyms separated by comma, e.g.
+                    ('food','spaghetti','pasta')
+                  </Typography>
+                  <SynonymsInput />
+                </AccordionDetails>
+              </Accordion>
+            </Grid>
             <Grid item xs={12} sx={{ m: 3 }} justifyContent={"flex-end"}>
               <Grid container justifyContent={"space-between"}>
                 <ProfileEditActions />
