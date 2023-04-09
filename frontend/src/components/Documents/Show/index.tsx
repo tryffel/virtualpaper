@@ -42,6 +42,7 @@ import { ShowDocumentsEditHistory } from "./DocumentHistory";
 import { LinkedDocumentList } from "./LinkedDocuments";
 import { DocumentJobsHistory, DocumentTopRow } from "./Show";
 import { RequestIndexingModal } from "../RequestIndexing";
+import get from "lodash/get";
 
 export const DocumentShow = () => {
   const [historyEnabled, toggleHistory] = React.useState(false);
@@ -227,5 +228,6 @@ const DocumentContentTab = () => {
 };
 
 const DocumentPreviewTab = () => {
-  return <EmbedFile source="download_url" />;
+  const record = useRecordContext();
+  return <EmbedFile source="download_url" filename={get(record, "filename")} />;
 };

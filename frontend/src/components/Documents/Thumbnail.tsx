@@ -18,8 +18,9 @@
 
 import * as React from "react";
 import get from "lodash/get";
-import { RaRecord, useRecordContext } from "react-admin";
+import { Button, useRecordContext } from "react-admin";
 import { Paper, useMediaQuery, useTheme } from "@mui/material";
+import DownloadIcon from "@mui/icons-material/Download";
 
 export function downloadFile(url: string) {
   const token = localStorage.getItem("auth");
@@ -119,7 +120,7 @@ export function ThumbnailSmall(props: ThumbnailProps) {
   );
 }
 
-export function EmbedFile({ source = "" }) {
+export function EmbedFile({ source = "", filename = "" }) {
   const style = {
     width: "100%",
     display: "fill",
@@ -148,14 +149,21 @@ export function EmbedFile({ source = "" }) {
   if (!record) return null;
 
   return (
-    <Paper
-      sx={{
-        width: "100%",
-        margin: "0.5em",
-        height: "80vh",
-      }}
-    >
-      <iframe style={style} title="Preview" src={imgData} />
-    </Paper>
+    <>
+      <a href={imgData} download={filename}>
+        <Button color="primary" label={"Download"}>
+          <DownloadIcon />
+        </Button>
+      </a>
+      <Paper
+        sx={{
+          width: "100%",
+          margin: "0.5em",
+          height: "80vh",
+        }}
+      >
+        <iframe style={style} title="Preview" src={imgData} />
+      </Paper>
+    </>
   );
 }

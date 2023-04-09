@@ -196,13 +196,13 @@ export const MetadataValueInput = (props: MetadataValueInputProps) => {
 };
 
 const ToggledEmbedFile = (props: any) => {
-  const { shown, source } = props;
+  const { shown, source, filename } = props;
   if (!shown) return null;
   const isLg = useMediaQuery((theme: any) => theme.breakpoints.up("lg"));
 
   return (
     <Box sx={{ width: isLg ? "900px" : "400px" }}>
-      <EmbedFile source={source} />
+      <EmbedFile source={source} filename={filename} />
     </Box>
   );
 };
