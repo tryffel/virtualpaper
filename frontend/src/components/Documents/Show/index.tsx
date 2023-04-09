@@ -43,9 +43,15 @@ import { LinkedDocumentList } from "./LinkedDocuments";
 import { DocumentJobsHistory, DocumentTopRow } from "./Show";
 import { RequestIndexingModal } from "../RequestIndexing";
 import get from "lodash/get";
+import MenuItem from "@mui/material/MenuItem";
+import Menu from "@mui/material/Menu";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import DownloadIcon from "@mui/icons-material/Download";
 
 export const DocumentShow = () => {
   const [historyEnabled, toggleHistory] = React.useState(false);
+
+  const [downloadUrl, setDownloadUrl] = React.useState("");
 
   return (
     <Show
@@ -54,6 +60,7 @@ export const DocumentShow = () => {
         <DocumentShowActions
           showHistory={toggleHistory}
           historyShown={historyEnabled}
+          downloadUrl={downloadUrl}
         />
       }
       aside={historyEnabled ? <ShowDocumentsEditHistory /> : undefined}
@@ -66,7 +73,7 @@ export const DocumentShow = () => {
           <DocumentContentTab />
         </Tab>
         <Tab label="preview">
-          <DocumentPreviewTab />
+          <DocumentPreviewTab setDownloadUrl={setDownloadUrl} />
         </Tab>
         <Tab label="Processing trace">
           <DocumentJobsHistory />
@@ -79,6 +86,7 @@ export const DocumentShow = () => {
 interface ActionsProps {
   historyShown: boolean;
   showHistory: (shown: boolean) => any;
+  downloadUrl?: string;
 }
 
 function DocumentShowActions(props: ActionsProps) {
@@ -86,6 +94,14 @@ function DocumentShowActions(props: ActionsProps) {
   const { historyShown, showHistory } = props;
   const toggleHistory = () => {
     showHistory(!historyShown);
+  };
+
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const handleClickMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleCloseMenu = () => {
+    setAnchorEl(null);
   };
 
   const record = useRecordContext();
@@ -96,16 +112,30 @@ function DocumentShowActions(props: ActionsProps) {
   return (
     <TopToolbar>
       <EditButton />
-      <RequestIndexingModal />
-      {!isSmall && (
-        <Button
-          color="primary"
-          onClick={toggleHistory}
-          label={historyShown ? "Hide history" : "Show history"}
-        >
-          <HistoryIcon />
-        </Button>
-      )}
+      <Button onClick={handleClickMenu} label={"More"}>
+        <MoreVertIcon />
+      </Button>
+      <Menu anchorEl={anchorEl} open={!!anchorEl} onClose={handleCloseMenu}>
+        <MenuItem>
+          <RequestIndexingModal />
+        </MenuItem>
+        <MenuItem>
+          <Button
+            color="primary"
+            onClick={toggleHistory}
+            label={historyShown ? "Hide history" : "Show history"}
+          >
+            <HistoryIcon />
+          </Button>
+        </MenuItem>
+        <MenuItem>
+          <a href={props.downloadUrl} download={get(record, "filename")}>
+            <Button color="primary" label={"Download"}>
+              <DownloadIcon />
+            </Button>
+          </a>
+        </MenuItem>
+      </Menu>
     </TopToolbar>
   );
 }
@@ -227,7 +257,15 @@ const DocumentContentTab = () => {
   );
 };
 
-const DocumentPreviewTab = () => {
+const DocumentPreviewTab = (props: {
+  setDownloadUrl: (url: string) => void;
+}) => {
   const record = useRecordContext();
-  return <EmbedFile source="download_url" filename={get(record, "filename")} />;
+  return (
+    <EmbedFile
+      source="download_url"
+      filename={get(record, "filename")}
+      {...props}
+    />
+  );
 };

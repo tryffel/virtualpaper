@@ -120,13 +120,21 @@ export function ThumbnailSmall(props: ThumbnailProps) {
   );
 }
 
-export function EmbedFile({ source = "", filename = "" }) {
+export function EmbedFile(
+  props: {
+    source: string;
+    filename: string;
+    setDownloadUrl?: (url: string) => void;
+  } = { source: "", filename: "" }
+) {
   const style = {
     width: "100%",
     display: "fill",
     border: "none",
     height: "100%",
   };
+
+  const { source, filename, setDownloadUrl } = props;
 
   const record = useRecordContext();
   const url = get(record, source || "");
@@ -139,6 +147,7 @@ export function EmbedFile({ source = "", filename = "" }) {
         response.arrayBuffer().then((buffer) => {
           const data = window.URL.createObjectURL(new Blob([buffer]));
           setImage(data);
+          setDownloadUrl && setDownloadUrl(data);
         });
       })
       .catch((response) => {
@@ -149,21 +158,14 @@ export function EmbedFile({ source = "", filename = "" }) {
   if (!record) return null;
 
   return (
-    <>
-      <a href={imgData} download={filename}>
-        <Button color="primary" label={"Download"}>
-          <DownloadIcon />
-        </Button>
-      </a>
-      <Paper
-        sx={{
-          width: "100%",
-          margin: "0.5em",
-          height: "80vh",
-        }}
-      >
-        <iframe style={style} title="Preview" src={imgData} />
-      </Paper>
-    </>
+    <Paper
+      sx={{
+        width: "100%",
+        margin: "0.5em",
+        height: "80vh",
+      }}
+    >
+      <iframe style={style} title="Preview" src={imgData} />
+    </Paper>
   );
 }
