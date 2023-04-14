@@ -42,7 +42,7 @@ const App = () => (
       name="documents/deleted"
       list={<DeletedDocumentList />}
       icon={DeleteIcon}
-      options={{ label: "Trashbin" }}
+      options={{ label: "Trash bin" }}
     />
     <Resource
       name="metadata/keys"
