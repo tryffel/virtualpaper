@@ -39,6 +39,9 @@ import ScheduleIcon from "@mui/icons-material/Schedule";
 import TagIcon from "@mui/icons-material/Tag";
 import ContentCut from "@mui/icons-material/ContentCut";
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
+import DeleteIcon from "@mui/icons-material/Delete";
+import RestoreFromTrashIcon from "@mui/icons-material/RestoreFromTrash";
+
 import get from "lodash/get";
 
 export const ShowDocumentsEditHistory = () => {
@@ -131,6 +134,10 @@ const ShowDocumentsEditHistoryItem = (props: { item: DocumentHistoryItem }) => {
       return (
         <DocumentHistoryRemoveMetadata pretty_time={timeString} item={item} />
       );
+    case "delete":
+      return <DocumentHistoryDelete pretty_time={timeString} item={item} />;
+    case "restore":
+      return <DocumentHistoryRestore pretty_time={timeString} item={item} />;
     case "modified linked documents":
       return (
         <DocumentHistoryModifyLinkedDocuments
@@ -324,6 +331,32 @@ const DocumentHistoryModifyLinkedDocuments = (props: HistoryProps) => {
       <StepContent>
         <ItemLabel {...props} />
         <Typography variant="body1">{item.new_value}</Typography>
+      </StepContent>
+    </Step>
+  );
+};
+
+const DocumentHistoryDelete = (props: HistoryProps) => {
+  const { item } = props;
+
+  return (
+    <Step key={`${item.id}`} expanded active completed>
+      <StepLabel icon={<DeleteIcon />}>Deleted</StepLabel>
+      <StepContent>
+        <ItemLabel {...props} />
+      </StepContent>
+    </Step>
+  );
+};
+
+const DocumentHistoryRestore = (props: HistoryProps) => {
+  const { item } = props;
+
+  return (
+    <Step key={`${item.id}`} expanded active completed>
+      <StepLabel icon={<RestoreFromTrashIcon />}>Restored</StepLabel>
+      <StepContent>
+        <ItemLabel {...props} />
       </StepContent>
     </Step>
   );

@@ -220,7 +220,7 @@ INSERT INTO documents (id, user_id, name, content, filename, hash, mimetype, siz
 		}
 		rows.Close()
 	}
-	err = addDocumentHistoryAction(s.db, s.sq, []models.DocumentHistory{{DocumentId: doc.Id, Action: "create", OldValue: "", NewValue: doc.Name}}, doc.UserId)
+	err = addDocumentHistoryAction(s.db, s.sq, []models.DocumentHistory{{DocumentId: doc.Id, Action: models.DocumentHistoryActionCreate, OldValue: "", NewValue: doc.Name}}, doc.UserId)
 	s.sq.Select()
 	return err
 }
@@ -352,7 +352,22 @@ func (s *DocumentStore) MarkDocumentDeleted(userId int, docId string) error {
 		return fmt.Errorf("sql: %v", err)
 	}
 	_, err = s.db.Exec(sql, args...)
-	return s.parseError(err, "mark document deleted")
+	if err != nil {
+		return s.parseError(err, "mark document deleted")
+	}
+
+	err = addDocumentHistoryAction(s.db, s.sq, []models.DocumentHistory{{
+		DocumentId: docId,
+		Action:     models.DocumentHistoryActionDelete,
+		OldValue:   "",
+		NewValue:   "",
+		UserId:     userId,
+	},
+	}, userId)
+	if err != nil {
+		return fmt.Errorf("add history entry: %v", err)
+	}
+	return nil
 }
 
 func (s *DocumentStore) MarkDocumentNonDeleted(userId int, docId string) error {
@@ -365,7 +380,21 @@ func (s *DocumentStore) MarkDocumentNonDeleted(userId int, docId string) error {
 		return fmt.Errorf("sql: %v", err)
 	}
 	_, err = s.db.Exec(sql, args...)
-	return s.parseError(err, "mark document deleted")
+	if err != nil {
+		return s.parseError(err, "mark document deleted")
+	}
+	err = addDocumentHistoryAction(s.db, s.sq, []models.DocumentHistory{{
+		DocumentId: docId,
+		Action:     models.DocumentHistoryActionRestore,
+		OldValue:   "",
+		NewValue:   "",
+		UserId:     userId,
+	},
+	}, userId)
+	if err != nil {
+		return fmt.Errorf("add history entry: %v", err)
+	}
+	return nil
 }
 
 func (s *DocumentStore) DeleteDocument(docId string) error {

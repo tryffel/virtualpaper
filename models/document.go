@@ -195,13 +195,13 @@ func MetadataDiff(id string, userId int, original, updated *[]Metadata) []Docume
 
 	for keyValue, oldVal := range oldMetadata {
 		if _, found := newMetadata[keyValue]; !found {
-			addHistoryItem("remove metadata", formatMetadata(oldVal), "")
+			addHistoryItem(DocumentHistoryActionMetadataRemove, formatMetadata(oldVal), "")
 		}
 	}
 
 	for keyValue, newVal := range newMetadata {
 		if _, found := oldMetadata[keyValue]; !found {
-			addHistoryItem("add metadata", "", formatMetadata(newVal))
+			addHistoryItem(DocumentHistoryActionMetadataAdd, "", formatMetadata(newVal))
 		}
 	}
 	return history
@@ -292,6 +292,20 @@ type DocumentMetadataHistoryEntry struct {
 	ValueId int `json:"value_id"`
 }
 
+type DocumentHistoryAction string
+
+const (
+	DocumentHistoryActionCreate         = "create"
+	DocumentHistoryActionRename         = "rename"
+	DocumentHistoryActionDescription    = "description"
+	DocumentHistoryActionDate           = "date"
+	DocumentHistoryActionContent        = "content"
+	DocumentHistoryActionMetadataRemove = "remove metadata"
+	DocumentHistoryActionMetadataAdd    = "add metadata"
+	DocumentHistoryActionDelete         = "delete"
+	DocumentHistoryActionRestore        = "restore"
+)
+
 // Diffs returns a list of DocumentHistory items from d -> newDocument.
 // Metadata changes are not evaluated.
 func (d *Document) Diff(newDocument *Document, userId int) ([]DocumentHistory, error) {
@@ -313,18 +327,18 @@ func (d *Document) Diff(newDocument *Document, userId int) ([]DocumentHistory, e
 	}
 
 	if d.Name != d2.Name {
-		addHistoryItem("rename", d.Name, d2.Name)
+		addHistoryItem(DocumentHistoryActionRename, d.Name, d2.Name)
 	}
 	if d.Description != d2.Description {
-		addHistoryItem("description", d.Description, d2.Description)
+		addHistoryItem(DocumentHistoryActionDescription, d.Description, d2.Description)
 	}
 
 	if MidnightForDate(d.Date) != MidnightForDate(d2.Date) {
-		addHistoryItem("date", strconv.Itoa(int(d.Date.Unix())), strconv.Itoa(int(d2.Date.Unix())))
+		addHistoryItem(DocumentHistoryActionDate, strconv.Itoa(int(d.Date.Unix())), strconv.Itoa(int(d2.Date.Unix())))
 	}
 
 	if d.Content != d2.Content {
-		addHistoryItem("content", d.Content, d2.Content)
+		addHistoryItem(DocumentHistoryActionContent, d.Content, d2.Content)
 	}
 	return history, nil
 }
