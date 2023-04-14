@@ -908,7 +908,7 @@ func (a *Api) restoreDeletedDocument(c echo.Context) error {
 	}
 	document.Update()
 
-	err = a.db.DocumentStore.MarkDocumentNonDeleted(0, docId)
+	err = a.db.DocumentStore.MarkDocumentNonDeleted(ctx.UserId, docId)
 	if err != nil {
 		return err
 	}
