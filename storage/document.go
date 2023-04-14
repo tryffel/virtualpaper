@@ -372,9 +372,6 @@ func (s *DocumentStore) MarkDocumentDeleted(userId int, docId string) error {
 
 func (s *DocumentStore) MarkDocumentNonDeleted(userId int, docId string) error {
 	query := s.sq.Update("documents").Set("deleted_at", nil).Where("id=?", docId)
-	if userId != 0 {
-		query = query.Where("user_id = ?", userId)
-	}
 	sql, args, err := query.ToSql()
 	if err != nil {
 		return fmt.Errorf("sql: %v", err)
