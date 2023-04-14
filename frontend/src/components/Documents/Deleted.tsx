@@ -111,7 +111,7 @@ const DocumentGrid = (props: any) => {
         padding: "1em",
       }}
     >
-      <Typography variant="h6">Document trashbin</Typography>
+      <Typography variant="h6">Document trash bin</Typography>
       {data.map((record) => (
         <DocumentCard
           record={record}
