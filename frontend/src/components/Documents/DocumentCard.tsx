@@ -1,6 +1,7 @@
 import {
   Card,
   CardActions,
+  CardActionArea,
   CardContent,
   CardHeader,
   ToggleButton,
@@ -13,7 +14,7 @@ import {
   Confirm,
   EditButton,
   RaRecord,
-  ShowButton,
+  useDelete,
   useNotify,
   useRefresh,
   useUpdate,
@@ -25,6 +26,8 @@ import * as React from "react";
 import "./document.css";
 import get from "lodash/get";
 import { useState } from "react";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { useNavigate } from "react-router-dom";
 
 const cardStyle = {
   width: 230,
@@ -43,6 +46,8 @@ export interface DocumentCardProps {
 }
 
 export const DocumentCard = (props: DocumentCardProps) => {
+  const navigate = useNavigate();
+
   const { record } = props;
   const { selected, setSelected } = props;
   const isDeleted = get(record, "deleted_at") !== null;
@@ -50,36 +55,49 @@ export const DocumentCard = (props: DocumentCardProps) => {
   const isSelected = selected ? selected(String(record.id)) : false;
   const select = () => (setSelected ? setSelected(String(record.id)) : null);
 
+  const showDocument = () => {
+    navigate(`/documents/${record.id}/show`);
+  };
+
   return (
     <Card key={record.id} style={{ ...cardStyle }}>
-      <CardHeader
-        title={<DocumentTitle record={record} />}
-        sx={{ mt: 0, pb: 0, pt: 0, height: 85 }}
-      />
-      <DocumentContent record={record} />
+      <CardActionArea onClick={showDocument}>
+        <CardHeader
+          title={<DocumentTitle record={record} />}
+          sx={{ mt: 0, pb: 0, pt: 0, height: 85 }}
+        />
+        <DocumentContent record={record} />
+      </CardActionArea>
       <CardActions style={{ textAlign: "right", paddingTop: "0" }}>
-        <ShowButton resource="documents" record={record} />
-        {!isDeleted && <EditButton resource="documents" record={record} />}
-        {!isDeleted && setSelected && (
-          <ToggleButton
-            size="small"
-            value={record.id}
-            selected={isSelected}
-            onChange={select}
-            sx={{
-              borderWidth: "0px",
-              background: "primary",
-              marginLeft: "auto",
-            }}
-          >
-            {isSelected ? (
-              <CheckCircleIcon color="primary" />
-            ) : (
-              <RadioButtonUncheckedIcon />
+        {!isDeleted ? (
+          <>
+            <EditButton resource="documents" record={record} />
+            {setSelected && (
+              <ToggleButton
+                size="small"
+                value={record.id}
+                selected={isSelected}
+                onChange={select}
+                sx={{
+                  borderWidth: "0px",
+                  background: "primary",
+                  marginLeft: "auto",
+                }}
+              >
+                {isSelected ? (
+                  <CheckCircleIcon color="primary" />
+                ) : (
+                  <RadioButtonUncheckedIcon />
+                )}
+              </ToggleButton>
             )}
-          </ToggleButton>
+          </>
+        ) : (
+          <>
+            <RestoreDocumentButton record={record} />
+            <ConfirmDeleteDocumentButton record={record} />
+          </>
         )}
-        {isDeleted && <RestoreDocumentButton record={record} />}
       </CardActions>
     </Card>
   );
@@ -225,7 +243,7 @@ const RestoreDocumentButton = (props: { record: RaRecord }) => {
 
   return (
     <>
-      <Button label={"Restore"} color={"secondary"} onClick={handleClick}>
+      <Button label={"Restore"} color={"primary"} onClick={handleClick}>
         <RestoreIcon />
       </Button>
       <Confirm
@@ -233,6 +251,52 @@ const RestoreDocumentButton = (props: { record: RaRecord }) => {
         loading={isLoading}
         title="Restore document"
         content="Are you sure you want to restore the document?"
+        onConfirm={handleConfirm}
+        onClose={handleDialogClose}
+      />
+    </>
+  );
+};
+
+const ConfirmDeleteDocumentButton = (props: { record: RaRecord }) => {
+  const { record } = props;
+
+  const refresh = useRefresh();
+  const notify = useNotify();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const [update, { isLoading, error, isSuccess }] = useDelete(
+    "documents/deleted",
+    {
+      id: get(record, "id"),
+      previousData: record,
+    }
+  );
+
+  const handleClick = () => setConfirmOpen(true);
+  const handleDialogClose = () => setConfirmOpen(false);
+  const handleConfirm = async () => {
+    await update();
+    setTimeout(() => refresh(), 1000);
+    if (error) {
+      // @ts-ignore
+      notify(error.toString(), { type: "error" });
+    } else {
+      setConfirmOpen(false);
+      notify("Document deleted");
+    }
+  };
+
+  return (
+    <>
+      <Button label={"Delete"} color={"secondary"} onClick={handleClick}>
+        <DeleteIcon />
+      </Button>
+      <Confirm
+        isOpen={confirmOpen}
+        loading={isLoading}
+        title="Restore document"
+        content="Are you sure you want to permanently delete the document?"
         onConfirm={handleConfirm}
         onClose={handleDialogClose}
       />

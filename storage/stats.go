@@ -108,7 +108,7 @@ order by year desc;
 	sql = `
 select id
 from documents
-where user_id = $1
+where user_id = $1 AND deleted_at IS NULL
 order by updated_at desc limit 10;
 `
 
@@ -117,24 +117,25 @@ order by updated_at desc limit 10;
 	sql = `
 select id
 from documents
-where user_id = $1
+where user_id = $1 AND deleted_at IS NULL
 order by created_at desc limit 10;
 `
 
 	err = s.db.Select(&stats.LastDocumentsAdded, sql, userId)
 	sql = `
-select document_id
+select t.document_id as document_id
 from (
-    select document_id, created_at,
-        row_number() over (
-            partition by document_id
-            order by created_at desc
-            ) as rn
-        from document_view_history
-        where user_id = $1) t
-    where rn =1
-order by created_at desc
-limit 10
+         select document_id, created_at,
+                row_number() over (
+                    partition by document_id
+                    order by created_at desc
+                    ) as rn
+         from document_view_history
+         where user_id = $1) t
+LEFT JOIN documents ON t.document_id = documents.id
+where rn =1 AND documents.deleted_at IS NULL
+order by t.created_at desc
+limit 10;
 `
 	err = s.db.Select(&stats.LastDocumentsViewed, sql, userId)
 	return stats, s.parseError(err, "get last updated docs")

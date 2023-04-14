@@ -41,7 +41,7 @@ const DocumentListActions = () => (
     <DocumentHelp />
     <SortButton
       label="Sort"
-      fields={["date", "name", "updated_at", "created_at"]}
+      fields={["date", "name", "updated_at", "created_at", "deleted_at"]}
     />
   </TopToolbar>
 );
@@ -57,6 +57,7 @@ const SmallDocumentList = () => {
     <List
       title="Documents"
       actions={<DocumentListActions />}
+      sort={{ field: "deleted_at", order: "DESC" }}
       pagination={<DocumentPagination />}
     >
       <DocumentGrid />
@@ -70,8 +71,9 @@ const LargeDocumentList = () => {
       title="Documents"
       pagination={<DocumentPagination />}
       actions={<DocumentListActions />}
-      sort={{ field: "date", order: "DESC" }}
+      sort={{ field: "deleted_at", order: "DESC" }}
       filters={[<DocumentSearchFilter />]}
+      empty={<EmptyPage />}
     >
       <DocumentGrid />
     </List>
@@ -100,15 +102,8 @@ const DocumentGrid = (props: any) => {
   if (isLoading) {
     return <Loading />;
   }
-  if (data && data.length === 0) {
-    return (
-      <Box sx={{ padding: 3 }}>
-        <Typography variant="h5">No deleted documents</Typography>
-      </Box>
-    );
-  }
 
-  return !isLoading && data ? (
+  return data ? (
     <Grid
       flex={2}
       sx={{
@@ -136,9 +131,32 @@ const DocumentHelp = () => {
         allowing user to restore the document.
       </p>
       <p>
-        Documents will be permanently deleted after 14 days (or as configured in
-        the configuration file).
+        Documents will be permanently deleted after 14 days by default (or as
+        configured in the configuration file).
+      </p>
+
+      <p>
+        Document can also be permanently deleted by clicking the Delete button.
       </p>
     </HelpButton>
+  );
+};
+
+const EmptyPage = () => {
+  return (
+    <Grid
+      container
+      direction="column"
+      justifyContent="center"
+      alignItems="center"
+    >
+      <Grid item md={5}>
+        <Box sx={{ mt: 10 }}>
+          <Typography variant="h4" paragraph>
+            No deleted documents
+          </Typography>
+        </Box>
+      </Grid>
+    </Grid>
   );
 };

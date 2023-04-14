@@ -58,8 +58,8 @@ const EditToolBar = () => {
     <Toolbar>
       <SaveButton />
       <DeleteWithConfirmButton
-        confirmTitle="Are you sure you want to delete document?"
-        confirmContent="The document will be permanently deleted."
+        confirmTitle="Are you sure you want to move document to trashbin?"
+        confirmContent="Document can be restored from the trashbin. It will be automatically deleted after 14 days."
       />
     </Toolbar>
   );
