@@ -99,8 +99,8 @@ LIMIT $3
 	sql = `
 SELECT count(id) 
 FROM documents
-WHERE user_id = $1
-`
+WHERE user_id = $1 AND deleted_at 
+` + deletedAt
 	var count int
 	err = s.db.Get(&count, sql, userId)
 	err = s.parseError(err, "get documents")

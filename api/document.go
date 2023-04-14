@@ -701,13 +701,15 @@ func (a *Api) deleteDocument(c echo.Context) error {
 	opOk := false
 	defer logCrudDocument(ctx.UserId, "delete", &opOk, "document: %s", id)
 
-	owns, err := a.db.DocumentStore.UserOwnsDocument(id, ctx.UserId)
+	doc, err := a.db.DocumentStore.GetDocument(ctx.UserId, id)
 	if err != nil {
 		return err
 	}
-
-	if !owns {
-		return respForbiddenV2()
+	if doc.UserId != ctx.UserId {
+		return errors.ErrRecordNotFound
+	}
+	if doc.DeletedAt.Valid {
+		return errors.ErrInvalid
 	}
 
 	logrus.Infof("Request user %d removing document %s", ctx.UserId, id)
@@ -896,12 +898,15 @@ func (a *Api) restoreDeletedDocument(c echo.Context) error {
 
 	opOk := false
 	defer func() {
-		logCrudDocument(ctx.UserId, "restore deleted document", &opOk, "restore document %d", docId)
+		logCrudDocument(ctx.UserId, "restore deleted document", &opOk, "restore deleted document %s", docId)
 	}()
 
 	document, err := a.db.DocumentStore.GetDocument(0, docId)
 	if err != nil {
 		return err
+	}
+	if document.UserId != ctx.UserId {
+		return errors.ErrRecordNotFound
 	}
 	if !document.DeletedAt.Valid {
 		return errors.ErrRecordNotFound
@@ -921,4 +926,51 @@ func (a *Api) restoreDeletedDocument(c echo.Context) error {
 	}
 	opOk = true
 	return c.JSON(200, responseFromDocument(doc))
+}
+
+func (a *Api) flushDeletedDocument(c echo.Context) error {
+	// swagger:route DELETE /api/v1/documents/deleted/:id User UserFlushDeletedDocument
+	// Flush deleted document
+	//
+	// responses:
+	//   200: RespUserInfo
+
+	ctx := c.(UserContext)
+	docId := bindPathId(c)
+
+	opOk := false
+	defer func() {
+		logCrudDocument(ctx.UserId, "flush deleted document", &opOk, "flush deleted document %s", docId)
+	}()
+
+	document, err := a.db.DocumentStore.GetDocument(0, docId)
+	if err != nil {
+		return err
+	}
+	if document.UserId != ctx.UserId {
+		return errors.ErrRecordNotFound
+	}
+	if !document.DeletedAt.Valid {
+		return errors.ErrRecordNotFound
+	}
+	document.Update()
+
+	err = process.DeleteDocument(docId)
+	if err != nil {
+		logrus.Errorf("error deleting file: %v", err)
+		return respInternalErrorV2("delete file", err)
+	}
+
+	err = a.search.DeleteDocument(docId, ctx.UserId)
+	if err != nil {
+		logrus.Errorf("delete document from search index: %v", err)
+		return respInternalErrorV2("delete from search index", err)
+	}
+
+	err = a.db.DocumentStore.DeleteDocument(docId)
+	if err != nil {
+		return err
+	}
+	opOk = true
+	return c.JSON(200, 200)
 }
