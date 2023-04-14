@@ -63,6 +63,7 @@ func NewApi(database *storage.Database) (*Api, error) {
 	api.echo.Use(loggingMiddlware())
 	api.echo.Use(middleware.Recover())
 	api.echo.Use(middleware.CORS())
+	api.echo.Pre(middleware.RemoveTrailingSlash())
 	api.echo.HTTPErrorHandler = httpErrorHandler
 
 	api.echo.Server.ReadTimeout = time.Second * 30
