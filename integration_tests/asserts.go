@@ -61,3 +61,21 @@ func assertDocumentMetadataMatches(t *testing.T, document *api.DocumentResponse,
 	assertDocumentMetadataContainsValues(t, document, wantValues)
 	assertDocumentMetadataInValues(t, document, wantValues)
 }
+
+func assertDocumentInArray(t *testing.T, id string, docs *[]api.DocumentResponse) {
+	for _, v := range *docs {
+		if v.Id == id {
+			return
+		}
+	}
+	t.Errorf("document not found from list of documents")
+}
+
+func assertDocumentNotInArray(t *testing.T, id string, docs *[]api.DocumentResponse) {
+	for _, v := range *docs {
+		if v.Id == id {
+			t.Errorf("document found from list of documents")
+			return
+		}
+	}
+}

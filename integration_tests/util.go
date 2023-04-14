@@ -29,3 +29,27 @@ func getDocumentWithVisit(t *testing.T, client *httpClient, id string, wantHttpS
 		return nil
 	}
 }
+
+func getDocuments(t *testing.T, client *httpClient, wantHttpStatus int) *[]api.DocumentResponse {
+	doc := &[]api.DocumentResponse{}
+	req := client.Get("/api/v1/documents/").Expect(t)
+	if wantHttpStatus == 200 {
+		req.Json(t, doc).e.Status(200).Done()
+		return doc
+	} else {
+		req.e.Status(wantHttpStatus).Done()
+		return nil
+	}
+}
+
+func getDeletedDocuments(t *testing.T, client *httpClient, wantHttpStatus int) *[]api.DocumentResponse {
+	doc := &[]api.DocumentResponse{}
+	req := client.Get("/api/v1/documents/deleted").Expect(t)
+	if wantHttpStatus == 200 {
+		req.Json(t, doc).e.Status(200).Done()
+		return doc
+	} else {
+		req.e.Status(wantHttpStatus).Done()
+		return nil
+	}
+}

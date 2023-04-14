@@ -522,7 +522,7 @@ func (a *Api) adminRestoreDeletedDocument(c echo.Context) error {
 
 	opOk := false
 	defer func() {
-		logCrudAdminUsers(ctx.UserId, "restore deleted document", &opOk, "restore document %d", docId)
+		logCrudAdminUsers(ctx.UserId, "restore deleted document", &opOk, "restore document %s", docId)
 	}()
 
 	document, err := a.db.DocumentStore.GetDocument(0, docId)
@@ -533,7 +533,7 @@ func (a *Api) adminRestoreDeletedDocument(c echo.Context) error {
 		return errors.ErrRecordNotFound
 	}
 
-	err = a.db.DocumentStore.MarkDocumentNonDeleted(0, docId)
+	err = a.db.DocumentStore.MarkDocumentNonDeleted(ctx.UserId, docId)
 	if err != nil {
 		return err
 	}
