@@ -32,7 +32,7 @@ func NewCron(db *storage.Database) (*CronJobs, error) {
 	if err != nil {
 		return cj, fmt.Errorf("create removeExpiredAuthTokens job: %v", err)
 	}
-	cj.cleanupDocumenTrashbins, err = cj.c.AddFunc("*/1 * * * *", cj.JobCleanupDocumenTrashbins)
+	cj.cleanupDocumenTrashbins, err = cj.c.AddFunc("*/15 * * * *", cj.JobCleanupDocumenTrashbins)
 	if err != nil {
 		return cj, fmt.Errorf("create removeExpiredAuthTokens job: %v", err)
 	}
