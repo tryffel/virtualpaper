@@ -19,6 +19,10 @@ export const AdminCreateUser = () => {
     if (e.message === "authentication required") {
       notify("Authentication required", { type: "error" });
       navigate("/auth/confirm-authentication");
+    } else if (e.status === 304) {
+      notify("User already exists", { type: "error" });
+    } else {
+      notify(e.message, { type: "error" });
     }
   };
 

@@ -21,6 +21,8 @@ export const AdminEditUser = () => {
     if (e.message === "authentication required") {
       notify("Authentication required", { type: "error" });
       navigate("/auth/confirm-authentication");
+    } else {
+      notify(e.message, { type: "error" });
     }
   };
 
