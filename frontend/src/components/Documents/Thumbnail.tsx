@@ -42,9 +42,7 @@ export interface ThumbnailProps {
 }
 
 export const ThumbnailField = (props: any) => {
-  const theme = useTheme();
   const record = useRecordContext();
-  const url = get(record, props.source || "");
   const [imgData, setImage] = React.useState("");
   const isMedium = useMediaQuery((theme: any) => theme.breakpoints.down("md"));
   const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
@@ -69,7 +67,7 @@ export const ThumbnailField = (props: any) => {
       style={{
         overflow: "hidden",
         maxHeight: "600px",
-        minHeight: "500px",
+        minHeight: "200px",
         minWidth: "300px",
         maxWidth: "600px",
       }}
@@ -78,7 +76,7 @@ export const ThumbnailField = (props: any) => {
         src={imgData}
         alt={props.label}
         style={{
-          maxWidth: isSmall ? "350px" : isMedium ? "450px" : "600px",
+          maxWidth: isSmall ? "280px" : isMedium ? "450px" : "600px",
           background: "white",
           borderRadius: "5%",
           borderWidth: "thin",
@@ -175,7 +173,7 @@ export function EmbedFile(
   );
 }
 
-export const DownloadDocumentButton = () => {
+export const DownloadDocumentButton = (props: { onFinished: () => void }) => {
   const [downloadClicked, setDownloadClicked] = React.useState(false);
   const handleClick = () => {
     if (downloadClicked) {
@@ -186,15 +184,15 @@ export const DownloadDocumentButton = () => {
 
   return (
     <>
-      <Button color="primary" label={"Download"} onClick={handleClick}>
+      <Button color="primary" label={"Download document"} onClick={handleClick}>
         <DownloadIcon />
       </Button>
-      {downloadClicked && <DownloadFileLink />}
+      {downloadClicked && <DownloadFileLink onFinished={props.onFinished} />}
     </>
   );
 };
 
-const DownloadFileLink = () => {
+const DownloadFileLink = (props: { onFinished: () => void }) => {
   const [clicked, setClicked] = React.useState(false);
   const notify = useNotify();
   const record = useRecordContext();
@@ -229,6 +227,7 @@ const DownloadFileLink = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      props.onFinished();
     }
   }, [fileData]);
   if (!fileData) {

@@ -11,6 +11,7 @@ import {
   AccordionSummary,
   Grid,
   Typography,
+  useMediaQuery,
 } from "@mui/material";
 import React from "react";
 import { ExpandMore } from "@mui/icons-material";

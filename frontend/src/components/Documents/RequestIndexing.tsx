@@ -15,7 +15,7 @@ import { requestDocumentProcessing } from "../../api/dataProvider";
 import AutoFixNormalIcon from "@mui/icons-material/AutoFixNormal";
 import MenuItem from "@mui/material/MenuItem";
 
-export const RequestIndexingModal = () => {
+export const RequestIndexingModal = (props: { onClose: () => void }) => {
   const [step, setStep] = React.useState("fts");
   const record = useRecordContext();
   const notify = useNotify();
@@ -26,6 +26,7 @@ export const RequestIndexingModal = () => {
 
   const handleClose = () => {
     setOpen(false);
+    props.onClose();
   };
 
   const handleExecute = () => {
@@ -58,8 +59,9 @@ export const RequestIndexingModal = () => {
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            <p>Document: {record.name}</p>
-            <p>Id: {record.id}</p>
+            <Typography variant={"body2"}>
+              Are you sure you want to request processing?
+            </Typography>
             <RequestIndexSelect step={step} setStep={setStep} />
           </DialogContentText>
         </DialogContent>

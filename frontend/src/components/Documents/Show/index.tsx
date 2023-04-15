@@ -25,6 +25,7 @@ import {
   DateField,
   EditButton,
   Labeled,
+  LabeledClasses,
   Show,
   SingleFieldList,
   Tab,
@@ -33,8 +34,22 @@ import {
   TopToolbar,
   useRecordContext,
 } from "react-admin";
-import { Box, Grid, Typography, useMediaQuery, Divider } from "@mui/material";
+import {
+  Box,
+  Grid,
+  Typography,
+  Divider,
+  Card,
+  CardContent,
+  useMediaQuery,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material";
 import HistoryIcon from "@mui/icons-material/History";
+import TimelineIcon from "@mui/icons-material/Timeline";
+import CloseIcon from "@mui/icons-material/Close";
 import {
   DownloadDocumentButton,
   EmbedFile,
@@ -50,24 +65,27 @@ import get from "lodash/get";
 import MenuItem from "@mui/material/MenuItem";
 import Menu from "@mui/material/Menu";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-import DownloadIcon from "@mui/icons-material/Download";
 
 export const DocumentShow = () => {
-  const [historyEnabled, toggleHistory] = React.useState(false);
-
+  const [asideMode, setAsideMode] = React.useState<AsideMode>("closed");
   const [downloadUrl, setDownloadUrl] = React.useState("");
+  const isNotSmall = useMediaQuery((theme: any) => theme.breakpoints.up("sm"));
 
   return (
     <Show
       title="Document"
       actions={
         <DocumentShowActions
-          showHistory={toggleHistory}
-          historyShown={historyEnabled}
+          showHistory={() => setAsideMode("history")}
+          showJobs={() => setAsideMode("jobs")}
           downloadUrl={downloadUrl}
         />
       }
-      aside={historyEnabled ? <ShowDocumentsEditHistory /> : undefined}
+      aside={
+        isNotSmall ? (
+          <DocumentShowAside mode={asideMode} setMode={setAsideMode} />
+        ) : undefined
+      }
     >
       <TabbedShowLayout>
         <Tab label="general">
@@ -79,25 +97,29 @@ export const DocumentShow = () => {
         <Tab label="preview">
           <DocumentPreviewTab setDownloadUrl={setDownloadUrl} />
         </Tab>
-        <Tab label="Processing trace">
-          <DocumentJobsHistory />
-        </Tab>
       </TabbedShowLayout>
+      {!isNotSmall && (
+        <DocumentShowAsideModal mode={asideMode} setMode={setAsideMode} />
+      )}
     </Show>
   );
 };
 
 interface ActionsProps {
-  historyShown: boolean;
   showHistory: (shown: boolean) => any;
   downloadUrl?: string;
+  showJobs: (shown: boolean) => any;
 }
 
 function DocumentShowActions(props: ActionsProps) {
-  const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
-  const { historyShown, showHistory } = props;
+  const { showHistory, showJobs } = props;
   const toggleHistory = () => {
-    showHistory(!historyShown);
+    showHistory(true);
+    handleCloseMenu();
+  };
+  const toggleJobs = () => {
+    showJobs(true);
+    handleCloseMenu();
   };
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -121,19 +143,28 @@ function DocumentShowActions(props: ActionsProps) {
       </Button>
       <Menu anchorEl={anchorEl} open={!!anchorEl} onClose={handleCloseMenu}>
         <MenuItem>
-          <RequestIndexingModal />
+          <RequestIndexingModal onClose={handleCloseMenu} />
         </MenuItem>
         <MenuItem>
           <Button
             color="primary"
             onClick={toggleHistory}
-            label={historyShown ? "Hide history" : "Show history"}
+            label={"Document History"}
           >
             <HistoryIcon />
           </Button>
         </MenuItem>
         <MenuItem>
-          <DownloadDocumentButton />
+          <Button
+            color="primary"
+            onClick={toggleJobs}
+            label={"Processing history"}
+          >
+            <TimelineIcon />
+          </Button>
+        </MenuItem>
+        <MenuItem>
+          <DownloadDocumentButton onFinished={handleCloseMenu} />
         </MenuItem>
       </Menu>
     </TopToolbar>
@@ -171,31 +202,32 @@ const DocumentGeneralTab = () => {
         </Box>
         <Box display={{ xs: "block", sm: "flex" }}>
           <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-            <Labeled label="Linked documents">
-              <LinkedDocumentList />
-            </Labeled>
+            <LinkedDocumentList />
           </Box>
         </Box>
 
         <Box display={{ xs: "block", sm: "flex" }}>
           <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-            <Typography>Metadata</Typography>
-            <ArrayField source="metadata">
-              <Datagrid bulkActionButtons={false}>
-                <TextField source="key" />
-                <TextField source="value" />
-              </Datagrid>
-            </ArrayField>
+            <MetadataList />
           </Box>
         </Box>
         <Box display={{ xs: "block", sm: "flex" }}>
           <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-            <Typography>Uploaded at</Typography>
-            <DateField source="created_at" label="Uploaded" showTime={false} />
+            <Labeled label={"File size"}>
+              <TextField source={"pretty_size"} />
+            </Labeled>
+          </Box>
+        </Box>
+        <Box display={{ xs: "block", sm: "flex" }}>
+          <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
+            <Labeled label="Uploaded">
+              <DateField source="created_at" showTime={false} />
+            </Labeled>
           </Box>
           <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-            <Typography>Updated at</Typography>
-            <DateField source="updated_at" label="Last updated" showTime />
+            <Labeled label={"Last updated"}>
+              <DateField source="updated_at" showTime />
+            </Labeled>
           </Box>
         </Box>
       </Grid>
@@ -267,5 +299,82 @@ const DocumentPreviewTab = (props: {
       filename={get(record, "filename")}
       {...props}
     />
+  );
+};
+
+const MetadataList = () => {
+  const record = useRecordContext();
+
+  if (!record) {
+    return null;
+  }
+
+  if (get(record, "metadata")?.length === 0) {
+    return null;
+  }
+
+  return (
+    <>
+      <Typography className={LabeledClasses.label}>Metadata</Typography>
+      <ArrayField source="metadata">
+        <Datagrid bulkActionButtons={false}>
+          <TextField source="key" />
+          <TextField source="value" />
+        </Datagrid>
+      </ArrayField>
+    </>
+  );
+};
+
+type AsideMode = "closed" | "history" | "jobs";
+
+interface AsideProps {
+  mode: AsideMode;
+  setMode: (mode: AsideMode) => void;
+}
+
+const DocumentShowAside = (props: AsideProps) => {
+  const { mode, setMode } = props;
+
+  if (mode == "closed") {
+    return null;
+  }
+
+  return (
+    <Box ml={1} sx={{ maxWidth: "30%" }}>
+      <Card>
+        <CardContent>
+          <Button
+            label={"Close"}
+            variant="outlined"
+            onClick={() => setMode("closed")}
+            sx={{ mb: 2 }}
+          />
+          {mode == "history" && <ShowDocumentsEditHistory />}
+          {mode == "jobs" && <DocumentJobsHistory />}
+        </CardContent>
+      </Card>
+    </Box>
+  );
+};
+
+const DocumentShowAsideModal = (props: AsideProps) => {
+  const { mode, setMode } = props;
+
+  const title = mode === "history" ? "Document history" : "Processing history";
+
+  return (
+    <Dialog open={mode !== "closed"} scroll="paper">
+      <DialogTitle>{title}</DialogTitle>
+      <DialogContent>
+        {mode == "history" && <ShowDocumentsEditHistory />}
+        {mode == "jobs" && <DocumentJobsHistory />}
+      </DialogContent>
+      <DialogActions>
+        <Button label={"Close"} onClick={() => setMode("closed")}>
+          <CloseIcon />
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };

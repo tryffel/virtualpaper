@@ -17,46 +17,56 @@
  */
 
 import React, { useState } from "react";
-import { Link} from 'react-router-dom';
-import {useGetManyReference, useRecordContext, Loading} from "react-admin";
-import {LimitStringLength} from "../../util";
-import {Typography} from "@mui/material";
+import { Link } from "react-router-dom";
+import {
+  useGetManyReference,
+  useRecordContext,
+  Loading,
+  Labeled,
+} from "react-admin";
+import { LimitStringLength } from "../../util";
+import { Typography } from "@mui/material";
 
 export const LinkedDocumentList = () => {
-    const record = useRecordContext();
+  const record = useRecordContext();
 
-    const { data, isLoading, error } = useGetManyReference(
-        "documents/linked",
-        {
-            target: "id",
-            id: record?.id,
-        }
+  const { data, isLoading, error } = useGetManyReference("documents/linked", {
+    target: "id",
+    id: record?.id,
+  });
+  if (isLoading) {
+    return <Loading />;
+  }
+  if (data && data.length > 0) {
+    return (
+      <Labeled label="Linked documents">
+        <>
+          {data.map((doc) => (
+            <LinkedDocument
+              name={doc.name}
+              id={doc.id}
+              createdAt={doc.created_at}
+            />
+          ))}
+        </>
+      </Labeled>
     );
-    if (isLoading) {
-        return <Loading/>
-    }
-    if (data) {
-        return (
-            <>
-                {data.map((doc) => <LinkedDocument name={doc.name} id={doc.id} createdAt={doc.created_at}/>)}
-            </>
-        )
-    }
-    return null
-}
+  }
+  return null;
+};
 
 interface documentProps {
-    id: string
-    name: string
-    createdAt: string
+  id: string;
+  name: string;
+  createdAt: string;
 }
 
 const LinkedDocument = (props: documentProps) => {
-    const {name, id} = props;
-    const limitedName = LimitStringLength(name, 50);
-    return (
-        <Link to={`/documents/${id}/show`}>
-        <Typography variant="body2">{limitedName}</Typography>
-        </Link>
-    )
-}
+  const { name, id } = props;
+  const limitedName = LimitStringLength(name, 50);
+  return (
+    <Link to={`/documents/${id}/show`}>
+      <Typography variant="body2">{limitedName}</Typography>
+    </Link>
+  );
+};

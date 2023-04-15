@@ -19,10 +19,6 @@
 import React from "react";
 import { useRecordContext, useGetManyReference, Loading } from "react-admin";
 import {
-  useMediaQuery,
-  Box,
-  Card,
-  CardContent,
   Grid,
   Stepper,
   Step,
@@ -59,11 +55,6 @@ export const ShowDocumentsEditHistory = () => {
     }
   );
 
-  const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
-  if (isSmall) {
-    return null;
-  }
-
   if (isLoading) {
     return <Loading />;
   }
@@ -72,24 +63,18 @@ export const ShowDocumentsEditHistory = () => {
   }
 
   return (
-    <Box ml={1} sx={{ maxWidth: "30%" }}>
-      <Card>
-        <CardContent>
-          <Grid container>
-            <Grid item xs={8} md={8}>
-              <Typography variant="overline">Document edit history</Typography>
-            </Grid>
-            <Grid item xs={12} md={12}>
-              <Stepper orientation="vertical" sx={{ mt: 1 }}>
-                {data?.map((item: DocumentHistoryItem) => (
-                  <ShowDocumentsEditHistoryItem item={item} />
-                ))}
-              </Stepper>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
-    </Box>
+    <Grid container>
+      <Grid item xs={8} md={8}>
+        <Typography variant="overline">Document edit history</Typography>
+      </Grid>
+      <Grid item xs={12} md={12}>
+        <Stepper orientation="vertical" sx={{ mt: 1 }}>
+          {data?.map((item: DocumentHistoryItem) => (
+            <ShowDocumentsEditHistoryItem item={item} />
+          ))}
+        </Stepper>
+      </Grid>
+    </Grid>
   );
 };
 
