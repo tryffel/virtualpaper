@@ -18,8 +18,13 @@
 
 import * as React from "react";
 import get from "lodash/get";
-import { Button, useRecordContext } from "react-admin";
-import { Paper, useMediaQuery, useTheme } from "@mui/material";
+import { Button, Loading, useNotify, useRecordContext } from "react-admin";
+import {
+  CircularProgress,
+  Paper,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 
 export function downloadFile(url: string) {
@@ -169,3 +174,66 @@ export function EmbedFile(
     </Paper>
   );
 }
+
+export const DownloadDocumentButton = () => {
+  const [downloadClicked, setDownloadClicked] = React.useState(false);
+  const handleClick = () => {
+    if (downloadClicked) {
+      return;
+    }
+    setDownloadClicked(true);
+  };
+
+  return (
+    <>
+      <Button color="primary" label={"Download"} onClick={handleClick}>
+        <DownloadIcon />
+      </Button>
+      {downloadClicked && <DownloadFileLink />}
+    </>
+  );
+};
+
+const DownloadFileLink = () => {
+  const [clicked, setClicked] = React.useState(false);
+  const notify = useNotify();
+  const record = useRecordContext();
+  const [fileData, setFileData] = React.useState("");
+
+  const url = get(record, "download_url");
+  const filename = get(record, "filename");
+
+  React.useEffect(() => {
+    downloadFile(url)
+      .then((response) => {
+        response.arrayBuffer().then((buffer) => {
+          const data = window.URL.createObjectURL(new Blob([buffer]));
+          setFileData(data);
+          notify("Document downloaded", { type: "info" });
+        });
+      })
+      .catch((response) => {
+        console.error(response);
+        notify(`Error ${response.status}: ${response.error}`, {
+          type: "error",
+        });
+      });
+  }, []);
+
+  React.useEffect(() => {
+    if (fileData && !clicked) {
+      setClicked(true);
+      const link = document.createElement("a");
+      link.href = fileData;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }, [fileData]);
+  if (!fileData) {
+    return <CircularProgress size={20} />;
+  }
+
+  return null;
+};

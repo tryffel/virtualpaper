@@ -35,7 +35,11 @@ import {
 } from "react-admin";
 import { Box, Grid, Typography, useMediaQuery, Divider } from "@mui/material";
 import HistoryIcon from "@mui/icons-material/History";
-import { EmbedFile, ThumbnailField } from "../Thumbnail";
+import {
+  DownloadDocumentButton,
+  EmbedFile,
+  ThumbnailField,
+} from "../Thumbnail";
 import { IndexingStatusField } from "../IndexingStatus";
 import { MarkdownField } from "../../Markdown";
 import { ShowDocumentsEditHistory } from "./DocumentHistory";
@@ -129,11 +133,7 @@ function DocumentShowActions(props: ActionsProps) {
           </Button>
         </MenuItem>
         <MenuItem>
-          <a href={props.downloadUrl} download={get(record, "filename")}>
-            <Button color="primary" label={"Download"}>
-              <DownloadIcon />
-            </Button>
-          </a>
+          <DownloadDocumentButton />
         </MenuItem>
       </Menu>
     </TopToolbar>
