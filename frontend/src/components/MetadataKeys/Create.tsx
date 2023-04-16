@@ -20,10 +20,14 @@ import * as React from "react";
 import { Create, SimpleForm, TextInput } from "react-admin";
 
 export const MetadataKeyCreate = () => (
-  <Create>
+  <Create title={<CreateTitle />}>
     <SimpleForm>
       <TextInput source="key" label="Name" />
       <TextInput source="comment" label="Description" />
     </SimpleForm>
   </Create>
 );
+
+const CreateTitle = () => {
+  return <span>Add metadata key</span>;
+};

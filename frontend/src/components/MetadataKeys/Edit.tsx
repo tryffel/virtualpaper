@@ -28,8 +28,8 @@ import {
   BooleanField,
   NumberField,
   useEditController,
-  CreateButton,
   TextInput,
+  useRecordContext,
 } from "react-admin";
 
 import { MarkdownInput } from "../Markdown";
@@ -38,6 +38,7 @@ import { useMediaQuery } from "@mui/material";
 import MetadataValueCreateButton from "./ValueCreate";
 import MetadataValueUpdateDialog from "./ValueEditDialog";
 import { useState } from "react";
+import get from "lodash/get";
 
 export const MetadataKeyEdit = () => {
   const { record } = useEditController();
@@ -64,7 +65,7 @@ export const MetadataKeyEdit = () => {
   }
 
   return (
-    <Edit>
+    <Edit title={<EditTitle />}>
       <SimpleForm>
         <MetadataValueUpdateDialog
           showDialog={showUpdateDialog}
@@ -110,4 +111,11 @@ export const MetadataKeyEdit = () => {
       </SimpleForm>
     </Edit>
   );
+};
+
+const EditTitle = () => {
+  const record = useRecordContext();
+  const name = get(record, "key") ?? "";
+
+  return <span>Metadata key {name}</span>;
 };
