@@ -3,6 +3,7 @@ import SaveIcon from "@mui/icons-material/Save";
 import {
   Button,
   Form,
+  HttpError,
   Loading,
   useGetManyReference,
   useGetOne,
@@ -39,30 +40,69 @@ export const EditLinkedDocuments = (props: EditLinkedDocumentsProps) => {
   const [newDocumentId, setNewDocumentId] = React.useState<string | null>(null);
   const notify = useNotify();
 
-  const [update, { isLoading: updateLoading }] = useUpdate("documents/linked", {
-    id: documentId,
-    // @ts-ignore
-    data: { documents: [] },
-    // @ts-ignore
-    previousData: { documents },
-  });
-
-  const { data: loadedDocuments, isLoading } = useGetManyReference(
+  const { isLoading, refetch } = useGetManyReference(
     "documents/linked",
     {
       target: "id",
       id: documentId,
       meta: { originalDocuments },
+    },
+    {
+      onSuccess: (data) => {
+        setDocuments(data.data as LinkedDocument[]);
+        setOriginalDocuments(data.data as LinkedDocument[]);
+      },
     }
   );
 
-  const { data: newDocument, isSuccess: newDocumentLoaded } = useGetOne(
+  const closeModal = () => {
+    setModalOpen(false);
+    setDocuments([]);
+    refetch();
+  };
+
+  const [update, { isLoading: updateLoading }] = useUpdate(
+    "documents/linked",
+    {
+      id: documentId,
+      // @ts-ignore
+      data: { documents: [] },
+      // @ts-ignore
+      previousData: { documents },
+    },
+    {
+      onError: (error: HttpError) => {
+        notify("Error updating linking documents: " + error.message, {
+          type: "error",
+        });
+      },
+      onSuccess: () => {
+        setDocuments([]);
+        closeModal();
+        notify("Documents linked");
+      },
+    }
+  );
+
+  useGetOne(
     "documents",
     {
-      id: newDocumentId ?? "",
+      id: newDocumentId,
       meta: {
         noVisit: true,
       },
+    },
+    {
+      onSuccess: (data) => {
+        const hasDocumentLinked =
+          documents.filter((document) => document.id === data.id).length > 0;
+        if (!hasDocumentLinked) {
+          const docs = [...documents, { id: data.id, name: data.name }];
+          setDocuments(docs);
+          setNewDocumentId(null);
+        }
+      },
+      enabled: newDocumentId !== null,
     }
   );
 
@@ -79,26 +119,10 @@ export const EditLinkedDocuments = (props: EditLinkedDocumentsProps) => {
     [documents]
   );
 
-  useEffect(() => {
-    if (loadedDocuments && documents.length === 0) {
-      setDocuments(loadedDocuments as LinkedDocument[]);
-      setOriginalDocuments(loadedDocuments as LinkedDocument[]);
-    }
-  }, [loadedDocuments]);
-
-  useEffect(() => {
-    if (newDocument) {
-      addDocumentToArray();
-      setNewDocumentId(null);
-    }
-  }, [newDocumentLoaded, newDocument]);
-
-  const addDocumentToArray = React.useCallback(() => {
-    const docs = [...documents, { id: newDocument.id, name: newDocument.name }];
-    setDocuments(docs);
-  }, [newDocument, newDocumentLoaded]);
-
   const addDocument = (id: string) => {
+    if (id === "") {
+      return;
+    }
     const hasDocumentLinked =
       documents.filter((document) => document.id === id).length > 0;
     if (hasDocumentLinked) {
@@ -114,12 +138,12 @@ export const EditLinkedDocuments = (props: EditLinkedDocumentsProps) => {
   };
 
   const handleCancel = () => {
-    setModalOpen(false);
+    closeModal();
+    setDocuments(originalDocuments);
   };
 
   const handleSave = () => {
     handleSubmit(documents);
-    setModalOpen(false);
   };
 
   if (isLoading) {
