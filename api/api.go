@@ -189,6 +189,18 @@ func init() {
 		trimmed := strings.ReplaceAll(str, " ", "")
 		return govalidator.IsUTFLetterNumeric(trimmed)
 	})
+	govalidator.CustomTypeTagMap.Set("uuidarray", func(raw interface{}, o interface{}) bool {
+		isArray, ok := raw.([]string)
+		if !ok {
+			return false
+		}
+		for _, v := range isArray {
+			if !govalidator.IsUUID(v) {
+				return false
+			}
+		}
+		return true
+	})
 }
 
 //go:embed swaggerdocs/swagger.json

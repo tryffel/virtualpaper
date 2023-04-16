@@ -504,7 +504,7 @@ func (a *Api) deleteMetadataValue(c echo.Context) error {
 }
 
 type linkedDocumentParams struct {
-	DocumentIds []string `json:"documents" valid:"-"`
+	DocumentIds []string `json:"documents" valid:"uuidarray~Invalid ids"`
 }
 
 func (a *Api) getLinkedDocuments(c echo.Context) error {
@@ -540,6 +540,12 @@ func (a *Api) updateLinkedDocuments(c echo.Context) error {
 	err := unMarshalBody(c.Request(), dto)
 	if err != nil {
 		return err
+	}
+
+	if len(dto.DocumentIds) > 100 {
+		e := errors.ErrInvalid
+		e.ErrMsg = "Maximum number of linked documents is 100"
+		return e
 	}
 
 	ownership, err := a.db.DocumentStore.UserOwnsDocuments(ctx.UserId, append(dto.DocumentIds, docId))
