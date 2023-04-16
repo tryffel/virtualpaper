@@ -57,7 +57,7 @@ const DocumentListActions = () => (
       label="Sort"
       fields={["date", "name", "updated_at", "created_at"]}
     />
-    <CreateButton />
+    <CreateButton label={"Upload document"} />
     <ExportButton />
   </TopToolbar>
 );

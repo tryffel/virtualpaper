@@ -34,15 +34,27 @@ export const Dashboard = () => {
   }
 
   const direction = "column";
-
   if (data.num_documents > 0) {
     return (
       <Grid spacing={1} direction={direction} flexGrow={1} alignItems="stretch">
         {/* <Grid item xl={2} lg={5} xs={12} sm={10}>
                     <DocumentTimeline stats={data.yearly_stats}/>
                 </Grid> */}
-        <Grid item xs={4} sm={4} md={4} lg={12}>
-          <IndexingStatusRow indexing={get(data, "indexing")} />
+        <Grid
+          container
+          xs={8}
+          sm={6}
+          md={12}
+          lg={12}
+          direction={"row"}
+          justifyContent={"space-between"}
+        >
+          <Grid item>
+            <IndexingStatusRow indexing={get(data, "indexing")} />
+          </Grid>
+          <Grid item sx={{ mt: "14px" }}>
+            <CreateButton resource={"documents"} label={"Upload document"} />
+          </Grid>
         </Grid>
 
         <Grid item xs={12} sm={10} md={8} lg={3}>
