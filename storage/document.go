@@ -342,6 +342,16 @@ WHERE id=$1
 	return err
 }
 
+func (s *DocumentStore) SetModifiedAt(docIds []string, modifiedAt time.Time) error {
+	query := s.sq.Update("documents").Set("updated_at", modifiedAt).Where(squirrel.Eq{"id": docIds})
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return fmt.Errorf("sql: %v", err)
+	}
+	_, err = s.db.Exec(sql, args...)
+	return s.parseError(err, "update modified_at")
+}
+
 func (s *DocumentStore) MarkDocumentDeleted(userId int, docId string) error {
 	query := s.sq.Update("documents").Set("deleted_at", time.Now()).Where("id=?", docId)
 	if userId != 0 {

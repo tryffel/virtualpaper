@@ -20,6 +20,7 @@ package api
 
 import (
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 
@@ -548,14 +549,27 @@ func (a *Api) updateLinkedDocuments(c echo.Context) error {
 	if !ownership {
 		e := errors.ErrRecordNotFound
 		e.ErrMsg = "document(s) not found"
-		return err
+		return e
 	}
 
 	err = a.db.MetadataStore.UpdateLinkedDocuments(ctx.UserId, docId, dto.DocumentIds)
 	if err != nil {
 		return err
-	} else {
-		opOk = true
-		return c.String(http.StatusOK, "")
 	}
+
+	docIds := make([]string, len(dto.DocumentIds)+1)
+	docIds[0] = docId
+	for i, _ := range dto.DocumentIds {
+		docIds[i+1] = dto.DocumentIds[i]
+	}
+
+	err = a.db.DocumentStore.SetModifiedAt(docIds, time.Now())
+	if err != nil {
+		logrus.Errorf("update document updated_at when linking documents, docId: %s: %v", docId, err)
+	}
+	opOk = true
+
+	data := map[string]string{"id": "1"}
+
+	return c.JSON(http.StatusOK, data)
 }
