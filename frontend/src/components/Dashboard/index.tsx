@@ -19,11 +19,11 @@
 import { useGetOne, Loading, CreateButton } from "react-admin";
 import { Box, Grid, Typography, Container } from "@mui/material";
 
-import { Stats } from "./Stats";
 import { LastUpdatedDocumentList } from "./DocumentList";
 import { get } from "lodash";
 import { IndexingStatusRow, IndexingStatusRowSmall } from "./Status";
 import * as React from "react";
+import { EmptyDocumentList } from "../Documents/List";
 
 export const Dashboard = () => {
   const { data, isLoading } = useGetOne("documents/stats", {
@@ -67,7 +67,7 @@ export const Dashboard = () => {
       </Grid>
     );
   } else {
-    return <EmptyDashboard />;
+    return <EmptyDocumentList />;
   }
 };
 
@@ -80,28 +80,5 @@ export const ShowDocumentsIndexing = () => {
   }
   return (
     <IndexingStatusRowSmall indexing={get(data, "indexing")} hideReady={true} />
-  );
-};
-
-const EmptyDashboard = () => {
-  return (
-    <Grid
-      container
-      direction="column"
-      justifyContent="center"
-      alignItems="center"
-    >
-      <Grid item md={5}>
-        <Box sx={{ mt: 10 }}>
-          <Typography variant="h4" paragraph>
-            No documents yet
-          </Typography>
-          <Typography variant="body1" paragraph>
-            Upload some documents first!
-          </Typography>
-          <CreateButton resource="documents" />
-        </Box>
-      </Grid>
-    </Grid>
   );
 };

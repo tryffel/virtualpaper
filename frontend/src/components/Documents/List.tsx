@@ -41,9 +41,11 @@ import { HelpButton } from "../Help";
 import { DocumentSearchFilter, FullTextSeachFilter } from "./SearchFilter";
 import ClearIcon from "@mui/icons-material/Clear";
 import EditIcon from "@mui/icons-material/Edit";
+import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
 import { Link } from "react-router-dom";
 import { DocumentCard } from "./DocumentCard";
 import { ShowDocumentsIndexing } from "../Dashboard";
+import { EmptyResourcePage } from "../primitives/EmptyPage";
 
 const DocumentPagination = () => (
   <Pagination rowsPerPageOptions={[10, 25, 50, 100]} />
@@ -74,6 +76,7 @@ const SmallDocumentList = () => {
       title="Documents"
       actions={<DocumentListActions />}
       pagination={<DocumentPagination />}
+      empty={<EmptyDocumentList />}
     >
       <DocumentGrid />
     </List>
@@ -88,6 +91,7 @@ const LargeDocumentList = () => {
       actions={<DocumentListActions />}
       sort={{ field: "date", order: "DESC" }}
       filters={[<DocumentSearchFilter />]}
+      empty={<EmptyDocumentList />}
     >
       <DocumentGrid />
     </List>
@@ -259,5 +263,16 @@ const BulkEditToolbar = (props: any) => {
         <EditIcon />
       </Button>
     </MuiToolbar>
+  );
+};
+
+export const EmptyDocumentList = () => {
+  return (
+    <EmptyResourcePage
+      title={"No documents"}
+      subTitle={"Upload some documents first."}
+      createButtonLabel={"Upload document"}
+      icon={<InsertDriveFileOutlinedIcon />}
+    />
   );
 };

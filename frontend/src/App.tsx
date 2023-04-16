@@ -27,7 +27,7 @@ import { ForgotPassword } from "./components/Public/ForgotPassword";
 import { AdminEditUser } from "./components/Admin/UserEdit";
 import { AdminCreateUser } from "./components/Admin/UserCreate";
 import { ConfirmAuthentication } from "./components/Authentication/AuthConfirmationDialog";
-import { DeletedDocumentList } from "./components/Documents/Deleted";
+import { DeletedDocumentList } from "./components/Documents/Trashbin";
 
 const App = () => (
   <Admin

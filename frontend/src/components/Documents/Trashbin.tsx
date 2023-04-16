@@ -26,11 +26,13 @@ import {
   TopToolbar,
   useListContext,
 } from "react-admin";
-import { Box, Grid, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Grid, Typography, useMediaQuery, useTheme } from "@mui/material";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 
 import { HelpButton } from "../Help";
 import { DocumentSearchFilter, FullTextSeachFilter } from "./SearchFilter";
 import { DocumentCard } from "./DocumentCard";
+import { EmptyResourcePage } from "../primitives/EmptyPage";
 
 const DocumentPagination = () => (
   <Pagination rowsPerPageOptions={[10, 25, 50, 100]} />
@@ -59,6 +61,7 @@ const SmallDocumentList = () => {
       actions={<DocumentListActions />}
       sort={{ field: "deleted_at", order: "DESC" }}
       pagination={<DocumentPagination />}
+      empty={<EmptyTrashBin />}
     >
       <DocumentGrid />
     </List>
@@ -73,7 +76,7 @@ const LargeDocumentList = () => {
       actions={<DocumentListActions />}
       sort={{ field: "deleted_at", order: "DESC" }}
       filters={[<DocumentSearchFilter />]}
-      empty={<EmptyPage />}
+      empty={<EmptyTrashBin />}
     >
       <DocumentGrid />
     </List>
@@ -142,21 +145,13 @@ const DocumentHelp = () => {
   );
 };
 
-const EmptyPage = () => {
+const EmptyTrashBin = () => {
   return (
-    <Grid
-      container
-      direction="column"
-      justifyContent="center"
-      alignItems="center"
-    >
-      <Grid item md={5}>
-        <Box sx={{ mt: 10 }}>
-          <Typography variant="h4" paragraph>
-            No deleted documents
-          </Typography>
-        </Box>
-      </Grid>
-    </Grid>
+    <EmptyResourcePage
+      title={"Trash bin is empty"}
+      noCreateButton={true}
+      subTitle={""}
+      icon={<DeleteOutlinedIcon />}
+    />
   );
 };

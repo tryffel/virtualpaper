@@ -28,12 +28,17 @@ import {
 } from "react-admin";
 
 import { useMediaQuery } from "@mui/material";
+import { EmptyResourcePage } from "../primitives/EmptyPage";
 
 export const MetadataKeyList = () => {
   const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
 
   return (
-    <List title="Metadata" sort={{ field: "key", order: "ASC" }}>
+    <List
+      title="Metadata"
+      sort={{ field: "key", order: "ASC" }}
+      empty={<EmptyMetadataList />}
+    >
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <ChipField source="key" label={"Name"} />
         <TextField source="comment" label={"Description"} />
@@ -44,5 +49,14 @@ export const MetadataKeyList = () => {
         <NumberField source="documents_count" label={"Total documents"} />
       </Datagrid>
     </List>
+  );
+};
+
+const EmptyMetadataList = () => {
+  return (
+    <EmptyResourcePage
+      title={"No metadata keys"}
+      subTitle={"Do you want to add one?"}
+    />
   );
 };

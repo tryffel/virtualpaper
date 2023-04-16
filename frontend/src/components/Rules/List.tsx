@@ -31,9 +31,10 @@ import {
 import { Chip, Typography, Box, Grid } from "@mui/material";
 import { MarkdownField } from "../Markdown";
 import get from "lodash/get";
+import { EmptyResourcePage } from "../primitives/EmptyPage";
 
 export const RuleList = () => (
-  <List>
+  <List empty={<EmptyRuleList />}>
     <Datagrid bulkActionButtons={false} expand={ExpandRule}>
       <RuleTitle />
       <TextField source="order" />
@@ -101,5 +102,14 @@ const ExpandRule = () => {
         </Box>
       </Grid>
     </Grid>
+  );
+};
+
+const EmptyRuleList = () => {
+  return (
+    <EmptyResourcePage
+      title={"No processing rules"}
+      subTitle={"Do you want to add one?"}
+    />
   );
 };

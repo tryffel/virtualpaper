@@ -75,7 +75,7 @@ const MetadataValueCreateButton = (record: any) => {
 
   return (
     <>
-      <Button onClick={handleClick} label="ra.action.create">
+      <Button onClick={handleClick} label="Add metadata value">
         <Create />
       </Button>
       <Dialog
