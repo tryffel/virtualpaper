@@ -128,6 +128,10 @@ func respInternalErrorV2(error ...interface{}) error {
 func httpErrorHandler(err error, c echo.Context) {
 	var statuscode int
 	var reason string
+	if err == nil {
+		// some middlware returned error
+		return
+	}
 
 	if he, ok := err.(*echo.HTTPError); ok {
 		statuscode = he.Code
