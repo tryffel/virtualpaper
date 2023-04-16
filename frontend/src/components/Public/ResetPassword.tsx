@@ -90,7 +90,7 @@ export const ResetPassword = () => {
 
 const ResetForm = () => {
   return (
-    <Card sx={{ mt: 6 }}>
+    <Card sx={{ mt: 8 }}>
       <CardContent sx={{ margin: 2 }}>
         <Grid container flexDirection="column">
           <Grid item sx={{ pb: 4 }}>

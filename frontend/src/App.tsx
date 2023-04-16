@@ -28,6 +28,7 @@ import { AdminEditUser } from "./components/Admin/UserEdit";
 import { AdminCreateUser } from "./components/Admin/UserCreate";
 import { ConfirmAuthentication } from "./components/Authentication/AuthConfirmationDialog";
 import { DeletedDocumentList } from "./components/Documents/Trashbin";
+import { LoginPage } from "./components/Public/Login";
 
 const App = () => (
   <Admin
@@ -36,6 +37,7 @@ const App = () => (
     dataProvider={dataProvider}
     authProvider={authProvider}
     dashboard={Dashboard}
+    loginPage={<LoginPage />}
   >
     <Resource name="documents" {...documents} icon={ArticleIcon} />
     <Resource

@@ -25,6 +25,7 @@ import (
 	"github.com/mileusna/useragent"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -251,6 +252,8 @@ func (a *Api) LoginV2(c echo.Context) error {
 	remoteAddr := getRemoteAddr(req)
 	if userId == -1 || err != nil {
 		logrus.Infof("Failed login attempt for user %s from remote %s", dto.Username, remoteAddr)
+		// request takes about the same time with invalid password & invalid user
+		time.Sleep(time.Millisecond*1100 + time.Duration(int(rand.Float64()*1000))*time.Millisecond)
 		return echo.ErrUnauthorized
 	}
 

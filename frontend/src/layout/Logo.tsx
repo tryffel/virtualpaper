@@ -2,7 +2,9 @@ import * as React from "react";
 import { SVGProps } from "react";
 import { useTheme } from "@mui/material/styles";
 
-const Logo = (props: SVGProps<SVGSVGElement>) => {
+const Logo = (props: { color?: "primary" | "secondary" }) => {
+  const color = props.color ?? "secondary";
+
   const theme = useTheme();
   return (
     <svg
@@ -12,7 +14,11 @@ const Logo = (props: SVGProps<SVGSVGElement>) => {
       xmlns="http://www.w3.org/2000/svg"
     >
       <g
-        fill={theme.palette.secondary.contrastText}
+        fill={
+          color === "secondary"
+            ? theme.palette.secondary.contrastText
+            : theme.palette.primary.main
+        }
         id="svgGroup"
         strokeLinecap="round"
         fontSize="7"

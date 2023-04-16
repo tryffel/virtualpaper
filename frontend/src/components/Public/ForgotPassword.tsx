@@ -22,7 +22,7 @@ export const ForgotPassword = () => {
           "Password reset link has been sent. Please check your email to proceed.",
           { type: "warning" }
         );
-        redirect("/#");
+        setTimeout(() => redirect("/#"), 5000);
       })
       .catch((err) => {
         notify(String(err), { type: "error" });
