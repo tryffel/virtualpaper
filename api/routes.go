@@ -93,6 +93,7 @@ func (api *Api) addRoutesV2() {
 	api.privateRouter.DELETE("/metadata/keys/:keyId/values/:valueId", api.deleteMetadataValue)
 
 	api.privateRouter.GET("/processing/rules", api.getUserRules)
+	api.privateRouter.PUT("/processing/rules/reorder", api.reorderRules)
 	api.privateRouter.POST("/processing/rules", api.addUserRule)
 	api.privateRouter.GET("/processing/rules/:id", api.getUserRule)
 	api.privateRouter.PUT("/processing/rules/:id", api.updateUserRule)

@@ -309,6 +309,8 @@ export const dataProvider: DataProvider = {
     let method = "PUT";
     if (resource === "metadata/values") {
       url = `${apiUrl}/metadata/keys/${params.meta.key_id}/values/${params.data.id}`;
+    } else if (resource === "reorder-rules") {
+      url = `${apiUrl}/processing/rules/reorder`;
     }
     if (resource === "documents/deleted") {
       if (params.meta?.action === "restore") {

@@ -513,3 +513,34 @@ func mapActionsToRules(rules []*models.Rule, actions *[]models.RuleAction) {
 		}
 	}
 }
+
+func (s *RuleStore) ReorderRules(userId int, ids []int) error {
+	var maxOrder = 0
+	err := s.db.Get(&maxOrder, "SELECT MAX(rule_order) FROM rules WHERE user_id=$1", userId)
+	if err != nil {
+		return s.parseError(err, "get max rule_order")
+	}
+
+	if maxOrder > 100000 {
+		maxOrder = 100
+	} else {
+		maxOrder += 1
+
+	}
+
+	sql := `UPDATE rules SET rule_order=$1 WHERE id=$2 AND user_id=$3`
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin tx: %v", err)
+	}
+
+	for i, v := range ids {
+		_, err = s.db.Exec(sql, i+maxOrder, v, userId)
+		if err != nil {
+			tx.Rollback()
+			return s.parseError(err, "reorder rules")
+		}
+	}
+
+	return s.parseError(tx.Commit(), "reorder")
+}

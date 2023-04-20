@@ -375,3 +375,29 @@ func (a *Api) testRule(c echo.Context) error {
 	matched = status.Match
 	return c.JSON(http.StatusOK, status)
 }
+
+type ReorderRulesRequest struct {
+	Ids []int `json:"ids" valid:"-"`
+}
+
+func (a *Api) reorderRules(c echo.Context) error {
+	ctx := c.(UserContext)
+	processingRule := &ReorderRulesRequest{}
+	err := unMarshalBody(c.Request(), processingRule)
+	if err != nil {
+		return err
+	}
+
+	opOk := false
+	defer func() {
+		logCrudRule(ctx.UserId, "reorder", &opOk, "")
+	}()
+
+	err = a.db.RuleStore.ReorderRules(ctx.UserId, processingRule.Ids)
+	if err != nil {
+		return err
+	}
+	opOk = true
+	out := map[string]interface{}{"id": "rules"}
+	return c.JSON(200, out)
+}

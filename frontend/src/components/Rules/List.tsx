@@ -19,42 +19,31 @@
 import * as React from "react";
 
 import {
-  List,
-  Datagrid,
-  TextField,
-  EditButton,
-  DateField,
   BooleanField,
+  Button,
+  Datagrid,
+  EditButton,
+  List,
+  TopToolbar,
   useRecordContext,
 } from "react-admin";
+import ReorderIcon from "@mui/icons-material/Reorder";
 
-import { Chip, Typography, Box, Grid } from "@mui/material";
+import { Box, Chip, Grid, Typography } from "@mui/material";
 import { MarkdownField } from "../Markdown";
 import get from "lodash/get";
 import { EmptyResourcePage } from "../primitives/EmptyPage";
+import { ReorderRulesDialog, RuleTitle } from "./Reorder";
 
 export const RuleList = () => (
-  <List empty={<EmptyRuleList />}>
+  <List empty={<EmptyRuleList />} actions={<RuleListActions />}>
     <Datagrid bulkActionButtons={false} expand={ExpandRule}>
       <RuleTitle />
-      <TextField source="order" />
       <BooleanField label="Enabled" source="enabled" />
       <EditButton />
     </Datagrid>
   </List>
 );
-
-const RuleTitle = (props: object = {}) => {
-  const record = useRecordContext(props);
-  if (!record) {
-    return null;
-  }
-
-  const enabled = get(record, "enabled");
-  return (
-    <TextField sx={{ fontWeight: enabled ? "500" : "50" }} source="name" />
-  );
-};
 
 const RuleModeField = (props: any) => {
   const { source } = props;
@@ -77,8 +66,6 @@ const ChildCounterField = (props: any) => {
 };
 
 const ExpandRule = () => {
-  const record = useRecordContext();
-
   return (
     <Grid container>
       <Grid item xs={6} md={6} lg={6}>
@@ -111,5 +98,18 @@ const EmptyRuleList = () => {
       title={"No processing rules"}
       subTitle={"Do you want to add one?"}
     />
+  );
+};
+
+const RuleListActions = () => {
+  const [modalOpen, setModalOpen] = React.useState(false);
+
+  return (
+    <TopToolbar>
+      <Button label={"Reorder"} onClick={() => setModalOpen(true)}>
+        <ReorderIcon />
+      </Button>
+      <ReorderRulesDialog setModalOpen={setModalOpen} modalOpen={modalOpen} />
+    </TopToolbar>
   );
 };
