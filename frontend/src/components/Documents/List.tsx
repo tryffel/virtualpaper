@@ -272,6 +272,7 @@ export const EmptyDocumentList = () => {
       title={"No documents"}
       subTitle={"Upload some documents first."}
       createButtonLabel={"Upload document"}
+      resource={"documents"}
       icon={<InsertDriveFileOutlinedIcon />}
     />
   );

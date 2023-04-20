@@ -10,6 +10,7 @@ export interface EmptyPageProps {
   noCreateButton?: boolean;
   createButtonLabel?: string;
   icon?: React.ReactElement;
+  resource?: string;
 }
 
 export const EmptyResourceIconSx = {
@@ -58,6 +59,7 @@ export const EmptyResourcePage = (props: EmptyPageProps) => {
       )}
       {!finalProps.noCreateButton && (
         <CreateButton
+          resource={props.resource}
           label={finalProps.createButtonLabel}
           variant={"contained"}
           sx={{ marginTop: "10px" }}
