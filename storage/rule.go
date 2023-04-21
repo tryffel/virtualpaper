@@ -20,6 +20,7 @@ package storage
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Masterminds/squirrel"
@@ -515,17 +516,23 @@ func mapActionsToRules(rules []*models.Rule, actions *[]models.RuleAction) {
 }
 
 func (s *RuleStore) ReorderRules(userId int, ids []int) error {
-	var maxOrder = 0
+	var maxOrder = 1
 	err := s.db.Get(&maxOrder, "SELECT MAX(rule_order) FROM rules WHERE user_id=$1", userId)
 	if err != nil {
-		return s.parseError(err, "get max rule_order")
+		if strings.Contains(err.Error(), "converting NULL to int is unsupported") {
+			// user doesn't have rules
+			e := errors.ErrRecordNotFound
+			e.ErrMsg = "no rules"
+			return e
+		} else {
+			return s.parseError(err, "get max rule_order")
+		}
 	}
 
 	if maxOrder > 100000 {
 		maxOrder = 100
 	} else {
 		maxOrder += 1
-
 	}
 
 	sql := `UPDATE rules SET rule_order=$1 WHERE id=$2 AND user_id=$3`
@@ -534,11 +541,22 @@ func (s *RuleStore) ReorderRules(userId int, ids []int) error {
 		return fmt.Errorf("begin tx: %v", err)
 	}
 
+	// iterate each rule and check that exactly one row was changed.
 	for i, v := range ids {
-		_, err = s.db.Exec(sql, i+maxOrder, v, userId)
+		out, err := tx.Exec(sql, i+maxOrder, v, userId)
 		if err != nil {
 			tx.Rollback()
 			return s.parseError(err, "reorder rules")
+		}
+		affected, err := out.RowsAffected()
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("get rows affected: %v", err)
+		}
+		if affected != 1 {
+			tx.Rollback()
+			e := errors.ErrRecordNotFound
+			return e
 		}
 	}
 
