@@ -17,6 +17,7 @@ import {
   useGetList,
   useNotify,
   useRecordContext,
+  useRefresh,
   useUpdate,
 } from "react-admin";
 import ListItem from "@mui/material/ListItem";
@@ -41,7 +42,6 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import ListItemText from "@mui/material/ListItemText";
-import { keyboard } from "@testing-library/user-event/dist/keyboard";
 
 export interface ReorderProps {
   modalOpen: boolean;
@@ -56,6 +56,7 @@ export const ReorderRulesDialog = (props: ReorderProps) => {
   const [updatedIds, setUpdatedIds] = React.useState<Array<number>>([]);
   const [activeId, setActiveId] = React.useState<number | null>(null);
   const notify = useNotify();
+  const refresh = useRefresh();
 
   const mouseSensor = useSensor(MouseSensor);
   const touchSensor = useSensor(TouchSensor);
@@ -85,6 +86,7 @@ export const ReorderRulesDialog = (props: ReorderProps) => {
       onSuccess: (data) => {
         notify("Order saved");
         setModalOpen(false);
+        refresh();
       },
       onError: (data) => {
         notify(`${data}`, { type: "error" });
