@@ -19,8 +19,11 @@
 package api
 
 import (
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"net/http"
+	"tryffel.net/go/virtualpaper/config"
+	"tryffel.net/go/virtualpaper/errors"
 
 	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/models"
@@ -386,6 +389,16 @@ func (a *Api) reorderRules(c echo.Context) error {
 	err := unMarshalBody(c.Request(), processingRule)
 	if err != nil {
 		return err
+	}
+
+	if len(processingRule.Ids) < 2 {
+		e := errors.ErrInvalid
+		e.ErrMsg = "must have at least two rules"
+		return e
+	}
+	if len(processingRule.Ids) > config.MaxRows {
+		e := errors.ErrInvalid
+		e.ErrMsg = fmt.Sprintf("must have max %d rules", config.MaxRows)
 	}
 
 	opOk := false

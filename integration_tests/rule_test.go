@@ -259,8 +259,8 @@ func (suite *RuleTestSuite) TestGetRules() {
 	})
 
 	assert.Equal(suite.T(), 2, len(*rules), "number of rules match")
-	assert.Equal(suite.T(), rule1.Id, (*rules)[1].Id, "id matches")
-	assert.Equal(suite.T(), rule2.Id, (*rules)[0].Id, "id matches")
+	assert.Equal(suite.T(), rule1.Id, (*rules)[0].Id, "id matches")
+	assert.Equal(suite.T(), rule2.Id, (*rules)[1].Id, "id matches")
 }
 
 func (suite *RuleTestSuite) GetRule() {
@@ -356,6 +356,91 @@ func (suite *RuleTestSuite) TestRuleTesting() {
 	assert.Equal(suite.T(), true, ruleTest.Match)
 }
 
+func (suite *RuleTestSuite) TestReorderRules() {
+	rule := &api.Rule{
+		Name:        "rule1",
+		Description: "",
+		Enabled:     false,
+		Order:       0,
+		Mode:        "match_any",
+		Conditions: []api.RuleCondition{
+			{
+				ConditionType: "name_contains",
+				IsRegex:       true,
+				Value:         "valid regex",
+			},
+		},
+		Actions: []api.RuleAction{
+			{
+				Action: "description_append",
+				Value:  "test",
+			},
+		},
+	}
+
+	rule1 := addRule(suite.T(), suite.userHttp, rule, 200, "valid rule, match_all")
+	rule.Name = "rule2"
+	rule2 := addRule(suite.T(), suite.userHttp, rule, 200, "valid rule, match_all")
+
+	rule.Name = "rule3"
+	rule3 := addRule(suite.T(), suite.userHttp, rule, 200, "valid rule, match_all")
+
+	rule.Name = "rule4"
+	rule4 := addRule(suite.T(), suite.userHttp, rule, 200, "valid rule, match_all")
+
+	newOrder := []int{rule1.Id, rule2.Id, rule4.Id, rule3.Id}
+	reorderRules(suite.T(), suite.userHttp, newOrder, 200)
+	reorderedRules := getRules(suite.T(), suite.userHttp, 200, nil)
+
+	assert.Equal(suite.T(), (*reorderedRules)[0].Id, newOrder[0])
+	assert.Equal(suite.T(), (*reorderedRules)[1].Id, newOrder[1])
+	assert.Equal(suite.T(), (*reorderedRules)[2].Id, newOrder[2])
+	assert.Equal(suite.T(), (*reorderedRules)[3].Id, newOrder[3])
+}
+
+func (suite *RuleTestSuite) TestReorderRulesErrors() {
+	rule := &api.Rule{
+		Name:        "rule1",
+		Description: "",
+		Enabled:     false,
+		Order:       0,
+		Mode:        "match_any",
+		Conditions: []api.RuleCondition{
+			{
+				ConditionType: "name_contains",
+				IsRegex:       true,
+				Value:         "valid regex",
+			},
+		},
+		Actions: []api.RuleAction{
+			{
+				Action: "description_append",
+				Value:  "test",
+			},
+		},
+	}
+
+	reorderRules(suite.T(), suite.userHttp, []int{}, 400)
+	reorderRules(suite.T(), suite.userHttp, []int{1}, 400)
+	reorderRules(suite.T(), suite.userHttp, []int{1, 2}, 404)
+
+	rule1 := addRule(suite.T(), suite.userHttp, rule, 200, "valid rule, match_all")
+	rule.Name = "rule2"
+	rule2 := addRule(suite.T(), suite.userHttp, rule, 200, "valid rule, match_all")
+
+	rule.Name = "rule3"
+	rule3 := addRule(suite.T(), suite.userHttp, rule, 200, "valid rule, match_all")
+	originalRules := getRules(suite.T(), suite.userHttp, 200, nil)
+	newOrder := []int{rule1.Id, rule3.Id, rule2.Id}
+	reorderRules(suite.T(), suite.adminHttp, newOrder, 404)
+
+	// reorder nonexisting rule
+	reorderRules(suite.T(), suite.userHttp, append(newOrder, 10105), 404)
+	uneditedRules := getRules(suite.T(), suite.userHttp, 200, nil)
+	assert.Equal(suite.T(), originalRules, uneditedRules)
+
+}
+
 func addRule(t *testing.T, client *httpClient, rule *api.Rule, expectStatus int, name string) *api.Rule {
 	data := &api.Rule{}
 	req := client.Post("/api/v1/processing/rules").Json(t, rule).ExpectName(t, name, false)
@@ -417,4 +502,13 @@ func testRule(t *testing.T, client *httpClient, ruleId int, docId string, wantHt
 		req.Expect(t).e.Status(200).Done()
 		return nil
 	}
+}
+
+func reorderRules(t *testing.T, client *httpClient, rules []int, wantHttpStatus int) {
+	data := &api.ReorderRulesRequest{Ids: rules}
+	req := client.Put("/api/v1/processing/rules/reorder").Json(t, data).ExpectName(t, "", false)
+	if wantHttpStatus == 200 {
+		req = req.Json(t, data)
+	}
+	req.e.Status(wantHttpStatus).Done()
 }
