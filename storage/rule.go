@@ -148,31 +148,11 @@ func (s *RuleStore) AddRule(userId int, rule *models.Rule) error {
 		return fmt.Errorf("begin tx: %v", err)
 	}
 
-	// Increase remaining rules rule_order by on.
-	// Due to unique constraint a temporary value will need to be first set.
-	updateSql := `
-				UPDATE rules
-				SET rule_order = -rule_order
-				WHERE user_id = $1 AND rule_order >= $2;
-`
-	_, err = tx.tx.Exec(updateSql, userId, rule.Order)
-	if err != nil {
-		return getDatabaseError(err, s, "increase rule order")
-	}
-
-	updateSql = `UPDATE rules
-				SET rule_order = -rule_order +1
-				WHERE user_id = $1 AND -rule_order >= $2;`
-
-	_, err = tx.tx.Exec(updateSql, userId, rule.Order)
-	if err != nil {
-		return getDatabaseError(err, s, "increase rule order")
-	}
-
 	// insert rule
 	query := s.sq.Insert("rules").
 		Columns("user_id", "name", "description", "enabled", "rule_order", "mode").
-		Values(userId, rule.Name, rule.Description, rule.Enabled, rule.Order, rule.Mode).
+		Values(userId, rule.Name, rule.Description, rule.Enabled,
+			squirrel.Expr("(SELECT COALESCE(MAX(rule_order)+1, 1) FROM rules WHERE user_id=?)", userId), rule.Mode).
 		Suffix("RETURNING \"id\"")
 	sql, args, err := query.ToSql()
 	if err != nil {

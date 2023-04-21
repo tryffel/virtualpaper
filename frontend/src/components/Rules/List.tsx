@@ -20,7 +20,7 @@ import * as React from "react";
 
 import {
   BooleanField,
-  Button,
+  Button, CreateButton,
   Datagrid,
   EditButton,
   List,
@@ -110,6 +110,7 @@ const RuleListActions = () => {
         <ReorderIcon />
       </Button>
       <ReorderRulesDialog setModalOpen={setModalOpen} modalOpen={modalOpen} />
+      <CreateButton/>
     </TopToolbar>
   );
 };
