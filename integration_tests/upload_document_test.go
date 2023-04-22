@@ -2,6 +2,7 @@ package integrationtest
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/h2non/baloo.v3"
@@ -249,6 +250,11 @@ func updateDocument(t *testing.T, client *httpClient, doc *api.DocumentResponse,
 	}
 	req.e.Status(wantHttpStatus).Done()
 	return nil
+}
+
+func updateDocumentMetadata(t *testing.T, client *httpClient, docId string, metadata api.MetadataUpdateRequest, wantHttpStatus int) {
+	client.Post(fmt.Sprintf("/api/v1/documents/%s/metadata", docId)).
+		Json(t, metadata).req.Expect(t).Status(wantHttpStatus).Done()
 }
 
 func getDocumentHistory(t *testing.T, client *httpClient, docId string, wantHttpStatus int) *[]models.DocumentHistory {

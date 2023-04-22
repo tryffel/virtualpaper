@@ -2,7 +2,9 @@ package integrationtest
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 	"tryffel.net/go/virtualpaper/api"
 	"tryffel.net/go/virtualpaper/models"
 )
@@ -78,4 +80,14 @@ func assertDocumentNotInArray(t *testing.T, id string, docs *[]api.DocumentRespo
 			return
 		}
 	}
+}
+
+func assertDateMatches(t *testing.T, epoch1 int64, epoch2 int64) {
+	t1 := time.Unix(epoch1, 0)
+	t2 := time.Unix(epoch2, 0)
+
+	m1 := models.MidnightForDate(t1)
+	m2 := models.MidnightForDate(t2)
+
+	assert.True(t, m1.Equal(m2))
 }

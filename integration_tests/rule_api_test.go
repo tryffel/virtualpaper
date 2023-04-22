@@ -330,7 +330,7 @@ func (suite *RuleApiTestSuite) TestRuleTesting() {
 			{
 				ConditionType: "content_contains",
 				IsRegex:       true,
-				Value:         "[pP]ersonal",
+				Value:         "[pP]ersonalll",
 				Enabled:       true,
 			},
 			{

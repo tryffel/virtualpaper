@@ -572,7 +572,7 @@ func Test_removeMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			removeMetadata(tt.args.doc, tt.args.keyId, tt.args.valueId)
+			removeMetadata(tt.args.doc, tt.args.keyId, tt.args.valueId, nil)
 			if !reflect.DeepEqual(tt.args.doc, tt.wantDoc) {
 				t.Errorf("doc metadata differs: want %d, got %d",
 					len(tt.wantDoc.Metadata), len(tt.args.doc.Metadata))
