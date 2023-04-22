@@ -314,14 +314,14 @@ func (suite *RuleApiTestSuite) GetRule() {
 	_ = getRule(suite.T(), suite.adminHttp, adminRule.Id, 200)
 }
 
-func (suite *RuleApiTestSuite) TestRuleTesting() {
+func (suite *RuleApiTestSuite) TestRuleTestingMatch() {
 	_ = insertTestDocuments(suite.T(), suite.db)
 	doc := getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
 	assert.Equal(suite.T(), testDocumentX86Intel.Name, doc.Name)
 
 	suite.T().Log("test rule with 'match_any'")
 	rule := &api.Rule{
-		Name:        "rule1",
+		Name:        "test rule match any",
 		Description: "",
 		Enabled:     true,
 		Order:       10,
@@ -380,6 +380,71 @@ func (suite *RuleApiTestSuite) TestRuleTesting() {
 		"rule mode is set to 'match any', skip rest conditions"})
 
 	assert.Equal(suite.T(), ruleTest.ActionOutput[0], []string{"action is disabled"})
+}
+
+func (suite *RuleApiTestSuite) TestRuleTestingNoMatch() {
+	_ = insertTestDocuments(suite.T(), suite.db)
+	doc := getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
+	assert.Equal(suite.T(), testDocumentX86Intel.Name, doc.Name)
+
+	suite.T().Log("test rule with 'match_all'")
+	rule := &api.Rule{
+		Name:        "test rule match all",
+		Description: "",
+		Enabled:     true,
+		Order:       10,
+		Mode:        "match_all",
+		Conditions: []api.RuleCondition{
+			{
+				ConditionType: "content_contains",
+				IsRegex:       true,
+				Value:         "[pP]ersonal",
+				Enabled:       true,
+			},
+			{
+				ConditionType: "content_contains",
+				IsRegex:       false,
+				Value:         "not found",
+				Enabled:       true,
+			},
+		},
+		Actions: []api.RuleAction{
+			{
+				Action:  "description_append",
+				Value:   "test",
+				Enabled: false,
+			},
+		},
+	}
+
+	gotRule := addRule(suite.T(), suite.userHttp, rule, 200, "add rule")
+	rule.Id = gotRule.Id
+
+	ruleTest := testRule(suite.T(), suite.userHttp, rule.Id, testDocumentX86Intel.Id, 200)
+	assert.Equal(suite.T(), false, ruleTest.Match)
+
+	assert.Len(suite.T(), ruleTest.Conditions, 2)
+	assert.Len(suite.T(), ruleTest.Actions, 1)
+
+	assert.Len(suite.T(), ruleTest.ConditionOutput, 2)
+	assert.Len(suite.T(), ruleTest.ActionOutput, 0)
+
+	assert.Equal(suite.T(), ruleTest.Conditions[0].ConditionId, gotRule.Conditions[0].Id)
+	assert.Equal(suite.T(), ruleTest.Conditions[0].ConditionType, gotRule.Conditions[0].ConditionType)
+	assert.Equal(suite.T(), ruleTest.Conditions[0].Matched, true)
+	assert.Equal(suite.T(), ruleTest.Conditions[0].Skipped, false)
+
+	assert.Equal(suite.T(), ruleTest.Conditions[1].ConditionId, gotRule.Conditions[1].Id)
+	assert.Equal(suite.T(), ruleTest.Conditions[1].ConditionType, gotRule.Conditions[1].ConditionType)
+	assert.Equal(suite.T(), ruleTest.Conditions[1].Matched, false)
+	assert.Equal(suite.T(), ruleTest.Conditions[1].Skipped, false)
+
+	assert.Equal(suite.T(), ruleTest.ConditionOutput[0], []string{"condition matched"})
+	assert.Equal(suite.T(), ruleTest.ConditionOutput[1],
+		[]string{
+			"condition didn't match",
+			"rule mode is set to 'match all', stopping execution",
+		})
 }
 
 func (suite *RuleApiTestSuite) TestReorderRules() {

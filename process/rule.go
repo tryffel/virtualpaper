@@ -249,6 +249,7 @@ func (d *DocumentRule) MatchTest() *RuleTestResult {
 				logger.Infof("condition %d didn't match, skip rest", condition.Id)
 				logConditionOut("condition didn't match")
 				logConditionOut("rule mode is set to 'match all', stopping execution")
+				hasMatch = false
 				doBreak = true
 			} else {
 				logger.Infof("condition %d didn't match, continuing", condition.Id)
