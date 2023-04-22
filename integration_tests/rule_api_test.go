@@ -10,25 +10,25 @@ import (
 	"tryffel.net/go/virtualpaper/process"
 )
 
-type RuleTestSuite struct {
+type RuleApiTestSuite struct {
 	ApiTestSuite
 }
 
-func TestProcessingRules(t *testing.T) {
-	suite.Run(t, new(RuleTestSuite))
+func TestProcessingRulesApi(t *testing.T) {
+	suite.Run(t, new(RuleApiTestSuite))
 }
 
-func (suite *RuleTestSuite) SetupTest() {
+func (suite *RuleApiTestSuite) SetupTest() {
 	suite.Init()
 	clearDbMetadataTables(suite.T(), suite.db)
 	clearDbProcessingRuleTables(suite.T(), suite.db)
 }
 
-func (suite *RuleTestSuite) AddRules() {
+func (suite *RuleApiTestSuite) AddRules() {
 
 }
 
-func (suite *RuleTestSuite) TestCreateRule() {
+func (suite *RuleApiTestSuite) TestCreateRule() {
 	rule := &api.Rule{
 		Name:        "valid rule",
 		Description: "",
@@ -127,7 +127,7 @@ func (suite *RuleTestSuite) TestCreateRule() {
 	addRule(suite.T(), suite.userHttp, rule, 200, "ok")
 }
 
-func (suite *RuleTestSuite) TestUpdateRule() {
+func (suite *RuleApiTestSuite) TestUpdateRule() {
 	rule := &api.Rule{
 		Name:        "valid rule",
 		Description: "",
@@ -177,7 +177,7 @@ func (suite *RuleTestSuite) TestUpdateRule() {
 	assert.Equal(suite.T(), true, gotRule2.Actions[0].Enabled, "rule action enabled")
 }
 
-func (suite *RuleTestSuite) TestDeleteRule() {
+func (suite *RuleApiTestSuite) TestDeleteRule() {
 	rule := &api.Rule{
 		Name:        "valid rule",
 		Description: "",
@@ -214,7 +214,7 @@ func (suite *RuleTestSuite) TestDeleteRule() {
 	assert.Nil(suite.T(), gotRule, "rule exists")
 }
 
-func (suite *RuleTestSuite) TestGetRules() {
+func (suite *RuleApiTestSuite) TestGetRules() {
 	rule := &api.Rule{
 		Name:        "rule1",
 		Description: "",
@@ -263,7 +263,7 @@ func (suite *RuleTestSuite) TestGetRules() {
 	assert.Equal(suite.T(), rule2.Id, (*rules)[1].Id, "id matches")
 }
 
-func (suite *RuleTestSuite) GetRule() {
+func (suite *RuleApiTestSuite) GetRule() {
 	rule := &api.Rule{
 		Name:        "rule1",
 		Description: "",
@@ -314,7 +314,7 @@ func (suite *RuleTestSuite) GetRule() {
 	_ = getRule(suite.T(), suite.adminHttp, adminRule.Id, 200)
 }
 
-func (suite *RuleTestSuite) TestRuleTesting() {
+func (suite *RuleApiTestSuite) TestRuleTesting() {
 	_ = insertTestDocuments(suite.T(), suite.db)
 	doc := getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
 	assert.Equal(suite.T(), testDocumentX86Intel.Name, doc.Name)
@@ -354,9 +354,35 @@ func (suite *RuleTestSuite) TestRuleTesting() {
 
 	ruleTest := testRule(suite.T(), suite.userHttp, rule.Id, testDocumentX86Intel.Id, 200)
 	assert.Equal(suite.T(), true, ruleTest.Match)
+
+	assert.Len(suite.T(), ruleTest.Conditions, 2)
+	assert.Len(suite.T(), ruleTest.Actions, 1)
+
+	assert.Len(suite.T(), ruleTest.ConditionOutput, 2)
+	assert.Len(suite.T(), ruleTest.ActionOutput, 1)
+
+	assert.Equal(suite.T(), ruleTest.Conditions[0].ConditionId, gotRule.Conditions[0].Id)
+	assert.Equal(suite.T(), ruleTest.Conditions[0].ConditionType, gotRule.Conditions[0].ConditionType)
+	assert.Equal(suite.T(), ruleTest.Conditions[0].Matched, false)
+	assert.Equal(suite.T(), ruleTest.Conditions[0].Skipped, false)
+
+	assert.Equal(suite.T(), ruleTest.Conditions[1].ConditionId, gotRule.Conditions[1].Id)
+	assert.Equal(suite.T(), ruleTest.Conditions[1].ConditionType, gotRule.Conditions[1].ConditionType)
+	assert.Equal(suite.T(), ruleTest.Conditions[1].Matched, true)
+	assert.Equal(suite.T(), ruleTest.Conditions[1].Skipped, false)
+
+	assert.Equal(suite.T(), ruleTest.Actions[0].ActionId, gotRule.Actions[0].Id)
+	assert.Equal(suite.T(), ruleTest.Actions[0].ActionType, gotRule.Actions[0].Action)
+	assert.Equal(suite.T(), ruleTest.Actions[0].Skipped, true)
+
+	assert.Equal(suite.T(), ruleTest.ConditionOutput[0], []string{"condition didn't match"})
+	assert.Equal(suite.T(), ruleTest.ConditionOutput[1], []string{"condition matched",
+		"rule mode is set to 'match any', skip rest conditions"})
+
+	assert.Equal(suite.T(), ruleTest.ActionOutput[0], []string{"action is disabled"})
 }
 
-func (suite *RuleTestSuite) TestReorderRules() {
+func (suite *RuleApiTestSuite) TestReorderRules() {
 	rule := &api.Rule{
 		Name:        "rule1",
 		Description: "",
@@ -398,7 +424,7 @@ func (suite *RuleTestSuite) TestReorderRules() {
 	assert.Equal(suite.T(), (*reorderedRules)[3].Id, newOrder[3])
 }
 
-func (suite *RuleTestSuite) TestReorderRulesErrors() {
+func (suite *RuleApiTestSuite) TestReorderRulesErrors() {
 	rule := &api.Rule{
 		Name:        "rule1",
 		Description: "",
