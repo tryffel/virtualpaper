@@ -37,16 +37,21 @@ import {
   DialogContentText,
   DialogActions,
   TextField,
-  Box,
   Grid,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 
-import { Settings as SettingsIcon } from "@mui/icons-material";
+import { ExpandMore, Settings as SettingsIcon } from "@mui/icons-material";
+import NotInterestedIcon from "@mui/icons-material/NotInterested";
 import { DocumentCard } from "../Documents/DocumentCard";
 
 interface ConditionResult {
   condition_id: number;
+  condition_type: string;
   matched: boolean;
+  skipped: boolean;
 }
 
 interface RuleTestResult {
@@ -58,6 +63,8 @@ interface RuleTestResult {
   error: string;
   started_at: Date;
   stopped_at: Date;
+  condition_output: string[][];
+  action_output: string[][];
 }
 
 const TestButton = (record: any) => {
@@ -178,7 +185,7 @@ const TestDialog = (props: any) => {
             variant="outlined"
             // @ts-ignore
             onChange={onDocIdchanged}
-            color={isError ? "error" : "primary"}
+            color={isError || failureCount > 1 || true ? "error" : "primary"}
           />
           <Button onClick={exec} variant="contained" sx={{ mt: 1, ml: 1 }}>
             <Typography>Run test</Typography>
@@ -195,9 +202,11 @@ const TestDialog = (props: any) => {
               <Grid>
                 <StatusRow match={result.matched} />
               </Grid>
-
+              <ConditionList
+                conditions={result.conditions}
+                logs={result.condition_output}
+              />
               <Log log={result && result.log} />
-              <ConditionList conditions={result.conditions} />
             </>
           ) : null}
         </DialogContentText>
@@ -212,10 +221,6 @@ const TestDialog = (props: any) => {
       </DialogActions>
     </Dialog>
   );
-};
-
-const Test = () => {
-  return <p>kakka pissa</p>;
 };
 
 export default TestButton;
@@ -249,15 +254,19 @@ const StatusRow = (props: { match: boolean }) => {
 
 const Log = (props: { log: string }) => {
   const { log } = props;
-
   const rows = log.split("\n");
 
   return (
-    <Grid>
-      <Typography variant="h5" color="textPrimary" sx={{ mt: 1 }}>
-        Processing log:
-      </Typography>
-
+    <Accordion>
+      <AccordionSummary
+        expandIcon={<ExpandMore />}
+        style={{ marginTop: "1rem" }}
+      >
+        <Typography variant="h5" color="textPrimary" sx={{ mt: 1 }}>
+          Processing log:
+        </Typography>
+      </AccordionSummary>
+      <AccordionDetails></AccordionDetails>
       <ol>
         {rows.map((line) =>
           line !== "" ? (
@@ -267,27 +276,76 @@ const Log = (props: { log: string }) => {
           ) : null
         )}
       </ol>
+    </Accordion>
+  );
+};
+
+const ConditionList = (props: {
+  conditions: ConditionResult[];
+  logs: string[][];
+}) => {
+  const { conditions, logs } = props;
+
+  return (
+    <Grid paddingTop={"1rem"}>
+      <Typography variant="h5" color="textPrimary">
+        Conditions:
+      </Typography>
+
+      {conditions.map((condition, index) => (
+        <Condition index={index + 1} condition={condition} logs={logs[index]} />
+      ))}
     </Grid>
   );
 };
 
-const ConditionList = (props: { conditions: ConditionResult[] }) => {
-  const { conditions } = props;
+const Condition = (props: {
+  index: number;
+  condition: ConditionResult;
+  logs: string[];
+}) => {
+  const { index, condition, logs } = props;
 
   return (
-    <Grid>
-      <Typography variant="h5" color="textPrimary">
-        Conditions:
-      </Typography>
-      <ol>
-        {conditions.map((condition) => (
-          <li>
-            <div>
-              <p>Condition {condition.matched ? "matched" : "did not match"}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
+    <Grid container flexDirection={"column"} paddingTop={"1rem"}>
+      <Grid
+        container
+        flexDirection={"row"}
+        justifyContent={"flex-start"}
+        position={"relative"}
+      >
+        <Grid item sx={{ mr: "5px" }}>
+          {index}.
+        </Grid>
+        <Grid item>
+          <Typography variant="body1" sx={{ fontWeight: 600 }}>
+            {condition.condition_type}
+          </Typography>
+        </Grid>
+        <Grid
+          item
+          justifyContent={"flex-end"}
+          position={"absolute"}
+          right={"0px"}
+        >
+          {condition.skipped ? (
+            <NotInterestedIcon color={"disabled"} />
+          ) : condition.matched ? (
+            <CheckCircleIcon color="success" />
+          ) : (
+            <CancelIcon color="error" />
+          )}
+        </Grid>
+      </Grid>
+      {logs && (
+        <Grid item>
+          <ol style={{ margin: "0 auto" }}>
+            {logs.map((entry) => (
+              <li>{entry}</li>
+            ))}
+          </ol>
+        </Grid>
+      )}
     </Grid>
   );
 };

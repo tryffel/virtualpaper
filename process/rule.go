@@ -37,18 +37,24 @@ type DocumentRule struct {
 	date     time.Time
 }
 
+type RuleTestConditionResult struct {
+	ConditionId   int    `json:"condition_id"`
+	ConditionType string `json:"condition_type"`
+	Matched       bool   `json:"matched"`
+	Skipped       bool   `json:"skipped"`
+}
+
 type RuleTestResult struct {
-	Conditions []struct {
-		ConditionId int  `json:"condition_id"`
-		Matched     bool `json:"matched"`
-	} `json:"conditions"`
-	RuleId    int    `json:"rule_id"`
-	Match     bool   `json:"matched"`
-	TookMs    int    `json:"took_ms"`
-	Log       string `json:"log"`
-	Error     string `json:"error"`
-	StartedAt int    `json:"started_at"`
-	StoppedAt int    `json:"stopped_at"`
+	Conditions      []RuleTestConditionResult `json:"conditions"`
+	RuleId          int                       `json:"rule_id"`
+	Match           bool                      `json:"matched"`
+	TookMs          int                       `json:"took_ms"`
+	Log             string                    `json:"log"`
+	Error           string                    `json:"error"`
+	StartedAt       int                       `json:"started_at"`
+	StoppedAt       int                       `json:"stopped_at"`
+	ConditionOutput [][]string                `json:"condition_output"`
+	ActionOutput    [][]string                `json:"action_output"`
 }
 
 func NewDocumentRule(document *models.Document, rule *models.Rule) DocumentRule {
@@ -64,11 +70,11 @@ func (d *DocumentRule) Match() (bool, error) {
 	logrus.Debugf("match document: %s, rule: %d", d.Document.Id, d.Rule.Id)
 	for i, condition := range d.Rule.Conditions {
 		if !condition.Enabled {
-			logrus.Debugf("rule %d - condition: %d (id:%d), %s is disabled", d.Rule.Id, condition.Id, i+1, condition.ConditionType)
+			logrus.Debugf("rule %d - condition: %d (id:%d), %s is disabled", d.Rule.Id, i+1, condition.Id, condition.ConditionType)
 			continue
 		}
 
-		logrus.Debugf("evaluate rule %d - condition: %d (id:%d), %s", d.Rule.Id, condition.Id, i+1, condition.ConditionType)
+		logrus.Debugf("evaluate rule %d - condition: %d (id:%d), %s", d.Rule.Id, i+1, condition.Id, condition.ConditionType)
 		condText := string(condition.ConditionType)
 		var ok = false
 		var err error
@@ -142,83 +148,125 @@ func (d *DocumentRule) MatchTest() *RuleTestResult {
 	hasMatch := false
 
 	result := &RuleTestResult{
-		StartedAt: int(time.Now().UnixNano() / 1000000),
-		RuleId:    d.Rule.Id,
-		Conditions: []struct {
-			ConditionId int  "json:\"condition_id\""
-			Matched     bool "json:\"matched\""
-		}{},
+		StartedAt:       int(time.Now().UnixNano() / 1000000),
+		RuleId:          d.Rule.Id,
+		Conditions:      make([]RuleTestConditionResult, len(d.Rule.Conditions)),
+		ConditionOutput: [][]string{},
+		ActionOutput:    [][]string{},
 	}
 
-	logger.Infof("Try to match document: %s, rule: id: %d, name: %s", d.Document.Id, d.Rule.Id, d.Rule.Name)
+	for i, v := range d.Rule.Conditions {
+		result.Conditions[i].ConditionId = v.Id
+		result.Conditions[i].ConditionType = v.ConditionType.String()
+		result.Conditions[i].Skipped = true
+	}
+
+	var conditionResult []string
+	logConditionOut := func(format string, args ...interface{}) {
+		out := fmt.Sprintf(format, args...)
+		conditionResult = append(conditionResult, out)
+	}
+
+	logger.Infof("Try to match document: %s with rule: '%s' (id: %d)", d.Document.Id, d.Rule.Name, d.Rule.Id)
 	for i, condition := range d.Rule.Conditions {
+		result.Conditions[i].ConditionId = condition.Id
+		doBreak := false
 		if !condition.Enabled {
-			logger.Warnf("rule %d - condition: %d (id:%d), %s is disabled, skipping condition", d.Rule.Id, condition.Id, i+1, condition.ConditionType)
+			logger.Warnf("condition: %d (id:%d), %s is disabled, skipping condition", d.Rule.Id, condition.Id, i+1, condition.ConditionType)
+			logConditionOut("condition disabled")
 			continue
-		}
-
-		logger.Infof("evaluate rule %d - condition: %d (id:%d), type: '%s'", d.Rule.Id, condition.Id, i+1, condition.ConditionType)
-		condText := string(condition.ConditionType)
-		var ok = false
-		var err error
-		if strings.HasPrefix(condText, "name") {
-			ok, err = d.matchText(condition, d.Document.Name)
-		} else if strings.HasPrefix(condText, "description") {
-			ok, err = d.matchText(condition, d.Document.Description)
-		} else if strings.HasPrefix(condText, "content") {
-			ok, err = d.matchText(condition, d.Document.Content)
-		} else if strings.HasPrefix(condText, "metadata_has_key") {
-			ok = d.hasMetadataKey(condition)
-		} else if strings.HasPrefix(condText, "date") {
-			ok, err = d.extractDates(condition, time.Now(), logger)
-
-			if ok {
-				y, m, d := d.date.Date()
-				logger.Infof("found date %d-%d-%d", y, m, d)
-			}
-
-		} else if strings.HasPrefix(condText, "metadata_count") {
-			ok, err = d.hasMetadataCount(condition)
-		} else if condition.ConditionType == models.RuleConditionMetadataHasKey {
-			ok = d.hasMetadataKey(condition)
-		} else if condition.ConditionType == models.RuleConditionMetadataHasKeyValue {
-			ok = d.hasMetadataKeyValue(condition)
 		} else {
-			err := errors.ErrInternalError
-			err.ErrMsg = "unknown condition type: " + condText
-			result.Error = err.Error()
-			break
-		}
-		if err != nil {
-			e := errors.ErrInternalError
-			e.ErrMsg = fmt.Errorf("evaluate condition: %v", err).Error()
-			result.Error = e.Error()
-			break
-		}
+			result.Conditions[i].Skipped = false
+			logger.Infof("evaluate condition %d (id:%d), type: '%s'", d.Rule.Id, condition.Id, i+1, condition.ConditionType)
+			condText := string(condition.ConditionType)
+			var ok = false
+			var err error
+			if strings.HasPrefix(condText, "name") {
+				ok, err = d.matchText(condition, d.Document.Name)
+			} else if strings.HasPrefix(condText, "description") {
+				ok, err = d.matchText(condition, d.Document.Description)
+			} else if strings.HasPrefix(condText, "content") {
+				ok, err = d.matchText(condition, d.Document.Content)
+			} else if strings.HasPrefix(condText, "metadata_has_key") {
+				ok = d.hasMetadataKey(condition)
+			} else if strings.HasPrefix(condText, "date") {
+				ok, err = d.extractDates(condition, time.Now(), logger)
 
-		if condition.Inverted {
-			ok = !ok
-		}
+				if ok {
+					y, m, d := d.date.Date()
+					logger.Infof("found date %d-%d-%d", y, m, d)
+					logConditionOut("found date %d-%d-%d", y, m, d)
+				}
 
-		if ok {
-			hasMatch = true
-			logger.Infof("condition %d matched", condition.Id)
-			if d.Rule.Mode == models.RuleMatchAny {
-				// already found a match, skip rest of the conditions
-				logger.Infof("document matches and mode is set to 'match any', skip rest conditions")
+			} else if strings.HasPrefix(condText, "metadata_count") {
+				ok, err = d.hasMetadataCount(condition)
+			} else if condition.ConditionType == models.RuleConditionMetadataHasKey {
+				ok = d.hasMetadataKey(condition)
+			} else if condition.ConditionType == models.RuleConditionMetadataHasKeyValue {
+				ok = d.hasMetadataKeyValue(condition)
+			} else {
+				err := errors.ErrInternalError
+				err.ErrMsg = "unknown condition type: " + condText
+				result.Error = err.Error()
+				break
+			}
+			if err != nil {
+				e := errors.ErrInternalError
+				e.ErrMsg = fmt.Errorf("evaluate condition: %v", err).Error()
+				result.Error = e.Error()
 				break
 			}
 
-		} else if d.Rule.Mode == models.RuleMatchAll {
-			logger.Infof("condition %d didn't match, skip rest", condition.Id)
-			break
-		} else {
-			logger.Infof("condition %d didn't match, continuing", condition.Id)
+			if condition.Inverted {
+				logConditionOut("invert condition matched: %t -> %t", ok, !ok)
+				ok = !ok
+			}
+
+			if ok {
+				hasMatch = true
+				logger.Infof("condition %d (id %d) matched", i+1, condition.Id)
+				logConditionOut("condition matched")
+				result.Conditions[i].Matched = true
+				if d.Rule.Mode == models.RuleMatchAny {
+					// already found a match, skip rest of the conditions
+					logger.Infof("document matches and mode is set to 'match any', skip rest conditions")
+					logConditionOut("rule mode is set to 'match any', skip rest conditions")
+					doBreak = true
+				}
+
+			} else if d.Rule.Mode == models.RuleMatchAll {
+				logger.Infof("condition %d didn't match, skip rest", condition.Id)
+				logConditionOut("condition didn't match")
+				logConditionOut("rule mode is set to 'match all', stopping execution")
+				doBreak = true
+			} else {
+				logger.Infof("condition %d didn't match, continuing", condition.Id)
+				logConditionOut("condition didn't match")
+			}
 		}
-		result.Conditions = append(result.Conditions, struct {
-			ConditionId int  "json:\"condition_id\""
-			Matched     bool "json:\"matched\""
-		}{condition.Id, ok})
+
+		result.ConditionOutput = append(result.ConditionOutput, conditionResult)
+		conditionResult = []string{}
+		if doBreak {
+			break
+		}
+	}
+
+	if hasMatch {
+		var actionResult []string
+		logActionOut := func(format string, args ...interface{}) {
+			out := fmt.Sprintf(format, args...)
+			actionResult = append(actionResult, out)
+		}
+
+		for _, action := range d.Rule.Actions {
+			err := d.runAction(action, logActionOut)
+			if err != nil {
+				break
+			}
+		}
+		result.ActionOutput = append(result.ActionOutput, actionResult)
+		actionResult = []string{}
 	}
 
 	result.StoppedAt = int(time.Now().UnixNano() / 1000000)
@@ -380,51 +428,67 @@ func (d *DocumentRule) RunActions() error {
 	logrus.Debugf("execute rule %d actions for document: %s", d.Rule.Id, d.Document.Id)
 
 	var err error
-	var actionError error
-
-	for i, action := range d.Rule.Actions {
-		if !action.Enabled {
-			logrus.Infof("rule %d action: %d (id:%d), type: %s disabled", d.Rule.Id, i, action.Id, action.Action)
-			continue
-		}
-		logrus.Infof("run rule %d action: %d (id:%d), type: %s", d.Rule.Id, i, action.Id, action.Action)
-		switch action.Action {
-		case models.RuleActionSetName:
-			actionError = d.setName(action)
-		case models.RuleActionAppendName:
-			actionError = d.appendName(action)
-		case models.RuleActionSetDescription:
-			actionError = d.setDescription(action)
-		case models.RuleActionAppendDescription:
-			actionError = d.appendDescription(action)
-		case models.RuleActionAddMetadata:
-			actionError = addMetadata(d.Document, int(action.MetadataKey), int(action.MetadataValue))
-		case models.RuleActionRemoveMetadata:
-			removeMetadata(d.Document, int(action.MetadataKey), int(action.MetadataValue))
-		case models.RuleActionSetDate:
-			actionError = d.setDate(action)
-		default:
-			e := errors.ErrInternalError
-			e.ErrMsg = fmt.Sprintf("unknown action type: %v", action.Action)
-			actionError = e
-		}
-
-		if actionError != nil {
-			err = fmt.Errorf("action (%d): %v", action.Id, actionError)
-			actionError = nil
+	for _, action := range d.Rule.Actions {
+		err = d.runAction(action, nil)
+		if err != nil {
+			break
 		}
 	}
 	return err
 }
 
-func (d *DocumentRule) setName(action *models.RuleAction) error {
+func (d *DocumentRule) runAction(action *models.RuleAction, log logFunc) error {
+	var actionError error
+	if !action.Enabled {
+		logrus.Infof("rule %d (id:%d), type: %s disabled", d.Rule.Id, action.Id, action.Action)
+		if log != nil {
+			log("action is disabled")
+		}
+		return nil
+	}
+	logrus.Infof("run rule %d (id:%d), type: %s", d.Rule.Id, action.Id, action.Action)
+	switch action.Action {
+	case models.RuleActionSetName:
+		actionError = d.setName(action, log)
+	case models.RuleActionAppendName:
+		actionError = d.appendName(action, log)
+	case models.RuleActionSetDescription:
+		actionError = d.setDescription(action)
+	case models.RuleActionAppendDescription:
+		actionError = d.appendDescription(action)
+	case models.RuleActionAddMetadata:
+		actionError = addMetadata(d.Document, int(action.MetadataKey), int(action.MetadataValue))
+	case models.RuleActionRemoveMetadata:
+		removeMetadata(d.Document, int(action.MetadataKey), int(action.MetadataValue))
+	case models.RuleActionSetDate:
+		actionError = d.setDate(action)
+	default:
+		e := errors.ErrInternalError
+		e.ErrMsg = fmt.Sprintf("unknown action type: %v", action.Action)
+		actionError = e
+	}
+	return actionError
+}
+
+type logFunc = func(format string, args ...interface{})
+
+func (d *DocumentRule) setName(action *models.RuleAction, log logFunc) error {
 	d.Document.Name = action.Value
+	if log != nil {
+		log("set name to: %s", action.Value)
+	}
 	return nil
 }
 
-func (d *DocumentRule) appendName(action *models.RuleAction) error {
+func (d *DocumentRule) appendName(action *models.RuleAction, log logFunc) error {
 	if !strings.HasSuffix(d.Document.Name, action.Value) {
-		d.Document.Name += action.Value
+		newName := d.Document.Name + action.Value
+		if log != nil {
+			log(`append name: "%s" -> "%s"`, d.Document.Name, newName)
+		}
+		d.Document.Name = newName
+	} else if log != nil {
+		log(`append name (skip appending): "%s" -> "%s"`, d.Document.Name, d.Document.Name)
 	}
 	return nil
 }
