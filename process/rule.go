@@ -297,18 +297,22 @@ func (d *DocumentRule) matchText(condition *models.RuleCondition, text string) (
 		value = strings.ToLower(value)
 	}
 
-	switch condition.ConditionType {
-	case models.RuleConditionNameIs, models.RuleConditionDescriptionIs, models.RuleConditionContentIs:
-		return matchTextAllowTypo(value, text, false, true)
-	case models.RuleConditionNameStarts, models.RuleConditionDescriptionStarts, models.RuleConditionContentStarts:
-		return matchTextAllowTypo(value, text, true, false)
-	case models.RuleConditionNameContains, models.RuleConditionDescriptionContains, models.RuleConditionContentContains:
-		return matchTextAllowTypo(value, text, false, false)
-	default:
-		err := errors.ErrInternalError
-		err.ErrMsg = fmt.Sprintf("unknown condition type: %s", condition.ConditionType)
-		err.SetStack()
-		return false, err
+	if condition.IsRegex {
+		return matchTextByRegex(value, text)
+	} else {
+		switch condition.ConditionType {
+		case models.RuleConditionNameIs, models.RuleConditionDescriptionIs, models.RuleConditionContentIs:
+			return matchTextAllowTypo(value, text, false, true)
+		case models.RuleConditionNameStarts, models.RuleConditionDescriptionStarts, models.RuleConditionContentStarts:
+			return matchTextAllowTypo(value, text, true, false)
+		case models.RuleConditionNameContains, models.RuleConditionDescriptionContains, models.RuleConditionContentContains:
+			return matchTextAllowTypo(value, text, false, false)
+		default:
+			err := errors.ErrInternalError
+			err.ErrMsg = fmt.Sprintf("unknown condition type: %s", condition.ConditionType)
+			err.SetStack()
+			return false, err
+		}
 	}
 }
 
@@ -634,6 +638,14 @@ func matchTextAllowTypo(match, text string, matchPrefix, matchIs bool) (bool, er
 	}
 
 	return matchTextByDistance(match, text, maxTypos, matchPrefix, matchIs)
+}
+
+func matchTextByRegex(regex, text string) (bool, error) {
+	re, err := regexp.Compile(regex)
+	if err != nil {
+		return false, fmt.Errorf("invalid regex: %v", err)
+	}
+	return re.FindStringIndex(text) != nil, nil
 }
 
 func matchTextByDistance(match, text string, maxTypos int, matchPrefix, matchIs bool) (bool, error) {
