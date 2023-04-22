@@ -54,8 +54,15 @@ interface ConditionResult {
   skipped: boolean;
 }
 
+interface ActionResult {
+  action_id: number;
+  action_type: string;
+  skipped: boolean;
+}
+
 interface RuleTestResult {
   conditions: ConditionResult[];
+  actions: ActionResult[];
   rule_id: number;
   matched: boolean;
   took_ms: number;
@@ -130,6 +137,7 @@ const TestDialog = (props: any) => {
     // @ts-ignore
     setResult(null);
     setTextResult("");
+    setDocumentId("");
   };
 
   const exec = () => {
@@ -142,11 +150,11 @@ const TestDialog = (props: any) => {
       // @ts-ignore
       .then((data: { data: RuleTestResult }) => {
         setResult(data.data);
-        const splits = data.data.log.split("\n");
         setTextResult(data.data.log);
-        //setTextResult(splits.j)
       });
   };
+
+  console.log("data", data);
 
   return (
     <Dialog
@@ -191,7 +199,7 @@ const TestDialog = (props: any) => {
             <Typography>Run test</Typography>
           </Button>
 
-          {isSuccess && data && (
+          {isSuccess && data && documentId && (
             <RecordContextProvider value={data}>
               <DocumentCard record={data} />
             </RecordContextProvider>
@@ -206,6 +214,12 @@ const TestDialog = (props: any) => {
                 conditions={result.conditions}
                 logs={result.condition_output}
               />
+              {result.matched && (
+                <ActionList
+                  actions={result.actions}
+                  logs={result.action_output}
+                />
+              )}
               <Log log={result && result.log} />
             </>
           ) : null}
@@ -289,7 +303,7 @@ const ConditionList = (props: {
   return (
     <Grid paddingTop={"1rem"}>
       <Typography variant="h5" color="textPrimary">
-        Conditions:
+        Conditions
       </Typography>
 
       {conditions.map((condition, index) => (
@@ -335,6 +349,59 @@ const Condition = (props: {
           ) : (
             <CancelIcon color="error" />
           )}
+        </Grid>
+      </Grid>
+      {logs && (
+        <Grid item>
+          <ol style={{ margin: "0 auto" }}>
+            {logs.map((entry) => (
+              <li>{entry}</li>
+            ))}
+          </ol>
+        </Grid>
+      )}
+    </Grid>
+  );
+};
+
+const ActionList = (props: { actions: ActionResult[]; logs: string[][] }) => {
+  const { actions, logs } = props;
+
+  return (
+    <Grid paddingTop={"1rem"}>
+      <Typography variant="h5" color="textPrimary">
+        Actions
+      </Typography>
+
+      {actions.map((action, index) => (
+        <Action index={index + 1} action={action} logs={logs[index]} />
+      ))}
+    </Grid>
+  );
+};
+
+const Action = (props: {
+  index: number;
+  action: ActionResult;
+  logs: string[];
+}) => {
+  const { index, action, logs } = props;
+
+  return (
+    <Grid container flexDirection={"column"} paddingTop={"1rem"}>
+      <Grid
+        container
+        flexDirection={"row"}
+        justifyContent={"flex-start"}
+        position={"relative"}
+      >
+        <Grid item sx={{ mr: "5px" }}>
+          {index}.
+        </Grid>
+        <Grid item>
+          <Typography variant="body1" sx={{ fontWeight: 600 }}>
+            {action.action_type}
+          </Typography>
         </Grid>
       </Grid>
       {logs && (

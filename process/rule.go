@@ -44,8 +44,15 @@ type RuleTestConditionResult struct {
 	Skipped       bool   `json:"skipped"`
 }
 
+type RuleTestAction struct {
+	ActionId   int    `json:"action_id"`
+	ActionType string `json:"action_type"`
+	Skipped    bool   `json:"skipped"`
+}
+
 type RuleTestResult struct {
 	Conditions      []RuleTestConditionResult `json:"conditions"`
+	Actions         []RuleTestAction          `json:"actions"`
 	RuleId          int                       `json:"rule_id"`
 	Match           bool                      `json:"matched"`
 	TookMs          int                       `json:"took_ms"`
@@ -151,6 +158,7 @@ func (d *DocumentRule) MatchTest() *RuleTestResult {
 		StartedAt:       int(time.Now().UnixNano() / 1000000),
 		RuleId:          d.Rule.Id,
 		Conditions:      make([]RuleTestConditionResult, len(d.Rule.Conditions)),
+		Actions:         make([]RuleTestAction, len(d.Rule.Actions)),
 		ConditionOutput: [][]string{},
 		ActionOutput:    [][]string{},
 	}
@@ -159,6 +167,11 @@ func (d *DocumentRule) MatchTest() *RuleTestResult {
 		result.Conditions[i].ConditionId = v.Id
 		result.Conditions[i].ConditionType = v.ConditionType.String()
 		result.Conditions[i].Skipped = true
+	}
+	for i, v := range d.Rule.Actions {
+		result.Actions[i].Skipped = !v.Enabled
+		result.Actions[i].ActionId = v.Id
+		result.Actions[i].ActionType = v.Action.String()
 	}
 
 	var conditionResult []string
@@ -264,9 +277,9 @@ func (d *DocumentRule) MatchTest() *RuleTestResult {
 			if err != nil {
 				break
 			}
+			result.ActionOutput = append(result.ActionOutput, actionResult)
+			actionResult = []string{}
 		}
-		result.ActionOutput = append(result.ActionOutput, actionResult)
-		actionResult = []string{}
 	}
 
 	result.StoppedAt = int(time.Now().UnixNano() / 1000000)
@@ -453,15 +466,15 @@ func (d *DocumentRule) runAction(action *models.RuleAction, log logFunc) error {
 	case models.RuleActionAppendName:
 		actionError = d.appendName(action, log)
 	case models.RuleActionSetDescription:
-		actionError = d.setDescription(action)
+		actionError = d.setDescription(action, log)
 	case models.RuleActionAppendDescription:
-		actionError = d.appendDescription(action)
+		actionError = d.appendDescription(action, log)
 	case models.RuleActionAddMetadata:
-		actionError = addMetadata(d.Document, int(action.MetadataKey), int(action.MetadataValue))
+		actionError = addMetadata(d.Document, int(action.MetadataKey), int(action.MetadataValue), log)
 	case models.RuleActionRemoveMetadata:
-		removeMetadata(d.Document, int(action.MetadataKey), int(action.MetadataValue))
+		removeMetadata(d.Document, int(action.MetadataKey), int(action.MetadataValue), log)
 	case models.RuleActionSetDate:
-		actionError = d.setDate(action)
+		actionError = d.setDate(action, log)
 	default:
 		e := errors.ErrInternalError
 		e.ErrMsg = fmt.Sprintf("unknown action type: %v", action.Action)
@@ -493,30 +506,53 @@ func (d *DocumentRule) appendName(action *models.RuleAction, log logFunc) error 
 	return nil
 }
 
-func (d *DocumentRule) setDescription(action *models.RuleAction) error {
+func (d *DocumentRule) setDescription(action *models.RuleAction, log logFunc) error {
+	if log != nil {
+		log(`set description to "%s"`, action.Value)
+	}
 	d.Document.Description = action.Value
 	return nil
 }
 
-func (d *DocumentRule) appendDescription(action *models.RuleAction) error {
+func (d *DocumentRule) appendDescription(action *models.RuleAction, log logFunc) error {
+	newValue := d.Document.Description
+	appended := true
+	oldValue := d.Document.Description
+
 	if !strings.HasSuffix(d.Document.Description, action.Value) {
-		d.Document.Description += action.Value
+		newValue = d.Document.Description + action.Value
+		appended = false
+	}
+
+	d.Document.Description = newValue
+	if log != nil {
+		if appended {
+			log(`append description: "%s" -> "%s"`, oldValue, newValue)
+		} else {
+			log(`append description (skip duplicate): "%s" -> "%s"`, oldValue, newValue)
+		}
 	}
 	return nil
 }
 
-func addMetadata(doc *models.Document, key, value int) error {
+func addMetadata(doc *models.Document, key, value int, log logFunc) error {
 	if len(doc.Metadata) == 0 {
 		doc.Metadata = []models.Metadata{{
 			KeyId:   key,
 			ValueId: value,
 		}}
+		if log != nil {
+			log("add metadata key-value")
+		}
 		return nil
 	}
 
 	// check if key-value already exists
 	for _, v := range doc.Metadata {
 		if v.KeyId == key && v.ValueId == value {
+			if log != nil {
+				log("key-value already exists (skip duplicate)")
+			}
 			return nil
 		}
 	}
@@ -525,18 +561,27 @@ func addMetadata(doc *models.Document, key, value int) error {
 		KeyId:   key,
 		ValueId: value,
 	})
+	if log != nil {
+		log(`add metadata value`)
+	}
 	return nil
 }
 
 // remove metadata. If valueId == 0, delete all metadata that matches the key.
-func removeMetadata(doc *models.Document, keyId, valueId int) {
+func removeMetadata(doc *models.Document, keyId, valueId int, log logFunc) {
 	i := 0
 	for {
 		if i > len(doc.Metadata)-1 {
+			if log != nil {
+				log("metadata deletion completed")
+			}
 			// all metadata was deleted
 			break
 		}
 		if doc.Metadata[i].KeyId == keyId && (valueId == 0 || doc.Metadata[i].ValueId == valueId) {
+			if log != nil {
+				log("remove metadata key-value")
+			}
 			if i == len(doc.Metadata)-1 {
 				// last item
 				doc.Metadata = doc.Metadata[:i]
@@ -553,9 +598,15 @@ func removeMetadata(doc *models.Document, keyId, valueId int) {
 	}
 }
 
-func (d *DocumentRule) setDate(action *models.RuleAction) error {
+func (d *DocumentRule) setDate(action *models.RuleAction, log logFunc) error {
 	if !d.date.IsZero() {
+		if log != nil {
+			d, m, y := d.date.Date()
+			log(`set document date: %d-%d-%d`, y, m, d)
+		}
 		d.Document.Date = d.date
+	} else if log != nil {
+		log(`no valid date (skipping) `)
 	}
 	return nil
 }
@@ -662,7 +713,7 @@ func matchMetadata(document *models.Document, values *[]models.MetadataValue) er
 			continue
 		}
 		if match != "" {
-			addMetadata(document, v.KeyId, v.Id)
+			addMetadata(document, v.KeyId, v.Id, nil)
 		}
 	}
 	return nil
