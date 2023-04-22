@@ -91,8 +91,6 @@ func (d *DocumentRule) Match() (bool, error) {
 			ok, err = d.matchText(condition, d.Document.Description)
 		} else if strings.HasPrefix(condText, "content") {
 			ok, err = d.matchText(condition, d.Document.Content)
-		} else if strings.HasPrefix(condText, "metadata_has_key") {
-			ok = d.hasMetadataKey(condition)
 		} else if strings.HasPrefix(condText, "date") {
 			ok, err = d.extractDates(condition, time.Now(), nil)
 		} else if strings.HasPrefix(condText, "metadata_count") {
@@ -185,12 +183,12 @@ func (d *DocumentRule) MatchTest() *RuleTestResult {
 		result.Conditions[i].ConditionId = condition.Id
 		doBreak := false
 		if !condition.Enabled {
-			logger.Warnf("condition: %d (id:%d), %s is disabled, skipping condition", d.Rule.Id, condition.Id, i+1, condition.ConditionType)
+			logger.Warnf("condition: %d (id:%d), %s is disabled, skipping condition", condition.Id, i+1, condition.ConditionType)
 			logConditionOut("condition disabled")
 			continue
 		} else {
 			result.Conditions[i].Skipped = false
-			logger.Infof("evaluate condition %d (id:%d), type: '%s'", d.Rule.Id, condition.Id, i+1, condition.ConditionType)
+			logger.Infof("evaluate condition %d (id:%d), type: '%s'", condition.Id, i+1, condition.ConditionType)
 			condText := string(condition.ConditionType)
 			var ok = false
 			var err error
