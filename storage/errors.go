@@ -10,6 +10,12 @@ import (
 func getPostgresError(err error, resource Resource, action string) (bool, error) {
 	pError, ok := err.(*pq.Error)
 	if !ok {
+		if strings.HasPrefix(err.Error(), "pq: ") {
+			e := errors.ErrInternalError
+			e.ErrMsg = err.Error()
+			e.Err = err
+			return true, e
+		}
 		return false, nil
 	}
 
@@ -58,30 +64,7 @@ func getDatabaseError(e error, resource Resource, action string) error {
 		return err
 	}
 	Err := errors.ErrInternalError
-	Err.Err = err
-	Err.ErrMsg = fmt.Sprintf("%s - %s", resource, action)
-	return Err
-}
-
-func getDatabaseErrorIgnoreEmpty(e error, resource Resource, action string) error {
-	if e == nil {
-		return nil
-	}
-	p, err := getPostgresError(e, resource, action)
-	if p {
-		if e, ok := err.(errors.Error); ok {
-			if e.Is(errors.ErrRecordNotFound) {
-				return nil
-			}
-		}
-		return err
-	}
-	sql, err := getSqlError(e, resource)
-	if sql {
-		return err
-	}
-	Err := errors.ErrInternalError
-	Err.Err = err
+	Err.Err = e
 	Err.ErrMsg = fmt.Sprintf("%s - %s", resource, action)
 	return Err
 }
