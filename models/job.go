@@ -87,36 +87,30 @@ type ProcessStep int
 
 const (
 	// full processing needed, used for new documents
-	ProcessAll ProcessStep = iota
+	ProcessAll ProcessStep = 0
 
-	ProcessHash
+	ProcessHash ProcessStep = 1
 
-	ProcessThumbnail
-	ProcessParseContent
-	ProcessRules
-	ProcessFts
+	ProcessThumbnail    ProcessStep = 2
+	ProcessParseContent ProcessStep = 3
+	ProcessRules        ProcessStep = 4
+	ProcessFts          ProcessStep = 5
+)
+
+const (
+	ProcessV2Hash           = "hash"
+	ProcessV2Thumbnail      = "thumbnail"
+	ProcessV2ExtractContent = "extract"
+	ProcessV2Metadata       = "metadata"
+	ProcessV2Rules          = "rules"
+	ProcessV2Fts            = "index"
 )
 
 // ProcessStepsAll is a list of default steps to run for new document.
 var ProcessStepsAll = []ProcessStep{ProcessHash, ProcessThumbnail, ProcessParseContent, ProcessRules, ProcessFts}
 
 func (ps *ProcessStep) Value() (driver.Value, error) {
-	switch *ps {
-	case ProcessAll:
-		return 0, nil
-	case ProcessHash:
-		return 1, nil
-	case ProcessThumbnail:
-		return 2, nil
-	case ProcessParseContent:
-		return 3, nil
-	case ProcessRules:
-		return 4, nil
-	case ProcessFts:
-		return 5, nil
-	default:
-		return 0, fmt.Errorf("unknown step: %d", *ps)
-	}
+	return int(*ps), nil
 }
 
 func (ps *ProcessStep) Scan(src interface{}) error {
@@ -130,22 +124,10 @@ func (ps *ProcessStep) Scan(src interface{}) error {
 	} else {
 		return fmt.Errorf("expect int, got: %v", src)
 	}
-	switch val {
-	case 0:
-		*ps = ProcessAll
-	case 1:
-		*ps = ProcessHash
-	case 2:
-		*ps = ProcessThumbnail
-	case 3:
-		*ps = ProcessParseContent
-	case 4:
-		*ps = ProcessRules
-	case 5:
-		*ps = ProcessFts
-	default:
-		return fmt.Errorf("unknown step: %d", val)
+	if ProcessStep(val) > ProcessFts {
+		return fmt.Errorf("unknown process step: %d", val)
 	}
+	*ps = ProcessStep(val)
 	return nil
 }
 

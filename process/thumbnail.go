@@ -1,37 +1,57 @@
-/*
- * Virtualpaper is a service to manage users paper documents in virtual format.
- * Copyright (C) 2020  Tero Vierimaa
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package process
 
 import (
 	"bufio"
 	"fmt"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/basicfont"
+	"golang.org/x/image/math/fixed"
 	"image"
 	"image/color"
 	"image/png"
 	"os"
 	"strings"
-
-	"github.com/sirupsen/logrus"
-	"golang.org/x/image/font"
-	"golang.org/x/image/font/basicfont"
-	"golang.org/x/image/math/fixed"
+	"time"
+	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/storage"
 )
+
+func (fp *fileProcessor) generateThumbnail() error {
+	process := &models.ProcessItem{
+		DocumentId: fp.document.Id,
+		Step:       models.ProcessThumbnail,
+		CreatedAt:  time.Now(),
+	}
+
+	err := fp.ensureFileOpen()
+	if err != nil {
+		return fmt.Errorf("open file: %v", err)
+	}
+
+	job, err := fp.db.JobStore.StartProcessItem(process, "generate thumbnail")
+	if err != nil {
+		return fmt.Errorf("persist process item: %v", err)
+	}
+	defer fp.completeProcessingStep(process, job)
+
+	output := storage.PreviewPath(fp.document.Id)
+	err = storage.CreatePreviewDir(fp.document.Id)
+	if err != nil {
+		return fmt.Errorf("create thumbnail output dir: %v", err)
+	}
+
+	name := fp.rawFile.Name()
+	err = generateThumbnail(name, output, 0, 500, fp.document.Mimetype)
+	if err != nil {
+		job.Status = models.JobFailure
+		job.Message += "; " + err.Error()
+		return fmt.Errorf("call imagick: %v", err)
+	}
+
+	job.Status = models.JobFinished
+	return nil
+}
 
 func generateThumbnailPlainText(rawFile string, previewFile string, size int) error {
 	logrus.Debugf("generate thumbnail for text file")
@@ -155,5 +175,43 @@ func generateThumbnailPlainText(rawFile string, previewFile string, size int) er
 	if err != nil {
 		return fmt.Errorf("flush output buffer: %v", err)
 	}
+	return nil
+}
+
+func (fp *fileProcessor) updateThumbnail(doc *models.Document, file *os.File) error {
+	process := &models.ProcessItem{
+		DocumentId: fp.document.Id,
+		Step:       models.ProcessThumbnail,
+		CreatedAt:  time.Now(),
+	}
+
+	job, err := fp.db.JobStore.StartProcessItem(process, "generate thumbnail")
+	if err != nil {
+		return fmt.Errorf("persist process item: %v", err)
+	}
+	job.Message = "Generate thumbnail"
+	defer fp.completeProcessingStep(process, job)
+
+	output := storage.PreviewPath(fp.document.Id)
+
+	err = storage.CreatePreviewDir(fp.document.Id)
+	if err != nil {
+		logrus.Errorf("create preview dir: %v", err)
+	}
+
+	logrus.Infof("generate thumbnail for document %s", fp.document.Id)
+	err = generateThumbnail(file.Name(), output, 0, 500, process.Document.Mimetype)
+
+	err = fp.db.DocumentStore.Update(storage.UserIdInternal, doc)
+	if err != nil {
+		logrus.Errorf("update document record: %v", err)
+	}
+
+	if err != nil {
+		job.Status = models.JobFailure
+		job.Message += "; " + err.Error()
+		return fmt.Errorf("call imagick: %v", err)
+	}
+	job.Status = models.JobFinished
 	return nil
 }

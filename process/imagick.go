@@ -49,7 +49,7 @@ func GetImagickVersion() string {
 	}
 
 	ver := regex.FindString(stdout.String())
-	logrus.Infof("found imagemagick version %s", ver)
+	logrus.Debugf("found imagemagick version %s", ver)
 	return ver
 }
 

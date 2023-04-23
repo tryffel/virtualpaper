@@ -36,6 +36,9 @@ type fileProcessor struct {
 	useOcr            bool
 	usePandoc         bool
 	startedProcessing time.Time
+
+	logger *logrus.Logger
+	strId  string
 }
 
 func newFileProcessor(conf *fpConfig) *fileProcessor {
@@ -46,10 +49,40 @@ func newFileProcessor(conf *fpConfig) *fileProcessor {
 		usePdfToText: conf.usePdfToText,
 		useOcr:       conf.useOcr,
 		usePandoc:    conf.usePandoc,
+		strId:        fmt.Sprintf("%d", conf.id),
 	}
 	fp.idle = true
 	fp.runFunc = fp.waitEvent
 	return fp
+}
+
+func (fp *fileProcessor) logFields() logrus.Fields {
+	fp.lock.RLock()
+	fields := logrus.Fields{
+		"module":    "process",
+		"runner-id": fp.strId,
+	}
+	if fp.document != nil {
+		fields["document"] = fp.document.Id
+	}
+	fp.lock.RUnlock()
+	return fields
+}
+
+func (fp fileProcessor) Info(msg string, args ...interface{}) {
+	logrus.WithFields(fp.logFields()).Infof(msg, args...)
+}
+
+func (fp fileProcessor) Debug(msg string, args ...interface{}) {
+	logrus.WithFields(fp.logFields()).Debugf(msg, args...)
+}
+
+func (fp fileProcessor) Warn(msg string, args ...interface{}) {
+	logrus.WithFields(fp.logFields()).Warnf(msg, args...)
+}
+
+func (fp fileProcessor) Error(msg string, args ...interface{}) {
+	logrus.WithFields(fp.logFields()).Errorf(msg, args...)
 }
 
 func (fp *fileProcessor) queueFull() bool {
@@ -63,6 +96,8 @@ func (fp *fileProcessor) queueSize() int {
 func (fp *fileProcessor) GetDocumentBeingProcessed() (bool, string) {
 	// this probably needs synchronization for true accuracy,
 	// but it's only for metrics so it's probably okay
+	fp.lock.RLock()
+	defer fp.lock.RUnlock()
 	doc := fp.document
 	if doc == nil {
 		return false, ""
@@ -167,7 +202,7 @@ func (fp *fileProcessor) cancelDocumentProcessing(reason string) error {
 func (fp *fileProcessor) process(op fileOp) {
 	if op.document == nil && op.file != "" {
 		fp.file = op.file
-		fp.processFile()
+		fp.processFileV0()
 	} else if op.document != nil {
 		fp.file = op.file
 		fp.document = op.document
@@ -176,94 +211,6 @@ func (fp *fileProcessor) process(op fileOp) {
 		fp.startedProcessing = time.Time{}
 	} else {
 		logrus.Warningf("process task got empty fileop, skipping")
-	}
-}
-
-/* New implementation, used when document is sent using the API */
-func (fp *fileProcessor) processDocument() {
-	logrus.Debugf("Task %d process file %s", fp.id, fp.document.Id)
-
-	pendingSteps, err := fp.db.JobStore.GetDocumentPendingSteps(fp.document.Id)
-	if err != nil {
-		logrus.Errorf("get pending processing steps for document %s: %v", fp.document.Id, err)
-		return
-	}
-
-	metadata, err := fp.db.MetadataStore.GetDocumentMetadata(fp.document.UserId, fp.document.Id)
-	if err != nil {
-		logrus.Errorf("get document metadata before processing: %v", err)
-	} else {
-		fp.document.Metadata = *metadata
-	}
-
-	tags, err := fp.db.MetadataStore.GetDocumentTags(fp.document.UserId, fp.document.Id)
-	if err != nil {
-		logrus.Errorf("get document tags before processing: %v", err)
-	} else {
-		fp.document.Tags = *tags
-	}
-
-	defer fp.cleanup()
-
-	for _, step := range *pendingSteps {
-		switch step.Step {
-		case models.ProcessHash:
-			err = fp.ensureFileOpenAndLogFailure()
-			if err != nil {
-				err = fp.cancelDocumentProcessing("file not found")
-				if err != nil {
-					logrus.Errorf("cancel document processing: %v", err)
-				}
-				return
-			}
-			err := fp.updateHash(fp.document)
-			if err != nil {
-				logrus.Errorf("update hash: %v", err)
-				return
-			}
-		case models.ProcessThumbnail:
-			err = fp.ensureFileOpenAndLogFailure()
-			if err != nil {
-				err = fp.cancelDocumentProcessing("file not found")
-				if err != nil {
-					logrus.Errorf("cancel document processing: %v", err)
-				}
-				return
-			}
-			err := fp.generateThumbnail()
-			if err != nil {
-				logrus.Errorf("generate thumbnail: %v", err)
-				return
-			}
-		case models.ProcessParseContent:
-			err = fp.ensureFileOpenAndLogFailure()
-			if err != nil {
-				err = fp.cancelDocumentProcessing("file not found")
-				if err != nil {
-					logrus.Errorf("cancel document processing: %v", err)
-				}
-				return
-			}
-			err := fp.parseContent()
-			if err != nil {
-				logrus.Errorf("parse content: %v", err)
-				return
-			}
-		case models.ProcessRules:
-			err := fp.runRules()
-			if err != nil {
-				logrus.Errorf("run rules: %v", err)
-				return
-			}
-		case models.ProcessFts:
-			err := fp.indexSearchContent()
-			if err != nil {
-				logrus.Errorf("index search content: %v", err)
-				return
-			}
-		default:
-			logrus.Warningf("unhandle process step: %v, skipping", step.Step)
-		}
 	}
 }
 
@@ -320,44 +267,6 @@ func (fp *fileProcessor) updateHash(doc *models.Document) error {
 	return nil
 }
 
-func (fp *fileProcessor) updateThumbnail(doc *models.Document, file *os.File) error {
-	process := &models.ProcessItem{
-		DocumentId: fp.document.Id,
-		Step:       models.ProcessThumbnail,
-		CreatedAt:  time.Now(),
-	}
-
-	job, err := fp.db.JobStore.StartProcessItem(process, "generate thumbnail")
-	if err != nil {
-		return fmt.Errorf("persist process item: %v", err)
-	}
-	job.Message = "Generate thumbnail"
-	defer fp.completeProcessingStep(process, job)
-
-	output := storage.PreviewPath(fp.document.Id)
-
-	err = storage.CreatePreviewDir(fp.document.Id)
-	if err != nil {
-		logrus.Errorf("create preview dir: %v", err)
-	}
-
-	logrus.Infof("generate thumbnail for document %s", fp.document.Id)
-	err = generateThumbnail(file.Name(), output, 0, 500, process.Document.Mimetype)
-
-	err = fp.db.DocumentStore.Update(storage.UserIdInternal, doc)
-	if err != nil {
-		logrus.Errorf("update document record: %v", err)
-	}
-
-	if err != nil {
-		job.Status = models.JobFailure
-		job.Message += "; " + err.Error()
-		return fmt.Errorf("call imagick: %v", err)
-	}
-	job.Status = models.JobFinished
-	return nil
-}
-
 func (fp *fileProcessor) ensureFileOpen() error {
 	if fp.rawFile != nil {
 		return nil
@@ -373,14 +282,14 @@ func (fp *fileProcessor) ensureFileOpen() error {
 func (fp fileProcessor) ensureFileOpenAndLogFailure() error {
 	err := fp.ensureFileOpen()
 	if err != nil {
-		logrus.WithField("document", fp.document.Id).Error(err)
+		fp.Error("open file: %v", err)
 		return err
 	}
 	return nil
 }
 
 /* Old implementation, currently being used when file originates from file system and not from the API */
-func (fp *fileProcessor) processFile() {
+func (fp *fileProcessor) processFileV0() {
 	logrus.Infof("task %d, process file %s", fp.id, fp.file)
 
 	fp.lock.Lock()
@@ -412,7 +321,7 @@ func (fp *fileProcessor) processFile() {
 		return
 	}
 
-	err = fp.createNewDocumentRecord()
+	err = fp.createNewDocumentRecordV0()
 	if err != nil {
 		logrus.Error(err)
 		return
@@ -430,41 +339,6 @@ func (fp *fileProcessor) processFile() {
 	if err != nil {
 		logrus.Errorf("Parse document content: %v", err)
 	}
-}
-
-func (fp *fileProcessor) cleanup() {
-	logrus.Infof("Stop processing file %s", fp.file)
-
-	if fp.rawFile != nil {
-		fp.rawFile.Close()
-		fp.rawFile = nil
-	}
-	if fp.tempFile != nil {
-		fp.tempFile.Close()
-
-		err := os.Remove(fp.tempFile.Name())
-		if err != nil {
-			logrus.Errorf("remove temp file %s: %v", fp.tempFile.Name(), err)
-		}
-		fp.tempFile = nil
-	}
-
-	if fp.document != nil {
-		tmpDir := storage.TempFilePath(fp.document.Hash)
-		err := os.RemoveAll(tmpDir)
-		if err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-			} else {
-				logrus.Errorf("cannot remove tmp dir %s: %v", tmpDir, err)
-			}
-		}
-	}
-
-	fp.document = nil
-	fp.file = ""
-	fp.lock.Lock()
-	fp.idle = true
-	fp.lock.Unlock()
 }
 
 func (fp *fileProcessor) isDuplicate() (bool, error) {
@@ -491,7 +365,7 @@ func (fp *fileProcessor) isDuplicate() (bool, error) {
 	return false, nil
 }
 
-func (fp *fileProcessor) createNewDocumentRecord() error {
+func (fp *fileProcessor) createNewDocumentRecordV0() error {
 	fullDir, fileName := path.Split(fp.file)
 	fullDir = strings.TrimSuffix(fullDir, "/")
 	fullDir = strings.TrimSuffix(fullDir, "\\")
@@ -534,286 +408,6 @@ func (fp *fileProcessor) createNewDocumentRecord() error {
 	}
 
 	fp.document = doc
-	return nil
-}
-
-func (fp *fileProcessor) generateThumbnail() error {
-	process := &models.ProcessItem{
-		DocumentId: fp.document.Id,
-		Step:       models.ProcessThumbnail,
-		CreatedAt:  time.Now(),
-	}
-
-	job, err := fp.db.JobStore.StartProcessItem(process, "generate thumbnail")
-	if err != nil {
-		return fmt.Errorf("persist process item: %v", err)
-	}
-	defer fp.completeProcessingStep(process, job)
-
-	output := storage.PreviewPath(fp.document.Id)
-	err = storage.CreatePreviewDir(fp.document.Id)
-	if err != nil {
-		return fmt.Errorf("create thumbnail output dir: %v", err)
-	}
-
-	name := fp.rawFile.Name()
-	err = generateThumbnail(name, output, 0, 500, fp.document.Mimetype)
-	if err != nil {
-		job.Status = models.JobFailure
-		job.Message += "; " + err.Error()
-		return fmt.Errorf("call imagick: %v", err)
-	}
-
-	job.Status = models.JobFinished
-	return nil
-}
-
-func (fp *fileProcessor) parseContent() error {
-	err := fp.ensureFileOpen()
-	if err != nil {
-		logrus.Errorf("open file: %v", err)
-
-	}
-	file := fp.rawFile
-
-	logrus.Infof("extract content for document %s", fp.document.Id)
-	if fp.document.IsPdf() {
-		return fp.extractPdf(file)
-	} else if fp.document.IsImage() {
-		return fp.extractImage(file)
-	} else if fp.usePandoc && isPandocMimetype(fp.document.Mimetype) {
-		return fp.extractPandoc(file)
-	} else {
-		return fmt.Errorf("cannot extract content from mimetype: %v", fp.document.Mimetype)
-	}
-}
-
-func (fp *fileProcessor) extractPdf(file *os.File) error {
-	// if pdf, generate image preview and pass it to tesseract
-	var err error
-
-	process := &models.ProcessItem{
-		DocumentId: fp.document.Id,
-		Document:   nil,
-		Step:       models.ProcessParseContent,
-		CreatedAt:  time.Now(),
-	}
-
-	job, err := fp.db.JobStore.StartProcessItem(process, "extract pdf content")
-	if err != nil {
-		return fmt.Errorf("start process: %v", err)
-	}
-
-	defer fp.completeProcessingStep(process, job)
-
-	var text string
-	useOcr := false
-
-	if fp.usePdfToText {
-		logrus.Infof("Attempt to parse document %s content with pdftotext", fp.document.Id)
-		text, err = getPdfToText(file, fp.document.Id)
-		if err != nil {
-			if err.Error() == "empty" {
-				logrus.Infof("document %s has no plain text, try ocr", fp.document.Id)
-				useOcr = true
-			} else {
-				logrus.Debugf("failed to get content with pdftotext: %v", err)
-			}
-		} else {
-			useOcr = false
-		}
-	} else {
-		useOcr = true
-	}
-
-	if useOcr {
-		text, err = runOcr(file.Name(), fp.document.Id)
-		if err != nil {
-			job.Message += "; " + err.Error()
-			job.Status = models.JobFailure
-			return fmt.Errorf("parse document content: %v", err)
-		}
-	}
-
-	if text == "" {
-		logrus.Warningf("document %s content seems to be empty", fp.document.Id)
-	}
-
-	text = strings.ToValidUTF8(text, "")
-
-	fp.document.Content = text
-	err = fp.db.DocumentStore.SetDocumentContent(fp.document.Id, text)
-	if err != nil {
-		job.Message += "; " + "save document content: " + err.Error()
-		job.Status = models.JobFailure
-		return fmt.Errorf("save document content: %v", err)
-	} else {
-		job.Status = models.JobFinished
-	}
-	return nil
-}
-
-func (fp *fileProcessor) extractImage(file *os.File) error {
-	var err error
-	process := &models.ProcessItem{
-		DocumentId: fp.document.Id,
-		Step:       models.ProcessParseContent,
-		CreatedAt:  time.Now(),
-	}
-
-	job, err := fp.db.JobStore.StartProcessItem(process, "extract content from image")
-	if err != nil {
-		return fmt.Errorf("start process: %v", err)
-	}
-
-	defer fp.completeProcessingStep(process, job)
-
-	text, err := runOcr(file.Name(), fp.document.Id)
-	if err != nil {
-		job.Message += "; " + err.Error()
-		job.Status = models.JobFailure
-		return fmt.Errorf("parse document text: %v", err)
-	} else {
-		text = strings.ToValidUTF8(text, "")
-		fp.document.Content = text
-		err = fp.db.DocumentStore.SetDocumentContent(fp.document.Id, fp.document.Content)
-		if err != nil {
-			job.Message += "; " + "save document content: " + err.Error()
-			job.Status = models.JobFailure
-			return fmt.Errorf("save document content: %v", err)
-		} else {
-			job.Status = models.JobFinished
-		}
-	}
-	return nil
-}
-
-func (fp *fileProcessor) extractPandoc(file *os.File) error {
-	var err error
-	process := &models.ProcessItem{
-		DocumentId: fp.document.Id,
-		Step:       models.ProcessParseContent,
-		CreatedAt:  time.Now(),
-	}
-
-	job, err := fp.db.JobStore.StartProcessItem(process, fmt.Sprintf("extract content from %s", fp.document.Mimetype))
-	if err != nil {
-		return fmt.Errorf("start process: %v", err)
-	}
-
-	defer fp.completeProcessingStep(process, job)
-
-	text, err := getPandocText(fp.document.Mimetype, fp.document.Filename, file)
-	if err != nil {
-		job.Message += "; " + err.Error()
-		job.Status = models.JobFailure
-		return fmt.Errorf("parse document text: %v", err)
-	} else {
-		text = strings.ToValidUTF8(text, "")
-		fp.document.Content = text
-		err = fp.db.DocumentStore.SetDocumentContent(fp.document.Id, fp.document.Content)
-		if err != nil {
-			job.Message += "; " + "save document content: " + err.Error()
-			job.Status = models.JobFailure
-			return fmt.Errorf("save document content: %v", err)
-		} else {
-			job.Status = models.JobFinished
-		}
-	}
-	return nil
-}
-
-func (fp *fileProcessor) runRules() error {
-	if fp.document == nil {
-		return errors.New("no document set")
-	}
-
-	rules, err := fp.db.RuleStore.GetActiveUserRules(fp.document.UserId)
-	if err != nil {
-		return fmt.Errorf("load rules: %v", err)
-	}
-
-	process := &models.ProcessItem{
-		DocumentId: fp.document.Id,
-		Step:       models.ProcessRules,
-		CreatedAt:  time.Now(),
-	}
-	job, err := fp.db.JobStore.StartProcessItem(process, "process user rules")
-	// hotfix for failure when job item does not exist anymore.
-	if err != nil {
-		logrus.Warningf("persist job record: %v", err)
-		// use empty job to not panic the rest of the function
-		job = &models.Job{}
-	} else {
-		defer fp.completeProcessingStep(process, job)
-	}
-
-	metadataValues, err := fp.db.MetadataStore.GetUserValuesWithMatching(fp.document.UserId)
-	if err != nil {
-		logrus.Errorf("get metadata values with matching for user %d: %v", fp.document.UserId, err)
-	} else if len(*metadataValues) != 0 {
-		err = matchMetadata(fp.document, metadataValues)
-	}
-
-	for i, rule := range rules {
-		logrus.Debugf("(%d.) run user rule %d", i, rule.Id)
-
-		if len(rule.Actions) == 0 {
-			logrus.Debugf("rule %d does not have actions, skip rule", rule.Id)
-			continue
-		}
-
-		if len(rule.Conditions) == 0 {
-			logrus.Debugf("rule %d does not have conditions, skip rule", rule.Id)
-			continue
-		}
-
-		runner := NewDocumentRule(fp.document, rule)
-		match, err := runner.Match()
-		if err != nil {
-			logrus.Errorf("match rule (%d): %v", rule.Id, err)
-		}
-		if !match {
-			logrus.Debugf("document %s does not match rule: %d", fp.document.Id, rule.Id)
-		} else {
-
-			logrus.Debugf("document %s matches rule %d, run actions", fp.document.Id, rule.Id)
-			err = runner.RunActions()
-			if err != nil {
-				logrus.Errorf("rule (%d) actions: %v", rule.Id, err)
-			}
-		}
-	}
-
-	if err != nil {
-		logrus.Errorf("run user rules: %v", err)
-		job.Status = models.JobFailure
-	} else {
-		job.Status = models.JobFinished
-	}
-
-	err = fp.db.DocumentStore.Update(storage.UserIdInternal, fp.document)
-	if err != nil {
-		logrus.Errorf("update document (%s) after rules: %v", fp.document.Id, err)
-	}
-
-	metadata := make([]models.Metadata, len(fp.document.Metadata))
-	for i, _ := range fp.document.Metadata {
-		metadata[i] = fp.document.Metadata[i]
-	}
-	err = fp.db.MetadataStore.UpdateDocumentKeyValues(fp.document.UserId, fp.document.Id, metadata)
-	if err != nil {
-		logrus.Errorf("update document metadata after processing rules")
-	} else {
-		// metadata added by rule does not contain all fields, only key/value ids. Load other values as well.
-		newMetadata, err := fp.db.MetadataStore.GetDocumentMetadata(fp.document.UserId, fp.document.Id)
-		if err != nil {
-			logrus.Errorf("reload full metadata records for document "+
-				"after (doc %s) rules: %v", fp.document.Id, err)
-		} else {
-			fp.document.Metadata = *newMetadata
-		}
-	}
 	return nil
 }
 
@@ -870,67 +464,5 @@ func (fp *fileProcessor) indexSearchContent() error {
 		job.Status = models.JobFinished
 	}
 
-	return nil
-}
-
-func (fp *fileProcessor) completeProcessingStep(process *models.ProcessItem, job *models.Job) {
-
-	// remove step if it was successful. In addition, remove step from queue.
-	// if further steps do not absolutely require running this step.
-	removeStep := job.Status == models.JobFinished
-	switch process.Step {
-	case models.ProcessThumbnail:
-		removeStep = true
-	case models.ProcessRules:
-		removeStep = true
-	case models.ProcessFts:
-		removeStep = true
-	}
-
-	if job.Status == models.JobFailure && removeStep {
-		logrus.Infof("failure in processing document %s, skipping step %s", job.DocumentId, job.Step.String())
-		// prevent 100% cpu utilization if step fails
-		time.Sleep(1)
-	}
-
-	err := fp.db.JobStore.MarkProcessingDone(process, removeStep)
-	if err != nil {
-		logrus.Errorf("mark process complete: %v", err)
-	}
-	job.StoppedAt = time.Now()
-	if job.Status == models.JobRunning {
-		job.Status = models.JobFailure
-	}
-	err = fp.db.JobStore.Update(job)
-	if err != nil {
-		logrus.Errorf("save job to database: %v", err)
-	}
-}
-
-// DeleteDocument deletes original document and its preview file.
-func DeleteDocument(docId string) error {
-	previewPath := storage.PreviewPath(docId)
-	docPath := storage.DocumentPath(docId)
-
-	logrus.Debugf("delete preview file %s", previewPath)
-	err := os.Remove(previewPath)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			err = nil
-			logrus.Warnf("document %s preview file not found, continuing delete operation...", docId)
-		} else {
-			return fmt.Errorf("remove thumbnail: %v", err)
-		}
-	}
-	logrus.Debugf("delete document file %s", previewPath)
-	err = os.Remove(docPath)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			err = nil
-			logrus.Warnf("document %s file not found, continuing delete operation...", docId)
-		} else {
-			return fmt.Errorf("remove document file: %v", err)
-		}
-	}
 	return nil
 }
