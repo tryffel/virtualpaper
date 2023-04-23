@@ -184,12 +184,12 @@ func (s *DocumentStore) GetByHash(userId int, hash string) (*models.Document, er
 `
 	args := []interface{}{hash}
 	if userId != 0 {
-		sql += " AND user_id = $2;"
+		sql += " AND user_id = $2"
 		args = append(args, userId)
 	}
 
 	object := &models.Document{}
-	err := s.db.Get(object, sql, hash)
+	err := s.db.Get(object, sql, args...)
 	if err != nil {
 		e := s.parseError(err, "get by hash")
 		if errors.Is(e, errors.ErrRecordNotFound) {

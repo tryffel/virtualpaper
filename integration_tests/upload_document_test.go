@@ -147,6 +147,16 @@ func (suite *UploadDocumentSuite) TestEditSchedulesProcessing() {
 	assert.Equal(suite.T(), (*logs)[5].Status, models.JobFinished)
 }
 
+func (suite *UploadDocumentSuite) TestUploadDuplicate() {
+	// one user cannot upload duplicate
+	uploadDocumentWithStatus(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 60, 200)
+	uploadDocumentWithStatus(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 60, 400)
+
+	// another user can upload the same document
+	uploadDocumentWithStatus(suite.T(), suite.adminClient, "text-1.txt", "Lorem ipsum", 60, 200)
+	uploadDocumentWithStatus(suite.T(), suite.adminClient, "text-1.txt", "Lorem ipsum", 60, 400)
+}
+
 func uploadDocument(t *testing.T, client *baloo.Client, fileName string, contentPrefix string, timeoutS int) string {
 	return uploadDocumentWithStatus(t, client, fileName, contentPrefix, timeoutS, 200)
 }

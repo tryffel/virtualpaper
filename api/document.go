@@ -431,7 +431,7 @@ func (a *Api) uploadFile(c echo.Context) error {
 		return fmt.Errorf("get hash for temp file: %v", err)
 	}
 
-	existingDoc, err := a.db.DocumentStore.GetByHash(0, hash)
+	existingDoc, err := a.db.DocumentStore.GetByHash(ctx.UserId, hash)
 	if err != nil {
 		if errors.Is(err, errors.ErrRecordNotFound) {
 		} else {
