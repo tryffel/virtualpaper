@@ -727,6 +727,17 @@ ON CONFLICT (document_id, key_id, value_id) DO NOTHING
 
 	sql = fmt.Sprintf(sql, sqlParams)
 	_, err := s.db.Exec(sql, args...)
+
+	if err != nil {
+		return s.parseError(err, "upsert multiple documents metadata")
+	}
+
+	query := s.sq.Update("documents").Set("updated_at", time.Now()).Where(squirrel.Eq{"id": documents})
+	sql, arg, err := query.ToSql()
+	if err != nil {
+		return fmt.Errorf("sql: %v", err)
+	}
+	_, err = s.db.Exec(sql, arg...)
 	return s.parseError(err, "upsert multiple documents metadata")
 }
 
