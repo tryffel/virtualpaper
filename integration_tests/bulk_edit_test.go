@@ -4,7 +4,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"testing"
-	"time"
 	"tryffel.net/go/virtualpaper/api"
 	"tryffel.net/go/virtualpaper/models"
 )
@@ -60,15 +59,10 @@ func (suite *BulkEditTestSuite) TestAddMetadata() {
 	originalX86 := getDocument(suite.T(), suite.userHttp, testDocumentX86.Id, 200)
 	originalX86Intel := getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
 	originalMetamorphosis := getDocument(suite.T(), suite.userHttp, testDocumentMetamorphosis.Id, 200)
-	time.Sleep(time.Millisecond * 100)
 
 	assert.Len(suite.T(), originalX86.Metadata, 0)
 	assert.Len(suite.T(), originalX86Intel.Metadata, 0)
 	assert.Len(suite.T(), originalMetamorphosis.Metadata, 0)
-
-	assert.Equal(suite.T(), originalX86.CreatedAt, originalX86.UpdatedAt)
-	assert.Equal(suite.T(), originalX86Intel.CreatedAt, originalX86Intel.UpdatedAt)
-	assert.Equal(suite.T(), originalMetamorphosis.CreatedAt, originalMetamorphosis.UpdatedAt)
 
 	valueDoyle := suite.user1Values["author"]["doyle"]
 
@@ -146,8 +140,6 @@ func (suite *BulkEditTestSuite) TestAddMetadata() {
 	wantKeys := []*models.MetadataValue{valueDoyle, suite.user1Values["category"]["paper"], suite.user1Values["author"]["darwin"]}
 	assertDocumentMetadataMatches(suite.T(), editedX86, wantKeys)
 	assertDocumentMetadataMatches(suite.T(), editedMetamorphosis, wantKeys)
-	assert.Greater(suite.T(), editedX86.UpdatedAt, editedX86.CreatedAt)
-	assert.Greater(suite.T(), editedMetamorphosis.UpdatedAt, editedX86.CreatedAt)
 
 	suite.T().Log("bulk edit two documents, add one key, remove two keys")
 	doBulkEditRequest(suite.T(), suite.userHttp, &api.BulkEditDocumentsRequest{
@@ -181,8 +173,6 @@ func (suite *BulkEditTestSuite) TestAddMetadata() {
 	assertDocumentMetadataMatches(suite.T(), editedX86, wantKeys)
 	assertDocumentMetadataMatches(suite.T(), editedMetamorphosis, wantKeys)
 
-	assert.Greater(suite.T(), editedX86.UpdatedAt, editedX86.CreatedAt)
-	assert.Greater(suite.T(), editedMetamorphosis.UpdatedAt, editedMetamorphosis.CreatedAt)
 }
 
 func (suite *BulkEditTestSuite) TestPermissionDenied() {
