@@ -38,6 +38,7 @@ const App = () => (
     authProvider={authProvider}
     dashboard={Dashboard}
     loginPage={<LoginPage />}
+    disableTelemetry
   >
     <Resource name="documents" {...documents} icon={ArticleIcon} />
     <Resource
