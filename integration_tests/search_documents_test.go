@@ -24,7 +24,8 @@ func TestDocumentSearch(t *testing.T) {
 	suite.Run(t, new(DocumentSearchSuite))
 }
 
-func (suite *DocumentSearchSuite) SetupTest() {
+func (suite *DocumentSearchSuite) SetupSuite() {
+	suite.ApiTestSuite.SetupSuite()
 	suite.Init()
 	clearDbDocumentTables(suite.T(), suite.db)
 	clearMeiliIndices(suite.T())
@@ -52,7 +53,7 @@ func (suite *DocumentSearchSuite) SetupTest() {
 	)
 	text1.Date = time.Now().UnixMilli()
 
-	text2.Metadata = append(text1.Metadata, models.Metadata{
+	text2.Metadata = append(text2.Metadata, models.Metadata{
 		KeyId:   suite.keys["author"].Id,
 		ValueId: suite.values["author"]["darwin"].Id,
 	},
@@ -155,6 +156,87 @@ func (suite *DocumentSearchSuite) TestSearchByDate() {
 	docs = searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
 	assert.Equal(suite.T(), 1, len(docs), action)
 	assertDocInDocs(suite.T(), suite.docs["text-2"].Id, &docs, action)
+}
+
+func (suite *DocumentSearchSuite) TestSearchByWords() {
+	filter := map[string]string{
+		"q": "ipsum lorem",
+	}
+	docs := searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
+	assert.Equal(suite.T(), 2, len(docs))
+	assertDocInDocs(suite.T(), suite.docs["text-2"].Id, &docs, "search by words")
+	assertDocInDocs(suite.T(), suite.docs["text-1"].Id, &docs, "search by words")
+}
+
+func (suite *DocumentSearchSuite) TestSearchByPhrase() {
+	filter := map[string]string{
+		"q": `"Lorem ipsum"`,
+	}
+	docs := searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
+	assert.Equal(suite.T(), 2, len(docs))
+	assertDocInDocs(suite.T(), suite.docs["text-2"].Id, &docs, "search by words")
+	assertDocInDocs(suite.T(), suite.docs["text-1"].Id, &docs, "search by words")
+
+	filter = map[string]string{
+		"q": `"ipsum lorem"`,
+	}
+	docs = searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
+	assert.Equal(suite.T(), 0, len(docs))
+}
+
+func (suite *DocumentSearchSuite) TestSearchByMetadata() {
+	filter := map[string]string{
+		"q": `author:c`,
+	}
+	docs := searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
+	assert.Equal(suite.T(), 0, len(docs))
+
+	filter["q"] = "author:darwin"
+	docs = searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
+	assert.Equal(suite.T(), 1, len(docs))
+	assertDocInDocs(suite.T(), suite.docs["text-2"].Id, &docs, "")
+
+	filter["q"] = "author:darwin category:paper"
+	docs = searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
+	assert.Equal(suite.T(), 1, len(docs))
+	assertDocInDocs(suite.T(), suite.docs["text-2"].Id, &docs, "")
+
+	filter["q"] = "author:darwin OR category:paper"
+	docs = searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
+	assert.Equal(suite.T(), 2, len(docs))
+	assertDocInDocs(suite.T(), suite.docs["text-1"].Id, &docs, "")
+	assertDocInDocs(suite.T(), suite.docs["text-2"].Id, &docs, "")
+
+	filter["q"] = "category:paper"
+	docs = searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
+	assert.Equal(suite.T(), 2, len(docs))
+	assertDocInDocs(suite.T(), suite.docs["text-1"].Id, &docs, "")
+	assertDocInDocs(suite.T(), suite.docs["text-2"].Id, &docs, "")
+
+	filter["q"] = "category:paper AND NOT author:darwin"
+	docs = searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
+	assert.Equal(suite.T(), 1, len(docs))
+	assertDocInDocs(suite.T(), suite.docs["text-1"].Id, &docs, "")
+}
+
+func (suite *DocumentSearchSuite) TestSearchCombined() {
+	filter := map[string]string{
+		"q": `author:darwin AND date:month`,
+	}
+	docs := searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
+	assert.Equal(suite.T(), 0, len(docs))
+
+	filter["q"] = `author:darwin AND date:2015|today`
+	docs = searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
+	assert.Equal(suite.T(), 1, len(docs))
+
+	filter["q"] = `author:darwin AND date:2015|today "ipsum lorem"`
+	docs = searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
+	assert.Equal(suite.T(), 0, len(docs))
+
+	filter["q"] = `author:darwin AND date:2015|today ipsum lorem`
+	docs = searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
+	assert.Equal(suite.T(), 1, len(docs))
 }
 
 func waitIndexingReady(t *testing.T, client *httpClient, timeoutSec int) {

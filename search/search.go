@@ -350,10 +350,15 @@ func fillMetadataQueryOperators(query []string) []string {
 			results = append(results, v)
 			continue
 		}
-		if !isOp(strings.ToLower(results[len(results)-1])) && !isOp(strings.ToLower(v)) {
-			results = append(results, "and")
+		if !isOp(strings.ToLower(results[len(results)-1])) {
+			if !isOp(strings.ToLower(v)) {
+				results = append(results, "AND", v)
+			} else {
+				results = append(results, v)
+			}
+		} else {
+			results = append(results, v)
 		}
-		results = append(results, v)
 	}
 	return results
 }

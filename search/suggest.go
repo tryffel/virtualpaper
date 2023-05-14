@@ -146,7 +146,8 @@ func (s *searchQuery) prepareMeiliQuery(userId int, sort storage.SortKey, paging
 	if len(datefilters) > 0 {
 		filter = strings.Join(append(datefilters, filter), " AND ")
 	}
-	filter = strings.TrimSuffix(filter, " AND ")
+	filter = strings.TrimSuffix(filter, " ")
+	filter = strings.TrimSuffix(filter, " AND")
 	//logrus.Infof("filter: %s", filter)
 	// TODO : fix
 	//if sort.Key != "" {
