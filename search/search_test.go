@@ -279,6 +279,28 @@ func Test_parseFilter(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "default metadata operator is AND",
+			args: args{`key:value another:"multi word value"`},
+			want: &searchQuery{
+				RawQuery:       `key:value another:"multi word value"`,
+				MetadataQuery:  []string{`metadata="key:value"`, "and", `metadata="another:multi_word_value"`},
+				MetadataString: `metadata="key:value" and metadata="another:multi_word_value"`,
+				Query:          "",
+			},
+			wantErr: false,
+		},
+		{
+			name: "does not append default metadata operator",
+			args: args{`key:value OR another:"multi word value" third:add`},
+			want: &searchQuery{
+				RawQuery:       `key:value OR another:"multi word value" third:add`,
+				MetadataQuery:  []string{`metadata="key:value"`, "OR", `metadata="another:multi_word_value"`, "and", `metadata="third:add"`},
+				MetadataString: `metadata="key:value" OR metadata="another:multi_word_value" and metadata="third:add"`,
+				Query:          "",
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

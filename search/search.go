@@ -262,8 +262,9 @@ func parseFilter(filter string) (*searchQuery, error) {
 		metadataQuery = append(metadataQuery, metadataFilter)
 		removeToken()
 	}
-	sq.MetadataQuery = metadataQuery
-	sq.MetadataString = strings.Join(metadataQuery, " ")
+	metadata := fillMetadataQueryOperators(metadataQuery)
+	sq.MetadataQuery = metadata
+	sq.MetadataString = strings.Join(metadata, " ")
 	sq.Query = strings.Join(textQuery, " ")
 	return sq, nil
 }
@@ -326,4 +327,33 @@ func escapePhrase(token string) string {
 		token = token + `"`
 	}
 	return token
+}
+
+// every metadata key-pair must have operator.
+// inspect array and add default operators if necessary.
+// e.g. "key:value another:value" -> "key:value AND another:value"
+func fillMetadataQueryOperators(query []string) []string {
+	operators := []string{"and", "or", "not", "(", ")"}
+	isOp := func(s string) bool {
+		for _, v := range operators {
+			if v == s {
+				return true
+			}
+		}
+		return false
+	}
+
+	results := make([]string, 0, len(query))
+
+	for i, v := range query {
+		if i == 0 {
+			results = append(results, v)
+			continue
+		}
+		if !isOp(strings.ToLower(results[len(results)-1])) && !isOp(strings.ToLower(v)) {
+			results = append(results, "and")
+		}
+		results = append(results, v)
+	}
+	return results
 }
