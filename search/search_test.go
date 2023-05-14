@@ -246,6 +246,39 @@ func Test_parseFilter(t *testing.T) {
 
 			wantErr: false,
 		},
+		{
+			name: "phrase",
+			args: args{`"phrase matches this"`},
+			want: &searchQuery{
+				RawQuery:       `"phrase matches this"`,
+				MetadataQuery:  []string{},
+				MetadataString: "",
+				Query:          `"phrase matches this"`,
+			},
+			wantErr: false,
+		},
+		{
+			name: "phrase and words",
+			args: args{`one "phrase matches this" words`},
+			want: &searchQuery{
+				RawQuery:       `one "phrase matches this" words`,
+				MetadataQuery:  []string{},
+				MetadataString: "",
+				Query:          `one "phrase matches this" words`,
+			},
+			wantErr: false,
+		},
+		{
+			name: "phrase and words and metadata",
+			args: args{`one "phrase matches this" words key:value AND another:"multi word value"`},
+			want: &searchQuery{
+				RawQuery:       `one "phrase matches this" words key:value AND another:"multi word value"`,
+				MetadataQuery:  []string{`metadata="key:value"`, "AND", `metadata="another:multi_word_value"`},
+				MetadataString: `metadata="key:value" AND metadata="another:multi_word_value"`,
+				Query:          `one "phrase matches this" words`,
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

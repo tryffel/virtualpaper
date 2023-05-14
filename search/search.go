@@ -235,7 +235,7 @@ func parseFilter(filter string) (*searchQuery, error) {
 			if found {
 				continue
 			}
-			textQuery = append(textQuery, token)
+			textQuery = append(textQuery, escapePhrase(token))
 			removeToken()
 			continue
 		}
@@ -312,4 +312,18 @@ func escapeMetadataKey(key string) string {
 
 func escapeMetadataValue(value string) string {
 	return escapeMetadataKey(value)
+}
+
+func escapePhrase(token string) string {
+	if !strings.Contains(token, " ") {
+		return token
+	}
+
+	if !strings.HasPrefix(token, `"`) {
+		token = `"` + token
+	}
+	if !strings.HasSuffix(token, `"`) {
+		token = token + `"`
+	}
+	return token
 }
