@@ -20,7 +20,7 @@ import (
 func (fp *fileProcessor) generateThumbnail() error {
 	process := &models.ProcessItem{
 		DocumentId: fp.document.Id,
-		Step:       models.ProcessThumbnail,
+		Action:     models.ProcessThumbnail,
 		CreatedAt:  time.Now(),
 	}
 
@@ -181,7 +181,7 @@ func generateThumbnailPlainText(rawFile string, previewFile string, size int) er
 func (fp *fileProcessor) updateThumbnail(doc *models.Document, file *os.File) error {
 	process := &models.ProcessItem{
 		DocumentId: fp.document.Id,
-		Step:       models.ProcessThumbnail,
+		Action:     models.ProcessThumbnail,
 		CreatedAt:  time.Now(),
 	}
 

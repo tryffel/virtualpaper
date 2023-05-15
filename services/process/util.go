@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"tryffel.net/go/virtualpaper/errors"
+	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
@@ -62,4 +63,15 @@ func DeleteDocument(docId string) error {
 		}
 	}
 	return nil
+}
+
+// RequiredProcessingSteps returns list of steps that are required to be execute after a given step.
+func RequiredProcessingSteps(startingStep models.ProcessStep) []models.ProcessStep {
+	switch startingStep {
+	case models.ProcessHash, models.ProcessThumbnail, models.ProcessFts:
+		return []models.ProcessStep{}
+	case models.ProcessParseContent, models.ProcessRules:
+		return []models.ProcessStep{models.ProcessFts}
+	}
+	return []models.ProcessStep{}
 }

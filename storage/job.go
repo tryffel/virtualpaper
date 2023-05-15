@@ -32,25 +32,17 @@ func (s JobStore) parseError(err error, action string) error {
 	return getDatabaseError(err, s, action)
 }
 
-// GetByDocument returns all jobs related to document
-func (s *JobStore) GetByDocument(documentId string) (*[]models.Job, error) {
-
-	sql := `
-SELECT
-*
-FROM jobs
-WHERE jobs.document_id = $1;
-`
+// GetJobsByDocumentId returns all jobs related to document
+func (s *JobStore) GetJobsByDocumentId(documentId string) (*[]models.Job, error) {
+	sql := `SELECT * FROM jobs WHERE jobs.document_id = $1`
 
 	jobs := &[]models.Job{}
-
 	err := s.db.Select(jobs, sql, documentId)
 	return jobs, s.parseError(err, "get by document")
 }
 
-// GetByDocument returns all jobs related to document
-func (s *JobStore) GetByUser(userId int, paging Paging) (*[]models.JobComposite, error) {
-
+// GetJobsByDocumentId returns all jobs related to document
+func (s *JobStore) GetJobsByUserId(userId int, paging Paging) (*[]models.JobComposite, error) {
 	sql := `
 SELECT
        jobs.id as id,
@@ -67,9 +59,7 @@ LEFT JOIN documents d ON jobs.document_id = d.id
 WHERE d.user_id = $1
 ORDER BY document_id, started_at
 OFFSET $2
-LIMIT $3;
-;
-`
+LIMIT $3;`
 
 	jobs := &[]models.JobComposite{}
 
@@ -83,8 +73,7 @@ LIMIT $3;
 	return jobs, s.parseError(err, "get by user")
 }
 
-func (s *JobStore) Create(documentId string, job *models.Job) error {
-
+func (s *JobStore) CreateJob(documentId string, job *models.Job) error {
 	sql := `
 INSERT INTO jobs (document_id, status, message, started_at, stopped_at)
 VALUES ($1, $2, $3, $4, $5) RETURNING id;
@@ -106,12 +95,10 @@ VALUES ($1, $2, $3, $4, $5) RETURNING id;
 		}
 		job.Id = id
 	}
-
 	return nil
 }
 
-func (s *JobStore) Update(job *models.Job) error {
-
+func (s *JobStore) UpdateJob(job *models.Job) error {
 	sql := `
 UPDATE jobs
 SET document_id=$2, status=$3, message=$4, started_at=$5, stopped_at=$6
@@ -131,25 +118,22 @@ func (s *JobStore) GetPendingProcessing() (*[]models.ProcessItem, int, error) {
 	sql := `
 select 
 	d.document_id as document_id, 
-	min(d.step) as step, 
+	d.action as action,
 	min(d.created_at) as created_at
 from (
-         select document_id,
-                step,
-                created_at
-         from process_queue
-		 where running = false 
-		 -- ignore document's that are being processed
-		 and document_id not in 
-		 	(
-				select document_id 
-				from process_queue 
-				where running=true group by document_id
-			)
-         order by created_at asc
+	select document_id, action, created_at, action_order
+	from process_queue
+	where running = false 
+	-- ignore document's that are being processed
+	and document_id not in 
+		(
+			select document_id 
+			from process_queue 
+			where running=true group by document_id
+		) order by created_at asc
      ) as d
-group by d.document_id
-order by created_at
+group by d.document_id, action, action_order
+order by action_order, created_at
 limit 50;
 `
 
@@ -161,7 +145,7 @@ limit 50;
 	}
 
 	sql = `
-SELECT COUNT(DISTINCT(document_id, step)) AS count
+SELECT COUNT(DISTINCT(document_id, action)) AS count
 FROM process_queue;
 `
 	var n int
@@ -171,41 +155,33 @@ FROM process_queue;
 	return dto, n, s.parseError(err, "get pending ProcessItems, scan")
 }
 
-// GetPendingProcessing returns max 100 documents ordered by process_queue created_at.
-// Also returns total number of pending process_queues.
-func (s *JobStore) GetDocumentsPendingProcessing() (*[]models.Document, error) {
+// GetDocumentsPendingProcessing returns list of document ids that are not currently being processed
+// and have processing queued. Only first 50 documents are returned
+func (s *JobStore) GetDocumentsPendingProcessing() (*[]string, error) {
+	sql := `SELECT document_id FROM process_queue
+WHERE document_id NOT IN (
+    SELECT document_id FROM process_queue
+    WHERE running = true GROUP BY document_id
+) 
+GROUP BY document_id 
+ORDER BY min(created_at) ASC 
+LIMIT 50`
 
-	sql := `
-SELECT d.id AS id, d.user_id AS user_id, d.filename AS filename, d.hash AS hash, d.size AS SIZE, d.date AS DATE
-FROM documents d
-LEFT JOIN process_queue pq ON d.id = pq.document_id
-WHERE pq.step IS NOT NULL
-AND pq.running = FALSE
-ORDER by pq.created_at ASC
-LIMIT 40;
-`
-	dto := &[]models.Document{}
-
-	err := s.db.Select(dto, sql)
-	if err != nil {
-		return dto, s.parseError(err, "get documents pending")
-	}
-	return dto, s.parseError(err, "scan documents pending")
+	ids := &[]string{}
+	err := s.db.Select(ids, sql)
+	return ids, s.parseError(err, "get documents pending processing")
 }
 
-// GetDocumentPendingSteps returns ProcessItems not yet started on given document in ascending order.
-func (s *JobStore) GetDocumentPendingSteps(documentId string) (*[]models.ProcessItem, error) {
-	sql := `
-SELECT document_id, step
-	FROM process_queue
-WHERE running=FALSE
-AND document_id = $1
-ORDER BY step ASC;
-`
+// GetNextStepForDocument returns next step that hasn't been started yet.
+func (s *JobStore) GetNextStepForDocument(documentId string) (*models.ProcessItem, error) {
+	sql := `SELECT document_id, action, created_at FROM process_queue
+WHERE document_id = $1 AND running = FALSE
+ORDER BY action_order ASC
+LIMIT 1`
 
-	dto := &[]models.ProcessItem{}
-	err := s.db.Select(dto, sql, documentId)
-	return dto, s.parseError(err, "get pending ProcessSteps")
+	step := &models.ProcessItem{}
+	err := s.db.Get(step, sql, documentId)
+	return step, s.parseError(err, "get next step for document")
 }
 
 // GetDocumentStatus returns status for given document:
@@ -259,13 +235,10 @@ GROUP BY running;
 // return it.
 func (s *JobStore) StartProcessItem(item *models.ProcessItem, msg string) (*models.Job, error) {
 	sql := `
-UPDATE process_queue
-SET running=TRUE 
-WHERE document_id = $1
-AND step = $2
-AND running=FALSE;
+UPDATE process_queue SET running=TRUE 
+WHERE document_id = $1 AND action = $2 AND running=FALSE;
 `
-	res, err := s.db.Exec(sql, item.DocumentId, item.Step)
+	res, err := s.db.Exec(sql, item.DocumentId, item.Action)
 	if err != nil {
 		return nil, s.parseError(err, "start ProcessItem")
 	}
@@ -282,23 +255,13 @@ AND running=FALSE;
 		DocumentId: item.DocumentId,
 		Message:    msg,
 		Status:     models.JobRunning,
-		Step:       item.Step,
+		Step:       item.Action,
 		StartedAt:  time.Now(),
 		StoppedAt:  time.Time{},
 	}
 
-	err = s.Create(item.DocumentId, job)
+	err = s.CreateJob(item.DocumentId, job)
 	return job, s.parseError(err, "mark ProcessStep started")
-}
-
-// CreateProcessItem add single process item.
-func (s *JobStore) CreateProcessItem(item *models.ProcessItem) error {
-	sql := `
-INSERT INTO process_queue (document_id, step)
-VALUES ($1, $2);
-`
-	_, err := s.db.Exec(sql, item.DocumentId, item.Step)
-	return s.parseError(err, "create ProcessSteps")
 }
 
 // MarkProcessinDone update given item. If ok, remove record, else mark it as not running
@@ -308,7 +271,7 @@ func (s *JobStore) MarkProcessingDone(item *models.ProcessItem, ok bool) error {
 		sql = `
 			DELETE FROM process_queue
 			WHERE document_id = $1
-			AND step = $2
+			AND action = $2
 			AND running =TRUE;
 			`
 	} else {
@@ -316,46 +279,28 @@ func (s *JobStore) MarkProcessingDone(item *models.ProcessItem, ok bool) error {
 			UPDATE process_queue
 			SET running=FALSE
 			WHERE document_id = $1
-			AND step = $2
+			AND action = $2
 			AND running=FALSE;
 			`
 	}
-	_, err := s.db.Exec(sql, item.DocumentId, item.Step)
+	_, err := s.db.Exec(sql, item.DocumentId, item.Action)
 	return s.parseError(err, "mark ProcessSteps done")
 }
 
-// AddDocument adds default processing steps for document. Document must be existing.
-func (s *JobStore) AddDocument(doc *models.Document) error {
-	return s.addDocument(doc.Id, models.ProcessHash)
-}
-
-func (s *JobStore) addDocument(documentId string, fromStep models.ProcessStep) error {
-	sql := `
-INSERT INTO process_queue (document_id, step)
-VALUES 
-`
-
-	logrus.Debugf("add document %s for processing starting from step %s", documentId, fromStep)
-	var err error
-	args := make([]interface{}, len(models.ProcessStepsAll)*2)
-	for i := 0; i < len(models.ProcessStepsAll); i++ {
-		if i > 0 {
-			sql += ", "
-		}
-		args[i*2] = documentId
-		args[i*2+1], err = models.ProcessStepsAll[i].Value()
-		if err != nil {
-			return fmt.Errorf("insert processStep %s: %v", models.ProcessStepsAll[i], err)
-		}
-
-		sql += fmt.Sprintf(" ($%d, $%d)", i*2+1, i*2+2)
+// ProcessDocumentAllSteps adds default processing steps for document. Document must be existing.
+func (s *JobStore) ProcessDocumentAllSteps(documentId string) error {
+	sq := s.sq.Insert("process_queue").Columns("document_id", "action", "action_order")
+	for _, v := range models.ProcessStepsAll {
+		sq = sq.Values(documentId, v, models.ProcessStepsOrder[v])
+	}
+	sql, args, err := sq.ToSql()
+	if err != nil {
+		return fmt.Errorf("sql: %v", err)
 	}
 
-	sql += ";"
-
+	logrus.Debugf("add document %s for processing starting from step %s", documentId, models.ProcessHash)
 	_, err = s.db.Exec(sql, args...)
 	return s.parseError(err, "add document ProcessSteps")
-
 }
 
 // CancelRunningProcesses marks all processes that are currently running as not running.
@@ -370,38 +315,47 @@ WHERE running=TRUE
 	return s.parseError(err, "cancel running ProcessItem")
 }
 
-// ForceProcessing adds documents to process queue. If documentID != 0, mark only given document. If
+// ForceProcessingDocument adds documents to process queue. If documentID != 0, mark only given document. If
 // userId != 0, mark all documents for user. Else mark all documents for re-processing. FromStep
 // is the first step and successive steps are expected to re-run as well.
-func (s *JobStore) ForceProcessing(userId int, documentId string, fromStep models.ProcessStep) error {
-	var args []interface{}
-	steps := models.ProcessStepsAll[fromStep-1:]
+func (s *JobStore) ForceProcessingDocument(documentId string, steps []models.ProcessStep) error {
+	sq := s.sq.Insert("process_queue").Columns("document_id", "action", "action_order")
+	for _, v := range steps {
+		sq = sq.Values(documentId, v, models.ProcessStepsOrder[v])
+	}
+	sql, args, err := sq.ToSql()
+	if err != nil {
+		return fmt.Errorf("sql: %v", err)
+	}
+	_, err = s.db.Exec(sql, args...)
+	return s.parseError(err, "force processing ProcessSteps")
+}
+
+func (s *JobStore) ForceProcessingByUser(userId int, steps []models.ProcessStep) error {
 	stepsSql := ""
 	for i, v := range steps {
-		if i != 0 {
-			stepsSql += ", "
+		if i > 0 {
+			stepsSql += ","
 		}
-		val, _ := v.Value()
-		stepsSql += fmt.Sprintf("(%d)", val)
+		stepsSql += fmt.Sprintf("('%s', %d)", v, models.ProcessStepsOrder[v])
 	}
 
-	sql := `
-INSERT INTO process_queue (document_id, step)
-SELECT documents.id AS document_id, steps.step
-FROM documents
-JOIN (SELECT DISTINCT * FROM (VALUES %s) AS v) AS steps(step) ON TRUE
-`
+	sql := `INSERT INTO process_queue (document_id, action, action_order)
+	SELECT d.id as document_id, steps.action, steps.action_order
+	FROM documents d
+	JOIN (
+		SELECT * FROM (VALUES %s) AS v (action, action_order)
+	) steps ON TRUE`
+
+	var err error
 	sql = fmt.Sprintf(sql, stepsSql)
-	if documentId != "" {
-		sql += fmt.Sprintf(" WHERE documents.id = $%d", len(args)+1)
-		args = append(args, documentId)
-	} else if userId != 0 {
-		sql += fmt.Sprintf(" WHERE documents.user_id = $%d", len(args)+1)
-		args = append(args, userId)
+	if userId != 0 {
+		sql += " WHERE d.user_id=$1"
+		_, err = s.db.Exec(sql, userId)
+	} else {
+		_, err = s.db.Exec(sql)
 	}
-
-	_, err := s.db.Exec(sql, args...)
-	return s.parseError(err, "force processing ProcessSteps")
+	return s.parseError(err, "schedule processing job for documents")
 }
 
 // CancelDocumentProcessing removes all steps from processing queue for document.
@@ -414,30 +368,22 @@ func (s *JobStore) CancelDocumentProcessing(documentId string) error {
 	return s.parseError(err, "clear document queue")
 }
 
-// AddDocumentsByMetadata adds all documents that match the identifiers.
+// IndexDocumentsByMetadata adds all documents that match the identifiers.
 // If user != 0, use has to own the document,
 // if keyId != 0, document has to have key,
 // if valueId != 0, document has to have the value.
 // Either key or value must be supplied.
-func (s *JobStore) AddDocumentsByMetadata(userId int, keyId int, valueId int, step models.ProcessStep) error {
+func (s *JobStore) IndexDocumentsByMetadata(userId int, keyId int, valueId int) error {
 	if valueId == 0 && keyId == 0 {
 		e := errors.ErrInvalid
 		e.ErrMsg = "no key nor value supplied"
 	}
-	steps := models.ProcessStepsAll[step-1:]
-	stepsSql := ""
-	for i, v := range steps {
-		if i != 0 {
-			stepsSql += ", "
-		}
-		val, _ := v.Value()
-		stepsSql += fmt.Sprintf("(%d)", val)
-	}
 
-	selectQuery := s.sq.Select("documents.id as document_id, steps.step").
+	stepSql := fmt.Sprintf("('%s', %d)", models.ProcessFts, models.ProcessStepsOrder[models.ProcessFts])
+	selectQuery := s.sq.Select("documents.id as document_id, steps.action, steps.action_order").
 		From("documents").
 		LeftJoin("document_metadata dm on documents.id = dm.document_id").
-		Join(fmt.Sprintf("(SELECT DISTINCT * FROM (VALUES %s) AS v) AS steps(step) ON TRUE", stepsSql))
+		Join(fmt.Sprintf("(SELECT DISTINCT * FROM (VALUES %s) AS v) AS steps(action, action_order) ON TRUE", stepSql))
 
 	if userId != 0 {
 		selectQuery = selectQuery.Where("documents.user_id=?", userId)
@@ -449,7 +395,7 @@ func (s *JobStore) AddDocumentsByMetadata(userId int, keyId int, valueId int, st
 		selectQuery = selectQuery.Where("dm.value_id=?", valueId)
 	}
 	query := s.sq.Insert("process_queue").
-		Columns("document_id", "step").
+		Columns("document_id", "action", "action_order").
 		Select(selectQuery)
 
 	sql, args, err := query.ToSql()
@@ -465,7 +411,8 @@ func (s *JobStore) AddDocumentsByMetadata(userId int, keyId int, valueId int, st
 
 func (s *JobStore) AddDocuments(userId int, documents []string, step models.ProcessStep) error {
 
-	steps := models.ProcessStepsAll[step-1:]
+	//steps := models.ProcessStepsAll[step-1:]
+	steps := models.ProcessStepsAll
 	stepsSql := ""
 	for i, v := range steps {
 		if i != 0 {

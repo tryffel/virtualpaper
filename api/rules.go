@@ -271,7 +271,7 @@ func (a *Api) getUserRule(c echo.Context) error {
 
 func (a *Api) updateUserRule(c echo.Context) error {
 	// swagger:route PUT /api/v1/processing/rules/{id} Processing UpdateRule
-	// Update rule contents
+	// UpdateJob rule contents
 	// responses:
 	//   200:
 	ctx := c.(UserContext)

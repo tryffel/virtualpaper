@@ -265,7 +265,7 @@ func (a *Api) getDocumentLogs(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "forbidden")
 	}
 
-	job, err := a.db.JobStore.GetByDocument(id)
+	job, err := a.db.JobStore.GetJobsByDocumentId(id)
 	if err != nil {
 		return err
 	}
@@ -473,11 +473,11 @@ func (a *Api) uploadFile(c echo.Context) error {
 		return fmt.Errorf("rename temp file by document id: %v", err)
 	}
 
-	err = a.db.JobStore.AddDocument(document)
+	err = a.db.JobStore.ProcessDocumentAllSteps(document.Id)
 	if err != nil {
 		return fmt.Errorf("add process steps for new document: %v", err)
 	}
-	err = a.process.AddDocumentForProcessing(document)
+	err = a.process.AddDocumentForProcessing(document.Id)
 	opOk = true
 	return c.JSON(http.StatusOK, responseFromDocument(document))
 }
@@ -581,11 +581,11 @@ func (a *Api) updateDocument(c echo.Context) error {
 	}
 
 	logrus.Debugf("document updated, force fts update")
-	err = a.db.JobStore.ForceProcessing(ctx.UserId, doc.Id, models.ProcessFts)
+	err = a.db.JobStore.ForceProcessingDocument(doc.Id, []models.ProcessStep{models.ProcessFts})
 	if err != nil {
 		logrus.Warningf("error marking document for processing (doc %s): %v", doc.Id, err)
 	} else {
-		err = a.process.AddDocumentForProcessing(doc)
+		err = a.process.AddDocumentForProcessing(doc.Id)
 		if err != nil {
 			logrus.Warningf("error adding updated document for processing (doc: %s): %v", doc.Id, err)
 		}
@@ -667,7 +667,8 @@ func (a *Api) requestDocumentProcessing(c echo.Context) error {
 		return respForbiddenV2()
 	}
 
-	err = a.db.JobStore.ForceProcessing(ctx.UserId, id, models.ProcessRules)
+	steps := process.RequiredProcessingSteps(models.ProcessRules)
+	err = a.db.JobStore.ForceProcessingDocument(id, steps)
 	if err != nil {
 		return err
 	}
@@ -676,7 +677,7 @@ func (a *Api) requestDocumentProcessing(c echo.Context) error {
 	if err != nil {
 		logrus.Errorf("Get document to process: %v", err)
 	} else {
-		err = a.process.AddDocumentForProcessing(doc)
+		err = a.process.AddDocumentForProcessing(doc.Id)
 		if err != nil {
 			logrus.Errorf("schedule document processing: %v", err)
 		}

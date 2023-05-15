@@ -33,6 +33,7 @@ import (
 	"syscall"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
+	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/services/process"
 	"tryffel.net/go/virtualpaper/storage"
@@ -200,6 +201,14 @@ func init() {
 			}
 		}
 		return true
+	})
+	govalidator.TagMap["process_step"] = govalidator.Validator(func(str string) bool {
+		for _, v := range models.ProcessStepsKeys {
+			if str == v {
+				return true
+			}
+		}
+		return false
 	})
 }
 

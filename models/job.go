@@ -83,77 +83,57 @@ func (jc *JobComposite) SetDuration() {
 
 // ProcessStep describes next step for document.
 // It maps as integer to database.
-type ProcessStep int
+type ProcessStep string
 
 const (
-	// full processing needed, used for new documents
-	ProcessAll ProcessStep = 0
-
-	ProcessHash ProcessStep = 1
-
-	ProcessThumbnail    ProcessStep = 2
-	ProcessParseContent ProcessStep = 3
-	ProcessRules        ProcessStep = 4
-	ProcessFts          ProcessStep = 5
-)
-
-const (
-	ProcessV2Hash           = "hash"
-	ProcessV2Thumbnail      = "thumbnail"
-	ProcessV2ExtractContent = "extract"
-	ProcessV2Metadata       = "metadata"
-	ProcessV2Rules          = "rules"
-	ProcessV2Fts            = "index"
+	ProcessHash         ProcessStep = "hash"
+	ProcessThumbnail    ProcessStep = "thumbnail"
+	ProcessParseContent ProcessStep = "extract"
+	ProcessRules        ProcessStep = "rules"
+	ProcessFts          ProcessStep = "fts"
 )
 
 // ProcessStepsAll is a list of default steps to run for new document.
 var ProcessStepsAll = []ProcessStep{ProcessHash, ProcessThumbnail, ProcessParseContent, ProcessRules, ProcessFts}
 
+// ProcessStepsOrder is the order in which the steps are to be run in ascending order.
+var ProcessStepsOrder = map[ProcessStep]int{
+	ProcessHash:         1,
+	ProcessThumbnail:    2,
+	ProcessParseContent: 3,
+	ProcessRules:        4,
+	ProcessFts:          5,
+}
+
+var ProcessStepsKeys = map[ProcessStep]string{
+	ProcessHash:         "hash",
+	ProcessThumbnail:    "thumbnail",
+	ProcessParseContent: "content",
+	ProcessRules:        "rules",
+	ProcessFts:          "fts",
+}
+
 func (ps *ProcessStep) Value() (driver.Value, error) {
-	return int(*ps), nil
+	return string(*ps), nil
 }
 
 func (ps *ProcessStep) Scan(src interface{}) error {
-	var val int
-	if valDefault, ok := src.(int); ok {
-		val = valDefault
-	} else if val32, ok := src.(int32); ok {
-		val = int(val32)
-	} else if val64, ok := src.(int64); ok {
-		val = int(val64)
-	} else {
-		return fmt.Errorf("expect int, got: %v", src)
+	str, ok := src.(string)
+	if !ok {
+		return fmt.Errorf("value '%v' not string", src)
 	}
-	if ProcessStep(val) > ProcessFts {
-		return fmt.Errorf("unknown process step: %d", val)
-	}
-	*ps = ProcessStep(val)
+	*ps = ProcessStep(str)
 	return nil
 }
 
 func (ps ProcessStep) String() string {
-	switch ps {
-	case 0:
-		return "all"
-	case 1:
-		return "hash"
-	case 2:
-		return "thumbnail"
-	case 3:
-		return "parsecontent"
-	case 4:
-		return "rules"
-	case 5:
-		return "fts"
-	default:
-		return fmt.Sprintf("unknkown step: %d", ps)
-	}
+	return string(ps)
 }
 
 // ProcessItem contains document that awaits further processing.
 type ProcessItem struct {
 	DocumentId string `db:"document_id"`
 	Document   *Document
-	Step       ProcessStep `db:"step"`
+	Action     ProcessStep `db:"action"`
 	CreatedAt  time.Time   `db:"created_at"`
 }

@@ -284,7 +284,7 @@ func (a *Api) LoginV2(c echo.Context) error {
 
 	token, err = newToken(strconv.Itoa(userId), authToken.Key, config.C.Api.Key)
 	if err != nil {
-		c.Logger().Errorf("Create new token: %v", err)
+		c.Logger().Errorf("CreateJob new token: %v", err)
 	}
 
 	user, err := a.db.UserStore.GetUser(userId)
@@ -397,7 +397,7 @@ func (a *Api) ResetPassword(c echo.Context) error {
 
 	logrus.Warningf("Reset user's (%d) password with reset token %d", user.Id, token.Id)
 
-	logrus.Warningf("Create password reset token %d for user %d, expires at %s", token.Id, user.Id, token.ExpiresAt)
+	logrus.Warningf("CreateJob password reset token %d for user %d, expires at %s", token.Id, user.Id, token.ExpiresAt)
 	err = a.db.UserStore.DeletePasswordResetToken(token.Id)
 	if err != nil {
 		logrus.Errorf("delete password token %d: %v", token.Id, err)
@@ -470,7 +470,7 @@ func (a *Api) CreateResetPasswordToken(c echo.Context) error {
 		return fmt.Errorf("save password reset token: %v", err)
 	}
 
-	logrus.Warningf("Create password reset token %d for user %d, expires at %s", token.Id, user.Id, token.ExpiresAt)
+	logrus.Warningf("CreateJob password reset token %d for user %d, expires at %s", token.Id, user.Id, token.ExpiresAt)
 	go mail.ResetPassword(user.Email, rawToken, token.Id)
 	return c.JSON(200, msg)
 }

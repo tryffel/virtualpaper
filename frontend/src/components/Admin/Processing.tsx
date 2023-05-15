@@ -162,7 +162,7 @@ const RequestSingleDocumentProcessing = () => {
           <li>Force processing single or multiple documents</li>
           <li>
             Please fill either document id or user id. If user id (numeric) is
-            passed, all the documetns for the user are processed starting from
+            passed, all the documents for the user are processed starting from
             the given step.
           </li>
           <li>
@@ -193,14 +193,9 @@ const RequestSingleDocumentProcessing = () => {
               </Table>
             </TableContainer>
           </li>
-          <li>
-            All subsequent steps are always executed. E.g. if step is set to
-            content, rules and then fts are executed as well.
-          </li>
         </ul>
       </Typography>
 
-      <Typography>Allowed steps: thumbnail, content, rules or fts</Typography>
       <TextField
         id="document_id"
         label="Document id"

@@ -36,7 +36,7 @@ func (fp *fileProcessor) extractPdf(file *os.File) error {
 	process := &models.ProcessItem{
 		DocumentId: fp.document.Id,
 		Document:   nil,
-		Step:       models.ProcessParseContent,
+		Action:     models.ProcessParseContent,
 		CreatedAt:  time.Now(),
 	}
 
@@ -98,7 +98,7 @@ func (fp *fileProcessor) extractImage(file *os.File) error {
 	var err error
 	process := &models.ProcessItem{
 		DocumentId: fp.document.Id,
-		Step:       models.ProcessParseContent,
+		Action:     models.ProcessParseContent,
 		CreatedAt:  time.Now(),
 	}
 
@@ -133,7 +133,7 @@ func (fp *fileProcessor) extractPandoc(file *os.File) error {
 	var err error
 	process := &models.ProcessItem{
 		DocumentId: fp.document.Id,
-		Step:       models.ProcessParseContent,
+		Action:     models.ProcessParseContent,
 		CreatedAt:  time.Now(),
 	}
 

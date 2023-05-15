@@ -200,18 +200,17 @@ func (fp *fileProcessor) cancelDocumentProcessing(reason string) error {
 }
 
 func (fp *fileProcessor) process(op fileOp) {
-	if op.document == nil && op.file != "" {
-		fp.file = op.file
-		fp.processFileV0()
-	} else if op.document != nil {
-		fp.file = op.file
-		fp.document = op.document
-		fp.startedProcessing = time.Now()
-		fp.processDocument()
-		fp.startedProcessing = time.Time{}
-	} else {
-		logrus.Warningf("process task got empty fileop, skipping")
+	doc, err := fp.db.DocumentStore.GetDocument(0, op.docId)
+	if err != nil {
+		logrus.Errorf("process document %s: get document: %v", op.docId, err)
+		return
 	}
+	fp.document = doc
+	fp.file = storage.DocumentPath(op.docId)
+
+	fp.startedProcessing = time.Now()
+	fp.processDocument()
+	fp.startedProcessing = time.Time{}
 }
 
 // re-calculate hash. If it differs from current document.Hash, update document record and rename file to new hash,
@@ -219,7 +218,7 @@ func (fp *fileProcessor) process(op fileOp) {
 func (fp *fileProcessor) updateHash(doc *models.Document) error {
 	process := &models.ProcessItem{
 		DocumentId: fp.document.Id,
-		Step:       models.ProcessHash,
+		Action:     models.ProcessHash,
 		CreatedAt:  time.Now(),
 	}
 
@@ -319,7 +318,7 @@ func (fp *fileProcessor) indexSearchContent() error {
 
 	process := &models.ProcessItem{
 		DocumentId: fp.document.Id,
-		Step:       models.ProcessFts,
+		Action:     models.ProcessFts,
 		CreatedAt:  time.Now(),
 	}
 

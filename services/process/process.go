@@ -16,7 +16,7 @@ func (fp *fileProcessor) completeProcessingStep(process *models.ProcessItem, job
 	// remove step if it was successful. In addition, remove step from queue.
 	// if further steps do not absolutely require running this step.
 	removeStep := job.Status == models.JobFinished
-	switch process.Step {
+	switch process.Action {
 	case models.ProcessThumbnail:
 		removeStep = true
 	case models.ProcessRules:
@@ -39,7 +39,7 @@ func (fp *fileProcessor) completeProcessingStep(process *models.ProcessItem, job
 	if job.Status == models.JobRunning {
 		job.Status = models.JobFailure
 	}
-	err = fp.db.JobStore.Update(job)
+	err = fp.db.JobStore.UpdateJob(job)
 	if err != nil {
 		logrus.Errorf("save job to database: %v", err)
 	}
@@ -84,32 +84,34 @@ func (fp *fileProcessor) cleanup() {
 func (fp *fileProcessor) processDocument() {
 	fp.Info("Start processing file")
 
-	pendingSteps, err := fp.db.JobStore.GetDocumentPendingSteps(fp.document.Id)
-	if err != nil {
-		logrus.Errorf("get pending processing steps for document %s: %v", fp.document.Id, err)
-		return
-	}
-
-	metadata, err := fp.db.MetadataStore.GetDocumentMetadata(fp.document.UserId, fp.document.Id)
-	if err != nil {
-		logrus.Errorf("get document metadata before processing: %v", err)
-	} else {
-		fp.document.Metadata = *metadata
-	}
-
-	tags, err := fp.db.MetadataStore.GetDocumentTags(fp.document.UserId, fp.document.Id)
-	if err != nil {
-		logrus.Errorf("get document tags before processing: %v", err)
-	} else {
-		fp.document.Tags = *tags
+	refreshDocument := func() error {
+		doc, err := fp.db.DocumentStore.GetDocument(0, fp.document.Id)
+		if err != nil {
+			return fmt.Errorf("get document: %v", err)
+		}
+		metadata, err := fp.db.MetadataStore.GetDocumentMetadata(0, fp.document.Id)
+		if err != nil {
+			return fmt.Errorf("get metadata: %v", err)
+		}
+		doc.Metadata = *metadata
+		fp.document = doc
+		return nil
 	}
 
 	defer fp.cleanup()
+	for {
+		step, err := fp.db.JobStore.GetNextStepForDocument(fp.document.Id)
+		if err != nil {
+			if errors.Is(err, errors.ErrRecordNotFound) {
+				// all steps executed
+			} else {
+				logrus.Errorf("get next processing step for document %s: %v", fp.document.Id, err)
+			}
+			break
+		}
+		fp.Info("run step %s", step.Action)
 
-	for _, step := range *pendingSteps {
-		fp.Info("run step %s", step.Step.String())
-
-		switch step.Step {
+		switch step.Action {
 		case models.ProcessHash:
 			err = fp.ensureFileOpenAndLogFailure()
 			if err != nil {
@@ -153,19 +155,29 @@ func (fp *fileProcessor) processDocument() {
 				return
 			}
 		case models.ProcessRules:
-			err := fp.runRules()
+			err := refreshDocument()
+			if err != nil {
+				logrus.Errorf("refresh document: %v", err)
+				return
+			}
+			err = fp.runRules()
 			if err != nil {
 				logrus.Errorf("run rules: %v", err)
 				return
 			}
 		case models.ProcessFts:
-			err := fp.indexSearchContent()
+			err := refreshDocument()
+			if err != nil {
+				logrus.Errorf("refresh document: %v", err)
+				return
+			}
+			err = fp.indexSearchContent()
 			if err != nil {
 				logrus.Errorf("index search content: %v", err)
 				return
 			}
 		default:
-			logrus.Warningf("unhandle process step: %v, skipping", step.Step)
+			logrus.Warningf("unhandle process step: %v, skipping", step.Action)
 		}
 	}
 }
@@ -182,7 +194,7 @@ func (fp *fileProcessor) runRules() error {
 
 	process := &models.ProcessItem{
 		DocumentId: fp.document.Id,
-		Step:       models.ProcessRules,
+		Action:     models.ProcessRules,
 		CreatedAt:  time.Now(),
 	}
 	job, err := fp.db.JobStore.StartProcessItem(process, "process user rules")

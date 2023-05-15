@@ -11,7 +11,7 @@ func (a *Api) GetJob(c echo.Context) error {
 		return err
 	}
 
-	jobs, err := a.db.JobStore.GetByUser(ctx.UserId, params)
+	jobs, err := a.db.JobStore.GetJobsByUserId(ctx.UserId, params)
 	if err != nil {
 		return err
 	}

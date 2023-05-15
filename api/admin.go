@@ -57,7 +57,7 @@ func (a *Api) AuthorizeAdminV2() echo.MiddlewareFunc {
 type ForceDocumentProcessingRequest struct {
 	UserId     int    `json:"user_id" valid:"-"`
 	DocumentId string `json:"document_id" valid:"-"`
-	FromStep   string `json:"from_step" valid:"-"`
+	FromStep   string `json:"from_step" valid:"process_step~invalid process step"`
 }
 
 func (a *Api) forceDocumentProcessing(c echo.Context) error {
@@ -110,10 +110,15 @@ func (a *Api) forceDocumentProcessing(c echo.Context) error {
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid step")
 	}
+	steps := append(process.RequiredProcessingSteps(step), step)
 
-	err = a.db.JobStore.ForceProcessing(body.UserId, body.DocumentId, step)
-	if err != nil {
-		return err
+	if body.UserId != 0 {
+		err = a.db.JobStore.ForceProcessingByUser(body.UserId, steps)
+	} else {
+		err = a.db.JobStore.ForceProcessingDocument(body.DocumentId, steps)
+		if err != nil {
+			return err
+		}
 	}
 
 	if body.DocumentId != "" {
@@ -121,7 +126,7 @@ func (a *Api) forceDocumentProcessing(c echo.Context) error {
 		if err != nil {
 			logrus.Errorf("Get document to process: %v", err)
 		} else {
-			err = a.process.AddDocumentForProcessing(doc)
+			err = a.process.AddDocumentForProcessing(doc.Id)
 			if err != nil {
 				logrus.Errorf("schedule document processing: %v", err)
 			}
@@ -145,6 +150,7 @@ func (a *Api) getDocumentProcessQueue(c echo.Context) error {
 	//   200: RespDocumentProcessingSteps
 	//   401: RespForbidden
 	//   500: RespInternalError
+
 	queue, n, err := a.db.JobStore.GetPendingProcessing()
 	if err != nil {
 		return err
@@ -153,7 +159,7 @@ func (a *Api) getDocumentProcessQueue(c echo.Context) error {
 	processes := make([]DocumentProcessStep, len(*queue))
 	for i, v := range *queue {
 		processes[i].DocumentId = v.DocumentId
-		processes[i].Step = v.Step.String()
+		processes[i].Step = v.Action.String()
 	}
 
 	return resourceList(c, processes, n)
@@ -343,7 +349,7 @@ type AdminUpdateUserRequest struct {
 
 func (a *Api) adminUpdateUser(c echo.Context) error {
 	// swagger:route PUT /api/v1/admin/users/:id Admin AdminUpdateUser
-	// Update user
+	// UpdateJob user
 	//
 	// responses:
 	//   200: RespUserInfo

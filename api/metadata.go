@@ -198,7 +198,7 @@ func (a *Api) getMetadataKeyValues(c echo.Context) error {
 
 func (a *Api) updateDocumentMetadata(c echo.Context) error {
 	// swagger:route POST /api/v1/documents/{id}/metadata Documents UpdateDocumentMetadata
-	// Update document metadata
+	// UpdateJob document metadata
 	// Responses:
 	//  200: DocumentResponse
 	ctx := c.(UserContext)
@@ -305,7 +305,7 @@ func (a *Api) addMetadataValue(c echo.Context) error {
 
 func (a *Api) updateMetadataValue(c echo.Context) error {
 	// swagger:route PUT /api/v1/metadata/keys/{id}/values Metadata UpdateMetadataKeyValue
-	// Update metadata key value
+	// UpdateJob metadata key value
 	// Responses:
 	//  200: MetadataKeyValueResponse
 
@@ -355,7 +355,7 @@ func (a *Api) updateMetadataValue(c echo.Context) error {
 		return err
 	}
 
-	err = a.db.JobStore.AddDocumentsByMetadata(ctx.UserId, keyId, valueId, models.ProcessFts)
+	err = a.db.JobStore.IndexDocumentsByMetadata(ctx.UserId, keyId, valueId)
 	if err != nil {
 		return err
 	} else {
@@ -366,7 +366,7 @@ func (a *Api) updateMetadataValue(c echo.Context) error {
 
 func (a *Api) updateMetadataKey(c echo.Context) error {
 	// swagger:route PUT /api/v1/metadata/keys/{id} Metadata UpdateMetadataKeyValues
-	// Update metadata key
+	// UpdateJob metadata key
 	// Responses:
 	//  200: MetadataKeyResponse
 
@@ -409,7 +409,7 @@ func (a *Api) updateMetadataKey(c echo.Context) error {
 		return err
 	}
 
-	err = a.db.JobStore.AddDocumentsByMetadata(ctx.UserId, keyId, 0, models.ProcessFts)
+	err = a.db.JobStore.IndexDocumentsByMetadata(ctx.UserId, keyId, 0)
 	if err != nil {
 		return err
 	} else {
@@ -443,7 +443,7 @@ func (a *Api) deleteMetadataKey(c echo.Context) error {
 	}
 
 	// need to add processing when the metadata still exists
-	err = a.db.JobStore.AddDocumentsByMetadata(ctx.UserId, keyId, 0, models.ProcessFts)
+	err = a.db.JobStore.IndexDocumentsByMetadata(ctx.UserId, keyId, 0)
 	if err != nil {
 		return err
 	}
@@ -489,7 +489,7 @@ func (a *Api) deleteMetadataValue(c echo.Context) error {
 	}
 
 	// need to add processing when the metadata still exists
-	err = a.db.JobStore.AddDocumentsByMetadata(ctx.UserId, keyId, valueId, models.ProcessFts)
+	err = a.db.JobStore.IndexDocumentsByMetadata(ctx.UserId, keyId, valueId)
 	if err != nil {
 		return err
 	}
@@ -527,7 +527,7 @@ func (a *Api) getLinkedDocuments(c echo.Context) error {
 
 func (a *Api) updateLinkedDocuments(c echo.Context) error {
 	// swagger:route PUT /api/v1/documents/{id}/linked-documents Metadata UpdateLinkedDocuments
-	// Update linked documents
+	// UpdateJob linked documents
 	// Responses:
 	//  200:
 
