@@ -22,7 +22,7 @@ run:
 	go run main.go
 
 test-unit: 
-	go test ./api ./cmd ./config ./errors ./mail ./models ./process ./search ./storage
+	go test ./api ./cmd ./config ./errors ./mail ./models ./services ./search ./storage
 
 test-external:
 	# test integration with external programs
@@ -52,7 +52,7 @@ test-start:
 	docker-compose start server
 
 ci-test-unit:
-	 /go/bin/gotestsum --format testname ./api ./cmd ./config ./errors ./mail ./models ./process ./search ./storage
+	 /go/bin/gotestsum --format testname ./api ./cmd ./config ./errors ./mail ./models ./services ./search ./storage
 
 ci-test-api:
 	/go/bin/gotestsum --format testname ./integration_tests -count=1

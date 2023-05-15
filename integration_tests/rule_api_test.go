@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"testing"
 	"tryffel.net/go/virtualpaper/api"
-	"tryffel.net/go/virtualpaper/process"
+	"tryffel.net/go/virtualpaper/services/process"
 )
 
 type RuleApiTestSuite struct {

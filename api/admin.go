@@ -31,8 +31,8 @@ import (
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
-	"tryffel.net/go/virtualpaper/process"
 	"tryffel.net/go/virtualpaper/search"
+	"tryffel.net/go/virtualpaper/services/process"
 )
 
 func (a *Api) AuthorizeAdminV2() echo.MiddlewareFunc {

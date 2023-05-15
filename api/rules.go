@@ -24,10 +24,10 @@ import (
 	"net/http"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
+	"tryffel.net/go/virtualpaper/services/process"
 
 	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/models"
-	"tryffel.net/go/virtualpaper/process"
 )
 
 type Rule struct {

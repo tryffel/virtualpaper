@@ -33,8 +33,8 @@ import (
 	"syscall"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
-	"tryffel.net/go/virtualpaper/process"
 	"tryffel.net/go/virtualpaper/search"
+	"tryffel.net/go/virtualpaper/services/process"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
