@@ -23,7 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"tryffel.net/go/virtualpaper/config"
-	"tryffel.net/go/virtualpaper/mail"
+	"tryffel.net/go/virtualpaper/services/mail"
 )
 
 var manageCmd = &cobra.Command{

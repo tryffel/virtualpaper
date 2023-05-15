@@ -5,7 +5,7 @@ import (
 	"github.com/Masterminds/squirrel"
 	"testing"
 	"tryffel.net/go/virtualpaper/config"
-	"tryffel.net/go/virtualpaper/search"
+	"tryffel.net/go/virtualpaper/services/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
 

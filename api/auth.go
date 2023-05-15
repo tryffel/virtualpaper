@@ -32,8 +32,8 @@ import (
 	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
-	"tryffel.net/go/virtualpaper/mail"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/services/mail"
 )
 
 const (

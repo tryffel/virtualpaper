@@ -34,8 +34,9 @@ import (
 	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
-	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/services/process"
+	"tryffel.net/go/virtualpaper/services/scheduler"
+	"tryffel.net/go/virtualpaper/services/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
@@ -50,7 +51,7 @@ type Api struct {
 	db      *storage.Database
 	search  *search.Engine
 	process *process.Manager
-	cron    *process.CronJobs
+	cron    *scheduler.CronJobs
 }
 
 // NewApi initializes new api instance. It connects to database and opens http port.
@@ -81,7 +82,7 @@ func NewApi(database *storage.Database) (*Api, error) {
 		return api, err
 	}
 
-	api.cron, err = process.NewCron(database)
+	api.cron, err = scheduler.NewCron(database)
 	if err != nil {
 		return api, err
 	}

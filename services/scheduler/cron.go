@@ -1,4 +1,4 @@
-package process
+package scheduler
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
+	"tryffel.net/go/virtualpaper/services/process"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
@@ -140,7 +141,7 @@ func (c *CronJobs) JobCleanupDocumenTrashbins() {
 }
 
 func (c *CronJobs) deleteDocument(docId string) error {
-	err := DeleteDocument(docId)
+	err := process.DeleteDocument(docId)
 	if err != nil {
 		return fmt.Errorf("delete document %s: %v", docId, err)
 	}

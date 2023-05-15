@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 	"tryffel.net/go/virtualpaper/api"
-	"tryffel.net/go/virtualpaper/search"
+	"tryffel.net/go/virtualpaper/services/search"
 )
 
 type SearchAutocompleteTestSuite struct {

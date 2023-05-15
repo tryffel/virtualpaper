@@ -25,13 +25,13 @@ import (
 	"strings"
 	"syscall"
 	"tryffel.net/go/virtualpaper/api"
+	"tryffel.net/go/virtualpaper/services/search"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/models"
-	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
 

@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
-	"tryffel.net/go/virtualpaper/mail"
+	"tryffel.net/go/virtualpaper/services/mail"
 )
 
 // MailEnabled returns true if error mailing is enabled

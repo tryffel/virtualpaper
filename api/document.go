@@ -27,13 +27,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"tryffel.net/go/virtualpaper/services/search"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
-	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/services/process"
 	"tryffel.net/go/virtualpaper/storage"
 )
