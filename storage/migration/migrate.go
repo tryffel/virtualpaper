@@ -103,6 +103,11 @@ var Migrations = []Migrator{
 		Level:  15,
 		Schema: schemaV15,
 	},
+	&Migration{
+		Name:   "split process_queue.step to action and action_order",
+		Level:  16,
+		Schema: schemaV16,
+	},
 }
 
 type Schema struct {
