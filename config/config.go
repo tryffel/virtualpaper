@@ -61,7 +61,6 @@ type Database struct {
 // Processing contains document-processing settings
 type Processing struct {
 	Disabled     bool
-	InputDir     string
 	TmpDir       string
 	DataDir      string
 	MaxWorkers   int
@@ -145,7 +144,6 @@ func ConfigFromViper() error {
 		},
 		Processing: Processing{
 			Disabled:     viper.GetBool("processing.disabled"),
-			InputDir:     viper.GetString("processing.input_dir"),
 			TmpDir:       viper.GetString("processing.tmp_dir"),
 			DataDir:      viper.GetString("processing.data_dir"),
 			MaxWorkers:   viper.GetInt("processing.max_workers"),
@@ -206,8 +204,6 @@ func InitConfig() error {
 
 	var inputChanged, tmpChanged, dataChanged, indexChanged bool
 
-	C.Processing.InputDir, inputChanged = setVar(C.Processing.InputDir, "input")
-
 	defaultTmpDir := os.TempDir()
 	defaultTmpDir = path.Join(defaultTmpDir, "virtualpaper")
 	C.Processing.TmpDir, inputChanged = setVar(C.Processing.TmpDir, defaultTmpDir)
@@ -238,7 +234,6 @@ func InitConfig() error {
 
 	viper.Set("processing.tmp_dir", C.Processing.TmpDir)
 	viper.Set("processing.data_dir", C.Processing.DataDir)
-	viper.Set("processing.input_dir", C.Processing.InputDir)
 
 	viper.Set("logging.log_level", C.Logging.Loglevel)
 	viper.Set("logging.directory", C.Logging.LogDirectory)

@@ -42,7 +42,6 @@ index = "virtualpaper"
 # Processing / application data.
 [processing]
 disabled = false
-input_dir = "input"
 tmp_dir = "/tmp"
 # output directory is where all documents / data is persisted.
 output_dir = "media"

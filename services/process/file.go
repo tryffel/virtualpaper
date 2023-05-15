@@ -288,59 +288,6 @@ func (fp fileProcessor) ensureFileOpenAndLogFailure() error {
 	return nil
 }
 
-/* Old implementation, currently being used when file originates from file system and not from the API */
-func (fp *fileProcessor) processFileV0() {
-	logrus.Infof("task %d, process file %s", fp.id, fp.file)
-
-	fp.lock.Lock()
-	fp.idle = false
-	fp.lock.Unlock()
-	var err error
-
-	err = fp.ensureFileOpen()
-	if err != nil {
-		logrus.Errorf("process file %s: %v", fp.document.Id, err)
-		return
-	}
-
-	defer fp.cleanup()
-
-	if err != nil {
-		logrus.Errorf("process file %s, open: %v", fp.file, err)
-		return
-	}
-
-	duplicate, err := fp.isDuplicate()
-	if duplicate {
-		logrus.Infof("file %s is a duplicate, ignore file", fp.file)
-		return
-	}
-
-	if err != nil {
-		logrus.Errorf("get duplicate status: %v", err)
-		return
-	}
-
-	err = fp.createNewDocumentRecordV0()
-	if err != nil {
-		logrus.Error(err)
-		return
-	}
-
-	logrus.Info("generate thumbnail")
-	err = fp.generateThumbnail()
-	if err != nil {
-		logrus.Errorf("generate thumbnail: %v", err)
-		return
-	}
-
-	logrus.Info("parse content")
-	err = fp.parseContent()
-	if err != nil {
-		logrus.Errorf("Parse document content: %v", err)
-	}
-}
-
 func (fp *fileProcessor) isDuplicate() (bool, error) {
 	err := fp.ensureFileOpen()
 	if err != nil {
@@ -363,52 +310,6 @@ func (fp *fileProcessor) isDuplicate() (bool, error) {
 		return true, nil
 	}
 	return false, nil
-}
-
-func (fp *fileProcessor) createNewDocumentRecordV0() error {
-	fullDir, fileName := path.Split(fp.file)
-	fullDir = strings.TrimSuffix(fullDir, "/")
-	fullDir = strings.TrimSuffix(fullDir, "\\")
-	_, userName := path.Split(fullDir)
-	userName = strings.Trim(userName, "/\\")
-
-	user, err := fp.db.UserStore.GetUserByName(userName)
-	if err != nil {
-		if errors.Is(err, errors.ErrRecordNotFound) {
-			return fmt.Errorf("unable to process document from input dir, since user '%s' does not exist. Ensure "+
-				"user has properly named directory assigned to them, and add documents there", userName)
-		} else {
-			return fmt.Errorf("get user: %v", err)
-		}
-	}
-
-	doc := &models.Document{
-		UserId:   user.Id,
-		Name:     fileName,
-		Content:  "",
-		Filename: fileName,
-		Date:     time.Now(),
-	}
-	doc.UpdatedAt = time.Now()
-	doc.CreatedAt = time.Now()
-
-	err = fp.ensureFileOpen()
-	if err != nil {
-		return err
-	}
-
-	doc.Hash, err = GetFileHash(fp.rawFile)
-	if err != nil {
-		return fmt.Errorf("get hash: %v", err)
-	}
-
-	err = fp.db.DocumentStore.Create(doc)
-	if err != nil {
-		return fmt.Errorf("store document: %s", err)
-	}
-
-	fp.document = doc
-	return nil
 }
 
 func (fp *fileProcessor) indexSearchContent() error {

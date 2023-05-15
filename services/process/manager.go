@@ -2,17 +2,11 @@ package process
 
 import (
 	"errors"
-	"fmt"
-	"os"
-	"path"
-	"path/filepath"
 	"sync"
 	"time"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
-	config "tryffel.net/go/virtualpaper/config"
-	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
@@ -38,8 +32,6 @@ type Manager struct {
 
 	tasks    []*fileProcessor
 	numtasks int
-
-	inputWatch *fsnotify.Watcher
 
 	checkJobstimer *time.Timer
 	runFunctimer   *time.Timer
@@ -86,7 +78,6 @@ func NewManager(database *storage.Database, search *search.Engine) (*Manager, er
 		}
 		manager.tasks[i] = newFileProcessor(conf)
 	}
-	manager.inputWatch, err = fsnotify.NewWatcher()
 	return manager, err
 }
 
@@ -101,25 +92,6 @@ func (m *Manager) Start() error {
 	}
 
 	logrus.Info("Start background worker")
-	logrus.Infof("Watch directory %s", config.C.Processing.InputDir)
-
-	if config.C.Processing.InputDir != "" {
-		logrus.Infof("add directory wath for %s", config.C.Processing.InputDir)
-
-		err := filepath.Walk(config.C.Processing.InputDir, func(filepath string, info os.FileInfo, err error) error {
-			logrus.Debugf("add dir watch for: %s", filepath)
-			err = m.inputWatch.Add(filepath)
-			if err != nil {
-				_, file := path.Split(filepath)
-				return fmt.Errorf(file)
-			}
-			return err
-		})
-		if err != nil {
-			logrus.Errorf("add input watch: %v", err)
-		}
-	}
-
 	for _, task := range m.tasks {
 		task.Start()
 	}
@@ -140,7 +112,6 @@ func (m *Manager) Start() error {
 		for m.isRunning() {
 			m.runFunc()
 		}
-		m.inputWatch.Close()
 		logrus.Debug("background task manager stopped")
 	}
 
@@ -266,16 +237,6 @@ func (m *Manager) runFunc() {
 		m.PullDocumentsToProcess()
 		m.checkJobstimer.Reset(idleCheckDocumentsForProcessingSec)
 
-	case event, ok := <-m.inputWatch.Events:
-		if ok {
-			logrus.Infof("Got file watcher event: %v", event)
-		}
-
-		if event.Op == fsnotify.Write {
-			logrus.Infof("Schedule processing for file %s", event.Name)
-			m.scheduleNewOp(event.Name, nil)
-		}
-		m.PullDocumentsToProcess()
 	case report := <-m.reportChan:
 		logrus.Infof("Got task report: %v", report)
 
