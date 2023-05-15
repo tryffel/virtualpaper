@@ -2,11 +2,10 @@ package storage
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
+	"time"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 )
@@ -409,22 +408,20 @@ func (s *JobStore) IndexDocumentsByMetadata(userId int, keyId int, valueId int) 
 	return getDatabaseError(err, s, "queue documents by metadata")
 }
 
-func (s *JobStore) AddDocuments(userId int, documents []string, step models.ProcessStep) error {
+func (s *JobStore) AddDocuments(userId int, documents []string, steps []models.ProcessStep) error {
 
-	//steps := models.ProcessStepsAll[step-1:]
-	steps := models.ProcessStepsAll
 	stepsSql := ""
 	for i, v := range steps {
 		if i != 0 {
 			stepsSql += ", "
 		}
 		val, _ := v.Value()
-		stepsSql += fmt.Sprintf("(%d)", val)
+		stepsSql += fmt.Sprintf("('%s', %d)", val, models.ProcessStepsOrder[v])
 	}
 
-	selectQuery := s.sq.Select("documents.id as document_id, steps.step").
+	selectQuery := s.sq.Select("documents.id as document_id, steps.action, steps.action_order").
 		From("documents").
-		Join(fmt.Sprintf("(SELECT DISTINCT * FROM (VALUES %s) AS v) AS steps(step) ON TRUE", stepsSql))
+		Join(fmt.Sprintf("(SELECT DISTINCT * FROM (VALUES %s) AS v) AS steps(action, action_order) ON TRUE", stepsSql))
 
 	if userId != 0 {
 		selectQuery = selectQuery.Where("documents.user_id=?", userId)
@@ -432,7 +429,7 @@ func (s *JobStore) AddDocuments(userId int, documents []string, step models.Proc
 
 	selectQuery = selectQuery.Where(squirrel.Eq{"documents.id": documents})
 	query := s.sq.Insert("process_queue").
-		Columns("document_id", "step").
+		Columns("document_id", "action", "action_order").
 		Select(selectQuery)
 
 	sql, args, err := query.ToSql()

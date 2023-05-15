@@ -115,8 +115,13 @@ func (suite *UploadDocumentSuite) TestUploadSchedulesProcessing() {
 func (suite *UploadDocumentSuite) TestEditSchedulesProcessing() {
 	docId := uploadDocument(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 20)
 	doc := getDocument(suite.T(), suite.userHttp, docId, 200)
+	logs := getDocumentProcessingSteps(suite.T(), suite.userHttp, docId, 200)
+	assert.Equal(suite.T(), 5, len(*logs))
 
 	editedDoc := updateDocument(suite.T(), suite.userHttp, doc, 200)
+	time.Sleep(time.Millisecond * 500)
+	logs = getDocumentProcessingSteps(suite.T(), suite.userHttp, docId, 200)
+	assert.Equal(suite.T(), 6, len(*logs))
 
 	assert.Equal(suite.T(), doc.Id, editedDoc.Id, "id matches")
 	assert.NotEqual(suite.T(), doc.CreatedAt, editedDoc.UpdatedAt, "updated_at is updated")
@@ -138,12 +143,9 @@ func (suite *UploadDocumentSuite) TestEditSchedulesProcessing() {
 	history := getDocumentHistory(suite.T(), suite.userHttp, doc.Id, 200)
 	assert.Equal(suite.T(), 4, len(*history))
 
-	logs := getDocumentProcessingSteps(suite.T(), suite.userHttp, docId, 200)
+	logs = getDocumentProcessingSteps(suite.T(), suite.userHttp, docId, 200)
 
-	// sometimes additional indexing step is created. Amount is thus 6 or 7 steps
-	assert.GreaterOrEqual(suite.T(), len(*logs), 6, "6-7 steps")
-	assert.LessOrEqual(suite.T(), len(*logs), 7, "6-7 steps")
-	assert.True(suite.T(), strings.HasPrefix((*logs)[5].Message, "index for search engine"))
+	assert.Equal(suite.T(), 7, len(*logs))
 	assert.Equal(suite.T(), (*logs)[5].Status, models.JobFinished)
 }
 

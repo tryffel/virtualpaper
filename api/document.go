@@ -667,7 +667,7 @@ func (a *Api) requestDocumentProcessing(c echo.Context) error {
 		return respForbiddenV2()
 	}
 
-	steps := process.RequiredProcessingSteps(models.ProcessRules)
+	steps := append(process.RequiredProcessingSteps(models.ProcessRules), models.ProcessRules)
 	err = a.db.JobStore.ForceProcessingDocument(id, steps)
 	if err != nil {
 		return err
@@ -806,7 +806,7 @@ func (a *Api) bulkEditDocuments(c echo.Context) error {
 	}
 
 	// need to reindex
-	err = a.db.JobStore.AddDocuments(ctx.UserId, dto.Documents, models.ProcessFts)
+	err = a.db.JobStore.AddDocuments(ctx.UserId, dto.Documents, []models.ProcessStep{models.ProcessFts})
 	if err != nil {
 		if errors.Is(err, errors.ErrAlreadyExists) {
 			// already indexing, skip
