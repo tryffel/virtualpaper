@@ -49,6 +49,7 @@ var dbProcessingRuleTables = []string{
 var dbDocumentTables = []string{
 	"document_view_history",
 	"document_history",
+	"linked_documents",
 	"jobs",
 	"documents",
 }

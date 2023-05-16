@@ -504,7 +504,8 @@ func (a *Api) deleteMetadataValue(c echo.Context) error {
 }
 
 type linkedDocumentParams struct {
-	DocumentIds []string `json:"documents" valid:"uuidarray~Invalid ids"`
+	// optional when document list is empty = clear linked documents
+	DocumentIds []string `json:"documents" valid:"optional,uuidarray~Invalid ids"`
 }
 
 func (a *Api) getLinkedDocuments(c echo.Context) error {
