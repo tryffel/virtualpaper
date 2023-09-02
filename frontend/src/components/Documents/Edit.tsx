@@ -199,7 +199,7 @@ export const MetadataValueInput = (props: MetadataValueInputProps) => {
   }
 };
 
-const LanguageSelectInput = (props: any) => {
+export const LanguageSelectInput = (props: any) => {
   const choices = Object.keys(languages).map((key) => {
     return {
       id: key,

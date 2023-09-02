@@ -32,6 +32,7 @@ import {
   useNotify,
   useRedirect,
   TopToolbar,
+  DateInput,
 } from "react-admin";
 import {
   Typography,
@@ -43,7 +44,7 @@ import {
 import { ExpandMore, Clear } from "@mui/icons-material";
 import { HelpButton } from "../Help";
 import { DocumentCard } from "./DocumentCard";
-import { MetadataValueInput } from "./Edit";
+import { LanguageSelectInput, MetadataValueInput } from "./Edit";
 
 interface Metadata {
   KeyId: number;
@@ -88,11 +89,17 @@ const BulkEditDocuments = () => {
     return <Loading />;
   }
 
+  const transform = (data: any) => ({
+    ...data,
+    date: Date.parse(`${data.date}`),
+  });
+
   return (
     <CreateBase
       record={emptyRecord}
       redirect="false"
       mutationOptions={{ onSuccess }}
+      transform={transform}
     >
       <SimpleForm>
         <Toolbar cancel={cancel} />
@@ -196,6 +203,17 @@ const BulkEditDocuments = () => {
                   </FormDataConsumer>
                 </SimpleFormIterator>
               </ArrayInput>
+            </AccordionDetails>
+          </Accordion>
+        </Box>
+        <Box width="100%">
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMore />}>
+              <Typography variant="h5">General</Typography>
+            </AccordionSummary>
+            <AccordionDetails style={{ flexDirection: "column" }}>
+              <LanguageSelectInput source={"lang"} label={"Language"} />
+              <DateInput source="date" />
             </AccordionDetails>
           </Accordion>
         </Box>

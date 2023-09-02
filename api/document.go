@@ -739,6 +739,8 @@ type BulkEditDocumentsRequest struct {
 	Documents      []string              `json:"documents" valid:"required"`
 	AddMetadata    MetadataUpdateRequest `json:"add_metadata" valid:"-"`
 	RemoveMetadata MetadataUpdateRequest `json:"remove_metadata" valid:"-"`
+	Lang           string                `json:"lang" valid:"language, optional"`
+	Date           int64                 `json:"date" valid:"optional,range(0|4106139691000)"` // year 2200 in ms
 }
 
 func (a *Api) bulkEditDocuments(c echo.Context) error {
@@ -761,14 +763,14 @@ func (a *Api) bulkEditDocuments(c echo.Context) error {
 		return err
 	}
 
-	if len(dto.RemoveMetadata.Metadata) == 0 && len(dto.AddMetadata.Metadata) == 0 {
+	if len(dto.RemoveMetadata.Metadata) == 0 && len(dto.AddMetadata.Metadata) == 0 && dto.Lang == "" && dto.Date == 0 {
 		userErr := errors.ErrAlreadyExists
 		userErr.ErrMsg = "no documents modified"
 		return userErr
 	}
 	opOk := false
-	defer logCrudDocument(ctx.UserId, "bulk edit", &opOk, "documents: %v, add metadata: %d, remove metadata: %d",
-		len(dto.Documents), len(dto.AddMetadata.Metadata), len(dto.RemoveMetadata.Metadata))
+	defer logCrudDocument(ctx.UserId, "bulk edit", &opOk, "documents: %v, add metadata: %d, remove metadata: %d, set lang: '%s'",
+		len(dto.Documents), len(dto.AddMetadata.Metadata), len(dto.RemoveMetadata.Metadata), dto.Lang)
 
 	owns, err := a.db.DocumentStore.UserOwnsDocuments(ctx.UserId, dto.Documents)
 	if err != nil {
@@ -806,6 +808,14 @@ func (a *Api) bulkEditDocuments(c echo.Context) error {
 		}
 
 		err = a.db.MetadataStore.DeleteDocumentsMetadata(ctx.UserId, dto.Documents, removeMetadata)
+		if err != nil {
+			return err
+		}
+	}
+
+	if dto.Lang != "" || dto.Date != 0 {
+		date := time.Unix(dto.Date/1000, 0)
+		err := a.db.DocumentStore.BulkUpdateDocuments(ctx.UserId, dto.Documents, models.Lang(dto.Lang), date)
 		if err != nil {
 			return err
 		}

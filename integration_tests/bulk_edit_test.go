@@ -4,6 +4,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"testing"
+	"time"
 	"tryffel.net/go/virtualpaper/api"
 	"tryffel.net/go/virtualpaper/models"
 )
@@ -175,6 +176,66 @@ func (suite *BulkEditTestSuite) TestAddMetadata() {
 
 }
 
+func (suite *BulkEditTestSuite) TestSetLang() {
+	originalX86 := getDocument(suite.T(), suite.userHttp, testDocumentX86.Id, 200)
+	originalX86Intel := getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
+	originalMetamorphosis := getDocument(suite.T(), suite.userHttp, testDocumentMetamorphosis.Id, 200)
+
+	assert.Equal(suite.T(), "", originalX86.Lang)
+	assert.Equal(suite.T(), "", originalX86Intel.Lang)
+	assert.Equal(suite.T(), "", originalMetamorphosis.Lang)
+
+	suite.T().Log("bulk edit two documents, set language")
+	doBulkEditRequest(suite.T(), suite.userHttp, &api.BulkEditDocumentsRequest{
+		Documents: []string{
+			originalX86.Id,
+			originalMetamorphosis.Id,
+		},
+		Lang: "af",
+	}, 200)
+
+	editedX86 := getDocument(suite.T(), suite.userHttp, testDocumentX86.Id, 200)
+	unEditedX86 := getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
+	editedMetamorphosis := getDocument(suite.T(), suite.userHttp, testDocumentMetamorphosis.Id, 200)
+
+	assert.Equal(suite.T(), "af", editedX86.Lang)
+	assert.Equal(suite.T(), "af", editedMetamorphosis.Lang)
+	assert.Equal(suite.T(), "", unEditedX86.Lang)
+}
+
+func (suite *BulkEditTestSuite) TestSetDate() {
+	originalX86 := getDocument(suite.T(), suite.userHttp, testDocumentX86.Id, 200)
+	originalX86Intel := getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
+	originalMetamorphosis := getDocument(suite.T(), suite.userHttp, testDocumentMetamorphosis.Id, 200)
+
+	originalDate := midnightForUnixMilli(defaultDate.UnixMilli())
+
+	assert.Equal(suite.T(), originalDate, midnightForUnixMilli(originalX86.Date))
+	assert.Equal(suite.T(), originalDate, midnightForUnixMilli(originalX86Intel.Date))
+	assert.Equal(suite.T(), originalDate, midnightForUnixMilli(originalMetamorphosis.Date))
+
+	newDate := defaultDate.AddDate(0, 3, 5)
+
+	suite.T().Log("bulk edit two documents, set date")
+	doBulkEditRequest(suite.T(), suite.userHttp, &api.BulkEditDocumentsRequest{
+		Documents: []string{
+			originalX86.Id,
+			originalMetamorphosis.Id,
+		},
+		Date: newDate.UnixMilli(),
+	}, 200)
+
+	editedX86 := getDocument(suite.T(), suite.userHttp, testDocumentX86.Id, 200)
+	unEditedX86 := getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
+	editedMetamorphosis := getDocument(suite.T(), suite.userHttp, testDocumentMetamorphosis.Id, 200)
+
+	newDateMilli := midnightForUnixMilli(newDate.UnixMilli())
+
+	assert.Equal(suite.T(), newDateMilli, midnightForUnixMilli(editedX86.Date))
+	assert.Equal(suite.T(), newDateMilli, midnightForUnixMilli(editedMetamorphosis.Date))
+	assert.Equal(suite.T(), originalDate, midnightForUnixMilli(unEditedX86.Date))
+}
+
 func (suite *BulkEditTestSuite) TestPermissionDenied() {
 	suite.T().Log("attempt to edit document that's not ours")
 	doBulkEditRequest(suite.T(), suite.userHttp, &api.BulkEditDocumentsRequest{
@@ -267,4 +328,8 @@ func doBulkEditRequest(t *testing.T, client *httpClient, req *api.BulkEditDocume
 
 func TestBulkEditDocuments(t *testing.T) {
 	suite.Run(t, new(BulkEditTestSuite))
+}
+
+func midnightForUnixMilli(millis int64) int64 {
+	return models.MidnightForDate(time.UnixMilli(millis)).UnixMilli()
 }

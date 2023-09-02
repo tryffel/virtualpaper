@@ -468,3 +468,21 @@ func (s *DocumentStore) GetDocumentsInTrashbin(deletedAt time.Time) ([]string, e
 	}
 	return ids, nil
 }
+
+func (s *DocumentStore) BulkUpdateDocuments(userId int, docs []string, lang models.Lang, date time.Time) error {
+	query := s.sq.Update("documents")
+	if lang.String() != "" {
+		query = query.Set("lang", lang)
+	}
+	if !date.IsZero() {
+		query = query.Set("date", date)
+	}
+
+	query = query.Where("user_id = ?", userId).Where(squirrel.Eq{"id": docs})
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return fmt.Errorf("sql: %v", err)
+	}
+	_, err = s.db.Exec(sql, args...)
+	return getDatabaseError(err, s, "bulk update document lang")
+}
