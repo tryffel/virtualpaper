@@ -58,6 +58,24 @@ func (m *MetadataStore) cacheNameUserKeyValues(userId int, key string) string {
 	return fmt.Sprintf("user-%d-key-%s-values", userId, key)
 }
 
+func (m *MetadataStore) cacheNameUserLangs(userId int) string {
+	return fmt.Sprintf("user-%d-languages", userId)
+}
+
+func (m *MetadataStore) getCachedLangs(userId int) *[]string {
+	data, ok := m.cache.Get(m.cacheNameUserLangs(userId))
+	if !ok {
+		return nil
+	}
+
+	langs, ok := data.(*[]string)
+	if !ok {
+		m.cache.Delete(m.cacheNameUserLangs(userId))
+		return nil
+	}
+	return langs
+}
+
 func (m *MetadataStore) getCachedKeys(userId int) *[]models.MetadataKey {
 	data, ok := m.cache.Get(m.cacheNameUserKeys(userId))
 	if !ok {
@@ -212,6 +230,34 @@ func (s *MetadataStore) GetUserKeyValuesCached(userId int, key string) (*[]model
 	}
 
 	s.cache.SetDefault(s.cacheNameUserKeyValues(userId, key), values)
+	return values, nil
+}
+
+func (s *MetadataStore) GetUserLangsCached(userId int) (*[]string, error) {
+	values := s.getCachedLangs(userId)
+	if values != nil {
+		return values, nil
+	}
+
+	type result struct {
+		Lang string `db:"lang"`
+	}
+
+	query := "select distinct(lang) as lang from documents where user_id = $1"
+
+	results := &[]result{}
+	err := s.db.Select(results, query, userId)
+	if err != nil {
+		return &[]string{}, s.parseError(err, "get key values")
+	}
+
+	valuesP := make([]string, len(*results))
+	values = &valuesP
+	for i, v := range *results {
+		(*values)[i] = v.Lang
+	}
+
+	s.cache.SetDefault(s.cacheNameUserLangs(userId), values)
 	return values, nil
 }
 

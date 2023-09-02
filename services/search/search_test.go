@@ -301,6 +301,18 @@ func Test_parseFilter(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "lang",
+			args: args{"lang:en key:value and some text"},
+			want: &searchQuery{
+				RawQuery:       "lang:en key:value and some text",
+				MetadataQuery:  []string{`metadata="key:value"`, "AND"},
+				MetadataString: `metadata="key:value" AND`,
+				Query:          "some text",
+				Lang:           "en",
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
