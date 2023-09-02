@@ -94,6 +94,27 @@ func (m *metadataSuggest) queryValues(key, value string) []string {
 	return data
 }
 
+func (m *metadataSuggest) queryLangs(key string) []string {
+	candidates, err := m.db.MetadataStore.GetUserLangsCached(m.userId)
+	if err != nil {
+		logrus.Error(err)
+		return []string{}
+	}
+
+	lowerKey := strings.ToLower(key)
+	values := make([]string, 0, MaxSuggestMetadata)
+	for _, v := range *candidates {
+		if strings.Contains(v, lowerKey) {
+			values = append(values, v)
+		}
+	}
+
+	if len(values) > MaxSuggestMetadata {
+		values = (values)[:MaxSuggestMetadata]
+	}
+	return values
+}
+
 type searchQuery struct {
 	RawQuery       string
 	Query          string
@@ -104,6 +125,7 @@ type searchQuery struct {
 	DateAfter      time.Time
 	MetadataQuery  []string
 	MetadataString string
+	Lang           string
 	Suggestions    []string
 }
 
@@ -113,17 +135,16 @@ func (s *searchQuery) addSuggestion(text string) {
 }
 
 func (s *searchQuery) prepareMeiliQuery(userId int, sort storage.SortKey, paging storage.Paging) *meilisearch.SearchRequest {
-
 	request := &meilisearch.SearchRequest{
 		Offset:                int64(paging.Offset),
 		Limit:                 int64(paging.Limit),
-		AttributesToRetrieve:  []string{"document_id", "name", "content", "description", "date", "mimetype"},
+		AttributesToRetrieve:  []string{"document_id", "name", "content", "description", "date", "mimetype", "lang"},
 		AttributesToCrop:      []string{"content"},
 		CropLength:            1000,
 		AttributesToHighlight: []string{"name"},
 		PlaceholderSearch:     false,
 	}
-	filter := s.MetadataString
+	filter := strings.TrimSuffix(s.MetadataString, "AND")
 	if s.Query == "" {
 		request.PlaceholderSearch = true
 	}
@@ -141,13 +162,8 @@ func (s *searchQuery) prepareMeiliQuery(userId int, sort storage.SortKey, paging
 	if !s.DateBefore.IsZero() {
 		datefilters = append(datefilters, fmt.Sprintf("date < %d", s.DateBefore.Unix()))
 		logrus.Tracef("search before %s", s.DateBefore.Format("2006-1-2"))
+	}
 
-	}
-	if len(datefilters) > 0 {
-		filter = strings.Join(append(datefilters, filter), " AND ")
-	}
-	filter = strings.TrimSuffix(filter, " ")
-	filter = strings.TrimSuffix(filter, " AND")
 	//logrus.Infof("filter: %s", filter)
 	// TODO : fix
 	//if sort.Key != "" {
@@ -156,13 +172,28 @@ func (s *searchQuery) prepareMeiliQuery(userId int, sort storage.SortKey, paging
 
 	if s.Name != "" {
 		q := fmt.Sprintf(`name="%s"`, s.Name)
-		filter = strings.Join([]string{filter, q}, " AND ")
+		datefilters = append(datefilters, q)
 	} else if s.Description != "" {
 		q := fmt.Sprintf(`description="%s"`, s.Description)
-		filter = strings.Join([]string{filter, q}, " AND ")
+		datefilters = append(datefilters, q)
 	} else if s.Content != "" {
 		q := fmt.Sprintf(`content="%s"`, s.Content)
-		filter = strings.Join([]string{filter, q}, " AND ")
+		datefilters = append(datefilters, q)
+	}
+	if s.Lang != "" {
+		q := fmt.Sprintf("lang=%s", s.Lang)
+		datefilters = append(datefilters, q)
+	}
+
+	filter = strings.Trim(filter, " ")
+	filter = strings.TrimSuffix(filter, "AND")
+	filter = strings.TrimPrefix(filter, "AND")
+	if len(datefilters) > 0 {
+		if filter != "" {
+			filter = strings.Join(append([]string{filter}, datefilters...), " AND ")
+		} else {
+			filter = strings.Join(datefilters, " AND ")
+		}
 	}
 
 	if filter != "" {
@@ -247,7 +278,7 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 		}
 	}
 
-	keys := []string{"name", "description", "content", "date"}
+	keys := []string{"name", "description", "content", "date", "lang"}
 	operators := []string{"AND", "OR", "NOT"}
 
 	parts := strings.Split(lastToken, ":")
@@ -298,6 +329,16 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 				//tokenPrefix = "date:"
 				addWhiteSpace = false
 				for _, v := range dateSuggestions {
+					qs.addSuggestionValues(v, SuggestionTypeKey, "")
+				}
+			}
+		} else if parts[0] == "lang" {
+			langSuggestions := metadata.queryLangs(parts[1])
+			tokenPrefix = "lang:"
+			if len(langSuggestions) > 0 {
+				//tokenPrefix = "date:"
+				addWhiteSpace = false
+				for _, v := range langSuggestions {
 					qs.addSuggestionValues(v, SuggestionTypeKey, "")
 				}
 			}
@@ -534,4 +575,5 @@ func parseDateFromLayout(token string, addDigit bool, removeDigit bool) time.Tim
 type metadataQuerier interface {
 	queryKeys(key string, prefis string, suffix string) []string
 	queryValues(key, value string) []string
+	queryLangs(key string) []string
 }

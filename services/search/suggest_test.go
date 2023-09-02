@@ -154,6 +154,9 @@ func (m *metadata) queryValues(key, value string) []string {
 	}
 	return results
 }
+func (m *metadata) queryLangs(key string) []string {
+	return []string{"fi", "en"}
+}
 
 func Test_suggest(t *testing.T) {
 	metadata := newMetadata()
@@ -308,6 +311,13 @@ func Test_suggest(t *testing.T) {
 			name: "metadata value match no suggestion",
 			args: args{"one topic:technology"},
 			want: &QuerySuggestions{Suggestions: []Suggestion{}, Prefix: "one topic:technology", ValidQuery: false},
+		},
+		{
+			name: "lang",
+			args: args{"one lan"},
+			want: &QuerySuggestions{Suggestions: []Suggestion{
+				{Value: "lang:", Type: "key"},
+			}, Prefix: "one ", ValidQuery: false},
 		},
 	}
 

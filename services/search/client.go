@@ -138,6 +138,7 @@ func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 			"date":        v.Date.Unix(),
 			"description": v.Description,
 			"mimetype":    v.Mimetype,
+			"lang":        v.Lang,
 		}
 	}
 
@@ -340,6 +341,7 @@ func (e *Engine) AddUserIndex(userId int) error {
 			"metadata_key",
 			"metadata_value",
 			"mimetype",
+			"lang",
 		}
 		_, err = e.client.Index(index).UpdateFilterableAttributes(fields)
 		if err != nil {

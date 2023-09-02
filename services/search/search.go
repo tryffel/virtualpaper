@@ -89,6 +89,7 @@ func (e *Engine) SearchDocuments(userId int, query string, sort storage.SortKey,
 			doc.Description = getString("description", isMap)
 			doc.Date = time.Unix(int64(getInt("date", isMap)), 0)
 			doc.Mimetype = getString("mimetype", isMap)
+			doc.Lang = models.Lang(getString("lang", isMap))
 			docs[i] = doc
 
 			formatted := isMap["_formatted"]
@@ -209,6 +210,7 @@ func parseFilter(filter string) (*searchQuery, error) {
 		"name":        parseName,
 		"content":     parseContent,
 		"description": parseDescription,
+		"lang":        parseLang,
 	}
 
 	tokensLeft := tokens
@@ -283,6 +285,11 @@ func parseDate(value string, sq *searchQuery) bool {
 
 func parseName(value string, sq *searchQuery) bool {
 	sq.Name = value
+	return true
+}
+
+func parseLang(value string, sq *searchQuery) bool {
+	sq.Lang = value
 	return true
 }
 
