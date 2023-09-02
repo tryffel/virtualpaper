@@ -70,7 +70,7 @@ func RequiredProcessingSteps(startingStep models.ProcessStep) []models.ProcessSt
 	switch startingStep {
 	case models.ProcessHash, models.ProcessThumbnail, models.ProcessFts:
 		return []models.ProcessStep{}
-	case models.ProcessParseContent, models.ProcessRules:
+	case models.ProcessParseContent, models.ProcessRules, models.ProcessDetectLanguage:
 		return []models.ProcessStep{models.ProcessFts}
 	}
 	return []models.ProcessStep{}

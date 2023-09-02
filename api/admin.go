@@ -103,6 +103,8 @@ func (a *Api) forceDocumentProcessing(c echo.Context) error {
 		step = models.ProcessThumbnail
 	case "content":
 		step = models.ProcessParseContent
+	case "detect-language":
+		step = models.ProcessDetectLanguage
 	case "rules":
 		step = models.ProcessRules
 	case "fts":

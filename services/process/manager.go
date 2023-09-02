@@ -61,6 +61,7 @@ func NewManager(database *storage.Database, search *search.Engine) (*Manager, er
 	}
 
 	buildMimeDataMapping()
+	initLanguageDetector()
 
 	count := config.C.Processing.MaxWorkers
 	manager.numtasks = count

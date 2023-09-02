@@ -86,31 +86,34 @@ func (jc *JobComposite) SetDuration() {
 type ProcessStep string
 
 const (
-	ProcessHash         ProcessStep = "hash"
-	ProcessThumbnail    ProcessStep = "thumbnail"
-	ProcessParseContent ProcessStep = "extract"
-	ProcessRules        ProcessStep = "rules"
-	ProcessFts          ProcessStep = "fts"
+	ProcessHash           ProcessStep = "hash"
+	ProcessThumbnail      ProcessStep = "thumbnail"
+	ProcessParseContent   ProcessStep = "extract"
+	ProcessDetectLanguage ProcessStep = "detect-language"
+	ProcessRules          ProcessStep = "rules"
+	ProcessFts            ProcessStep = "fts"
 )
 
 // ProcessStepsAll is a list of default steps to run for new document.
-var ProcessStepsAll = []ProcessStep{ProcessHash, ProcessThumbnail, ProcessParseContent, ProcessRules, ProcessFts}
+var ProcessStepsAll = []ProcessStep{ProcessHash, ProcessThumbnail, ProcessParseContent, ProcessDetectLanguage, ProcessRules, ProcessFts}
 
 // ProcessStepsOrder is the order in which the steps are to be run in ascending order.
 var ProcessStepsOrder = map[ProcessStep]int{
-	ProcessHash:         1,
-	ProcessThumbnail:    2,
-	ProcessParseContent: 3,
-	ProcessRules:        4,
-	ProcessFts:          5,
+	ProcessHash:           1,
+	ProcessThumbnail:      2,
+	ProcessParseContent:   3,
+	ProcessDetectLanguage: 4,
+	ProcessRules:          5,
+	ProcessFts:            6,
 }
 
 var ProcessStepsKeys = map[ProcessStep]string{
-	ProcessHash:         "hash",
-	ProcessThumbnail:    "thumbnail",
-	ProcessParseContent: "content",
-	ProcessRules:        "rules",
-	ProcessFts:          "fts",
+	ProcessHash:           "hash",
+	ProcessThumbnail:      "thumbnail",
+	ProcessParseContent:   "content",
+	ProcessDetectLanguage: "detect-language",
+	ProcessRules:          "rules",
+	ProcessFts:            "fts",
 }
 
 func (ps *ProcessStep) Value() (driver.Value, error) {

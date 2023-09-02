@@ -211,6 +211,9 @@ func init() {
 		}
 		return false
 	})
+	govalidator.TagMap["language"] = govalidator.Validator(func(str string) bool {
+		return process.SupportedLanguages[str] != ""
+	})
 }
 
 //go:embed swaggerdocs/swagger.json

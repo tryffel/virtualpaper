@@ -60,6 +60,7 @@ type DocumentResponse struct {
 	Status      string            `json:"status"`
 	Metadata    []models.Metadata `json:"metadata"`
 	Tags        []models.Tag      `json:"tags"`
+	Lang        string            `json:"lang"`
 }
 
 func responseFromDocument(doc *models.Document) *DocumentResponse {
@@ -80,6 +81,7 @@ func responseFromDocument(doc *models.Document) *DocumentResponse {
 		PrettySize:  doc.GetSize(),
 		Metadata:    doc.Metadata,
 		Tags:        doc.Tags,
+		Lang:        doc.Lang.String(),
 	}
 	if doc.DeletedAt.Valid {
 		resp.DeletedAt = doc.DeletedAt.Time.Unix() * 1000
@@ -103,6 +105,7 @@ type DocumentUpdateRequest struct {
 	Filename    string            `json:"filename" valid:"optional"`
 	Date        int64             `json:"date" valid:"optional,range(0|4106139691000)"` // year 2200 in ms
 	Metadata    []MetadataRequest `json:"metadata" valid:"-"`
+	Lang        string            `json:"lang" valid:"language, optional"`
 }
 
 func (a *Api) getDocuments(c echo.Context) error {

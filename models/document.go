@@ -47,6 +47,7 @@ type Document struct {
 	Date        time.Time `db:"date"`
 	Metadata    []Metadata
 	Tags        []Tag
+	Lang        Lang `db:"lang"`
 
 	DeletedAt sql.NullTime `db:"deleted_at"`
 }

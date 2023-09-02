@@ -108,6 +108,11 @@ var Migrations = []Migrator{
 		Level:  16,
 		Schema: schemaV16,
 	},
+	&Migration{
+		Name:   "add list of languages",
+		Level:  17,
+		Schema: schemaV17,
+	},
 }
 
 type Schema struct {
