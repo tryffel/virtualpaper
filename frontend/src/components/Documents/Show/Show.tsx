@@ -102,6 +102,7 @@ function DocumentJobListItem(props: any) {
 export const DocumentTopRow = () => {
   const record = useRecordContext();
   const isDeleted = get(record, "deleted_at") !== null;
+  const hasLang = get(record, "lang") !== "";
 
   const getDateString = (): string => {
     if (!record) {
@@ -133,13 +134,14 @@ export const DocumentTopRow = () => {
           }}
           sx={{ m: 0.5 }}
         />
-
-        <Badge
-          label={getLang()}
-          variant="outlined"
-          color={"primary"}
-          sx={{ m: 0.5 }}
-        />
+        {hasLang && (
+          <Badge
+            label={getLang()}
+            variant="outlined"
+            color={"primary"}
+            sx={{ m: 0.5 }}
+          />
+        )}
         <Badge
           label={getMimeTypeName()}
           variant="filled"
