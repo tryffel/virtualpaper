@@ -300,6 +300,7 @@ const (
 	DocumentHistoryActionRename         = "rename"
 	DocumentHistoryActionDescription    = "description"
 	DocumentHistoryActionDate           = "date"
+	DocumentHistoryActionLanguage       = "lang"
 	DocumentHistoryActionContent        = "content"
 	DocumentHistoryActionMetadataRemove = "remove metadata"
 	DocumentHistoryActionMetadataAdd    = "add metadata"
@@ -340,6 +341,9 @@ func (d *Document) Diff(newDocument *Document, userId int) ([]DocumentHistory, e
 
 	if d.Content != d2.Content {
 		addHistoryItem(DocumentHistoryActionContent, d.Content, d2.Content)
+	}
+	if d.Lang != d2.Lang {
+		addHistoryItem(DocumentHistoryActionLanguage, d.Lang.String(), d2.Lang.String())
 	}
 	return history, nil
 }

@@ -37,8 +37,10 @@ import ContentCut from "@mui/icons-material/ContentCut";
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
 import DeleteIcon from "@mui/icons-material/Delete";
 import RestoreFromTrashIcon from "@mui/icons-material/RestoreFromTrash";
+import TranslateIcon from "@mui/icons-material/Translate";
 
 import get from "lodash/get";
+import { languages } from "../../../languages";
 
 export const ShowDocumentsEditHistory = () => {
   const record = useRecordContext();
@@ -123,6 +125,8 @@ const ShowDocumentsEditHistoryItem = (props: { item: DocumentHistoryItem }) => {
       return <DocumentHistoryDelete pretty_time={timeString} item={item} />;
     case "restore":
       return <DocumentHistoryRestore pretty_time={timeString} item={item} />;
+    case "lang":
+      return <DocumentHistoryLang item={item} pretty_time={timeString} />;
     case "modified linked documents":
       return (
         <DocumentHistoryModifyLinkedDocuments
@@ -342,6 +346,21 @@ const DocumentHistoryRestore = (props: HistoryProps) => {
       <StepLabel icon={<RestoreFromTrashIcon />}>Restored</StepLabel>
       <StepContent>
         <ItemLabel {...props} />
+      </StepContent>
+    </Step>
+  );
+};
+
+const DocumentHistoryLang = (props: HistoryProps) => {
+  const { item } = props;
+  const newLang = languages[props.item.new_value as keyof typeof languages];
+
+  return (
+    <Step key={`${item.id}`} expanded active completed>
+      <StepLabel icon={<TranslateIcon />}>Set language</StepLabel>
+      <StepContent>
+        <ItemLabel {...props} />
+        <Typography variant="body1">{newLang}</Typography>
       </StepContent>
     </Step>
   );

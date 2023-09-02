@@ -562,6 +562,9 @@ func (a *Api) updateDocument(c echo.Context) error {
 	doc.Description = dto.Description
 	doc.Filename = dto.Filename
 	metadata := make([]models.Metadata, len(dto.Metadata))
+	if dto.Lang != "" {
+		doc.Lang = models.Lang(dto.Lang)
+	}
 
 	for i, v := range dto.Metadata {
 		metadata[i] = models.Metadata{
