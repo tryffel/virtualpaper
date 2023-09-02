@@ -21,6 +21,7 @@ func TestSearchAutocomplete(t *testing.T) {
 func (suite *SearchAutocompleteTestSuite) SetupTest() {
 	suite.Init()
 	initMetadataKeyValues(suite.T(), suite.userHttp)
+	uploadDocument(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 60)
 }
 
 func (suite *SearchAutocompleteTestSuite) TestAutocomplete() {
@@ -61,6 +62,14 @@ func (suite *SearchAutocompleteTestSuite) TestAutocomplete() {
 	assertAutocompleteInSuggestions(suite.T(), completion, "author:darwin", "metadata", "")
 	assertAutocompleteInSuggestions(suite.T(), completion, "author:doyle", "metadata", "")
 	assert.Equal(suite.T(), "date:today ", completion.Prefix)
+
+	completion = getSearchAutocompletions(suite.T(), suite.userHttp, "date:today la", 200)
+	assertAutocompleteInSuggestions(suite.T(), completion, "lang:", "key", "")
+	assert.Len(suite.T(), completion.Suggestions, 1)
+
+	completion = getSearchAutocompletions(suite.T(), suite.userHttp, "date:today lang:", 200)
+	assertAutocompleteInSuggestions(suite.T(), completion, "la", "key", "")
+	assert.Len(suite.T(), completion.Suggestions, 1)
 }
 
 func (suite *SearchAutocompleteTestSuite) assertCommonAutocompleteSuggestions(results *search.QuerySuggestions) {

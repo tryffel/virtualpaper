@@ -83,6 +83,22 @@ func (suite *DocumentHistoryTestSuite) TestChangeDescription() {
 	assert.Equal(suite.T(), (*history)[1].NewValue, doc.Description)
 }
 
+func (suite *DocumentHistoryTestSuite) TestChangeLanguage() {
+	history := getDocumentHistory(suite.T(), suite.userHttp, testDocumentX86.Id, 200)
+	assert.Len(suite.T(), *history, 1)
+
+	doc := getDocument(suite.T(), suite.userHttp, testDocumentX86.Id, 200)
+	doc.Lang = "af"
+	updateDocument(suite.T(), suite.userHttp, doc, 200)
+
+	history = getDocumentHistory(suite.T(), suite.userHttp, testDocumentX86.Id, 200)
+	assert.Len(suite.T(), *history, 2)
+
+	assert.Equal(suite.T(), (*history)[1].Action, "lang")
+	assert.Equal(suite.T(), (*history)[1].OldValue, "")
+	assert.Equal(suite.T(), (*history)[1].NewValue, doc.Lang)
+}
+
 func (suite *DocumentHistoryTestSuite) TestChangeMetadata() {
 	history := getDocumentHistory(suite.T(), suite.userHttp, testDocumentX86.Id, 200)
 	assert.Len(suite.T(), *history, 1)
