@@ -79,7 +79,7 @@ func detectLanguage(text string) (string, error) {
 func initLanguageDetector() {
 	languageDetector = lingua.NewLanguageDetectorBuilder().
 		FromAllLanguages().
-		WithMinimumRelativeDistance(0.05).
+		WithMinimumRelativeDistance(0.15).
 		Build()
 }
 
