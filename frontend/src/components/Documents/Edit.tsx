@@ -24,9 +24,7 @@ import {
   TextInput,
   DateField,
   TextField,
-  ReferenceArrayInput,
   ReferenceInput,
-  SelectArrayInput,
   Loading,
   SelectInput,
   ArrayInput,
@@ -52,6 +50,7 @@ import get from "lodash/get";
 import { IndexingStatusField } from "./IndexingStatus";
 import { EmbedFile } from "./Thumbnail";
 import { EditLinkedDocuments } from "./EditLinkedDocuments";
+import { languages } from "../../languages";
 
 const EditToolBar = () => {
   return (
@@ -99,10 +98,15 @@ export const DocumentEdit = () => {
               <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
                 <TextInput source="name" fullWidth />
               </Box>
-              <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
-                <DateInput source="date" />
-              </Box>
               <IndexingStatusField source="status" />
+            </Box>
+            <Box display={{ xs: "block", sm: "flex" }}>
+              <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
+                <DateInput source="date" fullWidth />
+              </Box>
+              <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
+                <LanguageSelectInput source={"lang"} label={"language"} />
+              </Box>
             </Box>
             <Box display={{ xs: "block", sm: "flex" }}>
               <MarkdownInput source="description" label="Description" />
@@ -193,6 +197,17 @@ export const MetadataValueInput = (props: MetadataValueInputProps) => {
   } else {
     return <Loading />;
   }
+};
+
+const LanguageSelectInput = (props: any) => {
+  const choices = Object.keys(languages).map((key) => {
+    return {
+      id: key,
+      name: languages[key as keyof typeof languages],
+    };
+  });
+
+  return <AutocompleteInput {...props} choices={choices} />;
 };
 
 const ToggledEmbedFile = (props: any) => {

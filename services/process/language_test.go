@@ -13,7 +13,7 @@ func TestGetLanguage(t *testing.T) {
 	for i, sample := range samples {
 		lang, _ := detectLanguage(sample[1])
 		if sample[0] != lang {
-			t.Errorf("case %d: did not detect language, got '%d' '%s', want: '%s'", i+1, lang, sample[0])
+			t.Errorf("case %d: did not detect language, got '%s', want: '%s'", i+1, lang, sample[0])
 		}
 	}
 }
