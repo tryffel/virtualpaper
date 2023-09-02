@@ -17,11 +17,7 @@ func (fp *fileProcessor) completeProcessingStep(process *models.ProcessItem, job
 	// if further steps do not absolutely require running this step.
 	removeStep := job.Status == models.JobFinished
 	switch process.Action {
-	case models.ProcessThumbnail:
-		removeStep = true
-	case models.ProcessRules:
-		removeStep = true
-	case models.ProcessFts:
+	case models.ProcessThumbnail, models.ProcessDetectLanguage, models.ProcessRules, models.ProcessFts:
 		removeStep = true
 	}
 
@@ -152,6 +148,17 @@ func (fp *fileProcessor) processDocument() {
 			err := fp.parseContent()
 			if err != nil {
 				logrus.Errorf("parse content: %v", err)
+				return
+			}
+		case models.ProcessDetectLanguage:
+			err := refreshDocument()
+			if err != nil {
+				logrus.Errorf("refresh document: %v", err)
+				return
+			}
+			err = fp.detectLanguage()
+			if err != nil {
+				logrus.Errorf("detect language: %v", err)
 				return
 			}
 		case models.ProcessRules:

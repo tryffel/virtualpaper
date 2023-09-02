@@ -16,6 +16,12 @@ import {
 import React from "react";
 import { ExpandMore } from "@mui/icons-material";
 import get from "lodash/get";
+import { languages } from "../../../languages";
+
+function getLanguageLabel(code: string): string {
+  const lang = languages[code as keyof typeof languages];
+  return lang ? (lang as string) : code;
+}
 
 export function DocumentJobsHistory() {
   const record = useRecordContext();
@@ -107,6 +113,7 @@ export const DocumentTopRow = () => {
 
   const getMimetypeColor = () => mimetypeToColor(record?.mimetype);
   const getMimeTypeName = (): string => mimetypeToText(record?.mimetype);
+  const getLang = () => getLanguageLabel(record?.lang);
 
   return (
     <Grid container justifyContent={"align-center"}>
@@ -124,7 +131,14 @@ export const DocumentTopRow = () => {
             left: "16px",
             background: "white",
           }}
-          sx={{ m: 1 }}
+          sx={{ m: 0.5 }}
+        />
+
+        <Badge
+          label={getLang()}
+          variant="outlined"
+          color={"primary"}
+          sx={{ m: 0.5 }}
         />
         <Badge
           label={getMimeTypeName()}

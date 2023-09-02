@@ -100,3 +100,33 @@ func MidnightForDate(t time.Time) time.Time {
 	y, m, d := t.UTC().Date()
 	return time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
 }
+
+type Language struct {
+	Id   string `json:"id" db:"id"`
+	Name string `json:"name" db:"name"`
+}
+
+type Lang string
+
+func (l *Lang) Scan(src interface{}) error {
+	if src == nil {
+		*l = ""
+		return nil
+	}
+	if str, ok := src.(string); ok {
+		*l = Lang(str)
+		return nil
+	}
+	return fmt.Errorf("invalid type: %v, expected string", src)
+}
+
+func (l Lang) Value() (driver.Value, error) {
+	if l == "" {
+		return nil, nil
+	}
+	return string(l), nil
+}
+
+func (l Lang) String() string {
+	return string(l)
+}

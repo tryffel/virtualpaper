@@ -67,7 +67,7 @@ func (s *DocumentStore) GetDocuments(userId int, paging Paging, sort SortKey, li
 	sql := `
 SELECT id, name, ` + contenSelect + `, 
 	filename, created_at, updated_at,
-	hash, mimetype, size, date, description, deleted_at
+	hash, mimetype, size, date, description, lang, deleted_at
 FROM documents
 WHERE user_id = $1 AND deleted_at %s
 ORDER BY ` + sort.QueryKey() + " " + sort.SortOrder() + `
@@ -202,13 +202,13 @@ func (s *DocumentStore) GetByHash(userId int, hash string) (*models.Document, er
 
 func (s *DocumentStore) Create(doc *models.Document) error {
 	sql := `
-INSERT INTO documents (id, user_id, name, content, filename, hash, mimetype, size, description, date)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id;`
+INSERT INTO documents (id, user_id, name, content, filename, hash, mimetype, size, description, date, lang)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id;`
 
 	doc.Init()
 
 	rows, err := s.db.Query(sql, doc.Id, doc.UserId, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
-		doc.Description, doc.Date)
+		doc.Description, doc.Date, doc.Lang)
 	if err != nil {
 		return s.parseError(err, "created")
 	}
@@ -322,12 +322,12 @@ func (s *DocumentStore) Update(userId int, doc *models.Document) error {
 	sql := `
 UPDATE documents SET 
 name=$2, content=$3, filename=$4, hash=$5, mimetype=$6, size=$7, date=$8,
-updated_at=$9, description=$10
+updated_at=$9, description=$10, lang=$11
 WHERE id=$1
 `
 
 	_, err = s.db.Exec(sql, doc.Id, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
-		doc.Date, doc.UpdatedAt, doc.Description)
+		doc.Date, doc.UpdatedAt, doc.Description, doc.Lang)
 	if err != nil {
 		return s.parseError(err, "update")
 	}
