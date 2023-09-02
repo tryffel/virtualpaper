@@ -170,6 +170,23 @@ func Test_suggest(t *testing.T) {
 		want *QuerySuggestions
 	}{
 		{
+			name: "empty query",
+			args: args{""},
+			want: &QuerySuggestions{Suggestions: []Suggestion{
+				{Value: "name", Type: "key", Hint: ""},
+				{Value: "description", Type: "key", Hint: ""},
+				{Value: "content", Type: "key", Hint: ""},
+				{Value: "date", Type: "key", Hint: ""},
+				{Value: "lang", Type: "key", Hint: ""},
+				{Value: "class", Type: "metadata", Hint: ""},
+				{Value: "author", Type: "metadata", Hint: ""},
+				{Value: "authentic", Type: "metadata", Hint: ""},
+				{Value: "topic", Type: "metadata", Hint: ""},
+				{Value: "datasource", Type: "metadata", Hint: ""},
+				{Value: "whitespace key", Type: "metadata", Hint: ""},
+			}, Prefix: "", ValidQuery: false},
+		},
+		{
 			name: "fts, no suggestions",
 			args: args{"one day"},
 			want: &QuerySuggestions{Suggestions: []Suggestion{}, Prefix: "one day", ValidQuery: false},

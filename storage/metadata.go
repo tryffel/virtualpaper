@@ -47,7 +47,7 @@ func NewMetadataStore(db *sqlx.DB) *MetadataStore {
 		},
 		db:    db,
 		sq:    squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
-		cache: cache.New(time.Second*30, time.Second*30),
+		cache: cache.New(time.Second*10, time.Second*30),
 	}
 }
 func (m *MetadataStore) cacheNameUserKeys(userId int) string {
@@ -243,7 +243,7 @@ func (s *MetadataStore) GetUserLangsCached(userId int) (*[]string, error) {
 		Lang string `db:"lang"`
 	}
 
-	query := "select distinct(lang) as lang from documents where user_id = $1"
+	query := "SELECT DISTINCT(lang) AS lang FROM documents WHERE user_id = $1 AND lang IS NOT NULL"
 
 	results := &[]result{}
 	err := s.db.Select(results, query, userId)
