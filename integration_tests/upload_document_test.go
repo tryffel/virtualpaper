@@ -99,29 +99,31 @@ func (suite *UploadDocumentSuite) TestUploadSchedulesProcessing() {
 	time.Sleep(time.Second * 2)
 
 	logs := getDocumentProcessingSteps(suite.T(), suite.userHttp, docId, 200)
-	assert.Equal(suite.T(), 5, len(*logs))
+	assert.Equal(suite.T(), 6, len(*logs))
 	assert.True(suite.T(), strings.HasPrefix((*logs)[0].Message, "hash"), "1st step is hash")
 	assert.Equal(suite.T(), (*logs)[0].Status, models.JobFinished)
 	assert.True(suite.T(), strings.HasPrefix((*logs)[1].Message, "generate thumbnail"), "2nd step is thumbnail")
 	assert.Equal(suite.T(), (*logs)[1].Status, models.JobFinished)
 	assert.True(suite.T(), strings.HasPrefix((*logs)[2].Message, "extract content"), "3rd step is extract")
 	assert.Equal(suite.T(), (*logs)[2].Status, models.JobFinished)
-	assert.True(suite.T(), strings.HasPrefix((*logs)[3].Message, "process user rules"), "4th step is rules")
+	assert.True(suite.T(), strings.HasPrefix((*logs)[3].Message, "detect language"), "4th step is indexing")
 	assert.Equal(suite.T(), (*logs)[3].Status, models.JobFinished)
-	assert.True(suite.T(), strings.HasPrefix((*logs)[4].Message, "index for search engine"), "5th step is indexing")
+	assert.True(suite.T(), strings.HasPrefix((*logs)[4].Message, "process user rules"), "5th step is rules")
 	assert.Equal(suite.T(), (*logs)[4].Status, models.JobFinished)
+	assert.True(suite.T(), strings.HasPrefix((*logs)[5].Message, "index for search engine"), "6th step is indexing")
+	assert.Equal(suite.T(), (*logs)[5].Status, models.JobFinished)
 }
 
 func (suite *UploadDocumentSuite) TestEditSchedulesProcessing() {
 	docId := uploadDocument(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 20)
 	doc := getDocument(suite.T(), suite.userHttp, docId, 200)
 	logs := getDocumentProcessingSteps(suite.T(), suite.userHttp, docId, 200)
-	assert.Equal(suite.T(), 5, len(*logs))
+	assert.Equal(suite.T(), 6, len(*logs))
 
 	editedDoc := updateDocument(suite.T(), suite.userHttp, doc, 200)
 	time.Sleep(time.Millisecond * 500)
 	logs = getDocumentProcessingSteps(suite.T(), suite.userHttp, docId, 200)
-	assert.Equal(suite.T(), 6, len(*logs))
+	assert.Equal(suite.T(), 7, len(*logs))
 
 	assert.Equal(suite.T(), doc.Id, editedDoc.Id, "id matches")
 	assert.NotEqual(suite.T(), doc.CreatedAt, editedDoc.UpdatedAt, "updated_at is updated")
@@ -141,11 +143,11 @@ func (suite *UploadDocumentSuite) TestEditSchedulesProcessing() {
 	assert.Equal(suite.T(), int64(1668786840000), editedDoc.Date, "date")
 
 	history := getDocumentHistory(suite.T(), suite.userHttp, doc.Id, 200)
-	assert.Equal(suite.T(), 4, len(*history))
+	assert.Equal(suite.T(), 5, len(*history))
 
 	logs = getDocumentProcessingSteps(suite.T(), suite.userHttp, docId, 200)
 
-	assert.Equal(suite.T(), 7, len(*logs))
+	assert.Equal(suite.T(), 8, len(*logs))
 	assert.Equal(suite.T(), (*logs)[5].Status, models.JobFinished)
 }
 
