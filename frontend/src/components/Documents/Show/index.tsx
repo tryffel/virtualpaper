@@ -59,7 +59,12 @@ import { IndexingStatusField } from "../IndexingStatus";
 import { MarkdownField } from "../../Markdown";
 import { ShowDocumentsEditHistory } from "./DocumentHistory";
 import { LinkedDocumentList } from "./LinkedDocuments";
-import { DocumentJobsHistory, DocumentTopRow } from "./Show";
+import {
+  DocumentBasicInfo,
+  DocumentJobsHistory,
+  DocumentTitle,
+  DocumentTopRow,
+} from "./Show";
 import { RequestIndexingModal } from "../RequestIndexing";
 import get from "lodash/get";
 import MenuItem from "@mui/material/MenuItem";
@@ -70,6 +75,7 @@ export const DocumentShow = () => {
   const [asideMode, setAsideMode] = React.useState<AsideMode>("closed");
   const [downloadUrl, setDownloadUrl] = React.useState("");
   const isNotSmall = useMediaQuery((theme: any) => theme.breakpoints.up("sm"));
+  const isNotMedium = useMediaQuery((theme: any) => theme.breakpoints.up("md"));
 
   return (
     <Show
@@ -89,7 +95,11 @@ export const DocumentShow = () => {
     >
       <TabbedShowLayout>
         <Tab label="general">
-          <DocumentGeneralTab />
+          {isNotMedium ? (
+            <DocumentGeneralTabLarge />
+          ) : (
+            <DocumentGeneralTablSmall />
+          )}
         </Tab>
         <Tab label="Content">
           <DocumentContentTab />
@@ -173,63 +183,122 @@ function DocumentShowActions(props: ActionsProps) {
 
 export default DocumentShow;
 
-const DocumentGeneralTab = () => {
+const DocumentGeneralTabLarge = () => {
+  return (
+    <>
+      <Grid container>
+        <Grid item sm={9} xl={11} height={"fitContent"}>
+          <DocumentTitle />
+        </Grid>
+        <Grid item sm={3} xl={1} alignContent={"flex-end"}>
+          <IndexingStatusField source="status" label="" />
+        </Grid>
+      </Grid>
+
+      <Grid container spacing={3}>
+        <Grid
+          container
+          item
+          sm={6}
+          xl={4}
+          spacing={1}
+          alignContent={"flex-start"}
+        >
+          <Grid item xs={12}>
+            <DocumentBasicInfo />
+          </Grid>
+          <Grid item xs={12}>
+            <ThumbnailField source="preview_url" label="Thumbnail" />
+          </Grid>
+          <Grid item xs={12}></Grid>
+        </Grid>
+
+        <Grid
+          container
+          item
+          sm={6}
+          xl={4}
+          spacing={3}
+          alignContent={"space-between"}
+        >
+          <Grid item xs={12}>
+            <Labeled label="Description">
+              <MarkdownField source="description" />
+            </Labeled>
+          </Grid>
+          <Grid item xs={12} sm={8}>
+            <MetadataList />
+          </Grid>
+          <Grid item xs={12} sm={12}>
+            <LinkedDocumentList />
+          </Grid>
+          <Grid item xs={4} sm={2} alignContent={"flex-end"}>
+            <Labeled label={"File size"}>
+              <TextField source={"pretty_size"} />
+            </Labeled>
+          </Grid>
+          <Grid item xs={4} sm={2}>
+            <Labeled label="Uploaded">
+              <DateField source="created_at" showTime={false} />
+            </Labeled>
+          </Grid>
+          <Grid item xs={4} sm={2}>
+            <Labeled label={"Last updated"}>
+              <DateField source="updated_at" showTime />
+            </Labeled>
+          </Grid>
+        </Grid>
+      </Grid>
+    </>
+  );
+};
+
+const DocumentGeneralTablSmall = () => {
   const record = useRecordContext();
 
   return (
     <Grid container spacing={2}>
-      <Grid item xs={12} md={8} lg={12}>
+      <Grid item xs={12}>
         <DocumentTopRow />
         <IndexingStatusField source="status" label="" />
-        <Box display={{ xs: "block", sm: "flex" }}>
-          <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-            <ThumbnailField source="preview_url" label="Thumbnail" />
-          </Box>
-          <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-            <Labeled label="Description">
-              <MarkdownField source="description" />
-            </Labeled>
-          </Box>
-          {record && record.tags ? (
-            <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-              <ArrayField source="tags">
-                <SingleFieldList>
-                  <ChipField source="key" />
-                </SingleFieldList>
-              </ArrayField>
-            </Box>
-          ) : null}
+      </Grid>
+      <Grid item xs={12}>
+        <ThumbnailField source="preview_url" label="Thumbnail" />
+      </Grid>
+      <Grid item xs={12}>
+        <Labeled label="Description">
+          <MarkdownField source="description" />
+        </Labeled>
+      </Grid>
+      {record && record.tags ? (
+        <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
+          <ArrayField source="tags">
+            <SingleFieldList>
+              <ChipField source="key" />
+            </SingleFieldList>
+          </ArrayField>
         </Box>
-        <Box display={{ xs: "block", sm: "flex" }}>
-          <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-            <LinkedDocumentList />
-          </Box>
-        </Box>
-
-        <Box display={{ xs: "block", sm: "flex" }}>
-          <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-            <MetadataList />
-          </Box>
-        </Box>
-        <Box display={{ xs: "block", sm: "flex" }}>
-          <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-            <Labeled label={"File size"}>
-              <TextField source={"pretty_size"} />
-            </Labeled>
-          </Box>
-        </Box>
-        <Box display={{ xs: "block", sm: "flex" }}>
-          <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-            <Labeled label="Uploaded">
-              <DateField source="created_at" showTime={false} />
-            </Labeled>
-          </Box>
-          <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-            <Labeled label={"Last updated"}>
-              <DateField source="updated_at" showTime />
-            </Labeled>
-          </Box>
-        </Box>
+      ) : null}
+      <Grid item xs={12}>
+        <MetadataList />
+      </Grid>
+      <Grid item xs={12}>
+        <LinkedDocumentList />
+      </Grid>
+      <Grid item xs={4} sm={3}>
+        <Labeled label={"File size"}>
+          <TextField source={"pretty_size"} />
+        </Labeled>
+      </Grid>
+      <Grid item xs={4} sm={3}>
+        <Labeled label="Uploaded">
+          <DateField source="created_at" showTime={false} />
+        </Labeled>
+      </Grid>
+      <Grid item xs={4} sm={3}>
+        <Labeled label={"Last updated"}>
+          <DateField source="updated_at" showTime />
+        </Labeled>
       </Grid>
     </Grid>
   );
@@ -304,14 +373,6 @@ const DocumentPreviewTab = (props: {
 
 const MetadataList = () => {
   const record = useRecordContext();
-
-  if (!record) {
-    return null;
-  }
-
-  if (get(record, "metadata")?.length === 0) {
-    return null;
-  }
 
   return (
     <>

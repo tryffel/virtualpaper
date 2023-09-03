@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import React, { useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import {
   useGetManyReference,
@@ -37,22 +37,24 @@ export const LinkedDocumentList = () => {
   if (isLoading) {
     return <Loading />;
   }
-  if (data && data.length > 0) {
-    return (
-      <Labeled label="Linked documents">
-        <>
-          {data.map((doc) => (
+
+  return (
+    <Labeled label="Linked documents">
+      <>
+        {data ? (
+          data.map((doc) => (
             <LinkedDocument
               name={doc.name}
               id={doc.id}
               createdAt={doc.created_at}
             />
-          ))}
-        </>
-      </Labeled>
-    );
-  }
-  return null;
+          ))
+        ) : (
+          <div />
+        )}
+      </>
+    </Labeled>
+  );
 };
 
 interface documentProps {

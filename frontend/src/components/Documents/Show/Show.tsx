@@ -9,9 +9,9 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Box,
   Grid,
   Typography,
-  useMediaQuery,
 } from "@mui/material";
 import React from "react";
 import { ExpandMore } from "@mui/icons-material";
@@ -163,6 +163,75 @@ export const DocumentTopRow = () => {
         <DocumentIdField />
       </Grid>
     </Grid>
+  );
+};
+
+export const DocumentBasicInfo = () => {
+  const record = useRecordContext();
+  const isDeleted = get(record, "deleted_at") !== null;
+  const hasLang = get(record, "lang") !== "";
+
+  const getDateString = (): string => {
+    if (!record) {
+      return "";
+    }
+    const date = new Date(record.date);
+    return date.toLocaleDateString();
+  };
+
+  const getMimetypeColor = () => mimetypeToColor(record?.mimetype);
+  const getMimeTypeName = (): string => mimetypeToText(record?.mimetype);
+  const getLang = () => getLanguageLabel(record?.lang);
+
+  return (
+    <Box>
+      <Badge
+        label={getDateString()}
+        variant="outlined"
+        color={"primary"}
+        style={{
+          top: "4px",
+          left: "16px",
+          background: "white",
+          marginLeft: 0,
+        }}
+        sx={{ m: 0.5 }}
+      />
+      {hasLang && (
+        <Badge
+          label={getLang()}
+          variant="outlined"
+          color={"primary"}
+          sx={{ m: 0.5 }}
+        />
+      )}
+      <Badge
+        label={getMimeTypeName()}
+        variant="filled"
+        color={getMimetypeColor()}
+        style={{ top: "4px", right: "16px" }}
+        sx={{ m: 1 }}
+      />
+      {isDeleted && (
+        <Badge
+          label={"Document is deleted"}
+          variant="filled"
+          color={"error"}
+          style={{ top: "4px", right: "16px" }}
+          sx={{ m: 1 }}
+        />
+      )}
+    </Box>
+  );
+};
+
+export const DocumentTitle = () => {
+  return (
+    <TextField
+      source="name"
+      label=""
+      style={{ fontSize: "2em", paddingBottom: "0.8em" }}
+    />
   );
 };
 
