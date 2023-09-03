@@ -23,8 +23,7 @@ import {
   useNotify,
   useGetList,
   Loading,
-  CardContentInner,
-  SelectInput,
+  HttpError,
 } from "react-admin";
 
 import {
@@ -76,8 +75,13 @@ const steps = [
     description: "Extract content from raw document",
   },
   {
+    id: "detect-language",
+    name: "Detect language",
+    description: "Detect the language of the document",
+  },
+  {
     id: "rules",
-    name: "UserRules",
+    name: "User Sules",
     description: "Execute user defined rules and metadata matching",
   },
   {
@@ -132,14 +136,21 @@ const RequestSingleDocumentProcessing = () => {
           from_step: step !== "" ? step : "",
         },
       })
+      .then((data: any) => {
+        console.log("received data", data);
+        return data;
+      })
       // @ts-ignore
       .then((data: { data: any }) => {
         notify(`Processing scheduled`, { type: "success" });
+      })
+      .catch((err: HttpError) => {
+        notify(err.message, { type: "error" });
       });
   };
 
   return (
-    <Box>
+    <Grid container spacing={2}>
       <Confirm
         isOpen={confirmOpen}
         title={
@@ -156,73 +167,108 @@ const RequestSingleDocumentProcessing = () => {
         onConfirm={onConfirm}
         onClose={onCancel}
       />
-      <Typography variant="h6">Instructions</Typography>
-      <Typography variant="body1">
-        <ul>
-          <li>Force processing single or multiple documents</li>
-          <li>
-            Please fill either document id or user id. If user id (numeric) is
-            passed, all the documents for the user are processed starting from
-            the given step.
-          </li>
-          <li>
-            Allowed steps are:
-            <TableContainer component={Paper} elevation={2}>
-              <Table sx={{ minWidth: 300 }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>#</TableCell>
-                    <TableCell align="left">Name</TableCell>
-                    <TableCell align="left">Description</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {steps.map((step, index) => (
-                    <TableRow
-                      key={index}
-                      sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-                    >
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell align="left" component="th" scope="row">
-                        {step.name}
-                      </TableCell>
-                      <TableCell align="left">{step.description}</TableCell>
+      <Grid item xs={12}>
+        <Typography variant="h6">Instructions</Typography>
+        <Typography variant="body1">
+          <ul>
+            <li>Force processing single or multiple documents</li>
+            <li>
+              Please fill either document id or user id. If user id (numeric) is
+              passed, all the documents for the user are processed starting from
+              the given step.
+            </li>
+            <li>
+              Allowed steps are:
+              <TableContainer component={Paper} elevation={2}>
+                <Table sx={{ minWidth: 300 }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>#</TableCell>
+                      <TableCell align="left">Name</TableCell>
+                      <TableCell align="left">Description</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </li>
-        </ul>
-      </Typography>
-
-      <TextField
-        id="document_id"
-        label="Document id"
-        variant="outlined"
-        value={documentId}
-        onChange={onChangeDocumentId}
-        disabled={!!userId}
-      />
-      <Typography>OR</Typography>
-
-      <TextField
-        id="user"
-        label="UserId"
-        variant="outlined"
-        value={userId}
-        onChange={onChangeUserId}
-        disabled={!!documentId}
-      />
-      <RequestIndexSelect step={step} setStep={onChangeStep} enabledAll />
-      <Button
-        onClick={onClickExec}
-        variant="contained"
-        disabled={!documentId ? userId === "" : userId !== ""}
+                  </TableHead>
+                  <TableBody>
+                    {steps.map((step, index) => (
+                      <TableRow
+                        key={index}
+                        sx={{
+                          "&:last-child td, &:last-child th": { border: 0 },
+                        }}
+                      >
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell align="left" component="th" scope="row">
+                          {step.name}
+                        </TableCell>
+                        <TableCell align="left">{step.description}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </li>
+          </ul>
+        </Typography>
+      </Grid>
+      <Grid item xs={12} sm={8} md={8} lg={4}>
+        <TextField
+          id="document_id"
+          label="Document id"
+          variant="outlined"
+          value={documentId}
+          onChange={onChangeDocumentId}
+          disabled={!!userId}
+          fullWidth
+        />
+      </Grid>
+      <Grid
+        item
+        xs={1}
+        sm={1}
+        md={1}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "start",
+        }}
       >
-        <Typography>Execute</Typography>
-      </Button>
-    </Box>
+        <Typography pl={"10px"}>OR</Typography>
+      </Grid>
+      <Grid item xs={12} sm={8} md={8} lg={4}>
+        <TextField
+          id="user"
+          label="UserId"
+          variant="outlined"
+          value={userId}
+          onChange={onChangeUserId}
+          disabled={!!documentId}
+          fullWidth
+        />
+      </Grid>
+      <Grid
+        item
+        xs={12}
+        sm={6}
+        md={6}
+        lg={4}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "start",
+        }}
+      >
+        <RequestIndexSelect step={step} setStep={onChangeStep} enabledAll />
+      </Grid>
+      <Grid item xs={12}>
+        <Button
+          onClick={onClickExec}
+          variant="contained"
+          disabled={!documentId ? userId === "" : userId !== ""}
+        >
+          <Typography>Execute</Typography>
+        </Button>
+      </Grid>
+    </Grid>
   );
 };
 
