@@ -813,9 +813,21 @@ func (a *Api) bulkEditDocuments(c echo.Context) error {
 		}
 	}
 
+	dateIsValid := dto.Date != 0
+	langIsValid := dto.Lang != ""
+
+	var date time.Time
+	var lang models.Lang
+
+	if dateIsValid {
+		date = time.Unix(dto.Date/1000, 0)
+	}
+	if langIsValid {
+		lang = models.Lang(dto.Lang)
+	}
+
 	if dto.Lang != "" || dto.Date != 0 {
-		date := time.Unix(dto.Date/1000, 0)
-		err := a.db.DocumentStore.BulkUpdateDocuments(ctx.UserId, dto.Documents, models.Lang(dto.Lang), date)
+		err := a.db.DocumentStore.BulkUpdateDocuments(ctx.UserId, dto.Documents, lang, date)
 		if err != nil {
 			return err
 		}

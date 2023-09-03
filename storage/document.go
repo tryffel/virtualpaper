@@ -125,6 +125,23 @@ WHERE id = $1
 	return dest, s.parseError(err, "get document")
 }
 
+// GetDocument returns document by its id. If userId != 0, user must be owner of the document.
+func (s *DocumentStore) GetDocumentsById(userId int, id []string) (*[]models.Document, error) {
+
+	query := s.sq.Select("*").From("documents").Where(squirrel.Eq{"id": id})
+	if userId != 0 {
+		query = query.Where("user_id = ?", userId)
+	}
+	query = query.OrderBy("id ASC")
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("sql: %v", err)
+	}
+	dest := &[]models.Document{}
+	err = s.db.Select(dest, sql, args...)
+	return dest, s.parseError(err, "get document")
+}
+
 // UserOwnsDocumet returns true if user has ownership for document.
 func (s *DocumentStore) UserOwnsDocument(documentId string, userId int) (bool, error) {
 
@@ -470,6 +487,11 @@ func (s *DocumentStore) GetDocumentsInTrashbin(deletedAt time.Time) ([]string, e
 }
 
 func (s *DocumentStore) BulkUpdateDocuments(userId int, docs []string, lang models.Lang, date time.Time) error {
+	oldDocs, err := s.GetDocumentsById(userId, docs)
+	if err != nil {
+		return err
+	}
+
 	query := s.sq.Update("documents")
 	if lang.String() != "" {
 		query = query.Set("lang", lang)
@@ -484,5 +506,25 @@ func (s *DocumentStore) BulkUpdateDocuments(userId int, docs []string, lang mode
 		return fmt.Errorf("sql: %v", err)
 	}
 	_, err = s.db.Exec(sql, args...)
-	return getDatabaseError(err, s, "bulk update document lang")
+	if err != nil {
+		return getDatabaseError(err, s, "bulk update document lang")
+	}
+
+	updatedDocs, err := s.GetDocumentsById(userId, docs)
+	if err != nil {
+		return err
+	}
+
+	diffs := make([]models.DocumentHistory, 0)
+	for i, v := range *oldDocs {
+		newDoc := (*updatedDocs)[i]
+		diff, err := v.Diff(&newDoc, userId)
+		if err != nil {
+			return fmt.Errorf("get diff for doc: %s: %v", v.Id, err)
+		} else {
+			diffs = append(diffs, diff...)
+		}
+	}
+	err = addDocumentHistoryAction(s.db, s.sq, diffs, userId)
+	return getDatabaseError(err, s, "insert document history")
 }
