@@ -11,12 +11,14 @@ import {
   AccordionSummary,
   Box,
   Grid,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import React from "react";
 import { ExpandMore } from "@mui/icons-material";
 import get from "lodash/get";
 import { languages } from "../../../languages";
+import { PrettifyAbsoluteTime, PrettifyTimeInterval } from "../../util";
 
 function getLanguageLabel(code: string): string {
   const lang = languages[code as keyof typeof languages];
@@ -69,9 +71,14 @@ function DocumentJobListItem(props: any) {
     style = { fontStyle: "italic", background: "red" };
     prefix = "Error";
   }
+  const startTime = PrettifyAbsoluteTime(props.record.started_at);
+  const took = PrettifyTimeInterval(
+    props.record.started_at,
+    props.record.stopped_at
+  );
 
   return (
-    <Accordion>
+    <Accordion sx={{ minWidth: "15em" }}>
       <AccordionSummary expandIcon={<ExpandMore />} style={style}>
         <Typography>
           {prefix} {props.record.message}
@@ -86,14 +93,10 @@ function DocumentJobListItem(props: any) {
           Job id:
           {props.record.id}
         </Typography>
-        <Typography>
-          Started at:
-          {props.record.started_at}
-        </Typography>
-        <Typography>
-          Stopped at:
-          {props.record.stopped_at}
-        </Typography>
+
+        <Tooltip title={`Time: ${took !== "" ? took : "< 1 sec"}`}>
+          <Typography>Started at: {startTime}</Typography>
+        </Tooltip>
       </AccordionDetails>
     </Accordion>
   );
