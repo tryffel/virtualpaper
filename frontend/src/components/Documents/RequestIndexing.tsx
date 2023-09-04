@@ -105,7 +105,7 @@ export const RequestIndexSelect = (props: {
         <MenuItem value={"content"} disabled={disabled}>
           Extract
         </MenuItem>
-        <MenuItem value={"detect-language-2"} disabled={disabled}>
+        <MenuItem value={"detect-language"} disabled={disabled}>
           Detect language
         </MenuItem>
         <MenuItem value={"rules"}>Rules</MenuItem>
