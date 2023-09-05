@@ -238,7 +238,7 @@ export const DocumentTitle = () => {
   );
 };
 
-const DocumentIdField = () => {
+export const DocumentIdField = () => {
   const record = useRecordContext();
 
   const id = record ? record.id : "";

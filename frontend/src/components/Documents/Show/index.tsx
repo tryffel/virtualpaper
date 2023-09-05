@@ -61,6 +61,7 @@ import { ShowDocumentsEditHistory } from "./DocumentHistory";
 import { LinkedDocumentList } from "./LinkedDocuments";
 import {
   DocumentBasicInfo,
+  DocumentIdField,
   DocumentJobsHistory,
   DocumentTitle,
   DocumentTopRow,
@@ -210,6 +211,10 @@ const DocumentGeneralTabLarge = () => {
           <Grid item xs={12}>
             <ThumbnailField source="preview_url" label="Thumbnail" />
           </Grid>
+          <Grid item xs={12}>
+            <DocumentIdField />
+          </Grid>
+
           <Grid item xs={12}></Grid>
         </Grid>
 
