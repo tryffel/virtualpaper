@@ -1,5 +1,5 @@
 ### Frontend build
-FROM node:18.14.0-alpine3.17 as frontend
+FROM node:18.17-alpine3.17 as frontend
 
 RUN apk update
 RUN apk --no-cache add \
@@ -39,7 +39,7 @@ RUN make build
 
 
 # Runtime
-FROM alpine:3.17.2
+FROM alpine:3.18.3
 
 RUN apk add \
     tesseract-ocr \
