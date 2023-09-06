@@ -513,7 +513,7 @@ func (a *Api) ConfirmAuthentication(c echo.Context) error {
 
 // get new password token, returns token, hashed token and error
 func newPasswordToken() (string, string, error) {
-	rawToken, err := config.RandomStringCrypt(80)
+	rawToken, err := config.RandomStringCrypt(70)
 	if err != nil {
 		return "", "", fmt.Errorf("generate random token: %v", err)
 	}
