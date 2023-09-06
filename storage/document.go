@@ -526,5 +526,23 @@ func (s *DocumentStore) BulkUpdateDocuments(userId int, docs []string, lang mode
 		}
 	}
 	err = addDocumentHistoryAction(s.db, s.sq, diffs, userId)
-	return getDatabaseError(err, s, "insert document history")
+	if err != nil {
+		return getDatabaseError(err, s, "insert document history")
+	}
+
+	err = s.setUpdatedAt(userId, docs, time.Now())
+	return getDatabaseError(err, s, "update updated_at")
+}
+
+func (s *DocumentStore) setUpdatedAt(userId int, docs []string, updatedAt time.Time) error {
+	query := s.sq.Update("documents").Set("updated_at", updatedAt).Where(squirrel.Eq{"id": docs})
+	if userId != 0 {
+		query = query.Where("user_id = ?", userId)
+	}
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return fmt.Errorf("sql: %v", err)
+	}
+	_, err = s.db.Exec(sql, args...)
+	return getDatabaseError(err, s, "set updated_at")
 }
