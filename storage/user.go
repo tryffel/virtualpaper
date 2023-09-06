@@ -144,6 +144,7 @@ VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;
 			return s.parseError(err, "add user, scan id")
 		}
 		user.Id = id
+		rows.Close()
 	} else {
 		return errors.New("no id returned")
 	}

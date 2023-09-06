@@ -497,6 +497,7 @@ RETURNING id;
 			return s.parseError(err, "create key, scan id")
 		}
 		key.Id = id
+		res.Close()
 	}
 	s.flushCachedUserKeys(userId)
 	return nil
@@ -523,6 +524,7 @@ RETURNING id;
 			return s.parseError(err, "create value, scan id")
 		}
 		value.Id = id
+		res.Close()
 	}
 	return nil
 }
@@ -915,6 +917,7 @@ func (s *MetadataStore) GetLinkedDocuments(userId int, docId string) ([]*models.
 			CreatedAt:    res.CreatedAt,
 		})
 	}
+	rows.Close()
 	return docs, nil
 }
 

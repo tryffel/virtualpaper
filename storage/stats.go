@@ -89,6 +89,7 @@ order by ordering asc;
 			i += 1
 		}
 	}
+	rows.Close()
 
 	sql = `
 select 

@@ -482,6 +482,7 @@ func (s *DocumentStore) GetDocumentsInTrashbin(deletedAt time.Time) ([]string, e
 			return ids, err
 		}
 		ids = append(ids, id)
+		rows.Close()
 	}
 	return ids, nil
 }

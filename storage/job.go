@@ -93,6 +93,7 @@ VALUES ($1, $2, $3, $4, $5) RETURNING id;
 			return s.parseError(err, "create, scan results")
 		}
 		job.Id = id
+		res.Close()
 	}
 	return nil
 }
@@ -219,6 +220,7 @@ GROUP BY running;
 			}
 		}
 	}
+	rows.Close()
 
 	if jobRunning {
 		return "indexing", nil
