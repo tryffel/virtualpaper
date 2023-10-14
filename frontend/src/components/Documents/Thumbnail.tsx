@@ -77,7 +77,6 @@ export const ThumbnailField = (props: any) => {
         alt={props.label}
         style={{
           maxWidth: isSmall ? "280px" : isMedium ? "450px" : "600px",
-          background: "white",
           borderRadius: "5%",
           borderWidth: "thin",
           borderStyle: "solid",
@@ -114,11 +113,7 @@ export function ThumbnailSmall(props: ThumbnailProps) {
         borderRadius: "5%",
       }}
     >
-      <img
-        src={imgData}
-        style={{ maxWidth: "200px", background: "white" }}
-        alt={props.label}
-      />
+      <img src={imgData} style={{ maxWidth: "200px" }} alt={props.label} />
     </div>
   );
 }

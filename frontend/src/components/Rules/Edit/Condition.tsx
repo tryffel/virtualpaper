@@ -49,6 +49,7 @@ export const ConditionEdit = () => {
     <SimpleFormIterator source={"conditions"}>
       <FormDataConsumer>
         {({ scopedFormData, getSource }) => {
+          // @ts-ignore
           return getSource ? (
             <div>
               <Grid container sx={{ flexFlow: "row" }}>
@@ -133,6 +134,7 @@ export const ConditionEdit = () => {
                       <ReferenceInput
                         label="Key"
                         source={getSource("metadata.key_id")}
+                        // @ts-ignore
                         record={scopedFormData}
                         reference="metadata/keys"
                         fullWidth

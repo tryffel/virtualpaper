@@ -34,6 +34,7 @@ const App = () => (
   <Admin
     layout={Layout}
     theme={lightTheme}
+    darkTheme={darkTheme}
     dataProvider={dataProvider}
     authProvider={authProvider}
     dashboard={Dashboard}

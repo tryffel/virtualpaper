@@ -17,6 +17,7 @@ import {
   useDelete,
   useNotify,
   useRefresh,
+  useTheme,
   useUpdate,
 } from "react-admin";
 import { ThumbnailSmall } from "./Thumbnail";
@@ -36,7 +37,7 @@ const cardStyle = {
   display: "inline-block",
   verticalAlign: "top",
   borderRadius: 15,
-  background: "#fafafc",
+  background: "secondary",
 };
 
 export interface DocumentCardProps {
@@ -46,6 +47,7 @@ export interface DocumentCardProps {
 }
 
 export const DocumentCard = (props: DocumentCardProps) => {
+  const [theme] = useTheme();
   const navigate = useNavigate();
 
   const { record } = props;
@@ -60,8 +62,12 @@ export const DocumentCard = (props: DocumentCardProps) => {
   };
 
   return (
-    <Card key={record.id} style={{ ...cardStyle }}>
-      <CardActionArea onClick={showDocument}>
+    <Card
+      key={record.id}
+      style={{ ...cardStyle }}
+      sx={{ background: theme === "dark" ? "#313131" : "#FAFAFA" }}
+    >
+      <CardActionArea href={`/#/documents/${record.id}/show`}>
         <CardHeader
           title={<DocumentTitle record={record} />}
           sx={{ mt: 0, pb: 0, pt: 0, height: 85 }}
