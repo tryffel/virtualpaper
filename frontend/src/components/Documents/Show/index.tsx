@@ -73,6 +73,9 @@ import Menu from "@mui/material/Menu";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import LabelIcon from "@mui/icons-material/Label";
 
 export const DocumentShow = () => {
   const [asideMode, setAsideMode] = React.useState<AsideMode>("closed");
@@ -376,18 +379,42 @@ const DocumentPreviewTab = (props: {
   );
 };
 
+type Metadata = {
+  id: number;
+  key: string;
+  value: string;
+};
+
 const MetadataList = () => {
   const record = useRecordContext();
+  if (!record) {
+    return null;
+  }
+
+  const array: Metadata[] = get(record, "metadata");
+  if (!array) {
+    return null;
+  }
 
   return (
     <>
       <Typography className={LabeledClasses.label}>Metadata</Typography>
-      <ArrayField source="metadata">
-        <Datagrid bulkActionButtons={false}>
-          <TextField source="key" />
-          <TextField source="value" />
-        </Datagrid>
-      </ArrayField>
+      <List dense>
+        {array.map((item) => (
+          <ListItem key={item.id}>
+            <ListItemIcon>
+              <LabelIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary={
+                <>
+                  <span>{item.key}</span>: <span>{item.value}</span>
+                </>
+              }
+            />
+          </ListItem>
+        ))}
+      </List>
     </>
   );
 };
