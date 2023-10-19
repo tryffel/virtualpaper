@@ -30,15 +30,18 @@ import {
   useEditController,
   TextInput,
   useRecordContext,
+  FunctionField,
+  FormDataConsumer,
 } from "react-admin";
 
 import { MarkdownInput } from "../Markdown";
-import { useMediaQuery } from "@mui/material";
+import { Typography, useMediaQuery } from "@mui/material";
 
 import MetadataValueCreateButton from "./ValueCreate";
 import MetadataValueUpdateDialog from "./ValueEditDialog";
 import { useState } from "react";
 import get from "lodash/get";
+import { IconByName, iconExists } from "../icons";
 
 export const MetadataKeyEdit = () => {
   const { record } = useEditController();
@@ -64,6 +67,22 @@ export const MetadataKeyEdit = () => {
     setKeyId(record.id);
   }
 
+  const renderIcon = (record: any) => () => {
+    console.log("record", record);
+    if (!iconExists(record.icon)) {
+      return <Typography color={"error"}>Icon does not exist</Typography>;
+    } else {
+      return <IconByName name={record.icon} />;
+    }
+  };
+
+  const validateIcon = (value: any) => {
+    if (iconExists(value)) {
+      return undefined;
+    }
+    return "Icon is invalid. Must be Material-ui icon. Leave empty to disable";
+  };
+
   return (
     <Edit title={<EditTitle />}>
       <SimpleForm>
@@ -79,6 +98,17 @@ export const MetadataKeyEdit = () => {
         <Labeled label={"Description"}>
           <MarkdownInput source="comment" />
         </Labeled>
+        <TextInput
+          source="icon"
+          id="icon"
+          label="Icon name (Material-ui)"
+          validate={validateIcon}
+        />
+        <FormDataConsumer>
+          {({ formData }) => {
+            return <FunctionField render={renderIcon(formData)} />;
+          }}
+        </FormDataConsumer>
         <ReferenceManyField
           label="Values"
           reference={"metadata/values"}

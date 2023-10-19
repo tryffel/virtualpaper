@@ -484,12 +484,12 @@ func (s *MetadataStore) CreateKey(userId int, key *models.MetadataKey) error {
 
 	sql := `
 INSERT INTO metadata_keys
-(user_id, key, comment)
-VALUES ($1, $2, $3)
+(user_id, key, comment, icon, style)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING id;
 `
 
-	res, err := s.db.Query(sql, userId, key.Key, key.Comment)
+	res, err := s.db.Query(sql, userId, key.Key, key.Comment, key.Icon, key.Style)
 	if err != nil {
 		return s.parseError(err, "create key")
 	}
@@ -706,11 +706,11 @@ func (s *MetadataStore) UpdateValue(value *models.MetadataValue) error {
 func (s *MetadataStore) UpdateKey(key *models.MetadataKey) error {
 	sql := `
 UPDATE metadata_keys 
-SET key=$1, comment=$2
-WHERE id=$3;
+SET key=$1, comment=$2, icon=$3, style=$4
+WHERE id=$5;
 `
 
-	_, err := s.db.Exec(sql, key.Key, key.Comment, key.Id)
+	_, err := s.db.Exec(sql, key.Key, key.Comment, key.Icon, key.Style, key.Id)
 	if err != nil {
 		return s.parseError(err, "update key")
 	}

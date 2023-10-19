@@ -18,11 +18,7 @@
 
 import * as React from "react";
 import get from "lodash/get";
-import {
-  useNotify,
-  useRecordContext,
-  useTheme,
-} from "react-admin";
+import { useNotify, useRecordContext, useTheme } from "react-admin";
 import {
   CircularProgress,
   Paper,
