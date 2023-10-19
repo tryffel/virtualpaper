@@ -113,6 +113,11 @@ var Migrations = []Migrator{
 		Level:  17,
 		Schema: schemaV17,
 	},
+	&Migration{
+		Name:   "add support for metadata icon and style",
+		Level:  18,
+		Schema: schemaV18,
+	},
 }
 
 type Schema struct {

@@ -131,6 +131,8 @@ func (s *MetadataStore) GetDocumentMetadata(userId int, documentId string) (*[]m
 SELECT
 	mk.id AS key_id,
 	mk.key AS key,
+	mk.icon as icon,
+	mk.style as style,
 	mv.id AS value_id,
 	mv.value AS value
 FROM documents d
@@ -148,6 +150,8 @@ ORDER BY key ASC;
 SELECT
 	mk.id AS key_id,
 	mk.key AS key,
+	mk.icon as icon,
+	mk.style as style,
 	mv.id AS value_id,
 	mv.value AS value
 FROM documents d

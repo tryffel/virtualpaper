@@ -21,7 +21,6 @@ import {
   ArrayField,
   Button,
   ChipField,
-  Datagrid,
   DateField,
   EditButton,
   Labeled,
@@ -76,6 +75,7 @@ import ListItemText from "@mui/material/ListItemText";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import LabelIcon from "@mui/icons-material/Label";
+import { IconByName, iconExists } from "../../icons";
 
 export const DocumentShow = () => {
   const [asideMode, setAsideMode] = React.useState<AsideMode>("closed");
@@ -383,6 +383,8 @@ type Metadata = {
   id: number;
   key: string;
   value: string;
+  icon: string;
+  style: string;
 };
 
 const MetadataList = () => {
@@ -400,20 +402,30 @@ const MetadataList = () => {
     <>
       <Typography className={LabeledClasses.label}>Metadata</Typography>
       <List dense>
-        {array.map((item) => (
-          <ListItem key={item.id}>
-            <ListItemIcon>
-              <LabelIcon />
-            </ListItemIcon>
-            <ListItemText
-              primary={
-                <>
-                  <span>{item.key}</span>: <span>{item.value}</span>
-                </>
-              }
-            />
-          </ListItem>
-        ))}
+        {array.map((item) => {
+          const style = JSON.parse(item.style);
+          const color = get(style, "color") ?? "inherit";
+          const icon = iconExists(item.icon) ? (
+            <IconByName name={item.icon} color={color} />
+          ) : (
+            <LabelIcon color={color} />
+          );
+
+          //const icon = customIcon ?? <LabelIcon color={color} />;
+
+          return (
+            <ListItem key={item.id}>
+              <ListItemIcon>{icon}</ListItemIcon>
+              <ListItemText
+                primary={
+                  <>
+                    <span>{item.key}</span>: <span>{item.value}</span>
+                  </>
+                }
+              />
+            </ListItem>
+          );
+        })}
       </List>
     </>
   );

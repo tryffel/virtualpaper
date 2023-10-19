@@ -141,6 +141,8 @@ func (d *Document) HasMetadataKeyValue(keyId, valueId int) bool {
 type Metadata struct {
 	KeyId   int    `db:"key_id" json:"key_id"`
 	Key     string `db:"key" json:"key"`
+	Icon    string `db:"icon" json:"icon"`
+	Style   string `db:"style" json:"style"`
 	ValueId int    `db:"value_id" json:"value_id"`
 	Value   string `db:"value" json:"value"`
 }
@@ -151,6 +153,8 @@ type MetadataKey struct {
 	Key       string    `db:"key" json:"key"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	Comment   string    `db:"comment" json:"comment"`
+	Icon      string    `db:"icon" json:"icon"`
+	Style     string    `db:"style" json:"style"`
 }
 
 func MetadataDiff(id string, userId int, original, updated *[]Metadata) []DocumentHistory {
