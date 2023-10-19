@@ -18,14 +18,21 @@
 
 import * as React from "react";
 import get from "lodash/get";
-import { Button, Loading, useNotify, useRecordContext } from "react-admin";
+import {
+  useNotify,
+  useRecordContext,
+  useTheme,
+} from "react-admin";
 import {
   CircularProgress,
   Paper,
+  Typography,
   useMediaQuery,
-  useTheme,
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
+import MenuItem from "@mui/material/MenuItem";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
 
 export function downloadFile(url: string) {
   const token = localStorage.getItem("auth");
@@ -42,6 +49,7 @@ export interface ThumbnailProps {
 }
 
 export const ThumbnailField = (props: any) => {
+  const [theme] = useTheme();
   const record = useRecordContext();
   const [imgData, setImage] = React.useState("");
   const isMedium = useMediaQuery((theme: any) => theme.breakpoints.down("md"));
@@ -62,6 +70,8 @@ export const ThumbnailField = (props: any) => {
   }, [record]);
   if (!record) return null;
 
+  //sx={{ backgroundColor: theme === "dark" ? "#292929" : "#FAFAFA" }}
+
   return record ? (
     <div
       style={{
@@ -76,6 +86,7 @@ export const ThumbnailField = (props: any) => {
         src={imgData}
         alt={props.label}
         style={{
+          backgroundColor: theme === "dark" ? "#D9D9D9" : "#FAFAFA",
           maxWidth: isSmall ? "280px" : isMedium ? "450px" : "600px",
           borderRadius: "5%",
           borderWidth: "thin",
@@ -178,12 +189,17 @@ export const DownloadDocumentButton = (props: { onFinished: () => void }) => {
   };
 
   return (
-    <>
-      <Button color="primary" label={"Download document"} onClick={handleClick}>
-        <DownloadIcon />
-      </Button>
-      {downloadClicked && <DownloadFileLink onFinished={props.onFinished} />}
-    </>
+    <MenuItem color={"primary"} onClick={handleClick}>
+      <ListItemIcon>
+        <DownloadIcon color={"primary"} />
+      </ListItemIcon>
+      <ListItemText>
+        {downloadClicked && <DownloadFileLink onFinished={props.onFinished} />}
+        <Typography variant="body1" color={"primary"}>
+          Download
+        </Typography>
+      </ListItemText>
+    </MenuItem>
   );
 };
 

@@ -57,15 +57,11 @@ export const DocumentCard = (props: DocumentCardProps) => {
   const isSelected = selected ? selected(String(record.id)) : false;
   const select = () => (setSelected ? setSelected(String(record.id)) : null);
 
-  const showDocument = () => {
-    navigate(`/documents/${record.id}/show`);
-  };
-
   return (
     <Card
       key={record.id}
       style={{ ...cardStyle }}
-      sx={{ background: theme === "dark" ? "#313131" : "#FAFAFA" }}
+      sx={{ backgroundColor: theme === "dark" ? "#292929" : "#FAFAFA" }}
     >
       <CardActionArea href={`/#/documents/${record.id}/show`}>
         <CardHeader
@@ -127,6 +123,7 @@ const DocumentTitle = (props: { record: RaRecord }) => {
 };
 
 const DocumentContent = (props: { record: RaRecord }) => {
+  const [theme] = useTheme();
   const { record } = props;
   if (!record) return null;
 
@@ -142,7 +139,13 @@ const DocumentContent = (props: { record: RaRecord }) => {
   const getMimeTypeName = (): string => mimetypeToText(record?.mimetype);
 
   return (
-    <CardContent style={{ position: "relative" }} sx={{ pt: 0.5 }}>
+    <CardContent
+      style={{ position: "relative" }}
+      sx={{
+        pt: 0.5,
+        backgroundColor: theme === "dark" ? "#D9D9D9" : "#f8f8f8",
+      }}
+    >
       <ThumbnailSmall url={record.preview_url} label="Img" />
       <Badge
         label={getDateString()}

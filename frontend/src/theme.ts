@@ -141,7 +141,7 @@ export const darkTheme = {
   palette: {
     ...defaultDarkTheme.palette,
     primary: {
-      main: "#673ab7",
+      main: "#a97aff",
     },
     background: {
       default: "#313131",

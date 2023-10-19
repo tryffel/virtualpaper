@@ -71,6 +71,8 @@ import get from "lodash/get";
 import MenuItem from "@mui/material/MenuItem";
 import Menu from "@mui/material/Menu";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
 
 export const DocumentShow = () => {
   const [asideMode, setAsideMode] = React.useState<AsideMode>("closed");
@@ -153,30 +155,28 @@ function DocumentShowActions(props: ActionsProps) {
         <MoreVertIcon />
       </Button>
       <Menu anchorEl={anchorEl} open={!!anchorEl} onClose={handleCloseMenu}>
-        <MenuItem>
-          <RequestIndexingModal onClose={handleCloseMenu} />
+        <RequestIndexingModal onClose={handleCloseMenu} />
+        <MenuItem color={"primary"} onClick={toggleHistory}>
+          <ListItemIcon>
+            <HistoryIcon color={"primary"} />
+          </ListItemIcon>
+          <ListItemText>
+            <Typography variant="body1" color={"primary"}>
+              Document History
+            </Typography>
+          </ListItemText>
         </MenuItem>
-        <MenuItem>
-          <Button
-            color="primary"
-            onClick={toggleHistory}
-            label={"Document History"}
-          >
-            <HistoryIcon />
-          </Button>
+        <MenuItem color={"primary"} onClick={toggleJobs}>
+          <ListItemIcon>
+            <TimelineIcon color={"primary"} />
+          </ListItemIcon>
+          <ListItemText>
+            <Typography variant="body1" color={"primary"}>
+              Processing history
+            </Typography>
+          </ListItemText>
         </MenuItem>
-        <MenuItem>
-          <Button
-            color="primary"
-            onClick={toggleJobs}
-            label={"Processing history"}
-          >
-            <TimelineIcon />
-          </Button>
-        </MenuItem>
-        <MenuItem>
-          <DownloadDocumentButton onFinished={handleCloseMenu} />
-        </MenuItem>
+        <DownloadDocumentButton onFinished={handleCloseMenu} />
       </Menu>
     </TopToolbar>
   );

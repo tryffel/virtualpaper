@@ -14,6 +14,8 @@ import {
 import { requestDocumentProcessing } from "../../api/dataProvider";
 import AutoFixNormalIcon from "@mui/icons-material/AutoFixNormal";
 import MenuItem from "@mui/material/MenuItem";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
 
 export const RequestIndexingModal = (props: { onClose: () => void }) => {
   const [step, setStep] = React.useState("fts");
@@ -39,15 +41,17 @@ export const RequestIndexingModal = (props: { onClose: () => void }) => {
   };
 
   return (
-    <div>
-      <Button
-        label={"Process"}
-        size="small"
-        alignIcon="left"
-        onClick={handleClickOpen}
-      >
-        <AutoFixNormalIcon />
-      </Button>
+    <>
+      <MenuItem onClick={handleClickOpen}>
+        <ListItemIcon>
+          <AutoFixNormalIcon color={"primary"} />
+        </ListItemIcon>
+        <ListItemText>
+          <Typography variant="body1" color={"primary"}>
+            Process
+          </Typography>
+        </ListItemText>
+      </MenuItem>
 
       <Dialog
         onClose={handleClose}
@@ -74,7 +78,7 @@ export const RequestIndexingModal = (props: { onClose: () => void }) => {
           </Button>
         </DialogActions>
       </Dialog>
-    </div>
+    </>
   );
 };
 
