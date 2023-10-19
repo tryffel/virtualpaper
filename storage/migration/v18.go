@@ -19,10 +19,10 @@ package migration
 
 const schemaV18 = `
 ALTER TABLE metadata_keys 
-    ADD COLUMN icon TEXT DEFAULT '',
+    ADD COLUMN icon TEXT DEFAULT 'Label',
 	ADD COLUMN style JSON DEFAULT '{}';
 
-UPDATE metadata_keys SET icon = '', style = '{}' WHERE TRUE;
+UPDATE metadata_keys SET icon = 'Label', style = '{}' WHERE TRUE;
 
 ALTER TABLE metadata_keys 
     ALTER COLUMN icon SET NOT NULL,
