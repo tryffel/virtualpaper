@@ -83,6 +83,15 @@ export const MetadataKeyEdit = () => {
     return "Icon is invalid. Must be Material-ui icon. Leave empty to disable";
   };
 
+  const validateJson = (value: any) => {
+    try {
+      JSON.parse(value);
+      return undefined;
+    } catch (e) {
+      return "invalid json";
+    }
+  };
+
   return (
     <Edit title={<EditTitle />}>
       <SimpleForm>
@@ -109,6 +118,12 @@ export const MetadataKeyEdit = () => {
             return <FunctionField render={renderIcon(formData)} />;
           }}
         </FormDataConsumer>
+        <TextInput
+          source="style"
+          id="style"
+          label="Style (json)"
+          validate={validateJson}
+        />
         <ReferenceManyField
           label="Values"
           reference={"metadata/values"}
