@@ -14,11 +14,8 @@ const Logo = (props: { color?: "primary" | "secondary" }) => {
       xmlns="http://www.w3.org/2000/svg"
     >
       <g
-        fill={
-          color === "secondary"
-            ? theme.palette.secondary.contrastText
-            : theme.palette.primary.main
-        }
+        // @ts-ignore
+        fill={theme.palette.logo}
         id="svgGroup"
         strokeLinecap="round"
         fontSize="7"
