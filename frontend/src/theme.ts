@@ -21,6 +21,7 @@ import { defaultDarkTheme, defaultTheme } from "react-admin";
 export const lightTheme = {
   ...defaultTheme,
   palette: {
+    logo: "#fff",
     primary: {
       main: "#673ab7",
     },
@@ -140,6 +141,7 @@ export const darkTheme = {
   ...defaultDarkTheme,
   palette: {
     ...defaultDarkTheme.palette,
+    logo: "#673ab7",
     primary: {
       main: "#a97aff",
     },
