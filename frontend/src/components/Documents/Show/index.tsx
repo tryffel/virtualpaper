@@ -76,6 +76,9 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import LabelIcon from "@mui/icons-material/Label";
 import { IconByName, iconExists } from "../../icons";
+import NotesIcon from "@mui/icons-material/Notes";
+import SourceIcon from "@mui/icons-material/Source";
+import StickyNote2Icon from "@mui/icons-material/StickyNote2";
 
 export const DocumentShow = () => {
   const [asideMode, setAsideMode] = React.useState<AsideMode>("closed");
@@ -100,17 +103,17 @@ export const DocumentShow = () => {
       }
     >
       <TabbedShowLayout>
-        <Tab label="general">
+        <Tab label="general" icon={<StickyNote2Icon />}>
           {isNotMedium ? (
             <DocumentGeneralTabLarge />
           ) : (
             <DocumentGeneralTablSmall />
           )}
         </Tab>
-        <Tab label="Content">
+        <Tab label="Content" icon={<NotesIcon />}>
           <DocumentContentTab />
         </Tab>
-        <Tab label="preview">
+        <Tab label="preview" icon={<SourceIcon />}>
           <DocumentPreviewTab setDownloadUrl={setDownloadUrl} />
         </Tab>
       </TabbedShowLayout>
