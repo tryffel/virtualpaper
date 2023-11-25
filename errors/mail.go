@@ -19,6 +19,7 @@
 package errors
 
 import (
+	"context"
 	e "errors"
 	"fmt"
 	"time"
@@ -33,7 +34,7 @@ func MailEnabled() bool {
 
 // SendMail sends error as mail to recipient. If recipient == "", send mail
 // to default recipient from config file.
-func SendMail(err error, recipient string) error {
+func SendMail(ctx context.Context, err error, recipient string) error {
 	if recipient == "" {
 		recipient = config.C.Mail.ErrorRecipient
 		if recipient == "" {
@@ -53,5 +54,5 @@ func SendMail(err error, recipient string) error {
 		stack := getStack(8)
 		msg += fmt.Sprintf("uncaught error: %s\nstack:\n\n%s", err.Error(), stack)
 	}
-	return mail.SendMail("Caught an error in Virtualpaper", msg, recipient)
+	return mail.SendMail(ctx, "Caught an error in Virtualpaper", msg, recipient)
 }
