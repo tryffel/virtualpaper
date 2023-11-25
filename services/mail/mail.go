@@ -19,22 +19,23 @@
 package mail
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net/smtp"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
+	log "tryffel.net/go/virtualpaper/util/logger"
 )
 
 // SendMail sends mail.
-func SendMail(subject, msg string, recipient string) error {
+func SendMail(ctx context.Context, subject, msg string, recipient string) error {
 	if !MailEnabled() {
 		return fmt.Errorf("mail not configured")
 	}
 
-	logrus.Infof("Send mail %s", subject)
+	log.Context(ctx).WithField("recipient", recipient).WithField("subject", subject).Infof("Send mail")
 	start := time.Now()
 
 	host := fmt.Sprintf("%s:%d", config.C.Mail.Host, config.C.Mail.Port)
@@ -45,7 +46,7 @@ func SendMail(subject, msg string, recipient string) error {
 
 	millisec := took.Milliseconds()
 	if millisec > 2000 {
-		logrus.Warningf("Sending mail took %.2f s", float32(millisec)/1000)
+		log.Context(ctx).Warnf("Sending mail took %.2f s", float32(millisec)/1000)
 	}
 
 	if err == nil {

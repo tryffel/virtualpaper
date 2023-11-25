@@ -20,14 +20,15 @@ package process
 
 import (
 	"bytes"
+	"context"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
+	log "tryffel.net/go/virtualpaper/util/logger"
 )
 
 var pandocFileEndingtoFormat = map[string]string{
@@ -83,7 +84,7 @@ func isPandocMimetype(mimeType string) bool {
 	return pandocMimesSupported[mimeType]
 }
 
-func getPandocText(mimetype, filename string, file *os.File) (string, error) {
+func getPandocText(ctx context.Context, mimetype, filename string, file *os.File) (string, error) {
 	// todo: handle mime type as well
 
 	fileEnding := fileEndingFromName(filename)
@@ -97,7 +98,11 @@ func getPandocText(mimetype, filename string, file *os.File) (string, error) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 
-	cmd := exec.Command(config.C.Processing.PandocBin, "-f", format, file.Name(), "-t", "plain")
+	args := []string{
+		"-f", format, file.Name(), "-t", "plain",
+	}
+	log.Context(ctx).Infof("Exec '%s %s'", config.C.Processing.PandocBin, args)
+	cmd := exec.Command(config.C.Processing.PandocBin, args...)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	text := ""
@@ -114,7 +119,7 @@ func getPandocText(mimetype, filename string, file *os.File) (string, error) {
 
 	text = stdout.String()
 	if text == "" {
-		logrus.Warning("got empty text from pandoc")
+		log.Context(ctx).Warning("got empty text from pandoc")
 	}
 
 	return text, err

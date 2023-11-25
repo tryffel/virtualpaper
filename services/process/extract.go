@@ -1,6 +1,7 @@
 package process
 
 import (
+	"context"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -9,7 +10,7 @@ import (
 	"tryffel.net/go/virtualpaper/models"
 )
 
-func (fp *fileProcessor) parseContent() error {
+func (fp *fileProcessor) parseContent(ctx context.Context) error {
 	err := fp.ensureFileOpen()
 	if err != nil {
 		logrus.Errorf("open file: %v", err)
@@ -19,17 +20,17 @@ func (fp *fileProcessor) parseContent() error {
 
 	fp.Info("extract content for document %s", fp.document.Id)
 	if fp.document.IsPdf() {
-		return fp.extractPdf(file)
+		return fp.extractPdf(ctx, file)
 	} else if fp.document.IsImage() {
-		return fp.extractImage(file)
+		return fp.extractImage(ctx, file)
 	} else if fp.usePandoc && isPandocMimetype(fp.document.Mimetype) {
-		return fp.extractPandoc(file)
+		return fp.extractPandoc(ctx, file)
 	} else {
 		return fmt.Errorf("cannot extract content from mimetype: %v", fp.document.Mimetype)
 	}
 }
 
-func (fp *fileProcessor) extractPdf(file *os.File) error {
+func (fp *fileProcessor) extractPdf(ctx context.Context, file *os.File) error {
 	// if pdf, generate image preview and pass it to tesseract
 	var err error
 
@@ -51,11 +52,11 @@ func (fp *fileProcessor) extractPdf(file *os.File) error {
 	useOcr := false
 
 	if fp.usePdfToText {
-		fp.Info("Attempt to parse document %s content with pdftotext", fp.document.Id)
+		fp.Info("Attempt to parse document content with pdftotext")
 		text, err = getPdfToText(file, fp.document.Id)
 		if err != nil {
 			if err.Error() == "empty" {
-				fp.Info("document %s has no plain text, try ocr", fp.document.Id)
+				fp.Info("document has no plain text, try ocr")
 				useOcr = true
 			} else {
 				fp.Debug("failed to get content with pdftotext: %v", err)
@@ -68,7 +69,7 @@ func (fp *fileProcessor) extractPdf(file *os.File) error {
 	}
 
 	if useOcr {
-		text, err = runOcr(file.Name(), fp.document.Id)
+		text, err = runOcr(ctx, file.Name(), fp.document.Id)
 		if err != nil {
 			job.Message += "; " + err.Error()
 			job.Status = models.JobFailure
@@ -94,7 +95,7 @@ func (fp *fileProcessor) extractPdf(file *os.File) error {
 	return nil
 }
 
-func (fp *fileProcessor) extractImage(file *os.File) error {
+func (fp *fileProcessor) extractImage(ctx context.Context, file *os.File) error {
 	var err error
 	process := &models.ProcessItem{
 		DocumentId: fp.document.Id,
@@ -109,7 +110,7 @@ func (fp *fileProcessor) extractImage(file *os.File) error {
 
 	defer fp.completeProcessingStep(process, job)
 
-	text, err := runOcr(file.Name(), fp.document.Id)
+	text, err := runOcr(ctx, file.Name(), fp.document.Id)
 	if err != nil {
 		job.Message += "; " + err.Error()
 		job.Status = models.JobFailure
@@ -129,7 +130,7 @@ func (fp *fileProcessor) extractImage(file *os.File) error {
 	return nil
 }
 
-func (fp *fileProcessor) extractPandoc(file *os.File) error {
+func (fp *fileProcessor) extractPandoc(ctx context.Context, file *os.File) error {
 	var err error
 	process := &models.ProcessItem{
 		DocumentId: fp.document.Id,
@@ -144,7 +145,7 @@ func (fp *fileProcessor) extractPandoc(file *os.File) error {
 
 	defer fp.completeProcessingStep(process, job)
 
-	text, err := getPandocText(fp.document.Mimetype, fp.document.Filename, file)
+	text, err := getPandocText(ctx, fp.document.Mimetype, fp.document.Filename, file)
 	if err != nil {
 		job.Message += "; " + err.Error()
 		job.Status = models.JobFailure

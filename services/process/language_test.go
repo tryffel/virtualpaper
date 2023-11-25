@@ -1,6 +1,10 @@
 package process
 
-import "testing"
+import (
+	"context"
+	"testing"
+	log "tryffel.net/go/virtualpaper/util/logger"
+)
 
 var samples = [][]string{
 	{"en", "languages are awesome"},
@@ -10,8 +14,9 @@ var samples = [][]string{
 
 func TestGetLanguage(t *testing.T) {
 	initLanguageDetector()
+	ctx := log.ContextWithTaskId(context.Background(), "test-task")
 	for i, sample := range samples {
-		lang, _ := detectLanguage(sample[1])
+		lang, _ := detectLanguage(ctx, sample[1])
 		if sample[0] != lang {
 			t.Errorf("case %d: did not detect language, got '%s', want: '%s'", i+1, lang, sample[0])
 		}

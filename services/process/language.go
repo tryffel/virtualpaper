@@ -1,6 +1,7 @@
 package process
 
 import (
+	"context"
 	"fmt"
 	"github.com/pemistahl/lingua-go"
 	"github.com/sirupsen/logrus"
@@ -8,12 +9,13 @@ import (
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/storage"
+	log "tryffel.net/go/virtualpaper/util/logger"
 	"unicode"
 )
 
 var languageDetector lingua.LanguageDetector
 
-func (fp *fileProcessor) detectLanguage() error {
+func (fp *fileProcessor) detectLanguage(ctx context.Context) error {
 	process := &models.ProcessItem{
 		DocumentId: fp.document.Id,
 		Action:     models.ProcessDetectLanguage,
@@ -29,7 +31,7 @@ func (fp *fileProcessor) detectLanguage() error {
 		defer fp.completeProcessingStep(process, job)
 	}
 
-	lang, err := detectLanguage(fp.document.Content)
+	lang, err := detectLanguage(ctx, fp.document.Content)
 	if err != nil {
 		job.Status = models.JobFailure
 		return err
@@ -47,7 +49,7 @@ func (fp *fileProcessor) detectLanguage() error {
 	return nil
 }
 
-func detectLanguage(text string) (string, error) {
+func detectLanguage(ctx context.Context, text string) (string, error) {
 	maxLen := 500
 	truncated := text
 	if len(text) > maxLen {
@@ -62,6 +64,8 @@ func detectLanguage(text string) (string, error) {
 			cleanedUp = append(cleanedUp, ' ')
 		}
 	}
+
+	log.Context(ctx).Info("detect lang")
 	sample := string(cleanedUp)
 	lang, found := languageDetector.DetectLanguageOf(sample)
 	if !found {

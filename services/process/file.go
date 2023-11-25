@@ -1,12 +1,14 @@
 package process
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
 	"strings"
 	"time"
 	"tryffel.net/go/virtualpaper/services/search"
+	log "tryffel.net/go/virtualpaper/util/logger"
 
 	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/config"
@@ -26,6 +28,7 @@ type fpConfig struct {
 
 type fileProcessor struct {
 	*Task
+	taskId   string
 	document *models.Document
 	input    chan fileOp
 	file     string
@@ -59,11 +62,12 @@ func newFileProcessor(conf *fpConfig) *fileProcessor {
 func (fp *fileProcessor) logFields() logrus.Fields {
 	fp.lock.RLock()
 	fields := logrus.Fields{
-		"module":    "process",
-		"runner-id": fp.strId,
+		"module":                "process",
+		"runner-id":             fp.strId,
+		log.LogContextKeyTaskId: fp.taskId,
 	}
 	if fp.document != nil {
-		fields["document"] = fp.document.Id
+		fields["documentId"] = fp.document.Id
 	}
 	fp.lock.RUnlock()
 	return fields
@@ -132,10 +136,12 @@ func (fp *fileProcessor) recoverPanic() {
 	}
 
 	fields := logrus.Fields{}
-	fields["task_id"] = fp.id
+	fields["task_runner_id"] = fp.id
+	fields[log.LogContextKeyTaskId] = fp.taskId
 	if fp.document != nil {
 		fields["document"] = fp.document.Id
 	}
+	ctx := log.ContextWithTaskId(context.Background(), fp.taskId)
 
 	err := errors.ErrInternalError
 	err.SetStack()
@@ -150,13 +156,13 @@ func (fp *fileProcessor) recoverPanic() {
 			msg += fmt.Sprintf("\ndocument_id: %s\n", fp.document.Id)
 		}
 		err.ErrMsg = msg
-		mailErr := errors.SendMail(err, "")
+		mailErr := errors.SendMail(context.Background(), err, "")
 		if mailErr != nil {
 			logrus.Errorf("send error stack on mail: %v", err)
 		}
 	}
 
-	e := fp.cancelDocumentProcessing("server error")
+	e := fp.cancelDocumentProcessing(ctx, "server error")
 	if e != nil {
 		logrus.Errorf("cancel document processing: %v", err)
 	}
@@ -164,9 +170,9 @@ func (fp *fileProcessor) recoverPanic() {
 
 // cancel ongoing processing, in case of errors.
 // without cancel processing probably gets stuck in the same processing step.
-func (fp *fileProcessor) cancelDocumentProcessing(reason string) error {
+func (fp *fileProcessor) cancelDocumentProcessing(ctx context.Context, reason string) error {
 	if fp.document != nil {
-		logrus.Warningf("cancel processing document %s due to errors", fp.document.Id)
+		log.Context(ctx).WithField("documentId", fp.document.Id).Warning("cancel processing document due to errors")
 		err := fp.db.JobStore.CancelDocumentProcessing(fp.document.Id)
 		if err != nil {
 			logrus.Errorf("cancel document processing: %v", err)
@@ -215,7 +221,7 @@ func (fp *fileProcessor) process(op fileOp) {
 
 // re-calculate hash. If it differs from current document.Hash, update document record and rename file to new hash,
 // if different.
-func (fp *fileProcessor) updateHash(doc *models.Document) error {
+func (fp *fileProcessor) updateHash(ctx context.Context, doc *models.Document) error {
 	process := &models.ProcessItem{
 		DocumentId: fp.document.Id,
 		Action:     models.ProcessHash,
@@ -240,9 +246,9 @@ func (fp *fileProcessor) updateHash(doc *models.Document) error {
 	}
 
 	if hash != doc.Hash {
-		logrus.Infof("rename file %s to %s", doc.Hash, hash)
+		log.Info(ctx, "rename file", map[string]interface{}{"old-name": doc.Hash, "new-name": hash})
 	} else {
-		logrus.Infof("file hash has not changed")
+		log.Info(ctx, "hash not changed", map[string]interface{}{"name": doc.Hash})
 		job.Status = models.JobFinished
 		job.Message = "hash: no change"
 		return nil
@@ -311,7 +317,7 @@ func (fp *fileProcessor) isDuplicate() (bool, error) {
 	return false, nil
 }
 
-func (fp *fileProcessor) indexSearchContent() error {
+func (fp *fileProcessor) indexSearchContent(ctx context.Context) error {
 	if fp.document == nil {
 		return errors.New("no document")
 	}
@@ -356,6 +362,7 @@ func (fp *fileProcessor) indexSearchContent() error {
 		return errors.New("no search engine available")
 	}
 
+	log.Context(ctx).Info("Send document to search index")
 	err = fp.search.IndexDocuments(&[]models.Document{*fp.document}, fp.document.UserId)
 	if err != nil {
 		job.Message += "; " + err.Error()
