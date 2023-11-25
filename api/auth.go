@@ -23,7 +23,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 	"github.com/mileusna/useragent"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"math/rand"
 	"net/http"
@@ -34,6 +33,7 @@ import (
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/services/mail"
+	log "tryffel.net/go/virtualpaper/util/logger"
 )
 
 const (
@@ -58,7 +58,7 @@ func (a *Api) authorizeUserV2() echo.MiddlewareFunc {
 				return
 			}
 
-			userId, tokenKey, err := validateToken(parts[1], config.C.Api.Key)
+			userId, tokenKey, err := validateToken(c, parts[1], config.C.Api.Key)
 			if userId == "" || err != nil {
 				return
 			}
@@ -118,7 +118,8 @@ func (a *Api) ConfirmAuthorizedToken() echo.MiddlewareFunc {
 				return err
 			}
 			if token.ConfirmationExpired() {
-				logrus.Infof("user's token needs confirmation, token %d", token.Id)
+				ctx := getContext(c)
+				log.Context(ctx).WithField("token", token.Id).Infof("auth token needs confirmation")
 				err := errors.ErrUnauthorized
 				err.ErrMsg = "authentication required"
 				return err
@@ -166,7 +167,7 @@ func newToken(userId string, tokenId string, privateKey string) (string, error) 
 
 // validateToken validates and parses user id and token id. If valid, return user_id, else return error description
 // Return user_id, nonce, error
-func validateToken(tokenString string, privateKey string) (string, string, error) {
+func validateToken(c echo.Context, tokenString string, privateKey string) (string, string, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, nil
@@ -183,7 +184,7 @@ func validateToken(tokenString string, privateKey string) (string, string, error
 				return "", "", e
 			}
 			if e.Inner.Error() == "Token is expired" {
-				logrus.Debugf("token expired")
+				log.Debugf(getContext(c), "token expired")
 				e := errors.ErrInvalid
 				e.ErrMsg = "token expired"
 				return "", "", e
@@ -208,7 +209,7 @@ func validateToken(tokenString string, privateKey string) (string, string, error
 		}
 		expired := !claims.VerifyNotBefore(time.Now().Unix(), config.C.Api.TokenExpire != 0)
 		if expired {
-			logrus.Debugf("token expired")
+			c.Logger().Infof("token expired")
 			e := errors.ErrInvalid
 			e.ErrMsg = "token expired"
 			return "", "", e
@@ -248,16 +249,17 @@ func (a *Api) LoginV2(c echo.Context) error {
 		return c.String(http.StatusBadRequest, err.Error())
 	}
 
+	ctx := getContext(c)
 	userId, err := a.db.UserStore.TryLogin(dto.Username, dto.Password)
 	remoteAddr := getRemoteAddr(req)
 	if userId == -1 || err != nil {
-		logrus.Infof("Failed login attempt for user %s from remote %s", dto.Username, remoteAddr)
+		log.Entry(ctx).WithField("user", dto.Username).WithField("remoteAddr", remoteAddr).Infof("Failed login attempt")
 		// request takes about the same time with invalid password & invalid user
 		time.Sleep(time.Millisecond*1100 + time.Duration(int(rand.Float64()*1000))*time.Millisecond)
 		return echo.ErrUnauthorized
 	}
 
-	c.Logger().Infof("User %d '%s' logged in from %s", userId, dto.Username, remoteAddr)
+	log.Entry(ctx).WithField("user", dto.Username).WithField("remoteAddr", remoteAddr).Infof("User logged in")
 	authToken := &models.Token{
 		Id:            0,
 		UserId:        userId,
@@ -284,12 +286,13 @@ func (a *Api) LoginV2(c echo.Context) error {
 
 	token, err = newToken(strconv.Itoa(userId), authToken.Key, config.C.Api.Key)
 	if err != nil {
-		c.Logger().Errorf("CreateJob new token: %v", err)
+		c.Logger().Errorf("Create new token: %v", err)
+		return respInternalErrorV2(c, err)
 	}
 
 	user, err := a.db.UserStore.GetUser(userId)
 	if user.Email != "" {
-		logrus.Debugf("Send email for logged in user to %s", user.Email)
+		c.Logger().Debugf("Send email for logged in user to %s", user.Email)
 
 		msg := fmt.Sprintf(`User logged in
 
@@ -297,9 +300,9 @@ ip address: %s,
 user agent: %s,
 `, remoteAddr, req.Header.Get("user-agent"))
 
-		err := mail.SendMail("User logged in", msg, user.Email)
+		err := mail.SendMail(ctx, "User logged in", msg, user.Email)
 		if err != nil {
-			logrus.Errorf("send logged-in email to user: %s: %v", user.Email, err)
+			c.Logger().Errorf("send logged-in email to user: %s: %v", user.Email, err)
 		}
 	}
 	respBody := &LoginResponse{
@@ -353,14 +356,14 @@ func (a *Api) ResetPassword(c echo.Context) error {
 	if err != nil {
 		if errors.Is(err, errors.ErrRecordNotFound) {
 			e := errors.ErrForbidden
-			logrus.Warningf("password reset token not found by id %d", dto.Id)
+			c.Logger().Warnf("password reset token not found by id %d", dto.Id)
 			return e
 		}
 		return err
 	}
 
 	if token.HasExpired() {
-		logrus.Warningf("user %d attempted to change password with expired reset token %d, expired at %s",
+		c.Logger().Warnf("user %d attempted to change password with expired reset token %d, expired at %s",
 			token.UserId, token.Id, token.ExpiresAt)
 		e := errors.ErrInvalid
 		e.ErrMsg = "Token has expired. Please create a new reset link."
@@ -369,7 +372,7 @@ func (a *Api) ResetPassword(c echo.Context) error {
 
 	match, err := token.TokenMatches(dto.Token)
 	if err != nil {
-		logrus.Warningf("user %d attempted to change password with bad reset token %d: %v", token.UserId, token.Id, err)
+		c.Logger().Warnf("user %d attempted to change password with bad reset token %d: %v", token.UserId, token.Id, err)
 		return fmt.Errorf("compare token to hash: %v", err)
 	}
 	if !match {
@@ -380,7 +383,7 @@ func (a *Api) ResetPassword(c echo.Context) error {
 
 	user, err := a.db.UserStore.GetUser(token.UserId)
 	if err != nil {
-		logrus.Errorf("user %d not found for password reset token %d", token.UserId, token.Id)
+		c.Logger().Errorf("user %d not found for password reset token %d", token.UserId, token.Id)
 	}
 
 	if user != nil {
@@ -395,12 +398,10 @@ func (a *Api) ResetPassword(c echo.Context) error {
 		}
 	}
 
-	logrus.Warningf("Reset user's (%d) password with reset token %d", user.Id, token.Id)
-
-	logrus.Warningf("CreateJob password reset token %d for user %d, expires at %s", token.Id, user.Id, token.ExpiresAt)
+	c.Logger().Warnf("Reset user's (%d) password with reset token %d", user.Id, token.Id)
 	err = a.db.UserStore.DeletePasswordResetToken(token.Id)
 	if err != nil {
-		logrus.Errorf("delete password token %d: %v", token.Id, err)
+		c.Logger().Errorf("delete password token %d: %v", token.Id, err)
 	}
 	return c.JSON(200, "ok")
 }
@@ -429,17 +430,17 @@ func (a *Api) CreateResetPasswordToken(c echo.Context) error {
 	user, err := a.db.UserStore.GetUserByEmail(dto.Email)
 	userOk := user != nil && err == nil
 	if err != nil {
-		logrus.Warningf("user by email '%s' not found when creating reset password link", dto.Email)
+		c.Logger().Warnf("user by email '%s' not found when creating reset password link", dto.Email)
 	}
 
 	// don't allow inactive users to reset passwords
 	if user != nil && userOk {
 		if !user.IsActive {
-			logrus.Warningf("user %d is not active, refure to send password reset link", user.Id)
+			c.Logger().Warnf("user %d is not active, refure to send password reset link", user.Id)
 			userOk = false
 		}
 		if user.Email == "" {
-			logrus.Warningf("user %d does not have valid email, cannot send password reset link", user.Id)
+			c.Logger().Warnf("user %d does not have valid email, cannot send password reset link", user.Id)
 			userOk = false
 		}
 	}
@@ -470,8 +471,8 @@ func (a *Api) CreateResetPasswordToken(c echo.Context) error {
 		return fmt.Errorf("save password reset token: %v", err)
 	}
 
-	logrus.Warningf("CreateJob password reset token %d for user %d, expires at %s", token.Id, user.Id, token.ExpiresAt)
-	go mail.ResetPassword(user.Email, rawToken, token.Id)
+	c.Logger().Warnf("Create password reset token %d for user %d, expires at %s", token.Id, user.Id, token.ExpiresAt)
+	go mail.ResetPassword(getContext(c), user.Email, rawToken, token.Id)
 	return c.JSON(200, msg)
 }
 
@@ -493,7 +494,7 @@ func (a *Api) ConfirmAuthentication(c echo.Context) error {
 	userId, err := a.db.UserStore.TryLogin(user.User.Name, dto.Password)
 	remoteAddr := getRemoteAddr(req)
 	if userId == -1 || err != nil {
-		logrus.Infof("Failed authentication confirmation for user %d, token %s, from remote %s", user.UserId, user.TokenKey, remoteAddr)
+		c.Logger().Infof("Failed authentication confirmation for user %d, token %s, from remote %s", user.UserId, user.TokenKey, remoteAddr)
 		return echo.ErrForbidden
 	}
 
@@ -507,7 +508,7 @@ func (a *Api) ConfirmAuthentication(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	logrus.Infof("Authentication confirmation successful for user %d, token %s, from remote %s", user.UserId, user.TokenKey, remoteAddr)
+	c.Logger().Infof("Authentication confirmation successful for user %d, token %s, from remote %s", user.UserId, user.TokenKey, remoteAddr)
 	return c.JSON(200, "")
 }
 

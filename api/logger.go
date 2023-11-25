@@ -19,10 +19,12 @@
 package api
 
 import (
+	"context"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/config"
+	log "tryffel.net/go/virtualpaper/util/logger"
 )
 
 func logCrudOp(resource string, action string, userId int, success *bool) *logrus.Entry {
@@ -62,10 +64,10 @@ func loggingMiddlware() echo.MiddlewareFunc {
 
 	logFunc := func(c echo.Context, values middleware.RequestLoggerValues) error {
 		logger.WithFields(logrus.Fields{
-			"method":    values.Method,
-			"uri":       values.URIPath,
-			"status":    values.Status,
-			"requestId": values.RequestID,
+			"method":                   values.Method,
+			"uri":                      values.URIPath,
+			"status":                   values.Status,
+			log.LogContextKeyRequestId: values.RequestID,
 		}).Info("request")
 		return nil
 	}
@@ -93,4 +95,10 @@ func loggingMiddlware() echo.MiddlewareFunc {
 		LogQueryParams:   nil,
 		LogFormValues:    nil,
 	})
+}
+
+func getContext(c echo.Context) context.Context {
+	id := c.Request().Header.Get(echo.HeaderXRequestID)
+	ctx := c.Request().Context()
+	return log.ContextWithRequestId(ctx, id)
 }

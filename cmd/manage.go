@@ -19,6 +19,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -55,7 +56,7 @@ var mailTestCmd = &cobra.Command{
 			recipient = config.C.Mail.ErrorRecipient
 		}
 
-		err = mail.SendMail("A test mail from Virtualpaper", "Mail configuration seemd to be valid.",
+		err = mail.SendMail(context.Background(), "A test mail from Virtualpaper", "Mail configuration seemd to be valid.",
 			config.C.Mail.ErrorRecipient)
 		if err == nil {
 			fmt.Printf("Sent mail to %s\n", recipient)
