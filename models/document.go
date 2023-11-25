@@ -198,15 +198,15 @@ func MetadataDiff(id string, userId int, original, updated *[]Metadata) []Docume
 		return string(bytes)
 	}
 
-	for keyValue, oldVal := range oldMetadata {
-		if _, found := newMetadata[keyValue]; !found {
-			addHistoryItem(DocumentHistoryActionMetadataRemove, formatMetadata(oldVal), "")
+	for _, value := range *original {
+		if _, found := newMetadata[fmt.Sprintf("%d-%d", value.KeyId, value.ValueId)]; !found {
+			addHistoryItem(DocumentHistoryActionMetadataRemove, formatMetadata(value), "")
 		}
 	}
 
-	for keyValue, newVal := range newMetadata {
-		if _, found := oldMetadata[keyValue]; !found {
-			addHistoryItem(DocumentHistoryActionMetadataAdd, "", formatMetadata(newVal))
+	for _, value := range *updated {
+		if _, found := oldMetadata[fmt.Sprintf("%d-%d", value.KeyId, value.ValueId)]; !found {
+			addHistoryItem(DocumentHistoryActionMetadataAdd, "", formatMetadata(value))
 		}
 	}
 	return history
