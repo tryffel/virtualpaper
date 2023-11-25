@@ -19,11 +19,13 @@ package process
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"os/exec"
 	"regexp"
 	"tryffel.net/go/virtualpaper/config"
+	log "tryffel.net/go/virtualpaper/util/logger"
 )
 
 var imagickRe = `Version: ImageMagick\s(.+)`
@@ -74,11 +76,10 @@ func callImagick(args ...string) error {
 	return nil
 }
 
-func generateThumbnail(rawFile string, previewFile string, page int, size int, mimetype string) error {
+func generateThumbnail(ctx context.Context, rawFile string, previewFile string, page int, size int, mimetype string) error {
 	if mimetype == "text/plain" {
 		return generateThumbnailPlainText(rawFile, previewFile, size)
 	}
-	logrus.Debugf("run 'convert -thumbnail'")
 
 	args := []string{
 		"-thumbnail", fmt.Sprintf("x%d", size),
@@ -88,16 +89,18 @@ func generateThumbnail(rawFile string, previewFile string, page int, size int, m
 		rawFile + fmt.Sprintf("[%d]", page),
 		previewFile,
 	}
+
+	log.Context(ctx).Infof("call imagick: '%s'", args)
 	return callImagick(args...)
 }
 
-func generatePicture(rawFile string, pictureFile string) error {
-	logrus.Debugf("run 'convert -thumbnail'")
+func generatePicture(ctx context.Context, rawFile string, pictureFile string) error {
 	args := []string{
 		"-density", "300",
 		rawFile,
 		"-depth", "8",
 		pictureFile,
 	}
+	log.Context(ctx).Infof("call imageick: '%s'", args)
 	return callImagick(args...)
 }

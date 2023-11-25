@@ -2,6 +2,7 @@ package process
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/image/font"
@@ -17,7 +18,7 @@ import (
 	"tryffel.net/go/virtualpaper/storage"
 )
 
-func (fp *fileProcessor) generateThumbnail() error {
+func (fp *fileProcessor) generateThumbnail(ctx context.Context) error {
 	process := &models.ProcessItem{
 		DocumentId: fp.document.Id,
 		Action:     models.ProcessThumbnail,
@@ -42,7 +43,7 @@ func (fp *fileProcessor) generateThumbnail() error {
 	}
 
 	name := fp.rawFile.Name()
-	err = generateThumbnail(name, output, 0, 500, fp.document.Mimetype)
+	err = generateThumbnail(ctx, name, output, 0, 500, fp.document.Mimetype)
 	if err != nil {
 		job.Status = models.JobFailure
 		job.Message += "; " + err.Error()
@@ -175,43 +176,5 @@ func generateThumbnailPlainText(rawFile string, previewFile string, size int) er
 	if err != nil {
 		return fmt.Errorf("flush output buffer: %v", err)
 	}
-	return nil
-}
-
-func (fp *fileProcessor) updateThumbnail(doc *models.Document, file *os.File) error {
-	process := &models.ProcessItem{
-		DocumentId: fp.document.Id,
-		Action:     models.ProcessThumbnail,
-		CreatedAt:  time.Now(),
-	}
-
-	job, err := fp.db.JobStore.StartProcessItem(process, "generate thumbnail")
-	if err != nil {
-		return fmt.Errorf("persist process item: %v", err)
-	}
-	job.Message = "Generate thumbnail"
-	defer fp.completeProcessingStep(process, job)
-
-	output := storage.PreviewPath(fp.document.Id)
-
-	err = storage.CreatePreviewDir(fp.document.Id)
-	if err != nil {
-		logrus.Errorf("create preview dir: %v", err)
-	}
-
-	logrus.Infof("generate thumbnail for document %s", fp.document.Id)
-	err = generateThumbnail(file.Name(), output, 0, 500, process.Document.Mimetype)
-
-	err = fp.db.DocumentStore.Update(storage.UserIdInternal, doc)
-	if err != nil {
-		logrus.Errorf("update document record: %v", err)
-	}
-
-	if err != nil {
-		job.Status = models.JobFailure
-		job.Message += "; " + err.Error()
-		return fmt.Errorf("call imagick: %v", err)
-	}
-	job.Status = models.JobFinished
 	return nil
 }

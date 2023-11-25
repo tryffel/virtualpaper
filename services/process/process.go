@@ -1,13 +1,16 @@
 package process
 
 import (
+	"context"
 	"fmt"
+	"github.com/hashicorp/go-uuid"
 	"github.com/sirupsen/logrus"
 	"os"
 	"time"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/storage"
+	log "tryffel.net/go/virtualpaper/util/logger"
 )
 
 func (fp *fileProcessor) completeProcessingStep(process *models.ProcessItem, job *models.Job) {
@@ -96,6 +99,8 @@ func (fp *fileProcessor) processDocument() {
 
 	defer fp.cleanup()
 	for {
+		fp.taskId, _ = uuid.GenerateUUID()
+		ctx := log.ContextWithTaskId(context.Background(), fp.taskId)
 		step, err := fp.db.JobStore.GetNextStepForDocument(fp.document.Id)
 		if err != nil {
 			if errors.Is(err, errors.ErrRecordNotFound) {
@@ -111,27 +116,27 @@ func (fp *fileProcessor) processDocument() {
 		case models.ProcessHash:
 			err = fp.ensureFileOpenAndLogFailure()
 			if err != nil {
-				err = fp.cancelDocumentProcessing("file not found")
+				err = fp.cancelDocumentProcessing(ctx, "file not found")
 				if err != nil {
 					logrus.Errorf("cancel document processing: %v", err)
 				}
 				return
 			}
-			err := fp.updateHash(fp.document)
+			err := fp.updateHash(ctx, fp.document)
 			if err != nil {
-				logrus.Errorf("update hash: %v", err)
+				log.Errorf(ctx, "update hash %v", err)
 				return
 			}
 		case models.ProcessThumbnail:
 			err = fp.ensureFileOpenAndLogFailure()
 			if err != nil {
-				err = fp.cancelDocumentProcessing("file not found")
+				err = fp.cancelDocumentProcessing(ctx, "file not found")
 				if err != nil {
 					logrus.Errorf("cancel document processing: %v", err)
 				}
 				return
 			}
-			err := fp.generateThumbnail()
+			err := fp.generateThumbnail(ctx)
 			if err != nil {
 				logrus.Errorf("generate thumbnail: %v", err)
 				return
@@ -139,57 +144,58 @@ func (fp *fileProcessor) processDocument() {
 		case models.ProcessParseContent:
 			err = fp.ensureFileOpenAndLogFailure()
 			if err != nil {
-				err = fp.cancelDocumentProcessing("file not found")
+				err = fp.cancelDocumentProcessing(ctx, "file not found")
 				if err != nil {
+					log.Errorf(ctx, "cancel document : %v", err)
 					logrus.Errorf("cancel document processing: %v", err)
 				}
 				return
 			}
-			err := fp.parseContent()
+			err := fp.parseContent(ctx)
 			if err != nil {
-				logrus.Errorf("parse content: %v", err)
+				log.Errorf(ctx, "parse content: %v", err)
 				return
 			}
 		case models.ProcessDetectLanguage:
 			err := refreshDocument()
 			if err != nil {
-				logrus.Errorf("refresh document: %v", err)
+				log.Errorf(ctx, "refresh document: %v", err)
 				return
 			}
-			err = fp.detectLanguage()
+			err = fp.detectLanguage(ctx)
 			if err != nil {
-				logrus.Errorf("detect language: %v", err)
+				log.Errorf(ctx, "detect language: %v", err)
 				return
 			}
 		case models.ProcessRules:
 			err := refreshDocument()
 			if err != nil {
-				logrus.Errorf("refresh document: %v", err)
+				log.Errorf(ctx, "refresh document: %v", err)
 				return
 			}
-			err = fp.runRules()
+			err = fp.runRules(ctx)
 			if err != nil {
-				logrus.Errorf("run rules: %v", err)
+				log.Errorf(ctx, "run rules: %v", err)
 				return
 			}
 		case models.ProcessFts:
 			err := refreshDocument()
 			if err != nil {
-				logrus.Errorf("refresh document: %v", err)
+				log.Errorf(ctx, "refresh document: %v", err)
 				return
 			}
-			err = fp.indexSearchContent()
+			err = fp.indexSearchContent(ctx)
 			if err != nil {
-				logrus.Errorf("index search content: %v", err)
+				log.Errorf(ctx, "index search content: %v", err)
 				return
 			}
 		default:
-			logrus.Warningf("unhandle process step: %v, skipping", step.Action)
+			logrus.Warningf("unhandled process step: %v, skipping", step.Action)
 		}
 	}
 }
 
-func (fp *fileProcessor) runRules() error {
+func (fp *fileProcessor) runRules(ctx context.Context) error {
 	if fp.document == nil {
 		return errors.New("no document set")
 	}
@@ -220,6 +226,9 @@ func (fp *fileProcessor) runRules() error {
 	} else if len(*metadataValues) != 0 {
 		err = matchMetadata(fp.document, metadataValues)
 	}
+
+	log.Context(ctx).WithField("user", fp.document.UserId).WithField("documentId", fp.document.Id).
+		WithField("total-rules", len(rules)).Infof("Run user rules for document")
 
 	for i, rule := range rules {
 		logrus.Debugf("(%d.) run user rule %d", i, rule.Id)

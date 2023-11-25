@@ -20,6 +20,7 @@ package process
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -28,13 +29,14 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	log "tryffel.net/go/virtualpaper/util/logger"
 
 	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
-func runOcr(inputImage, id string) (string, error) {
+func runOcr(ctx context.Context, inputImage, id string) (string, error) {
 
 	var err error
 	var text string
@@ -46,11 +48,11 @@ func runOcr(inputImage, id string) (string, error) {
 	}
 	defer os.RemoveAll(dir)
 
-	logrus.Infof("Extract content for file %s with OCR", id)
-	logrus.Debugf("convert pdf to images")
+	log.Context(ctx).Infof("Extract content for file %s with OCR", id)
+	log.Context(ctx).Debugf("convert pdf to images")
 
 	imageFile := path.Join(dir, "preview.png")
-	err = generatePicture(inputImage, imageFile)
+	err = generatePicture(ctx, inputImage, imageFile)
 	if err != nil {
 		return text, fmt.Errorf("generate pictures from pdf pages: %v", err)
 	}
@@ -65,7 +67,7 @@ func runOcr(inputImage, id string) (string, error) {
 			return nil
 		}
 		start := time.Now()
-		logrus.Infof("OCR file %s", fileName)
+		log.Context(ctx).Infof("OCR file %s", fileName)
 
 		outputFile := fileName + "-out"
 
@@ -94,7 +96,7 @@ func runOcr(inputImage, id string) (string, error) {
 		}
 
 		took := time.Now().Sub(start)
-		logrus.Infof("Extracted %s, took %.2f s, content length: %d", fileName, took.Seconds(), len(pageText))
+		log.Context(ctx).Infof("Extracted %s, took %.2f s, content length: %d", fileName, took.Seconds(), len(pageText))
 		*pages = append(*pages, string(pageText))
 		return nil
 	}
