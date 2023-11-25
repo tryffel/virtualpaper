@@ -37,8 +37,8 @@ type MetadataRequest struct {
 type MetadataKeyRequest struct {
 	Key     string `json:"key" valid:"required,metadata,stringlength(1|30)"`
 	Comment string `json:"comment" valid:"maxstringlength(1000),optional"`
-	Icon    string `json:"icon" valid:"-"`
-	Style   string `json:"style" valid:"json"`
+	Icon    string `json:"icon" valid:"optional"`
+	Style   string `json:"style" valid:"json,optional"`
 }
 
 type MetadataValueRequest struct {
@@ -247,6 +247,10 @@ func (a *Api) addMetadataKey(c echo.Context) error {
 		Comment:   dto.Comment,
 		Icon:      dto.Icon,
 		Style:     dto.Style,
+	}
+
+	if key.Style == "" {
+		key.Style = "{}"
 	}
 
 	err = a.db.MetadataStore.CreateKey(ctx.UserId, key)
