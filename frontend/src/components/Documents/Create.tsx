@@ -24,13 +24,26 @@ import {
   FileInput,
   HttpError,
   Loading,
+  SaveButton,
   SimpleForm,
+  Toolbar,
+  useCreate,
   useGetOne,
   useNotify,
-  useRedirect,
+  useCreatePath,
+  Button,
 } from "react-admin";
 import { useEffect } from "react";
-import { Typography } from "@mui/material";
+import { Box, ListItemButton, Typography } from "@mui/material";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemText from "@mui/material/ListItemText";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import PriorityHighIcon from "@mui/icons-material/PriorityHigh";
+import ClearIcon from "@mui/icons-material/Clear";
+import { useFormContext } from "react-hook-form";
+import { Link } from "react-router-dom";
 
 interface UploadError extends HttpError {
   body: {
@@ -40,13 +53,48 @@ interface UploadError extends HttpError {
   };
 }
 
-export const DocumentCreate = () => {
-  const notify = useNotify();
-  const redirect = useRedirect();
-  const { data, isLoading, error } = useGetOne("filetypes", { id: "" });
+type Link = {
+  id: string;
+  name: string;
+  created: boolean;
+};
 
-  const [fileNames, setFileNames] = React.useState("");
-  const [mimeTypes, setMimeTypes] = React.useState("");
+export const DocumentCreate = () => {
+  const {
+    data,
+    isLoading: fileTypesLoading,
+    error,
+  } = useGetOne("filetypes", { id: "" });
+  const notify = useNotify();
+  const [fileNames, setFileNames] = React.useState([]);
+  const [mimeTypes, setMimeTypes] = React.useState([]);
+  const [links, setLinks] = React.useState<Link[]>([]);
+  const [uploadData, setUploadData] = React.useState([]);
+  const [create] = useCreate("documents", undefined, {
+    onSuccess: (data) => {
+      setLinks(
+        links?.concat({
+          id: data.id,
+          name: data.name,
+          created: true,
+        })
+      );
+    },
+    onError: (data: UploadError) => {
+      if (data.status === 400 && data.body.error === "document exists") {
+        setLinks(
+          links?.concat({
+            id: data.body.id,
+            name: data.body.name,
+            created: false,
+          })
+        );
+      } else {
+        notify(`Error: ${data.status}`);
+        console.error(data);
+      }
+    },
+  });
 
   useEffect(() => {
     if (data) {
@@ -55,17 +103,29 @@ export const DocumentCreate = () => {
     }
   }, [data]);
 
-  const onError = (data: UploadError) => {
-    if (data.status === 400 && data.body.error === "document exists") {
-      notify("Duplicate document found. Showing existing document", {
-        type: "info",
-        autoHideDuration: 4000,
+  const handleSubmit = async (data: any) => {
+    setLinks([]);
+    setUploadData(data.file.map(() => 1));
+    return Promise.all(
+      data.file.map((file: any, index: number) => {
+        setTimeout(() => create("documents", { data: { file } }), 300 * index);
+      })
+    )
+      .then((data) => {
+        notify(`${data.length} files uploaded`, { type: "info" });
+      })
+      .catch((err) => {
+        notify(`Error`, { type: "error" });
+        console.error("upload files", err);
       });
-      redirect("show", "documents", data.body.id);
-    }
   };
 
-  if (isLoading) return <Loading />;
+  const handleReset = () => {
+    setLinks([]);
+    setUploadData([]);
+  };
+
+  if (fileTypesLoading) return <Loading />;
 
   if (error) {
     // @ts-ignore
@@ -74,20 +134,101 @@ export const DocumentCreate = () => {
 
   return (
     // @ts-ignore
-    <Create mutationOptions={{ onError }} title="Upload document">
-      <SimpleForm title={"Upload new document"}>
+    <Create title="Upload documents">
+      <SimpleForm
+        title={"Upload new document"}
+        toolbar={
+          <Toolbar>
+            <UploadButton />
+            <ClearButton reset={handleReset} />
+          </Toolbar>
+        }
+        onSubmit={handleSubmit}
+      >
         <Typography variant="body2">
           Supported file types: <em className="mimetypes">{fileNames}</em>
         </Typography>
         <FileInput
           accept={mimeTypes}
-          multiple={false}
+          multiple={true}
           label="File upload"
           source="file"
         >
           <FileField source="src" title="title" />
         </FileInput>
+
+        {links.length > 0 && (
+          <Box mt={3}>
+            <Typography mb={1}>
+              Uploaded documents: {links.length} / {uploadData.length}
+            </Typography>
+            <List>
+              {links?.map((link) => (
+                <DocumentLink {...link} />
+              ))}
+            </List>
+          </Box>
+        )}
       </SimpleForm>
     </Create>
+  );
+};
+
+const UploadButton = () => {
+  return <SaveButton label={"Upload"} />;
+};
+
+const ClearButton = ({ reset: resetOuter }: { reset: () => void }) => {
+  const { reset, formState } = useFormContext();
+
+  const handleReset = () => {
+    reset();
+    resetOuter();
+  };
+
+  return (
+    <Button
+      label={"Clear"}
+      startIcon={<ClearIcon />}
+      onClick={handleReset}
+      variant={"contained"}
+      size={"medium"}
+      sx={{ marginLeft: 1 }}
+      disabled={!formState.isDirty}
+    />
+  );
+};
+
+const DocumentLink = (link: Link) => {
+  const createPath2 = useCreatePath();
+  const icon = link.created ? (
+    <AddCircleOutlineIcon color={"info"} />
+  ) : (
+    <PriorityHighIcon color={"warning"} />
+  );
+
+  return (
+    <ListItem>
+      <ListItemButton
+        href={
+          `/#` +
+          createPath2({
+            resource: "documents",
+            type: "show",
+            id: link.id,
+          })
+        }
+      >
+        <ListItemIcon>{icon}</ListItemIcon>
+        <ListItemText
+          primary={<Typography variant={"body1"}>{link.name}</Typography>}
+          secondary={
+            !link.created && (
+              <Typography variant={"body2"}>Existing document</Typography>
+            )
+          }
+        />
+      </ListItemButton>
+    </ListItem>
   );
 };

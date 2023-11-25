@@ -363,7 +363,7 @@ export const dataProvider: DataProvider = {
         body: data,
         headers: headers,
       }).then(({ json }) => ({
-        data: { ...params.data, id: json.id },
+        data: { ...json },
       }));
     }
     // @ts-ignore
