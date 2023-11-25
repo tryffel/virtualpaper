@@ -24,6 +24,7 @@ import {
   useGetList,
   Loading,
   HttpError,
+  useRecordContext,
 } from "react-admin";
 
 import {
@@ -31,10 +32,6 @@ import {
   TextField,
   Box,
   Button,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   TableContainer,
   Table,
   TableHead,
@@ -48,8 +45,11 @@ import {
   CardHeader,
   useMediaQuery,
 } from "@mui/material";
-import { fstat } from "fs";
 import { RequestIndexSelect } from "../Documents/RequestIndexing";
+import OfflinePinIcon from "@mui/icons-material/OfflinePin";
+import ReportProblemIcon from "@mui/icons-material/ReportProblem";
+import AutorenewIcon from "@mui/icons-material/Autorenew";
+import { get } from "lodash";
 
 export const Processing = () => {
   return (
@@ -81,7 +81,7 @@ const steps = [
   },
   {
     id: "rules",
-    name: "User Sules",
+    name: "User Rules",
     description: "Execute user defined rules and metadata matching",
   },
   {
@@ -171,7 +171,6 @@ const RequestSingleDocumentProcessing = () => {
         <Typography variant="h6">Instructions</Typography>
         <Typography variant="body1">
           <ul>
-            <li>Force processing single or multiple documents</li>
             <li>
               Please fill either document id or user id. If user id (numeric) is
               passed, all the documents for the user are processed starting from
@@ -180,7 +179,7 @@ const RequestSingleDocumentProcessing = () => {
             <li>
               Allowed steps are:
               <TableContainer component={Paper} elevation={2}>
-                <Table sx={{ minWidth: 300 }}>
+                <Table sx={{ minWidth: 300 }} size={"small"}>
                   <TableHead>
                     <TableRow>
                       <TableCell>#</TableCell>
@@ -339,22 +338,24 @@ const ShowDocumentsPendingProcessing = () => {
 };
 
 export const Runners = (props: any) => {
+  const record = useRecordContext();
   const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
 
-  if (!props.record) {
-    return <Loading />;
+  if (!record) {
+    return null;
   }
 
   return (
     <Grid container spacing={2} direction={isSmall ? "column" : "row"}>
-      <Grid item xs={12} md={12}>
-        <Typography variant="body2">Processing runners</Typography>
+      <Grid item xs={12}>
+        <Typography variant={"h5"}>
+          Processing tasks ({get(record, "processing_queue").length})
+        </Typography>
       </Grid>
-
-      {props.record.processing_queue.map(
+      {record.processing_queue.map(
         // @ts-ignore
         (runner) => (
-          <Grid item xs={3}>
+          <Grid item xs={3} key={runner.id}>
             <RunnerStatus runner={runner} />
           </Grid>
         )
@@ -363,10 +364,28 @@ export const Runners = (props: any) => {
   );
 };
 
+type RunnerStatus = "running" | "idle" | "not-running";
+
+const RunnerIcons: Record<RunnerStatus, React.ReactNode> = {
+  running: <AutorenewIcon color={"warning"} />,
+  idle: <OfflinePinIcon color={"info"} />,
+  "not-running": <ReportProblemIcon color={"error"} />,
+};
+
 const RunnerStatus = (props: any) => {
   if (!props.runner) {
     return null;
   }
+
+  const getStatus = (): RunnerStatus => {
+    if (!props.runner.task_running) {
+      return (runnerStatus = "not-running");
+    }
+    if (props.runner.processing_ongoing) {
+      return "running";
+    }
+    return "idle";
+  };
 
   let runnerStatus = "";
   let backgroundColor = "";
@@ -383,19 +402,24 @@ const RunnerStatus = (props: any) => {
   return (
     <Card key={props.runner.task_id} elevation={3}>
       <CardHeader
-        title={"Task " + props.runner.task_id + ": " + runnerStatus}
+        avatar={RunnerIcons[getStatus()]}
+        title={
+          <Typography variant={"h6"} style={{ display: "inline" }}>
+            {parseInt(props.runner.task_id) + 1}: {runnerStatus}
+          </Typography>
+        }
         sx={{
           background: backgroundColor,
         }}
       />
       <CardContent>
-        <Typography>
+        <Typography variant={"body2"}>
           Queue: ({props.runner.queued} / {props.runner.queue_capacity} )
         </Typography>
-        <Typography>
-          Document id: {props.runner.processing_document_id}
+        <Typography variant={"body2"}>
+          Document: {props.runner.processing_document_id}
         </Typography>
-        <Typography>
+        <Typography variant={"body2"}>
           Step duration: {Math.floor(props.runner.duration_ms / 1000)} s
         </Typography>
       </CardContent>
@@ -403,39 +427,46 @@ const RunnerStatus = (props: any) => {
   );
 };
 
-export const SearchEngineStatus = (props: any) => {
-  if (!props.status) {
-    return <p>Loading</p>;
-  }
+export const SearchEngineStatus = () => {
+  const record = useRecordContext();
 
-  let runnerStatus = "";
-  let backgroundColor = "";
-  if (!props.status.engine_ok) {
-    runnerStatus = "Unavailable";
-    backgroundColor = "red";
-  } else {
-    runnerStatus = "running";
-    backgroundColor = "";
-  }
+  const ok = get(record, "search_engine_status.engine_ok");
+  const status = get(record, "search_engine_status.status");
+  const version = get(record, "search_engine_status.version");
+
+  const color = ok && status === "available" ? "info" : "error";
+  const statusLabel = ok && status === "available" ? "ok" : status;
 
   return (
-    <Card
-      key={"search engine status"}
-      elevation={3}
-      sx={{ margin: "0.5em", display: "inline-block" }}
-    >
-      <CardHeader
-        title={"Search engine status"}
-        sx={{
-          background: backgroundColor,
-        }}
-      />
-      <CardContent>
-        <Typography>
-          {props.status.name} {props.status.version}
-        </Typography>
-        <Typography>Status: {props.status.status}</Typography>
-      </CardContent>
-    </Card>
+    <Grid container spacing={1}>
+      <Grid item xs={12}>
+        <Typography variant={"h5"}>Search engine</Typography>
+      </Grid>
+      <Grid item xs={12}>
+        <Card
+          key={"search engine"}
+          elevation={3}
+          sx={{ display: "inline-block" }}
+        >
+          <CardHeader
+            avatar={
+              ok ? (
+                <OfflinePinIcon color={"info"} />
+              ) : (
+                <ReportProblemIcon color={"error"} />
+              )
+            }
+            title={<Typography variant={"h6"}>Meilisearch</Typography>}
+            sx={{
+              background: color,
+            }}
+          />
+          <CardContent>
+            <Typography>Version: {version}</Typography>
+            <Typography>Status: {statusLabel}</Typography>
+          </CardContent>
+        </Card>
+      </Grid>
+    </Grid>
   );
 };
