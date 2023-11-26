@@ -198,6 +198,12 @@ export const dataProvider: DataProvider = {
             throw error;
           }
         });
+    } else if (resource === "metadata/keys") {
+      return httpClient(`${apiUrl}/${resource}/${params.id}`).then(
+        ({ json }) => ({
+          data: { ...json, style: JSON.parse(json.style) },
+        })
+      );
     } else {
       if (params.id === null || params.id === "") {
         return httpClient(`${apiUrl}/${resource}`).then(({ json }) => ({

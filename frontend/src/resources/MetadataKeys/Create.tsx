@@ -18,12 +18,20 @@
 
 import * as React from "react";
 import { Create, SimpleForm, TextInput } from "react-admin";
+import { IconSelect } from "./IconSelect";
 
 export const MetadataKeyCreate = () => (
-  <Create title={<CreateTitle />}>
-    <SimpleForm>
+  <Create
+    title={<CreateTitle />}
+    transform={(data: any) => ({
+      ...data,
+      style: JSON.stringify(data.style),
+    })}
+  >
+    <SimpleForm defaultValues={{ icon: "Label", style: "{}" }}>
       <TextInput source="key" label="Name" />
       <TextInput source="comment" label="Description" />
+      <IconSelect source={"icon"} displayIcon={true} />
     </SimpleForm>
   </Create>
 );

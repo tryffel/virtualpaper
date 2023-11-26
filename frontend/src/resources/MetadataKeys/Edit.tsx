@@ -42,6 +42,7 @@ import MetadataValueUpdateDialog from "./ValueEditDialog";
 import { useState } from "react";
 import get from "lodash/get";
 import { IconByName, iconExists } from "../../components/icons";
+import { IconColorSelect, IconSelect } from "./IconSelect";
 
 export const MetadataKeyEdit = () => {
   const { record } = useEditController();
@@ -76,24 +77,14 @@ export const MetadataKeyEdit = () => {
     }
   };
 
-  const validateIcon = (value: any) => {
-    if (iconExists(value)) {
-      return undefined;
-    }
-    return "Icon is invalid. Must be Material-ui icon. Leave empty to disable";
-  };
-
-  const validateJson = (value: any) => {
-    try {
-      JSON.parse(value);
-      return undefined;
-    } catch (e) {
-      return "invalid json";
-    }
-  };
-
   return (
-    <Edit title={<EditTitle />}>
+    <Edit
+      title={<EditTitle />}
+      transform={(data: any) => ({
+        ...data,
+        style: JSON.stringify(data.style),
+      })}
+    >
       <SimpleForm>
         <MetadataValueUpdateDialog
           showDialog={showUpdateDialog}
@@ -107,23 +98,9 @@ export const MetadataKeyEdit = () => {
         <Labeled label={"Description"}>
           <MarkdownInput source="comment" />
         </Labeled>
-        <TextInput
-          source="icon"
-          id="icon"
-          label="Icon name (Material-ui)"
-          validate={validateIcon}
-        />
-        <FormDataConsumer>
-          {({ formData }) => {
-            return <FunctionField render={renderIcon(formData)} />;
-          }}
-        </FormDataConsumer>
-        <TextInput
-          source="style"
-          id="style"
-          label="Style (json)"
-          validate={validateJson}
-        />
+        <IconSelect source={"icon"} displayIcon={true} />
+        <IconColorSelect />
+
         <ReferenceManyField
           label="Values"
           reference={"metadata/values"}
