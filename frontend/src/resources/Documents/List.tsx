@@ -31,6 +31,7 @@ import {
 } from "react-admin";
 import {
   Grid,
+  Paper,
   Toolbar as MuiToolbar,
   Typography,
   useMediaQuery,
@@ -92,6 +93,7 @@ const LargeDocumentList = () => {
       sort={{ field: "date", order: "DESC" }}
       filters={[<DocumentSearchFilter />]}
       empty={<EmptyDocumentList />}
+      component={"div"}
     >
       <DocumentGrid />
     </List>
@@ -126,27 +128,29 @@ const DocumentGrid = (props: any) => {
   };
 
   return !isLoading && data ? (
-    <Grid
-      flex={2}
-      sx={{
-        background: theme.palette.background.default,
-        padding: "1em",
-      }}
-    >
-      <BulkEditToolbar
-        selectedIds={selectedIds}
-        clear={clearSelected}
-        edit={bulkEdit}
-      />
-      <FullTextSeachFilter />
-      {data.map((record) => (
-        <DocumentCard
-          record={record}
-          selected={isSelected}
-          setSelected={toggleSelectedId}
+    <Paper elevation={2}>
+      <Grid
+        flex={2}
+        sx={{
+          //background: theme.palette.background.default,
+          padding: "1em",
+        }}
+      >
+        <BulkEditToolbar
+          selectedIds={selectedIds}
+          clear={clearSelected}
+          edit={bulkEdit}
         />
-      ))}
-    </Grid>
+        <FullTextSeachFilter />
+        {data.map((record) => (
+          <DocumentCard
+            record={record}
+            selected={isSelected}
+            setSelected={toggleSelectedId}
+          />
+        ))}
+      </Grid>
+    </Paper>
   ) : null;
 };
 
