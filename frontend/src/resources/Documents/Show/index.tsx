@@ -24,7 +24,6 @@ import {
   DateField,
   EditButton,
   Labeled,
-  LabeledClasses,
   Show,
   SingleFieldList,
   Tab,
@@ -35,51 +34,38 @@ import {
 } from "react-admin";
 import {
   Box,
-  Grid,
-  Typography,
-  Divider,
   Card,
   CardContent,
-  useMediaQuery,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  Grid,
+  Typography,
+  useMediaQuery,
 } from "@mui/material";
 import HistoryIcon from "@mui/icons-material/History";
 import TimelineIcon from "@mui/icons-material/Timeline";
 import CloseIcon from "@mui/icons-material/Close";
-import {
-  DownloadDocumentButton,
-  EmbedFile,
-  ThumbnailField,
-} from "../Thumbnail";
-import { IndexingStatusField } from "../IndexingStatus";
-import { MarkdownField } from "../../../components/Markdown";
-import { ShowDocumentsEditHistory } from "./DocumentHistory";
-import { LinkedDocumentList } from "./LinkedDocuments";
-import {
-  DocumentBasicInfo,
-  DocumentIdField,
-  DocumentJobsHistory,
-  DocumentTitle,
-  DocumentTopRow,
-} from "./Show";
-import { RequestIndexingModal } from "../RequestIndexing";
+import {DownloadDocumentButton, EmbedFile, ThumbnailField,} from "../Thumbnail";
+import {IndexingStatusField} from "../IndexingStatus";
+import {MarkdownField} from "../../../components/Markdown";
+import {ShowDocumentsEditHistory} from "./DocumentHistory";
+import {LinkedDocumentList} from "./LinkedDocuments";
+import {DocumentBasicInfo, DocumentIdField, DocumentJobsHistory, DocumentTitle, DocumentTopRow,} from "./Show";
+import {RequestIndexingModal} from "../RequestIndexing";
 import get from "lodash/get";
 import MenuItem from "@mui/material/MenuItem";
 import Menu from "@mui/material/Menu";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import LabelIcon from "@mui/icons-material/Label";
-import { IconByName, iconExists } from "../../../components/icons";
 import NotesIcon from "@mui/icons-material/Notes";
 import SourceIcon from "@mui/icons-material/Source";
 import StickyNote2Icon from "@mui/icons-material/StickyNote2";
+import {MetadataList} from "./MetadataList";
 
 export const DocumentShow = () => {
   const [asideMode, setAsideMode] = React.useState<AsideMode>("closed");
@@ -402,57 +388,7 @@ const DocumentPreviewTab = (props: {
   );
 };
 
-type Metadata = {
-  id: number;
-  key: string;
-  value: string;
-  icon: string;
-  style: string;
-};
 
-const MetadataList = () => {
-  const record = useRecordContext();
-  if (!record) {
-    return null;
-  }
-
-  const array: Metadata[] = get(record, "metadata");
-  if (!array) {
-    return null;
-  }
-
-  return (
-    <>
-      <Typography className={LabeledClasses.label}>Metadata</Typography>
-      <List dense>
-        {array.map((item) => {
-          const style = JSON.parse(item.style);
-          const color = get(style, "color") ?? "inherit";
-          const icon = iconExists(item.icon) ? (
-            <IconByName name={item.icon} color={color} />
-          ) : (
-            <LabelIcon color={color} />
-          );
-
-          //const icon = customIcon ?? <LabelIcon color={color} />;
-
-          return (
-            <ListItem key={item.id}>
-              <ListItemIcon>{icon}</ListItemIcon>
-              <ListItemText
-                primary={
-                  <>
-                    <span>{item.key}</span>: <span>{item.value}</span>
-                  </>
-                }
-              />
-            </ListItem>
-          );
-        })}
-      </List>
-    </>
-  );
-};
 
 type AsideMode = "closed" | "history" | "jobs";
 
