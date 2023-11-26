@@ -25,6 +25,7 @@ export const StopWordsInput = () => {
       multiline
       fullWidth
       source="stop_words"
+      label={""}
       parse={parse}
       format={format}
     />
@@ -59,6 +60,7 @@ export const SynonymsInput = () => {
       multiline
       fullWidth
       source="synonyms"
+      label={""}
       parse={parse}
       format={format}
     />
