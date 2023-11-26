@@ -42,7 +42,7 @@ import {
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { Link } from "react-router-dom";
-import { EscapeWhitespace } from "../util";
+import { EscapeWhitespace } from "../../components/util";
 
 export interface MetadataValueUpdateDialogProps {
   showDialog: boolean;

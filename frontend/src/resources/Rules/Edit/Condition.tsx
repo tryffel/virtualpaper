@@ -8,7 +8,7 @@ import {
 } from "react-admin";
 import * as React from "react";
 import { Box, Grid, Tooltip, Typography } from "@mui/material";
-import { CheckBoxInput } from "../../primitives/CheckBox";
+import { CheckBoxInput } from "../../../components/primitives/CheckBox";
 import { MetadataValueInput } from "./Metadata";
 
 export const ConditionTypeInput = (props: any) => {

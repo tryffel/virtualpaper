@@ -34,14 +34,14 @@ import {
   FormDataConsumer,
 } from "react-admin";
 
-import { MarkdownInput } from "../Markdown";
+import { MarkdownInput } from "../../components/Markdown";
 import { Typography, useMediaQuery } from "@mui/material";
 
 import MetadataValueCreateButton from "./ValueCreate";
 import MetadataValueUpdateDialog from "./ValueEditDialog";
 import { useState } from "react";
 import get from "lodash/get";
-import { IconByName, iconExists } from "../icons";
+import { IconByName, iconExists } from "../../components/icons";
 
 export const MetadataKeyEdit = () => {
   const { record } = useEditController();

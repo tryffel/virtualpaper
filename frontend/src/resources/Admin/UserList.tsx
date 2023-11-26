@@ -10,9 +10,9 @@ import {
   useListController,
   useRecordContext,
 } from "react-admin";
-import { ByteToString } from "../util";
+import { ByteToString } from "../../components/util";
 import { Grid, Typography, useMediaQuery } from "@mui/material";
-import { BooleanIndexingStatusField } from "../IndexingStatus";
+import { BooleanIndexingStatusField } from "../../components/IndexingStatus";
 import * as React from "react";
 import { useNavigate } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";

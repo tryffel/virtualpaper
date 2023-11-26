@@ -18,7 +18,10 @@ import React from "react";
 import { ExpandMore } from "@mui/icons-material";
 import get from "lodash/get";
 import { languages } from "../../../languages";
-import { PrettifyAbsoluteTime, PrettifyTimeInterval } from "../../util";
+import {
+  PrettifyAbsoluteTime,
+  PrettifyTimeInterval,
+} from "../../../components/util";
 
 function getLanguageLabel(code: string): string {
   const lang = languages[code as keyof typeof languages];

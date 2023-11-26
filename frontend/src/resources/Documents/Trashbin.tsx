@@ -29,10 +29,10 @@ import {
 import { Grid, Typography, useMediaQuery, useTheme } from "@mui/material";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 
-import { HelpButton } from "../Help";
+import { HelpButton } from "../../components/Help";
 import { DocumentSearchFilter, FullTextSeachFilter } from "./SearchFilter";
 import { DocumentCard } from "./DocumentCard";
-import { EmptyResourcePage } from "../primitives/EmptyPage";
+import { EmptyResourcePage } from "../../components/primitives/EmptyPage";
 
 const DocumentPagination = () => (
   <Pagination rowsPerPageOptions={[10, 25, 50, 100]} />

@@ -1,4 +1,4 @@
-import { HelpButton } from "../../Help";
+import { HelpButton } from "../../../components/Help";
 import { Typography } from "@mui/material";
 import * as React from "react";
 

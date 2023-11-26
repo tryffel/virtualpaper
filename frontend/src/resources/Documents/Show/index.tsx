@@ -56,7 +56,7 @@ import {
   ThumbnailField,
 } from "../Thumbnail";
 import { IndexingStatusField } from "../IndexingStatus";
-import { MarkdownField } from "../../Markdown";
+import { MarkdownField } from "../../../components/Markdown";
 import { ShowDocumentsEditHistory } from "./DocumentHistory";
 import { LinkedDocumentList } from "./LinkedDocuments";
 import {
@@ -76,7 +76,7 @@ import ListItemText from "@mui/material/ListItemText";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import LabelIcon from "@mui/icons-material/Label";
-import { IconByName, iconExists } from "../../icons";
+import { IconByName, iconExists } from "../../../components/icons";
 import NotesIcon from "@mui/icons-material/Notes";
 import SourceIcon from "@mui/icons-material/Source";
 import StickyNote2Icon from "@mui/icons-material/StickyNote2";

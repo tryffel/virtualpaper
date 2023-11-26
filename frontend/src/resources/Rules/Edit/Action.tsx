@@ -8,7 +8,7 @@ import {
   useRecordContext,
 } from "react-admin";
 import { Grid } from "@mui/material";
-import { CheckBoxInput } from "../../primitives/CheckBox";
+import { CheckBoxInput } from "../../../components/primitives/CheckBox";
 import { MetadataValueInput } from "./Metadata";
 import * as React from "react";
 

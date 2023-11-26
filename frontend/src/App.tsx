@@ -11,24 +11,24 @@ import { Route } from "react-router-dom";
 import { Admin, Resource, CustomRoutes } from "react-admin";
 import { dataProvider } from "./api/dataProvider";
 import authProvider from "./api/authProvider";
-import documents from "./components/Documents";
+import documents from "./resources/Documents";
 
 import { lightTheme, darkTheme } from "./theme";
 import Layout from "./layout/Layout";
-import MetadataKeys from "./components/MetadataKeys";
-import Rules from "./components/Rules";
+import MetadataKeys from "./resources/MetadataKeys";
+import Rules from "./resources/Rules";
 
-import { ProfileEdit } from "./components/Preferences";
-import AdminView from "./components/Admin";
-import BulkEditDocuments from "./components/Documents/BulkEdit";
-import { Dashboard } from "./components/Dashboard";
-import { ResetPassword } from "./components/Public/ResetPassword";
-import { ForgotPassword } from "./components/Public/ForgotPassword";
-import { AdminEditUser } from "./components/Admin/UserEdit";
-import { AdminCreateUser } from "./components/Admin/UserCreate";
-import { ConfirmAuthentication } from "./components/Authentication/AuthConfirmationDialog";
-import { DeletedDocumentList } from "./components/Documents/Trashbin";
-import { LoginPage } from "./components/Public/Login";
+import { ProfileEdit } from "./resources/Preferences";
+import AdminView from "./resources/Admin";
+import BulkEditDocuments from "./resources/Documents/BulkEdit";
+import { Dashboard } from "./resources/Dashboard";
+import { ResetPassword } from "./resources/Public/ResetPassword";
+import { ForgotPassword } from "./resources/Public/ForgotPassword";
+import { AdminEditUser } from "./resources/Admin/UserEdit";
+import { AdminCreateUser } from "./resources/Admin/UserCreate";
+import { ConfirmAuthentication } from "./resources/Authentication/AuthConfirmationDialog";
+import { DeletedDocumentList } from "./resources/Documents/Trashbin";
+import { LoginPage } from "./resources/Public/Login";
 
 const App = () => (
   <Admin

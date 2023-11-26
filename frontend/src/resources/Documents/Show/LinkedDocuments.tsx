@@ -24,7 +24,7 @@ import {
   Loading,
   Labeled,
 } from "react-admin";
-import { LimitStringLength } from "../../util";
+import { LimitStringLength } from "../../../components/util";
 import { Typography } from "@mui/material";
 
 export const LinkedDocumentList = () => {

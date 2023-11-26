@@ -28,7 +28,7 @@ import {
 } from "react-admin";
 
 import { useMediaQuery } from "@mui/material";
-import { EmptyResourcePage } from "../primitives/EmptyPage";
+import { EmptyResourcePage } from "../../components/primitives/EmptyPage";
 
 export const MetadataKeyList = () => {
   const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));

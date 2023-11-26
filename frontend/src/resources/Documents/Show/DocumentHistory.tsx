@@ -27,7 +27,7 @@ import {
   Typography,
   Tooltip,
 } from "@mui/material";
-import { PrettifyRelativeTime } from "../../util";
+import { PrettifyRelativeTime } from "../../../components/util";
 
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import ArticleIcon from "@mui/icons-material/Article";

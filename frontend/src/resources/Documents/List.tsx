@@ -37,7 +37,7 @@ import {
   useTheme,
 } from "@mui/material";
 
-import { HelpButton } from "../Help";
+import { HelpButton } from "../../components/Help";
 import { DocumentSearchFilter, FullTextSeachFilter } from "./SearchFilter";
 import ClearIcon from "@mui/icons-material/Clear";
 import EditIcon from "@mui/icons-material/Edit";
@@ -45,7 +45,7 @@ import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutl
 import { Link } from "react-router-dom";
 import { DocumentCard } from "./DocumentCard";
 import { ShowDocumentsIndexing } from "../Dashboard";
-import { EmptyResourcePage } from "../primitives/EmptyPage";
+import { EmptyResourcePage } from "../../components/primitives/EmptyPage";
 
 const DocumentPagination = () => (
   <Pagination rowsPerPageOptions={[10, 25, 50, 100]} />

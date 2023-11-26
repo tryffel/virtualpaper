@@ -42,7 +42,7 @@ import {
   Box,
 } from "@mui/material";
 import { ExpandMore, Clear } from "@mui/icons-material";
-import { HelpButton } from "../Help";
+import { HelpButton } from "../../components/Help";
 import { DocumentCard } from "./DocumentCard";
 import { LanguageSelectInput, MetadataValueInput } from "./Edit";
 

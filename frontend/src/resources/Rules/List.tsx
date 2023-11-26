@@ -20,7 +20,8 @@ import * as React from "react";
 
 import {
   BooleanField,
-  Button, CreateButton,
+  Button,
+  CreateButton,
   Datagrid,
   EditButton,
   List,
@@ -30,9 +31,9 @@ import {
 import ReorderIcon from "@mui/icons-material/Reorder";
 
 import { Box, Chip, Grid, Typography } from "@mui/material";
-import { MarkdownField } from "../Markdown";
+import { MarkdownField } from "../../components/Markdown";
 import get from "lodash/get";
-import { EmptyResourcePage } from "../primitives/EmptyPage";
+import { EmptyResourcePage } from "../../components/primitives/EmptyPage";
 import { ReorderRulesDialog, RuleTitle } from "./Reorder";
 
 export const RuleList = () => (
@@ -110,7 +111,7 @@ const RuleListActions = () => {
         <ReorderIcon />
       </Button>
       <ReorderRulesDialog setModalOpen={setModalOpen} modalOpen={modalOpen} />
-      <CreateButton/>
+      <CreateButton />
     </TopToolbar>
   );
 };
