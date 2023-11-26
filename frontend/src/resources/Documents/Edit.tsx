@@ -59,6 +59,7 @@ const EditToolBar = () => {
       <DeleteWithConfirmButton
         confirmTitle="Are you sure you want to move document to trash bin?"
         confirmContent="Document can be restored from the trash bin. It will be automatically deleted after 14 days."
+        style={{ marginLeft: "auto" }}
       />
     </Toolbar>
   );
@@ -111,7 +112,7 @@ export const DocumentEdit = () => {
             <Box display={{ xs: "block", sm: "flex" }}>
               <MarkdownInput source="description" label="Description" />
             </Box>
-            <Box display={{ xs: "block", sm: "bloxk" }}>
+            <Box display={{ xs: "block", sm: "block" }}>
               <EditLinkedDocumentsButton />
             </Box>
             <Box display={{ xs: "block", sm: "block" }}>
