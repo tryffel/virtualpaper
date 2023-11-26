@@ -75,7 +75,7 @@ export const ThumbnailField = (props: any) => {
         maxHeight: "600px",
         minHeight: "200px",
         minWidth: "300px",
-        maxWidth: "600px",
+        maxWidth: "450px",
       }}
     >
       <img
@@ -83,7 +83,7 @@ export const ThumbnailField = (props: any) => {
         alt={props.label}
         style={{
           backgroundColor: theme === "dark" ? "#D9D9D9" : "#FAFAFA",
-          maxWidth: isSmall ? "280px" : isMedium ? "450px" : "600px",
+          maxWidth: isSmall ? "280px" : isMedium ? "450px" : "450px",
           borderRadius: "5%",
           borderWidth: "thin",
           borderStyle: "solid",

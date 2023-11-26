@@ -45,6 +45,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Container,
 } from "@mui/material";
 import HistoryIcon from "@mui/icons-material/History";
 import TimelineIcon from "@mui/icons-material/Timeline";
@@ -85,6 +86,7 @@ export const DocumentShow = () => {
   const [downloadUrl, setDownloadUrl] = React.useState("");
   const isNotSmall = useMediaQuery((theme: any) => theme.breakpoints.up("sm"));
   const isNotMedium = useMediaQuery((theme: any) => theme.breakpoints.up("md"));
+  const iconPosition = isNotSmall ? "start" : "top";
 
   return (
     <Show
@@ -102,21 +104,37 @@ export const DocumentShow = () => {
         ) : undefined
       }
     >
-      <TabbedShowLayout>
-        <Tab label="general" icon={<StickyNote2Icon />}>
-          {isNotMedium ? (
-            <DocumentGeneralTabLarge />
-          ) : (
-            <DocumentGeneralTablSmall />
-          )}
-        </Tab>
-        <Tab label="Content" icon={<NotesIcon />}>
-          <DocumentContentTab />
-        </Tab>
-        <Tab label="preview" icon={<SourceIcon />}>
-          <DocumentPreviewTab setDownloadUrl={setDownloadUrl} />
-        </Tab>
-      </TabbedShowLayout>
+      <Container>
+        <TabbedShowLayout
+          sx={{
+            ".MuiTab-root": { minHeight: "36px" },
+            marginBottom: 1,
+            marginTop: 1,
+          }}
+        >
+          <Tab
+            label="general"
+            icon={<StickyNote2Icon />}
+            iconPosition={iconPosition}
+          >
+            {isNotMedium ? (
+              <DocumentGeneralTabLarge />
+            ) : (
+              <DocumentGeneralTablSmall />
+            )}
+          </Tab>
+          <Tab label="Content" icon={<NotesIcon />} iconPosition={iconPosition}>
+            <DocumentContentTab />
+          </Tab>
+          <Tab
+            label="preview"
+            icon={<SourceIcon />}
+            iconPosition={iconPosition}
+          >
+            <DocumentPreviewTab setDownloadUrl={setDownloadUrl} />
+          </Tab>
+        </TabbedShowLayout>
+      </Container>
       {!isNotSmall && (
         <DocumentShowAsideModal mode={asideMode} setMode={setAsideMode} />
       )}
@@ -207,7 +225,8 @@ const DocumentGeneralTabLarge = () => {
           container
           item
           sm={6}
-          xl={4}
+          md={8}
+          xl={6}
           spacing={1}
           alignContent={"flex-start"}
         >
@@ -228,6 +247,7 @@ const DocumentGeneralTabLarge = () => {
           container
           item
           sm={6}
+          md={4}
           xl={4}
           spacing={3}
           alignContent={"space-between"}
@@ -243,17 +263,17 @@ const DocumentGeneralTabLarge = () => {
           <Grid item xs={12} sm={12}>
             <LinkedDocumentList />
           </Grid>
-          <Grid item xs={4} sm={2} alignContent={"flex-end"}>
+          <Grid item xs={4} sm={2} md={4} alignContent={"flex-end"}>
             <Labeled label={"File size"}>
               <TextField source={"pretty_size"} />
             </Labeled>
           </Grid>
-          <Grid item xs={4} sm={2}>
+          <Grid item xs={4} sm={2} md={4}>
             <Labeled label="Uploaded">
               <DateField source="created_at" showTime={false} />
             </Labeled>
           </Grid>
-          <Grid item xs={4} sm={2}>
+          <Grid item xs={4} sm={2} md={4}>
             <Labeled label={"Last updated"}>
               <DateField source="updated_at" showTime />
             </Labeled>
