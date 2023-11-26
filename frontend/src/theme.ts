@@ -38,31 +38,6 @@ export const lightTheme = {
     mode: "light" as "light",
   },
   components: {
-    /*
-    RaMenuItemLink: {
-      styleOverrides: {
-        root: {
-          borderLeft: "3px solid #fff",
-          "&.RaMenuItemLink-active": {
-            borderLeft: "3px solid #4f3cc9",
-          },
-        },
-      },
-    },
-
-     */
-    MuiPaper: {
-      styleOverrides: {
-        elevation1: {
-          boxShadow: "none",
-        },
-        root: {
-          border: "1px solid #e0e0e3",
-          backgroundClip: "padding-box",
-        },
-      },
-    },
-
     MuiButtonBase: {
       defaultProps: {
         // disable ripple for perf reasons
@@ -150,4 +125,21 @@ export const darkTheme = {
       secondary: "#673ab7",
     },
   },
+  /*
+  components: {
+    MuiCard: {
+      styleOverrides: {
+        root: ({ ownerState }) => ({
+          ...(ownerState.isDocument && {
+            backgroundColor: "white",
+          }),
+        }),
+      },
+    },
+    MuiDocumentCard: {
+      backgroundColor: "white",
+    },
+  },
+
+   */
 };
