@@ -53,6 +53,8 @@ This project is in **beta phase** and help with testing and general feedback is 
     * User configurable rules for modifying the data
 * REST api (swagger documentation is located at api/swaggerdocs/swagger.json) or at <virtualpaper-instance>/api/v1/swagger.json
 * Full-text-search
+* User-configurable rule engine for classifying documents and assigning metadata automatically
+* Responsive layout with dark theme
 * **Total number of users is limited to 200.** This is because Meilisearch has a limit of 200 indices, and each user
 uses one index. The benefit for own index is that each user can now configure their personal settings: 
   synonyms, stop words and results ranking, thus users have more powerful search capability over their files.
