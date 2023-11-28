@@ -294,3 +294,8 @@ func getDocumentProcessingSteps(t *testing.T, client *httpClient, docId string, 
 		return nil
 	}
 }
+
+func downloadDocument(t *testing.T, client *baloo.Client, id string, httpStatus int) {
+	req := client.Get(fmt.Sprintf("/api/v1/documents/%s/download", id))
+	req.Expect(t).Status(httpStatus).Done()
+}

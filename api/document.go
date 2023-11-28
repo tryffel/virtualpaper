@@ -178,7 +178,7 @@ func (a *Api) getDocument(c echo.Context) error {
 		err.ErrMsg = "query parameter 'visit' must be either 1 or 0"
 		return err
 	}
-	doc, err := a.db.DocumentStore.GetDocument(ctx.UserId, id)
+	doc, err := a.db.DocumentStore.GetDocument(id)
 	if err != nil {
 		return err
 	}
@@ -233,18 +233,7 @@ func (a *Api) getDocumentLogs(c echo.Context) error {
 	// Get processing job history related to document
 	// responses:
 	//   200: DocumentResponse
-
-	ctx := c.(UserContext)
 	id := c.Param("id")
-	owns, err := a.db.DocumentStore.UserOwnsDocument(id, ctx.UserId)
-	if err != nil {
-		return err
-	}
-
-	if !owns {
-		return echo.NewHTTPError(http.StatusForbidden, "forbidden")
-	}
-
 	job, err := a.db.JobStore.GetJobsByDocumentId(id)
 	if err != nil {
 		return err
@@ -257,9 +246,8 @@ func (a *Api) getDocumentPreview(c echo.Context) error {
 	// Get document preview, a small png image of first page of document.
 	// responses:
 
-	ctx := c.(UserContext)
 	id := c.Param("id")
-	doc, err := a.db.DocumentStore.GetDocument(ctx.UserId, id)
+	doc, err := a.db.DocumentStore.GetDocument(id)
 	if err != nil {
 		return err
 	}
@@ -479,7 +467,7 @@ func (a *Api) downloadDocument(c echo.Context) error {
 
 	opOk := false
 	defer logCrudDocument(ctx.UserId, "download", &opOk, "document: %s", id)
-	doc, err := a.db.DocumentStore.GetDocument(ctx.UserId, id)
+	doc, err := a.db.DocumentStore.GetDocument(id)
 	if err != nil {
 		return err
 	}
@@ -526,7 +514,7 @@ func (a *Api) updateDocument(c echo.Context) error {
 	defer logCrudDocument(ctx.UserId, "update", &opOk, "document: %s", id)
 
 	dto.Filename = govalidator.SafeFileName(dto.Filename)
-	doc, err := a.db.DocumentStore.GetDocument(ctx.UserId, id)
+	doc, err := a.db.DocumentStore.GetDocument(id)
 	if err != nil {
 		return err
 	}
@@ -577,20 +565,6 @@ func (a *Api) updateDocument(c echo.Context) error {
 	return resourceList(c, responseFromDocument(doc), 1)
 }
 
-type documentSortParams struct{}
-
-func (d *documentSortParams) FilterAttributes() []string {
-	return []string{"id", "name", "content", "description", "date"}
-}
-
-func (d *documentSortParams) SortAttributes() []string {
-	return append(d.FilterAttributes(), "created_at", "updated_at")
-}
-
-func (d *documentSortParams) SortNoCase() []string { return d.FilterAttributes() }
-
-func (d *documentSortParams) Update() {}
-
 func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, c echo.Context) error {
 	paging := getPagination(c)
 	sort := getSort(c)
@@ -626,25 +600,16 @@ func (a *Api) requestDocumentProcessing(c echo.Context) error {
 
 	ctx := c.(UserContext)
 	id := bindPathId(c)
-	owns, err := a.db.DocumentStore.UserOwnsDocument(id, ctx.UserId)
-	if err != nil {
-		return err
-	}
-
 	opOk := false
 	defer logCrudDocument(ctx.UserId, "schedule processing", &opOk, "document: %s", id)
 
-	if !owns {
-		return respForbiddenV2()
-	}
-
 	steps := append(process.RequiredProcessingSteps(models.ProcessRules), models.ProcessRules)
-	err = a.db.JobStore.ForceProcessingDocument(id, steps)
+	err := a.db.JobStore.ForceProcessingDocument(id, steps)
 	if err != nil {
 		return err
 	}
 
-	doc, err := a.db.DocumentStore.GetDocument(ctx.UserId, id)
+	doc, err := a.db.DocumentStore.GetDocument(id)
 	if err != nil {
 		logrus.Errorf("Get document to process: %v", err)
 	} else {
@@ -673,7 +638,7 @@ func (a *Api) deleteDocument(c echo.Context) error {
 	opOk := false
 	defer logCrudDocument(ctx.UserId, "delete", &opOk, "document: %s", id)
 
-	doc, err := a.db.DocumentStore.GetDocument(ctx.UserId, id)
+	doc, err := a.db.DocumentStore.GetDocument(id)
 	if err != nil {
 		return err
 	}
@@ -862,21 +827,10 @@ func (a *Api) getDocumentHistory(c echo.Context) error {
 	id := c.Param("id")
 	opOk := false
 	defer logCrudDocument(ctx.UserId, "delete", &opOk, "document: %s", id)
-
-	owns, err := a.db.DocumentStore.UserOwnsDocument(id, ctx.UserId)
-	if err != nil {
-		return err
-	}
-
-	if !owns {
-		return echo.NewHTTPError(http.StatusForbidden, "forbidden")
-	}
-
 	data, err := a.db.DocumentStore.GetDocumentHistory(ctx.UserId, id)
 	if err != nil {
 		return err
 	}
-
 	return resourceList(c, data, len(*data))
 }
 
@@ -895,7 +849,7 @@ func (a *Api) restoreDeletedDocument(c echo.Context) error {
 		logCrudDocument(ctx.UserId, "restore deleted document", &opOk, "restore deleted document %s", docId)
 	}()
 
-	document, err := a.db.DocumentStore.GetDocument(0, docId)
+	document, err := a.db.DocumentStore.GetDocument(docId)
 	if err != nil {
 		return err
 	}
@@ -912,7 +866,7 @@ func (a *Api) restoreDeletedDocument(c echo.Context) error {
 		return err
 	}
 
-	doc, err := a.db.DocumentStore.GetDocument(0, docId)
+	doc, err := a.db.DocumentStore.GetDocument(docId)
 	err = a.search.IndexDocuments(&[]models.Document{*doc}, doc.UserId)
 	if err != nil {
 		logrus.Errorf("delete document from search index: %v", err)
@@ -937,7 +891,7 @@ func (a *Api) flushDeletedDocument(c echo.Context) error {
 		logCrudDocument(ctx.UserId, "flush deleted document", &opOk, "flush deleted document %s", docId)
 	}()
 
-	document, err := a.db.DocumentStore.GetDocument(0, docId)
+	document, err := a.db.DocumentStore.GetDocument(docId)
 	if err != nil {
 		return err
 	}

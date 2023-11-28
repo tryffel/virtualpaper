@@ -176,6 +176,25 @@ func getSort(c echo.Context) SortKey {
 	return ctx.sort
 }
 
+func mDocumentOwner(documentStore *storage.DocumentStore) func(idKey string) echo.MiddlewareFunc {
+	return func(idKey string) echo.MiddlewareFunc {
+		return func(next echo.HandlerFunc) echo.HandlerFunc {
+			return func(c echo.Context) error {
+				ctx := c.(UserContext)
+				id := c.Param(idKey)
+				owns, err := documentStore.UserOwnsDocument(id, ctx.UserId)
+				if err != nil {
+					return err
+				}
+				if !owns {
+					return echo.NewHTTPError(http.StatusForbidden, "forbidden")
+				}
+				return next(c)
+			}
+		}
+	}
+}
+
 func bindPathId(c echo.Context) string {
 	return c.Param("id")
 }

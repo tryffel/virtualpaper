@@ -206,7 +206,7 @@ func (fp *fileProcessor) cancelDocumentProcessing(ctx context.Context, reason st
 }
 
 func (fp *fileProcessor) process(op fileOp) {
-	doc, err := fp.db.DocumentStore.GetDocument(0, op.docId)
+	doc, err := fp.db.DocumentStore.GetDocument(op.docId)
 	if err != nil {
 		logrus.Errorf("process document %s: get document: %v", op.docId, err)
 		return

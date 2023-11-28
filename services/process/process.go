@@ -84,7 +84,7 @@ func (fp *fileProcessor) processDocument() {
 	fp.Info("Start processing file")
 
 	refreshDocument := func() error {
-		doc, err := fp.db.DocumentStore.GetDocument(0, fp.document.Id)
+		doc, err := fp.db.DocumentStore.GetDocument(fp.document.Id)
 		if err != nil {
 			return fmt.Errorf("get document: %v", err)
 		}
