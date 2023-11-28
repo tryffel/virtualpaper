@@ -5,12 +5,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
-	"tryffel.net/go/virtualpaper/api"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/models/aggregates"
 )
 
 // check given metadata is subset of document's metadata
-func assertDocumentMetadataContainsValues(t *testing.T, document *api.DocumentResponse, wantValues []*models.MetadataValue) {
+func assertDocumentMetadataContainsValues(t *testing.T, document *aggregates.Document, wantValues []*models.MetadataValue) {
 	getKeyValueId := func(value *models.MetadataValue) string {
 		return fmt.Sprintf("%d-%s:%d-%s-user-%d", value.KeyId, value.Key, value.Id, value.Value, value.UserId)
 	}
@@ -35,7 +35,7 @@ func assertDocumentMetadataContainsValues(t *testing.T, document *api.DocumentRe
 }
 
 // check document's metadata is subset of given metadata
-func assertDocumentMetadataInValues(t *testing.T, document *api.DocumentResponse, wantValues []*models.MetadataValue) {
+func assertDocumentMetadataInValues(t *testing.T, document *aggregates.Document, wantValues []*models.MetadataValue) {
 	getKeyValueId := func(value models.Metadata) string {
 		return fmt.Sprintf("%d-%s:%d-%s", value.KeyId, value.Key, value.ValueId, value.Value)
 	}
@@ -59,12 +59,12 @@ func assertDocumentMetadataInValues(t *testing.T, document *api.DocumentResponse
 	}
 }
 
-func assertDocumentMetadataMatches(t *testing.T, document *api.DocumentResponse, wantValues []*models.MetadataValue) {
+func assertDocumentMetadataMatches(t *testing.T, document *aggregates.Document, wantValues []*models.MetadataValue) {
 	assertDocumentMetadataContainsValues(t, document, wantValues)
 	assertDocumentMetadataInValues(t, document, wantValues)
 }
 
-func assertDocumentInArray(t *testing.T, id string, docs *[]api.DocumentResponse) {
+func assertDocumentInArray(t *testing.T, id string, docs *[]aggregates.Document) {
 	for _, v := range *docs {
 		if v.Id == id {
 			return
@@ -73,7 +73,7 @@ func assertDocumentInArray(t *testing.T, id string, docs *[]api.DocumentResponse
 	t.Errorf("document not found from list of documents")
 }
 
-func assertDocumentNotInArray(t *testing.T, id string, docs *[]api.DocumentResponse) {
+func assertDocumentNotInArray(t *testing.T, id string, docs *[]aggregates.Document) {
 	for _, v := range *docs {
 		if v.Id == id {
 			t.Errorf("document found from list of documents")

@@ -21,13 +21,14 @@ package swaggerdocs
 import (
 	"gopkg.in/h2non/gentleman.v2/plugins/multipart"
 	"tryffel.net/go/virtualpaper/api"
+	"tryffel.net/go/virtualpaper/models/aggregates"
 )
 
 // DocumentsResponse contains array of documents
-// swagger:response DocumentResponse
+// swagger:response Document
 type documentResponse struct {
 	// in:body
-	Body []api.DocumentResponse
+	Body []aggregates.Document
 }
 
 // DocumentExistsResponse contains existing document's id and error message.
