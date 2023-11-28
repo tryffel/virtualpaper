@@ -23,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
+	"tryffel.net/go/virtualpaper/models/aggregates"
 
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
@@ -56,6 +57,18 @@ type MetadataUpdateRequest struct {
 	Metadata []MetadataRequest `valid:"required" json:"metadata"`
 }
 
+func (m *MetadataUpdateRequest) ToAggregate() []aggregates.Metadata {
+	metadata := make([]aggregates.Metadata, len(m.Metadata))
+
+	for i, v := range m.Metadata {
+		metadata[i] = aggregates.Metadata{
+			KeyId:   v.KeyId,
+			ValueId: v.ValueId,
+		}
+	}
+	return metadata
+}
+
 func (m *MetadataUpdateRequest) UniqueKeys() []int {
 	keyMap := map[int]bool{}
 	for _, v := range m.Metadata {
@@ -79,16 +92,16 @@ func (m *MetadataUpdateRequest) Keys() []int {
 	return keys
 }
 
-func (m *MetadataUpdateRequest) toMetadataArray() []models.Metadata {
+func (m *MetadataUpdateRequest) ToMetadataArray() []models.Metadata {
 	metadata := make([]models.Metadata, len(m.Metadata))
 
 	for i, v := range m.Metadata {
-		metadata[i] = v.toMetadata()
+		metadata[i] = v.ToMetadata()
 	}
 	return metadata
 }
 
-func (m MetadataRequest) toMetadata() models.Metadata {
+func (m MetadataRequest) ToMetadata() models.Metadata {
 	return models.Metadata{
 		KeyId:   m.KeyId,
 		ValueId: m.ValueId,
@@ -177,7 +190,7 @@ func (a *Api) updateDocumentMetadata(c echo.Context) error {
 		return err
 	}
 
-	metadata := dto.toMetadataArray()
+	metadata := dto.ToMetadataArray()
 	err = a.db.MetadataStore.UpdateDocumentKeyValues(ctx.UserId, documentId, metadata)
 	if err != nil {
 		return err

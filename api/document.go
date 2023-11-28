@@ -28,7 +28,9 @@ import (
 	"strings"
 	"time"
 	"tryffel.net/go/virtualpaper/models/aggregates"
+	"tryffel.net/go/virtualpaper/services"
 	"tryffel.net/go/virtualpaper/services/search"
+	"tryffel.net/go/virtualpaper/util/logger"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/sirupsen/logrus"
@@ -283,12 +285,12 @@ func (a *Api) uploadFile(c echo.Context) error {
 	buf := make([]byte, 500)
 	_, err = reader.Read(buf)
 	if err != nil {
-		logrus.Errorf("canot peek file contents")
+		return respInternalErrorV2(fmt.Errorf("peek file contents: %v", err))
 	}
 
 	_, err = reader.Seek(0, io.SeekStart)
 	if err != nil {
-		logrus.Errorf("canot seek file to start")
+		return respInternalErrorV2(fmt.Errorf("seek file to start: %v", err))
 	}
 
 	detectedFileType := http.DetectContentType(buf)
@@ -296,113 +298,35 @@ func (a *Api) uploadFile(c echo.Context) error {
 		detectedFileType = "text/plain"
 	}
 	if detectedFileType != mimetype {
-		logrus.Warningf("uploaded document detected mimetype does not match reported, given %s, detected %s", header.Filename, detectedFileType)
+		logger.Context(c.Request().Context()).Warnf("uploaded document detected mimetype does not match reported, given %s, detected %s", header.Filename, detectedFileType)
 		userError := errors.ErrInvalid
 		userError.ErrMsg = fmt.Sprintf("illegal mimetype")
 		userError.Err = err
 		return userError
 	}
 
-	tempHash, err := config.RandomString(10)
-	if err != nil {
-		logrus.Errorf("generate temporary hash for document: %v", err)
-		return errors.ErrInternalError
-	}
-
-	document := &models.Document{
-		Id:       "",
+	doc, err := a.documentService.UploadFile(c.Request().Context(), &services.UploadedFile{
 		UserId:   ctx.UserId,
-		Name:     name,
-		Content:  "",
 		Filename: name,
-		Hash:     tempHash,
 		Mimetype: mimetype,
 		Size:     header.Size,
-		Date:     time.Now(),
-	}
+		File:     reader,
+	})
 
-	if !process.MimeTypeIsSupported(mimetype, header.Filename) {
-		e := errors.ErrInvalid
-		e.ErrMsg = fmt.Sprintf("unsupported file type: %v", header.Filename)
-		req.Body.Close()
-		return e
-	}
-
-	tempFileName := storage.TempFilePath(tempHash)
-	inputFile, err := os.OpenFile(tempFileName, os.O_CREATE|os.O_WRONLY, os.ModePerm)
-	if err != nil {
-		c.Logger().Errorf("open new file for saving upload: %v", err)
-		//respError(resp, fmt.Errorf("open new file for saving upload: %v", err), handler)
-		return err
-	}
-	n, err := inputFile.ReadFrom(reader)
-	if err != nil {
-		return fmt.Errorf("write uploaded file to disk: %v", err)
-	}
-
-	if n != header.Size {
-		logrus.Warningf("did not fully read file: %d, got: %d", header.Size, n)
-	}
-
-	err = inputFile.Close()
-	if err != nil {
-		return fmt.Errorf("close file: %v", err)
-	}
-
-	hash, err := process.GetHash(tempFileName)
-	if err != nil {
-		return fmt.Errorf("get hash for temp file: %v", err)
-	}
-
-	existingDoc, err := a.db.DocumentStore.GetByHash(ctx.UserId, hash)
-	if err != nil {
-		if errors.Is(err, errors.ErrRecordNotFound) {
-		} else {
-			return fmt.Errorf("get existing document by hash: %v", err)
+	if errors.Is(err, errors.ErrAlreadyExists) && doc != nil {
+		body := DocumentExistsResponse{
+			Error: "document exists",
+			Id:    doc.Id,
+			Name:  doc.Name,
 		}
+		return c.JSON(http.StatusBadRequest, body)
 	}
 
-	if existingDoc != nil {
-		if existingDoc.Id != "" {
-			body := DocumentExistsResponse{
-				Error: "document exists",
-				Id:    existingDoc.Id,
-				Name:  existingDoc.Name,
-			}
-			err := os.Remove(tempFileName)
-			if err != nil {
-				c.Logger().Errorf("remove duplicated temp file: %v", err)
-			}
-			return c.JSON(http.StatusBadRequest, body)
-		}
-	}
-
-	document.Hash = hash
-	err = a.db.DocumentStore.Create(document)
 	if err != nil {
 		return err
 	}
-
-	documentId = document.Id
-	newFile := storage.DocumentPath(document.Id)
-
-	err = storage.CreateDocumentDir(document.Id)
-	if err != nil {
-		return fmt.Errorf("create directory for doc: %v", err)
-	}
-
-	err = storage.MoveFile(tempFileName, newFile)
-	if err != nil {
-		return fmt.Errorf("rename temp file by document id: %v", err)
-	}
-
-	err = a.db.JobStore.ProcessDocumentAllSteps(document.Id)
-	if err != nil {
-		return fmt.Errorf("add process steps for new document: %v", err)
-	}
-	err = a.process.AddDocumentForProcessing(document.Id)
 	opOk = true
-	return c.JSON(http.StatusOK, responseFromDocument(document))
+	return c.JSON(http.StatusOK, responseFromDocument(doc))
 }
 
 func (a *Api) getEmptyDocument(resp http.ResponseWriter, req *http.Request) {
@@ -422,28 +346,15 @@ func (a *Api) downloadDocument(c echo.Context) error {
 
 	opOk := false
 	defer logCrudDocument(ctx.UserId, "download", &opOk, "document: %s", id)
-	doc, err := a.db.DocumentStore.GetDocument(id)
-	if err != nil {
-		return err
-	}
-
-	filePath := storage.DocumentPath(doc.Id)
-	file, err := os.Open(filePath)
-	if err != nil {
-		return err
-	}
-
-	defer file.Close()
-
-	stat, err := file.Stat()
-	size := stat.Size()
+	file, err := a.documentService.DocumentFile(id)
+	defer file.File.Close()
 
 	resp := c.Response()
-	resp.Header().Set("Content-Type", doc.Mimetype)
-	resp.Header().Set("Content-Length", strconv.Itoa(int(size)))
+	resp.Header().Set("Content-Type", file.Mimetype)
+	resp.Header().Set("Content-Length", strconv.Itoa(int(file.Size)))
 	resp.Header().Set("Cache-Control", "max-age=600")
 
-	_, err = io.Copy(resp, file)
+	_, err = io.Copy(resp, file.File)
 	if err != nil {
 		logrus.Errorf("send file over http: %v", err)
 	}
@@ -467,57 +378,34 @@ func (a *Api) updateDocument(c echo.Context) error {
 
 	opOk := false
 	defer logCrudDocument(ctx.UserId, "update", &opOk, "document: %s", id)
-
 	dto.Filename = govalidator.SafeFileName(dto.Filename)
-	doc, err := a.db.DocumentStore.GetDocument(id)
-	if err != nil {
-		return err
+	metadata := make([]aggregates.Metadata, len(dto.Metadata))
+	for i, v := range dto.Metadata {
+		metadata[i] = aggregates.Metadata{
+			KeyId:   v.KeyId,
+			ValueId: v.ValueId,
+		}
+	}
+
+	doc := &aggregates.DocumentUpdate{
+		Name:        dto.Name,
+		Description: dto.Description,
+		Filename:    dto.Filename,
+		Date:        time.Time{},
+		Metadata:    metadata,
+		Lang:        dto.Lang,
 	}
 
 	if dto.Date != 0 {
 		doc.Date = time.Unix(dto.Date/1000, 0)
 	}
 
-	doc.Name = dto.Name
-	doc.Description = dto.Description
-	doc.Filename = dto.Filename
-	metadata := make([]models.Metadata, len(dto.Metadata))
-	if dto.Lang != "" {
-		doc.Lang = models.Lang(dto.Lang)
-	}
-
-	for i, v := range dto.Metadata {
-		metadata[i] = models.Metadata{
-			KeyId:   v.KeyId,
-			ValueId: v.ValueId,
-		}
-	}
-
-	doc.Update()
-	doc.Metadata = metadata
-
-	err = a.db.DocumentStore.Update(ctx.UserId, doc)
+	updatedDoc, err := a.documentService.UpdateDocument(getContext(c), ctx.UserId, id, doc)
+	opOk = err == nil
 	if err != nil {
 		return err
 	}
-
-	err = a.db.MetadataStore.UpdateDocumentKeyValues(ctx.UserId, doc.Id, metadata)
-	if err != nil {
-		return err
-	}
-
-	logrus.Debugf("document updated, force fts update")
-	err = a.db.JobStore.ForceProcessingDocument(doc.Id, []models.ProcessStep{models.ProcessFts})
-	if err != nil {
-		logrus.Warningf("error marking document for processing (doc %s): %v", doc.Id, err)
-	} else {
-		err = a.process.AddDocumentForProcessing(doc.Id)
-		if err != nil {
-			logrus.Warningf("error adding updated document for processing (doc: %s): %v", doc.Id, err)
-		}
-	}
-	opOk = true
-	return resourceList(c, responseFromDocument(doc), 1)
+	return resourceList(c, responseFromDocument(updatedDoc), 1)
 }
 
 func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, c echo.Context) error {
@@ -557,23 +445,11 @@ func (a *Api) requestDocumentProcessing(c echo.Context) error {
 	id := bindPathId(c)
 	opOk := false
 	defer logCrudDocument(ctx.UserId, "schedule processing", &opOk, "document: %s", id)
-
-	steps := append(process.RequiredProcessingSteps(models.ProcessRules), models.ProcessRules)
-	err := a.db.JobStore.ForceProcessingDocument(id, steps)
+	err := a.documentService.RequestProcessing(getContext(c), ctx.UserId, id)
+	opOk = err == nil
 	if err != nil {
 		return err
 	}
-
-	doc, err := a.db.DocumentStore.GetDocument(id)
-	if err != nil {
-		logrus.Errorf("Get document to process: %v", err)
-	} else {
-		err = a.process.AddDocumentForProcessing(doc.Id)
-		if err != nil {
-			logrus.Errorf("schedule document processing: %v", err)
-		}
-	}
-	opOk = true
 	return c.String(http.StatusOK, "")
 }
 
@@ -592,32 +468,9 @@ func (a *Api) deleteDocument(c echo.Context) error {
 
 	opOk := false
 	defer logCrudDocument(ctx.UserId, "delete", &opOk, "document: %s", id)
-
-	doc, err := a.db.DocumentStore.GetDocument(id)
-	if err != nil {
-		return err
-	}
-	if doc.UserId != ctx.UserId {
-		return errors.ErrRecordNotFound
-	}
-	if doc.DeletedAt.Valid {
-		return errors.ErrInvalid
-	}
-
-	logrus.Infof("Request user %d removing document %s", ctx.UserId, id)
-
-	err = a.db.DocumentStore.MarkDocumentDeleted(ctx.UserId, id)
-	if err != nil {
-		return err
-	}
-
-	err = a.search.DeleteDocument(id, ctx.UserId)
-	if err != nil {
-		logrus.Errorf("delete document from search index: %v", err)
-		return respInternalErrorV2("delete from search index", err)
-	}
-	opOk = true
-	return c.JSON(http.StatusOK, nil)
+	err := a.documentService.DeleteDocument(getContext(c), id, ctx.UserId)
+	opOk = err == nil
+	return err
 }
 
 type BulkEditDocumentsRequest struct {
@@ -665,70 +518,19 @@ func (a *Api) bulkEditDocuments(c echo.Context) error {
 		return respForbiddenV2()
 	}
 
-	if len(dto.AddMetadata.Metadata) > 0 {
-		addMetadata := dto.AddMetadata.toMetadataArray()
-		keys := dto.AddMetadata.UniqueKeys()
-		ok, err := a.db.MetadataStore.UserHasKeys(ctx.UserId, keys)
-		if err != nil {
-			return fmt.Errorf("check user owns keys: %v", err)
-		}
-		if !ok {
-			return respForbiddenV2()
-		}
-
-		err = a.db.MetadataStore.UpsertDocumentMetadata(ctx.UserId, dto.Documents, addMetadata)
-		if err != nil {
-			return err
-		}
-	}
-	if len(dto.RemoveMetadata.Metadata) > 0 {
-		removeMetadata := dto.RemoveMetadata.toMetadataArray()
-		keys := dto.RemoveMetadata.UniqueKeys()
-		ok, err := a.db.MetadataStore.UserHasKeys(ctx.UserId, keys)
-		if err != nil {
-			return fmt.Errorf("check user owns keys: %v", err)
-		}
-		if !ok {
-			return respForbiddenV2()
-		}
-
-		err = a.db.MetadataStore.DeleteDocumentsMetadata(ctx.UserId, dto.Documents, removeMetadata)
-		if err != nil {
-			return err
-		}
+	req := aggregates.BulkEditDocumentsRequest{
+		Documents:      dto.Documents,
+		AddMetadata:    dto.AddMetadata.ToAggregate(),
+		RemoveMetadata: dto.RemoveMetadata.ToAggregate(),
+		Lang:           dto.Lang,
+		Date:           dto.Date,
 	}
 
-	dateIsValid := dto.Date != 0
-	langIsValid := dto.Lang != ""
-
-	var date time.Time
-	var lang models.Lang
-
-	if dateIsValid {
-		date = time.Unix(dto.Date/1000, 0)
-	}
-	if langIsValid {
-		lang = models.Lang(dto.Lang)
-	}
-
-	if dto.Lang != "" || dto.Date != 0 {
-		err := a.db.DocumentStore.BulkUpdateDocuments(ctx.UserId, dto.Documents, lang, date)
-		if err != nil {
-			return err
-		}
-	}
-
-	// need to reindex
-	err = a.db.JobStore.AddDocuments(ctx.UserId, dto.Documents, []models.ProcessStep{models.ProcessFts})
+	err = a.documentService.BulkEditDocuments(getContext(c), &req, ctx.UserId)
+	opOk = err == nil
 	if err != nil {
-		if errors.Is(err, errors.ErrAlreadyExists) {
-			// already indexing, skip
-		} else {
-			return err
-		}
+		return err
 	}
-	a.process.PullDocumentsToProcess()
-	opOk = true
 	return resourceList(c, dto.Documents, len(dto.Documents))
 }
 
@@ -782,10 +584,11 @@ func (a *Api) getDocumentHistory(c echo.Context) error {
 	id := c.Param("id")
 	opOk := false
 	defer logCrudDocument(ctx.UserId, "delete", &opOk, "document: %s", id)
-	data, err := a.db.DocumentStore.GetDocumentHistory(ctx.UserId, id)
+	data, err := a.documentService.GetHistory(getContext(c), ctx.UserId, id)
 	if err != nil {
 		return err
 	}
+	opOk = true
 	return resourceList(c, data, len(*data))
 }
 
@@ -804,30 +607,11 @@ func (a *Api) restoreDeletedDocument(c echo.Context) error {
 		logCrudDocument(ctx.UserId, "restore deleted document", &opOk, "restore deleted document %s", docId)
 	}()
 
-	document, err := a.db.DocumentStore.GetDocument(docId)
+	doc, err := a.documentService.RestoreDeletedDocument(getContext(c), docId, ctx.UserId)
+	opOk = err == nil
 	if err != nil {
 		return err
 	}
-	if document.UserId != ctx.UserId {
-		return errors.ErrRecordNotFound
-	}
-	if !document.DeletedAt.Valid {
-		return errors.ErrRecordNotFound
-	}
-	document.Update()
-
-	err = a.db.DocumentStore.MarkDocumentNonDeleted(ctx.UserId, docId)
-	if err != nil {
-		return err
-	}
-
-	doc, err := a.db.DocumentStore.GetDocument(docId)
-	err = a.search.IndexDocuments(&[]models.Document{*doc}, doc.UserId)
-	if err != nil {
-		logrus.Errorf("delete document from search index: %v", err)
-		return respInternalErrorV2("delete from search index", err)
-	}
-	opOk = true
 	return c.JSON(200, responseFromDocument(doc))
 }
 
@@ -846,34 +630,7 @@ func (a *Api) flushDeletedDocument(c echo.Context) error {
 		logCrudDocument(ctx.UserId, "flush deleted document", &opOk, "flush deleted document %s", docId)
 	}()
 
-	document, err := a.db.DocumentStore.GetDocument(docId)
-	if err != nil {
-		return err
-	}
-	if document.UserId != ctx.UserId {
-		return errors.ErrRecordNotFound
-	}
-	if !document.DeletedAt.Valid {
-		return errors.ErrRecordNotFound
-	}
-	document.Update()
-
-	err = process.DeleteDocument(docId)
-	if err != nil {
-		logrus.Errorf("error deleting file: %v", err)
-		return respInternalErrorV2("delete file", err)
-	}
-
-	err = a.search.DeleteDocument(docId, ctx.UserId)
-	if err != nil {
-		logrus.Errorf("delete document from search index: %v", err)
-		return respInternalErrorV2("delete from search index", err)
-	}
-
-	err = a.db.DocumentStore.DeleteDocument(docId)
-	if err != nil {
-		return err
-	}
-	opOk = true
-	return c.JSON(200, 200)
+	err := a.documentService.FlushDeletedDocument(getContext(c), docId)
+	opOk = err == nil
+	return err
 }
