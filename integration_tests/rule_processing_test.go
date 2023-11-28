@@ -80,7 +80,7 @@ func (suite *RuleProcessingTestSuite) TestMatchAny() {
 	rule.Id = gotRule.Id
 
 	// invalid user
-	requestDocumentProcessing(suite.T(), suite.adminHttp, testDocumentX86Intel.Id, 403)
+	requestDocumentProcessing(suite.T(), suite.adminHttp, testDocumentX86Intel.Id, 404)
 
 	requestDocumentProcessing(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
 	time.Sleep(time.Second)
@@ -137,7 +137,7 @@ func (suite *RuleProcessingTestSuite) TestMatchAll() {
 	rule.Id = gotRule.Id
 
 	// invalid user
-	requestDocumentProcessing(suite.T(), suite.adminHttp, testDocumentX86Intel.Id, 403)
+	requestDocumentProcessing(suite.T(), suite.adminHttp, testDocumentX86Intel.Id, 404)
 
 	requestDocumentProcessing(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
 	time.Sleep(time.Second)
@@ -180,7 +180,7 @@ func (suite *RuleProcessingTestSuite) TestExtractDate() {
 	rule.Id = gotRule.Id
 
 	// invalid user
-	requestDocumentProcessing(suite.T(), suite.adminHttp, testDocumentX86.Id, 403)
+	requestDocumentProcessing(suite.T(), suite.adminHttp, testDocumentX86.Id, 404)
 
 	requestDocumentProcessing(suite.T(), suite.userHttp, testDocumentX86.Id, 200)
 	requestDocumentProcessing(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)

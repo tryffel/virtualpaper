@@ -108,7 +108,8 @@ func mSort(model models.Modeler) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			type sort struct {
-				Sort string `query:"sort"`
+				Sort  string `query:"sort"`
+				Order string `query:"order"`
 			}
 
 			rawSort := &sort{}
@@ -122,6 +123,9 @@ func mSort(model models.Modeler) echo.MiddlewareFunc {
 			var sortOrder string
 			if strings.HasPrefix(rawSort.Sort, "[") && strings.HasSuffix(rawSort.Sort, "]") {
 				sortVar, sortOrder = parseSortParamArray(rawSort.Sort)
+			} else {
+				sortVar = rawSort.Sort
+				sortOrder = rawSort.Order
 			}
 
 			for _, v := range model.SortAttributes() {
