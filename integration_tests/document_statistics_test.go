@@ -7,11 +7,12 @@ import (
 	"time"
 	"tryffel.net/go/virtualpaper/api"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/models/aggregates"
 )
 
 type DocumentStatisticsSuite struct {
 	ApiTestSuite
-	docs map[string]*api.DocumentResponse
+	docs map[string]*aggregates.Document
 }
 
 func TestDocumentStatistics(t *testing.T) {

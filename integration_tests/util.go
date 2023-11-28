@@ -3,11 +3,11 @@ package integrationtest
 import (
 	"fmt"
 	"testing"
-	"tryffel.net/go/virtualpaper/api"
+	"tryffel.net/go/virtualpaper/models/aggregates"
 )
 
-func getDocument(t *testing.T, client *httpClient, id string, wantHttpStatus int) *api.DocumentResponse {
-	doc := &api.DocumentResponse{}
+func getDocument(t *testing.T, client *httpClient, id string, wantHttpStatus int) *aggregates.Document {
+	doc := &aggregates.Document{}
 	req := client.Get("/api/v1/documents/" + id).Expect(t)
 	if wantHttpStatus == 200 {
 		req.Json(t, doc).e.Status(200).Done()
@@ -18,8 +18,8 @@ func getDocument(t *testing.T, client *httpClient, id string, wantHttpStatus int
 	}
 }
 
-func getDocumentWithVisit(t *testing.T, client *httpClient, id string, wantHttpStatus int) *api.DocumentResponse {
-	doc := &api.DocumentResponse{}
+func getDocumentWithVisit(t *testing.T, client *httpClient, id string, wantHttpStatus int) *aggregates.Document {
+	doc := &aggregates.Document{}
 	req := client.Get(fmt.Sprintf("/api/v1/documents/%s", id)).SetQueryParam("visit", "1").Expect(t)
 	if wantHttpStatus == 200 {
 		req.Json(t, doc).e.Status(200).Done()
@@ -30,8 +30,8 @@ func getDocumentWithVisit(t *testing.T, client *httpClient, id string, wantHttpS
 	}
 }
 
-func getDocuments(t *testing.T, client *httpClient, wantHttpStatus int) *[]api.DocumentResponse {
-	doc := &[]api.DocumentResponse{}
+func getDocuments(t *testing.T, client *httpClient, wantHttpStatus int) *[]aggregates.Document {
+	doc := &[]aggregates.Document{}
 	req := client.Get("/api/v1/documents/").Expect(t)
 	if wantHttpStatus == 200 {
 		req.Json(t, doc).e.Status(200).Done()
@@ -42,8 +42,8 @@ func getDocuments(t *testing.T, client *httpClient, wantHttpStatus int) *[]api.D
 	}
 }
 
-func getDeletedDocuments(t *testing.T, client *httpClient, wantHttpStatus int) *[]api.DocumentResponse {
-	doc := &[]api.DocumentResponse{}
+func getDeletedDocuments(t *testing.T, client *httpClient, wantHttpStatus int) *[]aggregates.Document {
+	doc := &[]aggregates.Document{}
 	req := client.Get("/api/v1/documents/deleted").Expect(t)
 	if wantHttpStatus == 200 {
 		req.Json(t, doc).e.Status(200).Done()

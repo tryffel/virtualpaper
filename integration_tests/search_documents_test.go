@@ -10,11 +10,12 @@ import (
 	"time"
 	"tryffel.net/go/virtualpaper/api"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/models/aggregates"
 )
 
 type DocumentSearchSuite struct {
 	ApiTestSuite
-	docs map[string]*api.DocumentResponse
+	docs map[string]*aggregates.Document
 
 	keys   map[string]*models.MetadataKey
 	values map[string]map[string]*models.MetadataValue
@@ -30,7 +31,7 @@ func (suite *DocumentSearchSuite) SetupSuite() {
 	clearDbDocumentTables(suite.T(), suite.db)
 	clearMeiliIndices(suite.T())
 	waitIndexingReady(suite.T(), suite.userHttp, 20)
-	suite.docs = make(map[string]*api.DocumentResponse)
+	suite.docs = make(map[string]*aggregates.Document)
 	suite.keys, suite.values = initMetadataKeyValues(suite.T(), suite.userHttp)
 
 	text1Id := uploadDocument(suite.T(), suite.userClient, "jpg-1.jpeg", "Lorem ipsum", 20)
@@ -259,7 +260,7 @@ func waitIndexingReady(t *testing.T, client *httpClient, timeoutSec int) {
 }
 
 // filter is of type api.DocumentFilter
-func searchDocuments(t *testing.T, client *httpClient, filter interface{}, page int, perPage int, sort string, order string, wantHttpStatus int) []*api.DocumentResponse {
+func searchDocuments(t *testing.T, client *httpClient, filter interface{}, page int, perPage int, sort string, order string, wantHttpStatus int) []*aggregates.Document {
 	b, err := json.Marshal(filter)
 	if err != nil {
 		t.Errorf("marshal json filter: %v", err)
@@ -271,7 +272,7 @@ func searchDocuments(t *testing.T, client *httpClient, filter interface{}, page 
 		req.
 		SetQuery("filter", string(b))}
 
-	dto := &[]*api.DocumentResponse{}
+	dto := &[]*aggregates.Document{}
 	if wantHttpStatus == 200 {
 		req.Expect(t).Json(t, dto).e.Status(200).Done()
 		return *dto
@@ -286,7 +287,7 @@ func serializeSearchQuery(filter interface{}) string {
 	return string(b)
 }
 
-func assertDocInDocs(t *testing.T, docId string, docs *[]*api.DocumentResponse, msg string) {
+func assertDocInDocs(t *testing.T, docId string, docs *[]*aggregates.Document, msg string) {
 	for _, v := range *docs {
 		if docId == v.Id {
 			return

@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"tryffel.net/go/virtualpaper/models/aggregates"
 	"tryffel.net/go/virtualpaper/services/search"
 
 	"github.com/asaskevich/govalidator"
@@ -38,56 +39,10 @@ import (
 	"tryffel.net/go/virtualpaper/storage"
 )
 
-// DocumentResponse
-type DocumentResponse struct {
-	// swagger:strfmt uuid
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Filename    string `json:"filename"`
-	Content     string `json:"content"`
-	Description string `json:"description"`
-	CreatedAt   int64  `json:"created_at"`
-	UpdatedAt   int64  `json:"updated_at"`
-	// swagger:strfmt either null or unix epoch in milliseconds
-	DeletedAt   interface{}       `json:"deleted_at"`
-	Date        int64             `json:"date"`
-	PreviewUrl  string            `json:"preview_url"`
-	DownloadUrl string            `json:"download_url"`
-	Mimetype    string            `json:"mimetype"`
-	Type        string            `json:"type"`
-	Size        int64             `json:"size"`
-	PrettySize  string            `json:"pretty_size"`
-	Status      string            `json:"status"`
-	Metadata    []models.Metadata `json:"metadata"`
-	Tags        []models.Tag      `json:"tags"`
-	Lang        string            `json:"lang"`
-}
-
-func responseFromDocument(doc *models.Document) *DocumentResponse {
-	resp := &DocumentResponse{
-		Id:          doc.Id,
-		Name:        doc.Name,
-		Filename:    doc.Filename,
-		Content:     doc.Content,
-		Description: doc.Description,
-		CreatedAt:   doc.CreatedAt.Unix() * 1000,
-		UpdatedAt:   doc.UpdatedAt.Unix() * 1000,
-		Date:        doc.Date.Unix() * 1000,
-		PreviewUrl:  fmt.Sprintf("%s/api/v1/documents/%s/preview", config.C.Api.PublicUrl, doc.Id),
-		DownloadUrl: fmt.Sprintf("%s/api/v1/documents/%s/download", config.C.Api.PublicUrl, doc.Id),
-		Mimetype:    doc.Mimetype,
-		Type:        doc.GetType(),
-		Size:        doc.Size,
-		PrettySize:  doc.GetSize(),
-		Metadata:    doc.Metadata,
-		Tags:        doc.Tags,
-		Lang:        doc.Lang.String(),
-	}
-	if doc.DeletedAt.Valid {
-		resp.DeletedAt = doc.DeletedAt.Time.Unix() * 1000
-	} else {
-		resp.DeletedAt = nil
-	}
+func responseFromDocument(doc *models.Document) *aggregates.Document {
+	resp := aggregates.DocumentToAggregate(doc)
+	resp.PreviewUrl = fmt.Sprintf("%s/api/v1/documents/%s/preview", config.C.Api.PublicUrl, doc.Id)
+	resp.DownloadUrl = fmt.Sprintf("%s/api/v1/documents/%s/download", config.C.Api.PublicUrl, doc.Id)
 	return resp
 }
 
@@ -113,7 +68,7 @@ func (a *Api) getDocuments(c echo.Context) error {
 	// Get documents
 	//
 	// responses:
-	//   200: DocumentResponse
+	//   200: Document
 	//handler := "Api.getDocuments"
 	ctx := c.(UserContext)
 	//user := ctx.User
@@ -132,7 +87,7 @@ func (a *Api) getDocuments(c echo.Context) error {
 		logrus.Errorf("get documents: %v", err)
 		return err
 	}
-	respDocs := make([]*DocumentResponse, len(*docs))
+	respDocs := make([]*aggregates.Document, len(*docs))
 
 	for i, v := range *docs {
 		respDocs[i] = responseFromDocument(&v)
@@ -145,7 +100,7 @@ func (a *Api) getDeletedDocuments(c echo.Context) error {
 	// Get deleted documents
 	//
 	// responses:
-	//   200: DocumentResponse
+	//   200: Document
 	ctx := c.(UserContext)
 
 	paging := getPagination(c)
@@ -155,7 +110,7 @@ func (a *Api) getDeletedDocuments(c echo.Context) error {
 		logrus.Errorf("get documents: %v", err)
 		return err
 	}
-	respDocs := make([]*DocumentResponse, len(*docs))
+	respDocs := make([]*aggregates.Document, len(*docs))
 
 	for i, v := range *docs {
 		respDocs[i] = responseFromDocument(&v)
@@ -167,7 +122,7 @@ func (a *Api) getDocument(c echo.Context) error {
 	// swagger:route GET /api/v1/documents/{id} Documents GetDocument
 	// Get document
 	// responses:
-	//   200: DocumentResponse
+	//   200: Document
 
 	ctx := c.(UserContext)
 	id := c.Param("id")
@@ -216,7 +171,7 @@ func (a *Api) getDocumentContent(c echo.Context) error {
 	// swagger:route GET /api/v1/documents/{id}/content Documents GetDocumentContent
 	// Get full document parsed content
 	// responses:
-	//   200: DocumentResponse
+	//   200: Document
 
 	ctx := c.(UserContext)
 	id := c.Param("id")
@@ -232,7 +187,7 @@ func (a *Api) getDocumentLogs(c echo.Context) error {
 	// swagger:route GET /api/v1/documents/{id}/jobs Documents GetDocumentJobs
 	// Get processing job history related to document
 	// responses:
-	//   200: DocumentResponse
+	//   200: Document
 	id := c.Param("id")
 	job, err := a.db.JobStore.GetJobsByDocumentId(id)
 	if err != nil {
@@ -287,7 +242,7 @@ func (a *Api) uploadFile(c echo.Context) error {
 	// - multipart/form-data
 	//
 	// Responses:
-	//  200: DocumentResponse
+	//  200: Document
 	//  400: DocumentExistsResponse
 	ctx := c.(UserContext)
 	var err error
@@ -459,7 +414,7 @@ func (a *Api) downloadDocument(c echo.Context) error {
 	// swagger:route GET /api/v1/documents/{id} Documents DownloadDocument
 	// Downloads original document
 	// Responses:
-	//  200: DocumentResponse
+	//  200: Document
 
 	ctx := c.(UserContext)
 	var err error
@@ -500,7 +455,7 @@ func (a *Api) updateDocument(c echo.Context) error {
 	// swagger:route PUT /api/v1/documents/{id} Documents UpdateDocument
 	// Updates document
 	// Responses:
-	//  200: DocumentResponse
+	//  200: Document
 
 	ctx := c.(UserContext)
 	id := c.Param("id")
@@ -580,7 +535,7 @@ func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, c echo.
 		return err
 	}
 
-	docs := make([]*DocumentResponse, len(res))
+	docs := make([]*aggregates.Document, len(res))
 	for i, v := range res {
 		docs[i] = responseFromDocument(v)
 	}

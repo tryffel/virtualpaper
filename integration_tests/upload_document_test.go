@@ -15,6 +15,7 @@ import (
 	"time"
 	"tryffel.net/go/virtualpaper/api"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/models/aggregates"
 )
 
 type UploadDocumentSuite struct {
@@ -182,7 +183,7 @@ func uploadDocumentWithStatus(t *testing.T, client *baloo.Client, fileName strin
 	form.Data["name"] = []string{fileName}
 
 	var docId = ""
-	docBody := &api.DocumentResponse{}
+	docBody := &aggregates.Document{}
 	docReady := false
 
 	t.Log("upload document, should return OK")
@@ -240,7 +241,7 @@ func uploadDocumentWithStatus(t *testing.T, client *baloo.Client, fileName strin
 	return docId
 }
 
-func updateDocument(t *testing.T, client *httpClient, doc *api.DocumentResponse, wantHttpStatus int) *api.DocumentResponse {
+func updateDocument(t *testing.T, client *httpClient, doc *aggregates.Document, wantHttpStatus int) *aggregates.Document {
 	dto := &api.DocumentUpdateRequest{
 		Name:        doc.Name,
 		Description: doc.Description,
@@ -258,7 +259,7 @@ func updateDocument(t *testing.T, client *httpClient, doc *api.DocumentResponse,
 
 	req := client.Put("/api/v1/documents/"+doc.Id).Json(t, doc).Expect(t)
 	if wantHttpStatus == 200 {
-		out := &api.DocumentResponse{}
+		out := &aggregates.Document{}
 		req.Json(t, out).e.Status(200).Done()
 		return out
 	}
