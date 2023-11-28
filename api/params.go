@@ -187,7 +187,7 @@ func mDocumentOwner(documentStore *storage.DocumentStore) func(idKey string) ech
 					return err
 				}
 				if !owns {
-					return echo.NewHTTPError(http.StatusForbidden, "forbidden")
+					return echo.NewHTTPError(http.StatusNotFound, "not found")
 				}
 				return next(c)
 			}
