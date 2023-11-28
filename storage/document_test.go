@@ -52,14 +52,14 @@ func TestDocumentStore_GetDocument(t *testing.T) {
 		Tags:        nil,
 	}
 
-	mock.ExpectQuery("SELECT *\nFROM documents\nWHERE id = $1 AND user_id = $2;").
-		WithArgs(doc.Id, doc.UserId).
+	mock.ExpectQuery("SELECT *\nFROM documents\nWHERE id = $1").
+		WithArgs(doc.Id).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "user_id", "name", "description", "content", "filename", "hash",
 			"mimetype", "size", "date", "created_at", "updated_at"}).
 			AddRow(doc.Id, doc.UserId, doc.Name, doc.Description, doc.Content, doc.Filename, doc.Hash, doc.Mimetype,
 				doc.Size, doc.Date, doc.CreatedAt, doc.UpdatedAt))
 
-	gotDoc, err := db.DocumentStore.GetDocument(10, doc.Id)
+	gotDoc, err := db.DocumentStore.GetDocument(doc.Id)
 
 	if err != nil {
 		t.Error(err)

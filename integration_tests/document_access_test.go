@@ -27,16 +27,16 @@ func (suite *DocumentAccessTest) TestDownloadForbidden() {
 	doc2 := uploadDocument(suite.T(), suite.adminClient, "text-1.txt", "Lorem ipsum", 60)
 
 	downloadDocument(suite.T(), suite.userClient, doc1, 200)
-	downloadDocument(suite.T(), suite.adminClient, doc1, 403)
+	downloadDocument(suite.T(), suite.adminClient, doc1, 404)
 
 	downloadDocument(suite.T(), suite.adminClient, doc2, 200)
-	downloadDocument(suite.T(), suite.userClient, doc2, 403)
+	downloadDocument(suite.T(), suite.userClient, doc2, 404)
 }
 
 func (suite *DocumentAccessTest) TestShowForbidden() {
 	getDocument(suite.T(), suite.userHttp, testDocumentMetamorphosis.Id, 200)
-	getDocument(suite.T(), suite.adminHttp, testDocumentMetamorphosis.Id, 403)
+	getDocument(suite.T(), suite.adminHttp, testDocumentMetamorphosis.Id, 404)
 
 	getDocument(suite.T(), suite.adminHttp, testDocumentTransistorCountAdminUser.Id, 200)
-	getDocument(suite.T(), suite.userHttp, testDocumentTransistorCountAdminUser.Id, 403)
+	getDocument(suite.T(), suite.userHttp, testDocumentTransistorCountAdminUser.Id, 404)
 }
