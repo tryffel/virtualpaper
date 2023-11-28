@@ -29,6 +29,7 @@ import (
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/services"
 	"tryffel.net/go/virtualpaper/services/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
@@ -180,13 +181,13 @@ func getSort(c echo.Context) SortKey {
 	return ctx.sort
 }
 
-func mDocumentOwner(documentStore *storage.DocumentStore) func(idKey string) echo.MiddlewareFunc {
+func mDocumentOwner(service *services.DocumentService) func(idKey string) echo.MiddlewareFunc {
 	return func(idKey string) echo.MiddlewareFunc {
 		return func(next echo.HandlerFunc) echo.HandlerFunc {
 			return func(c echo.Context) error {
 				ctx := c.(UserContext)
 				id := c.Param(idKey)
-				owns, err := documentStore.UserOwnsDocument(id, ctx.UserId)
+				owns, err := service.UserOwnsDocument(id, ctx.UserId)
 				if err != nil {
 					return err
 				}

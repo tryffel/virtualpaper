@@ -127,7 +127,7 @@ func (a *Api) getDocuments(c echo.Context) error {
 	}
 	paging := getPagination(c)
 	sort := getSort(c)
-	docs, count, err := a.db.DocumentStore.GetDocuments(ctx.UserId, paging.toPagination(), sort.ToKey(), true, false)
+	docs, count, err := a.documentService.GetDocuments(ctx.UserId, paging.toPagination(), sort.ToKey(), true)
 	if err != nil {
 		logrus.Errorf("get documents: %v", err)
 		return err
@@ -150,7 +150,7 @@ func (a *Api) getDeletedDocuments(c echo.Context) error {
 
 	paging := getPagination(c)
 	sort := getSort(c)
-	docs, count, err := a.db.DocumentStore.GetDocuments(ctx.UserId, paging.toPagination(), sort.ToKey(), true, true)
+	docs, count, err := a.documentService.GetDeletedDocuments(ctx.UserId, paging.toPagination(), sort.ToKey(), true)
 	if err != nil {
 		logrus.Errorf("get documents: %v", err)
 		return err
@@ -575,7 +575,7 @@ func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, c echo.
 	opOk := false
 	defer logCrudDocument(userId, "search", &opOk, "metadata: %v, query: %v", filter.Metadata != "", filter.Query != "")
 
-	res, n, err := a.search.SearchDocuments(userId, filter.Query, sort.ToKey(), paging.toPagination())
+	res, n, err := a.documentService.SearchDocuments(userId, filter.Query, sort.ToKey(), paging.toPagination())
 	if err != nil {
 		return err
 	}

@@ -47,7 +47,7 @@ func (api *Api) addRoutesV2() {
 		authGroup = api.apiRouter.Group("/v1/auth", authRateLimiter)
 	}
 
-	mDocOwner := mDocumentOwner(api.db.DocumentStore)
+	mDocOwner := mDocumentOwner(api.documentService)
 
 	authGroup.POST("/login", api.LoginV2)
 	api.privateRouter.POST("/auth/logout", api.Logout)
