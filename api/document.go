@@ -126,16 +126,8 @@ func (a *Api) getDocuments(c echo.Context) error {
 		return a.searchDocuments(ctx.UserId, query, c)
 	}
 	paging := getPagination(c)
-	sort, err := getSortParams(c.Request(), &models.Document{})
-	if err != nil {
-		return err
-	}
-
-	if len(sort) == 0 {
-		sort = append(sort, storage.SortKey{})
-	}
-
-	docs, count, err := a.db.DocumentStore.GetDocuments(ctx.UserId, paging.toPagination(), sort[0], true, false)
+	sort := getSort(c)
+	docs, count, err := a.db.DocumentStore.GetDocuments(ctx.UserId, paging.toPagination(), sort.ToKey(), true, false)
 	if err != nil {
 		logrus.Errorf("get documents: %v", err)
 		return err
@@ -157,15 +149,8 @@ func (a *Api) getDeletedDocuments(c echo.Context) error {
 	ctx := c.(UserContext)
 
 	paging := getPagination(c)
-	sort, err := getSortParams(c.Request(), &models.Document{})
-	if err != nil {
-		return err
-	}
-
-	if len(sort) == 0 {
-		sort = append(sort, storage.SortKey{})
-	}
-	docs, count, err := a.db.DocumentStore.GetDocuments(ctx.UserId, paging.toPagination(), sort[0], true, true)
+	sort := getSort(c)
+	docs, count, err := a.db.DocumentStore.GetDocuments(ctx.UserId, paging.toPagination(), sort.ToKey(), true, true)
 	if err != nil {
 		logrus.Errorf("get documents: %v", err)
 		return err
@@ -608,15 +593,7 @@ func (d *documentSortParams) Update() {}
 
 func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, c echo.Context) error {
 	paging := getPagination(c)
-	sort, err := getSortParams(c.Request(), &documentSortParams{})
-	if err != nil {
-		return err
-	}
-
-	if len(sort) == 1 {
-		filter.Sort = sort[0].Key
-		filter.SortMode = strings.ToLower(sort[0].SortOrder())
-	}
+	sort := getSort(c)
 	if filter.Sort == "id" {
 		filter.Sort = ""
 	}
@@ -624,7 +601,7 @@ func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, c echo.
 	opOk := false
 	defer logCrudDocument(userId, "search", &opOk, "metadata: %v, query: %v", filter.Metadata != "", filter.Query != "")
 
-	res, n, err := a.search.SearchDocuments(userId, filter.Query, sort[0], paging.toPagination())
+	res, n, err := a.search.SearchDocuments(userId, filter.Query, sort.ToKey(), paging.toPagination())
 	if err != nil {
 		return err
 	}

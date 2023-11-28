@@ -26,7 +26,6 @@ import (
 
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
-	"tryffel.net/go/virtualpaper/storage"
 )
 
 type MetadataRequest struct {
@@ -104,19 +103,9 @@ func (a *Api) getMetadataKeys(c echo.Context) error {
 	ctx := c.(UserContext)
 
 	paging := getPagination(c)
-	sort, err := getSortParams(c.Request(), &models.MetadataKey{})
-	if err != nil {
-		return err
-	}
-
-	var sortfield = "key"
-	var sortOrder = true
-	var caseInsensitive = true
-
-	if len(sort) > 0 {
-		sortfield = sort[0].Key
-		sortOrder = sort[0].Order
-		caseInsensitive = sort[0].CaseInsensitive
+	sort := getSort(c)
+	if sort.Key == "" {
+		sort.Key = "key"
 	}
 
 	filter, err := getMetadataFilter(c.Request())
@@ -124,9 +113,7 @@ func (a *Api) getMetadataKeys(c echo.Context) error {
 		return err
 	}
 
-	keys, count, err := a.db.MetadataStore.GetKeys(ctx.UserId, filter,
-		storage.NewSortKey(sortfield, "key", sortOrder, caseInsensitive),
-		paging.toPagination())
+	keys, count, err := a.db.MetadataStore.GetKeys(ctx.UserId, filter, sort.ToKey(), paging.toPagination())
 	if err != nil {
 		return err
 	}
@@ -164,23 +151,8 @@ func (a *Api) getMetadataKeyValues(c echo.Context) error {
 	}
 
 	paging := getPagination(c)
-	sort, err := getSortParams(c.Request(), &models.MetadataValue{})
-	if err != nil {
-		return err
-	}
-
-	var sortfield = "value"
-	var sortOrder = true
-	var caseInsensitive = true
-
-	if len(sort) > 0 {
-		sortfield = sort[0].Key
-		sortOrder = sort[0].Order
-		caseInsensitive = sort[0].CaseInsensitive
-	}
-
-	keys, err := a.db.MetadataStore.GetValues(ctx.UserId, key,
-		storage.NewSortKey(sortfield, "value", sortOrder, caseInsensitive), paging.toPagination())
+	sort := getSort(c)
+	keys, err := a.db.MetadataStore.GetValues(ctx.UserId, key, sort.ToKey(), paging.toPagination())
 	if err != nil {
 		return err
 	}

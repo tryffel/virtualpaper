@@ -95,7 +95,9 @@ func (a *Api) authorizeUserV2() echo.MiddlewareFunc {
 					Context: Context{Context: c, pagination: pageParams{
 						Page:     1,
 						PageSize: 20,
-					}},
+					},
+						sort: SortKey{},
+					},
 					Admin:    user.IsAdmin,
 					UserId:   numId,
 					User:     user,
