@@ -24,9 +24,11 @@ import (
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
+	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/services/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
@@ -68,6 +70,22 @@ func mPagination() echo.MiddlewareFunc {
 	}
 }
 
+type SortKey struct {
+	Key             string
+	Order           bool
+	CaseInsensitive bool
+}
+
+func (s SortKey) ToKey() storage.SortKey {
+	return storage.SortKey{
+		Key:             s.Key,
+		Order:           s.Order,
+		CaseInsensitive: s.CaseInsensitive,
+	}
+}
+
+type SortKeys []SortKey
+
 func getPagination(c echo.Context) pageParams {
 	ctx, ok := c.(Context)
 	if ok {
@@ -84,6 +102,78 @@ func getPagination(c echo.Context) pageParams {
 		Page:     ctx.pagination.Page,
 		PageSize: ctx.pagination.PageSize,
 	}
+}
+
+func mSort(model models.Modeler) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			type sort struct {
+				Sort string `query:"sort"`
+			}
+
+			rawSort := &sort{}
+			err := (&echo.DefaultBinder{}).BindQueryParams(c, rawSort)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "invalid sort")
+			}
+
+			sortKeys := make([]storage.SortKey, 0)
+			var sortVar string
+			var sortOrder string
+			if strings.HasPrefix(rawSort.Sort, "[") && strings.HasSuffix(rawSort.Sort, "]") {
+				sortVar, sortOrder = parseSortParamArray(rawSort.Sort)
+			}
+
+			for _, v := range model.SortAttributes() {
+				if sortVar == v {
+					caseInsensitive := false
+					for _, sortKey := range model.SortNoCase() {
+						if v == sortKey {
+							caseInsensitive = true
+							break
+						}
+					}
+					switch strings.ToUpper(sortOrder) {
+					case "ASC":
+						sort := storage.NewSortKey(v, "id", false, caseInsensitive)
+						sortKeys = append(sortKeys, sort)
+					case "DESC":
+						sort := storage.NewSortKey(v, "id", true, caseInsensitive)
+						sortKeys = append(sortKeys, sort)
+					default:
+						sort := storage.NewSortKey(v, "id", false, caseInsensitive)
+						sortKeys = append(sortKeys, sort)
+					}
+				}
+			}
+			if (len(sortKeys)) > 0 {
+				if ctx, ok := c.(UserContext); ok {
+					key := sortKeys[0]
+					ctx.sort.Key = key.Key
+					ctx.sort.Order = key.Order
+					ctx.sort.CaseInsensitive = key.CaseInsensitive
+					return next(ctx)
+				}
+			}
+			return next(c)
+		}
+	}
+}
+
+func getSort(c echo.Context) SortKey {
+	ctx, ok := c.(Context)
+	if ok {
+		return SortKey{
+			Key:             "",
+			Order:           true,
+			CaseInsensitive: false,
+		}
+	}
+	userCtx, ok := c.(UserContext)
+	if ok {
+		return userCtx.sort
+	}
+	return ctx.sort
 }
 
 func bindPathId(c echo.Context) string {

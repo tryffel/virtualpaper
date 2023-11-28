@@ -24,7 +24,6 @@ import (
 	"strings"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
-	"tryffel.net/go/virtualpaper/storage"
 )
 
 func getUserId(req *http.Request) (int, bool) {
@@ -49,55 +48,6 @@ func userIsAdmin(req *http.Request) (bool, error) {
 	return user.IsAdmin, nil
 }
 
-// getSortParams parses and validates sorting parameters. This always returns list of params
-// in the order of model.SortAttributes() and not in order of request.
-func getSortParams(req *http.Request, model models.Modeler) ([]storage.SortKey, error) {
-	sortKeys := make([]storage.SortKey, 0)
-
-	err := req.ParseForm()
-	if err != nil {
-		return sortKeys, err
-	}
-
-	if len(req.Form) == 0 {
-		return sortKeys, nil
-	}
-
-	vars := req.Form
-
-	sortVar := vars.Get("sort")
-	sortOrder := vars.Get("order")
-
-	if strings.HasPrefix(sortVar, "[") && strings.HasSuffix(sortVar, "]") {
-		sortVar, sortOrder = parseSortParamArray(sortVar)
-	}
-
-	for _, v := range model.SortAttributes() {
-		if sortVar == v {
-			caseInsensitive := false
-			for _, sortKey := range model.SortNoCase() {
-				if v == sortKey {
-					caseInsensitive = true
-					break
-				}
-			}
-
-			switch strings.ToUpper(sortOrder) {
-			case "ASC":
-				sort := storage.NewSortKey(v, "id", false, caseInsensitive)
-				sortKeys = append(sortKeys, sort)
-			case "DESC":
-				sort := storage.NewSortKey(v, "id", true, caseInsensitive)
-				sortKeys = append(sortKeys, sort)
-			default:
-				sort := storage.NewSortKey(v, "id", false, caseInsensitive)
-				sortKeys = append(sortKeys, sort)
-			}
-		}
-	}
-	return sortKeys, nil
-}
-
 func parseSortParamArray(s string) (string, string) {
 	s = strings.Trim(s, "[]\"")
 	s = strings.Replace(s, "\"", "", 2)
@@ -111,6 +61,7 @@ func parseSortParamArray(s string) (string, string) {
 type Context struct {
 	echo.Context
 	pagination pageParams
+	sort       SortKey
 }
 
 type UserContext struct {

@@ -21,11 +21,8 @@ package api
 import (
 	"context"
 	"net/http"
-	"reflect"
 	"testing"
 	"time"
-	"tryffel.net/go/virtualpaper/models"
-	"tryffel.net/go/virtualpaper/storage"
 )
 
 func Test_getUserId(t *testing.T) {
@@ -63,73 +60,6 @@ func Test_getUserId(t *testing.T) {
 			}
 			if got1 != tt.want1 {
 				t.Errorf("getUserId() got1 = %v, want %v", got1, tt.want1)
-			}
-		})
-	}
-}
-
-func Test_getSortParams(t *testing.T) {
-	type args struct {
-		req   *http.Request
-		model models.Modeler
-	}
-
-	emptyReq, _ := http.NewRequest(http.MethodGet, "http://localhost", nil)
-	simpleReq, _ := http.NewRequest(http.MethodGet, "http://localhost?sort=id&order=desc", nil)
-	altReq, _ := http.NewRequest(http.MethodGet, "http://localhost?sort=name&order=asc", nil)
-	skipReq, _ := http.NewRequest(http.MethodGet, "http://localhost?id=asc&name=desc&created_at=ab", nil)
-
-	tests := []struct {
-		name    string
-		args    args
-		want    []storage.SortKey
-		wantErr bool
-	}{
-		{
-			args: args{
-				req:   emptyReq,
-				model: &TestStruct{},
-			},
-			want:    []storage.SortKey{},
-			wantErr: false,
-		},
-		{
-			args: args{
-				req:   simpleReq,
-				model: &TestStruct{},
-			},
-			want: []storage.SortKey{
-				{Key: "id", Order: true, CaseInsensitive: false},
-			},
-			wantErr: false,
-		},
-		{
-			args: args{
-				req:   altReq,
-				model: &TestStruct{},
-			},
-			want: []storage.SortKey{
-				{Key: "name", Order: false, CaseInsensitive: true},
-			},
-			wantErr: false,
-		},
-		{
-			args: args{
-				req:   skipReq,
-				model: &TestStruct{},
-			},
-			want:    []storage.SortKey{},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := getSortParams(tt.args.req, tt.args.model)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getSortParams() = %v, want %v", got, tt.want)
-			}
-			if tt.wantErr != (err != nil) {
-				t.Errorf("getSortParams() = %v, want error %v", err, tt.wantErr)
 			}
 		})
 	}
