@@ -49,7 +49,7 @@ type UploadFileRequest struct {
 // swagger:parameters BulkEditDocuments ReqBulkEditDocuments
 type BulkEditDocuments struct {
 	// in:body
-	Body api.BulkEditDocumentsRequest
+	Body aggregates.BulkEditDocumentsRequest
 }
 
 // swagger:parameters GetDocuments ReqDocumentFilter

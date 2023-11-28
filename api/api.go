@@ -90,7 +90,7 @@ func NewApi(database *storage.Database) (*Api, error) {
 		return api, err
 	}
 
-	api.documentService = services.NewDocumentService(database.DocumentStore, api.search)
+	api.documentService = services.NewDocumentService(database, api.search, api.process)
 
 	api.addRoutesV2()
 	return api, err

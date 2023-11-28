@@ -267,7 +267,7 @@ func (suite *BulkEditTestSuite) TestPermissionDenied() {
 		},
 		},
 		RemoveMetadata: api.MetadataUpdateRequest{},
-	}, 403)
+	}, 404)
 
 	editedX86 := getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
 	assert.Equal(suite.T(), originalX86, editedX86)
@@ -284,7 +284,7 @@ func (suite *BulkEditTestSuite) TestPermissionDenied() {
 			},
 		},
 		},
-	}, 403)
+	}, 404)
 
 	editedX86 = getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
 	assert.Equal(suite.T(), originalX86, editedX86)
@@ -301,7 +301,7 @@ func (suite *BulkEditTestSuite) TestPermissionDenied() {
 			},
 		},
 		},
-	}, 403)
+	}, 404)
 
 	suite.T().Log("attempt to add value that does not exist")
 	doBulkEditRequest(suite.T(), suite.userHttp, &api.BulkEditDocumentsRequest{
@@ -315,7 +315,7 @@ func (suite *BulkEditTestSuite) TestPermissionDenied() {
 			},
 		},
 		},
-	}, 403)
+	}, 404)
 
 	editedX86 = getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
 	assert.Equal(suite.T(), originalX86, editedX86)
