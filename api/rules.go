@@ -360,7 +360,7 @@ func (a *Api) testRule(c echo.Context) error {
 	}
 
 	if doc.UserId != ctx.UserId {
-		return echo.NewHTTPError(http.StatusForbidden, "forbidden")
+		return echo.NewHTTPError(http.StatusNotFound, "not found")
 	}
 
 	metadata, err := a.db.MetadataStore.GetDocumentMetadata(ctx.UserId, processingRule.DocumentId)
