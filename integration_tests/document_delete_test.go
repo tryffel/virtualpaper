@@ -207,7 +207,7 @@ func requestAdminRestoreDeletedDocument(t *testing.T, client *httpClient, docId 
 }
 
 func assertDocumentHasDeletetAt(suite *ApiTestSuite, docId string, date time.Time) {
-	doc, err := suite.db.DocumentStore.GetDocument(0, docId)
+	doc, err := suite.db.DocumentStore.GetDocument(docId)
 	assert.NoError(suite.T(), err)
 
 	midnight := models.MidnightForDate(date)
@@ -218,7 +218,7 @@ func assertDocumentHasDeletetAt(suite *ApiTestSuite, docId string, date time.Tim
 }
 
 func assertDocumentHasNoDeletedAt(suite *ApiTestSuite, docId string) {
-	doc, err := suite.db.DocumentStore.GetDocument(0, docId)
+	doc, err := suite.db.DocumentStore.GetDocument(docId)
 	assert.NoError(suite.T(), err)
 
 	assert.False(suite.T(), doc.DeletedAt.Valid)

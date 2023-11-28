@@ -107,21 +107,15 @@ WHERE user_id = $1 AND deleted_at
 	return dest, count, err
 }
 
-// GetDocument returns document by its id. If userId != 0, user must be owner of the document.
-func (s *DocumentStore) GetDocument(userId int, id string) (*models.Document, error) {
+// GetDocument returns document by its id.
+func (s *DocumentStore) GetDocument(id string) (*models.Document, error) {
 	sql := `
 SELECT *
 FROM documents
 WHERE id = $1
 `
-
-	args := []interface{}{id}
-	if userId != 0 {
-		sql += " AND user_id = $2;"
-		args = append(args, userId)
-	}
 	dest := &models.Document{}
-	err := s.db.Get(dest, sql, args...)
+	err := s.db.Get(dest, sql, id)
 	return dest, s.parseError(err, "get document")
 }
 
@@ -331,7 +325,7 @@ WHERE awaits_indexing=True
 func (s *DocumentStore) Update(userId int, doc *models.Document) error {
 
 	// TODO: metadata diff is not saved, bc the document metadata is saved separately
-	oldDoc, err := s.GetDocument(0, doc.Id)
+	oldDoc, err := s.GetDocument(doc.Id)
 	if err != nil {
 		return s.parseError(err, "get document by id")
 	}

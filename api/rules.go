@@ -354,9 +354,13 @@ func (a *Api) testRule(c echo.Context) error {
 		return err
 	}
 
-	doc, err := a.db.DocumentStore.GetDocument(ctx.UserId, processingRule.DocumentId)
+	doc, err := a.db.DocumentStore.GetDocument(processingRule.DocumentId)
 	if err != nil {
 		return err
+	}
+
+	if doc.UserId != ctx.UserId {
+		return echo.NewHTTPError(http.StatusForbidden, "forbidden")
 	}
 
 	metadata, err := a.db.MetadataStore.GetDocumentMetadata(ctx.UserId, processingRule.DocumentId)

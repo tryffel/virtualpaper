@@ -124,7 +124,7 @@ func (a *Api) forceDocumentProcessing(c echo.Context) error {
 	}
 
 	if body.DocumentId != "" {
-		doc, err := a.db.DocumentStore.GetDocument(0, body.DocumentId)
+		doc, err := a.db.DocumentStore.GetDocument(body.DocumentId)
 		if err != nil {
 			logrus.Errorf("Get document to process: %v", err)
 		} else {
@@ -533,7 +533,7 @@ func (a *Api) adminRestoreDeletedDocument(c echo.Context) error {
 		logCrudAdminUsers(ctx.UserId, "restore deleted document", &opOk, "restore document %s", docId)
 	}()
 
-	document, err := a.db.DocumentStore.GetDocument(0, docId)
+	document, err := a.db.DocumentStore.GetDocument(docId)
 	if err != nil {
 		return err
 	}
@@ -546,7 +546,7 @@ func (a *Api) adminRestoreDeletedDocument(c echo.Context) error {
 		return err
 	}
 
-	doc, err := a.db.DocumentStore.GetDocument(0, docId)
+	doc, err := a.db.DocumentStore.GetDocument(docId)
 	err = a.search.IndexDocuments(&[]models.Document{*doc}, doc.UserId)
 	if err != nil {
 		logrus.Errorf("delete document from search index: %v", err)
