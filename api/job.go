@@ -6,12 +6,8 @@ import (
 
 func (a *Api) GetJob(c echo.Context) error {
 	ctx := c.(UserContext)
-	params, err := bindPaging(c)
-	if err != nil {
-		return err
-	}
-
-	jobs, err := a.db.JobStore.GetJobsByUserId(ctx.UserId, params)
+	pagination := getPagination(c)
+	jobs, err := a.db.JobStore.GetJobsByUserId(ctx.UserId, pagination.toPagination())
 	if err != nil {
 		return err
 	}

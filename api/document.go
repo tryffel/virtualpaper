@@ -125,12 +125,7 @@ func (a *Api) getDocuments(c echo.Context) error {
 	if query != nil {
 		return a.searchDocuments(ctx.UserId, query, c)
 	}
-
-	paging, err := bindPaging(c)
-	if err != nil {
-		return err
-	}
-
+	paging := getPagination(c)
 	sort, err := getSortParams(c.Request(), &models.Document{})
 	if err != nil {
 		return err
@@ -140,7 +135,7 @@ func (a *Api) getDocuments(c echo.Context) error {
 		sort = append(sort, storage.SortKey{})
 	}
 
-	docs, count, err := a.db.DocumentStore.GetDocuments(ctx.UserId, paging, sort[0], true, false)
+	docs, count, err := a.db.DocumentStore.GetDocuments(ctx.UserId, paging.toPagination(), sort[0], true, false)
 	if err != nil {
 		logrus.Errorf("get documents: %v", err)
 		return err
@@ -160,11 +155,8 @@ func (a *Api) getDeletedDocuments(c echo.Context) error {
 	// responses:
 	//   200: DocumentResponse
 	ctx := c.(UserContext)
-	paging, err := bindPaging(c)
-	if err != nil {
-		return err
-	}
 
+	paging := getPagination(c)
 	sort, err := getSortParams(c.Request(), &models.Document{})
 	if err != nil {
 		return err
@@ -173,7 +165,7 @@ func (a *Api) getDeletedDocuments(c echo.Context) error {
 	if len(sort) == 0 {
 		sort = append(sort, storage.SortKey{})
 	}
-	docs, count, err := a.db.DocumentStore.GetDocuments(ctx.UserId, paging, sort[0], true, true)
+	docs, count, err := a.db.DocumentStore.GetDocuments(ctx.UserId, paging.toPagination(), sort[0], true, true)
 	if err != nil {
 		logrus.Errorf("get documents: %v", err)
 		return err
@@ -615,11 +607,7 @@ func (d *documentSortParams) SortNoCase() []string { return d.FilterAttributes()
 func (d *documentSortParams) Update() {}
 
 func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, c echo.Context) error {
-	paging, err := bindPaging(c)
-	if err != nil {
-		return err
-	}
-
+	paging := getPagination(c)
 	sort, err := getSortParams(c.Request(), &documentSortParams{})
 	if err != nil {
 		return err
@@ -636,7 +624,7 @@ func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, c echo.
 	opOk := false
 	defer logCrudDocument(userId, "search", &opOk, "metadata: %v, query: %v", filter.Metadata != "", filter.Query != "")
 
-	res, n, err := a.search.SearchDocuments(userId, filter.Query, sort[0], paging)
+	res, n, err := a.search.SearchDocuments(userId, filter.Query, sort[0], paging.toPagination())
 	if err != nil {
 		return err
 	}

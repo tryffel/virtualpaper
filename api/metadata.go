@@ -103,13 +103,7 @@ func (a *Api) getMetadataKeys(c echo.Context) error {
 	//  200: MetadataKeyResponse
 	ctx := c.(UserContext)
 
-	paging, err := bindPaging(c)
-	if err != nil {
-		c.Logger().Debug("invalid paging", err)
-		paging.Limit = 100
-		paging.Offset = 0
-	}
-
+	paging := getPagination(c)
 	sort, err := getSortParams(c.Request(), &models.MetadataKey{})
 	if err != nil {
 		return err
@@ -132,7 +126,7 @@ func (a *Api) getMetadataKeys(c echo.Context) error {
 
 	keys, count, err := a.db.MetadataStore.GetKeys(ctx.UserId, filter,
 		storage.NewSortKey(sortfield, "key", sortOrder, caseInsensitive),
-		paging)
+		paging.toPagination())
 	if err != nil {
 		return err
 	}
@@ -169,11 +163,7 @@ func (a *Api) getMetadataKeyValues(c echo.Context) error {
 		return err
 	}
 
-	paging, err := bindPaging(c)
-	if err != nil {
-		return err
-	}
-
+	paging := getPagination(c)
 	sort, err := getSortParams(c.Request(), &models.MetadataValue{})
 	if err != nil {
 		return err
@@ -190,7 +180,7 @@ func (a *Api) getMetadataKeyValues(c echo.Context) error {
 	}
 
 	keys, err := a.db.MetadataStore.GetValues(ctx.UserId, key,
-		storage.NewSortKey(sortfield, "value", sortOrder, caseInsensitive), paging)
+		storage.NewSortKey(sortfield, "value", sortOrder, caseInsensitive), paging.toPagination())
 	if err != nil {
 		return err
 	}
