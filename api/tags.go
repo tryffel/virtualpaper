@@ -30,12 +30,8 @@ type TagRequest struct {
 
 func (a *Api) getTags(c echo.Context) error {
 	ctx := c.(UserContext)
-	paging, err := bindPaging(c)
-	if err != nil {
-		return err
-	}
-
-	tags, n, err := a.db.MetadataStore.GetTags(ctx.UserId, paging)
+	paging := getPagination(c)
+	tags, n, err := a.db.MetadataStore.GetTags(ctx.UserId, paging.toPagination())
 	if err != nil {
 		return err
 	}

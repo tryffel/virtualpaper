@@ -57,8 +57,8 @@ func (api *Api) addRoutesV2() {
 
 	api.privateRouter.GET("/documents/stats", api.getUserDocumentStatistics)
 	api.privateRouter.POST("/documents", api.uploadFile)
-	api.privateRouter.GET("/documents", api.getDocuments).Name = "get-documents"
-	api.privateRouter.GET("/documents/deleted", api.getDeletedDocuments).Name = "get-deleted-documents"
+	api.privateRouter.GET("/documents", api.getDocuments, mPagination()).Name = "get-documents"
+	api.privateRouter.GET("/documents/deleted", api.getDeletedDocuments, mPagination()).Name = "get-deleted-documents"
 	api.privateRouter.GET("/documents/:id", api.getDocument).Name = "get-document"
 	api.privateRouter.PUT("/documents/:id", api.updateDocument)
 	api.privateRouter.DELETE("/documents/:id", api.deleteDocument)
@@ -79,20 +79,20 @@ func (api *Api) addRoutesV2() {
 
 	api.privateRouter.POST("/documents/search/suggest", api.searchSuggestions).Name = "search-suggest"
 
-	api.privateRouter.GET("/jobs", api.GetJob)
+	api.privateRouter.GET("/jobs", api.GetJob, mPagination())
 	api.privateRouter.GET("/tags", api.getTags)
 
-	api.privateRouter.GET("/metadata/keys", api.getMetadataKeys)
+	api.privateRouter.GET("/metadata/keys", api.getMetadataKeys, mPagination())
 	api.privateRouter.POST("/metadata/keys", api.addMetadataKey)
 	api.privateRouter.PUT("/metadata/keys/:id", api.updateMetadataKey)
 	api.privateRouter.GET("/metadata/keys/:id", api.getMetadataKey)
-	api.privateRouter.GET("/metadata/keys/:id/values", api.getMetadataKeyValues)
+	api.privateRouter.GET("/metadata/keys/:id/values", api.getMetadataKeyValues, mPagination())
 	api.privateRouter.POST("/metadata/keys/:id/values", api.addMetadataValue)
 	api.privateRouter.DELETE("/metadata/keys/:id", api.deleteMetadataKey)
 	api.privateRouter.PUT("/metadata/keys/:keyId/values/:valueId", api.updateMetadataValue)
 	api.privateRouter.DELETE("/metadata/keys/:keyId/values/:valueId", api.deleteMetadataValue)
 
-	api.privateRouter.GET("/processing/rules", api.getUserRules)
+	api.privateRouter.GET("/processing/rules", api.getUserRules, mPagination())
 	api.privateRouter.PUT("/processing/rules/reorder", api.reorderRules)
 	api.privateRouter.POST("/processing/rules", api.addUserRule)
 	api.privateRouter.GET("/processing/rules/:id", api.getUserRule)

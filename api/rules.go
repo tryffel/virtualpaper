@@ -235,12 +235,9 @@ func (a *Api) getUserRules(c echo.Context) error {
 	//   200: ProcessingRuleResponse
 
 	ctx := c.(UserContext)
-	paging, err := bindPaging(c)
-	if err != nil {
-		return err
-	}
 
-	rules, total, err := a.db.RuleStore.GetUserRules(ctx.UserId, paging)
+	paging := getPagination(c)
+	rules, total, err := a.db.RuleStore.GetUserRules(ctx.UserId, paging.toPagination())
 	if err != nil {
 		return err
 	}

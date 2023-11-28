@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/services/search"
 	"tryffel.net/go/virtualpaper/storage"
@@ -35,22 +36,54 @@ type pageParams struct {
 	PageSize int `query:"page_size"`
 }
 
-func bindPaging(c echo.Context) (storage.Paging, error) {
-	params := &pageParams{
-		Page:     1,
-		PageSize: 50,
+func (p pageParams) toPagination() storage.Paging {
+	return storage.Paging{
+		Offset: (p.Page - 1) * p.PageSize,
+		Limit:  p.PageSize,
 	}
-	err := (&echo.DefaultBinder{}).BindQueryParams(c, params)
-	if err != nil {
-		return storage.Paging{Limit: 1}, echo.NewHTTPError(http.StatusBadRequest, "invalid paging: page and page_size must be numeric and > 0")
-	}
+}
 
-	paging := storage.Paging{
-		Offset: (params.Page - 1) * params.PageSize,
-		Limit:  params.PageSize,
+func mPagination() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			params := &pageParams{
+				Page:     1,
+				PageSize: 50,
+			}
+			err := (&echo.DefaultBinder{}).BindQueryParams(c, params)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "invalid paging: page and page_size must be numeric and > 0")
+			}
+			params.PageSize = config.MaxRecords(params.PageSize)
+			if ctx, ok := c.(UserContext); ok {
+				ctx.pagination = *params
+				return next(ctx)
+			}
+			ctx := Context{
+				Context:    c,
+				pagination: *params,
+			}
+			return next(ctx)
+		}
 	}
-	paging.Validate()
-	return paging, nil
+}
+
+func getPagination(c echo.Context) pageParams {
+	ctx, ok := c.(Context)
+	if ok {
+		return pageParams{
+			Page:     1,
+			PageSize: 20,
+		}
+	}
+	userCtx, ok := c.(UserContext)
+	if ok {
+		return userCtx.pagination
+	}
+	return pageParams{
+		Page:     ctx.pagination.Page,
+		PageSize: ctx.pagination.PageSize,
+	}
 }
 
 func bindPathId(c echo.Context) string {

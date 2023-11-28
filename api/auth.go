@@ -92,7 +92,10 @@ func (a *Api) authorizeUserV2() echo.MiddlewareFunc {
 				}
 
 				ctx := UserContext{
-					Context:  Context{c},
+					Context: Context{Context: c, pagination: pageParams{
+						Page:     1,
+						PageSize: 20,
+					}},
 					Admin:    user.IsAdmin,
 					UserId:   numId,
 					User:     user,
