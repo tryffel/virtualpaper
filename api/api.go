@@ -55,6 +55,7 @@ type Api struct {
 	cron    *scheduler.CronJobs
 
 	documentService *services.DocumentService
+	authService     *services.AuthService
 }
 
 // NewApi initializes new api instance. It connects to database and opens http port.
@@ -91,6 +92,7 @@ func NewApi(database *storage.Database) (*Api, error) {
 	}
 
 	api.documentService = services.NewDocumentService(database, api.search, api.process)
+	api.authService = services.NewAuthService(database)
 
 	api.addRoutesV2()
 	return api, err
