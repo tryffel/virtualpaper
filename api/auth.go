@@ -23,7 +23,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 	"github.com/mileusna/useragent"
-	"golang.org/x/crypto/bcrypt"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -31,8 +30,7 @@ import (
 	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
-	"tryffel.net/go/virtualpaper/models"
-	"tryffel.net/go/virtualpaper/services/mail"
+	"tryffel.net/go/virtualpaper/services"
 	log "tryffel.net/go/virtualpaper/util/logger"
 )
 
@@ -63,49 +61,37 @@ func (a *Api) authorizeUserV2() echo.MiddlewareFunc {
 				return
 			}
 
-			token, err := a.db.AuthStore.GetToken(tokenKey, true)
+			userNumId := 0
+			if userId != "" {
+				userNumId, err = strconv.Atoi(userId)
+				if err != nil {
+					c.Logger().Error("user id is not numerical", userId)
+					return echo.ErrInternalServerError
+				}
+			}
+
+			user, token, err := a.authService.GetUserByToken(getContext(c), tokenKey, userNumId)
 			if err != nil {
 				if errors.Is(err, errors.ErrRecordNotFound) {
+					return authErr
+				} else if errors.Is(err, errors.ErrUnauthorized) {
 					return authErr
 				}
 				return fmt.Errorf("get token from database: %v", err)
 			}
-
-			if token.HasExpired() {
-				return authErr
+			ctx := UserContext{
+				Context: Context{Context: c, pagination: pageParams{
+					Page:     1,
+					PageSize: 20,
+				},
+					sort: SortKey{},
+				},
+				Admin:    user.IsAdmin,
+				UserId:   userNumId,
+				User:     user,
+				TokenKey: token.Key,
 			}
-
-			if userId != "" {
-				numId, err := strconv.Atoi(userId)
-				if err != nil {
-					c.Logger().Error("user id is not numerical", numId)
-					return echo.ErrInternalServerError
-				}
-
-				user, err := a.db.UserStore.GetUser(numId)
-				if err != nil {
-					return
-				}
-
-				if !user.IsActive {
-					return
-				}
-
-				ctx := UserContext{
-					Context: Context{Context: c, pagination: pageParams{
-						Page:     1,
-						PageSize: 20,
-					},
-						sort: SortKey{},
-					},
-					Admin:    user.IsAdmin,
-					UserId:   numId,
-					User:     user,
-					TokenKey: token.Key,
-				}
-				return next(ctx)
-			}
-			return
+			return next(ctx)
 		}
 	}
 }
@@ -118,15 +104,14 @@ func (a *Api) ConfirmAuthorizedToken() echo.MiddlewareFunc {
 				c.Logger().Error("no UserContext found")
 				return echo.ErrInternalServerError
 			}
-			token, err := a.db.AuthStore.GetToken(ctx.TokenKey, false)
+
+			err := a.authService.ConfirmAuthToken(getContext(c), ctx.TokenKey)
 			if err != nil {
-				return err
-			}
-			if token.ConfirmationExpired() {
-				ctx := getContext(c)
-				log.Context(ctx).WithField("token", token.Id).Infof("auth token needs confirmation")
-				err := errors.ErrUnauthorized
-				err.ErrMsg = "authentication required"
+				if errors.Is(err, errors.ErrInvalid) {
+					err := errors.ErrInvalid
+					err.ErrMsg = "authentication required"
+					return err
+				}
 				return err
 			}
 			return next(c)
@@ -255,9 +240,13 @@ func (a *Api) LoginV2(c echo.Context) error {
 	}
 
 	ctx := getContext(c)
-	userId, err := a.db.UserStore.TryLogin(dto.Username, dto.Password)
 	remoteAddr := getRemoteAddr(req)
-	if userId == -1 || err != nil {
+
+	ua := useragent.Parse(c.Request().Header.Get("User-Agent"))
+	userAgent := fmt.Sprintf("%s %s, %s %s", ua.OS, ua.OSVersion, ua.Name, ua.Version)
+
+	authToken, err := a.authService.Login(getContext(c), dto.Username, dto.Password, userAgent, c.RealIP())
+	if err != nil {
 		log.Entry(ctx).WithField("user", dto.Username).WithField("remoteAddr", remoteAddr).Infof("Failed login attempt")
 		// request takes about the same time with invalid password & invalid user
 		time.Sleep(time.Millisecond*1100 + time.Duration(int(rand.Float64()*1000))*time.Millisecond)
@@ -265,56 +254,15 @@ func (a *Api) LoginV2(c echo.Context) error {
 	}
 
 	log.Entry(ctx).WithField("user", dto.Username).WithField("remoteAddr", remoteAddr).Infof("User logged in")
-	authToken := &models.Token{
-		Id:            0,
-		UserId:        userId,
-		IpAddr:        c.RealIP(),
-		LastConfirmed: time.Now(),
-		LastSeen:      time.Now(),
-	}
-
-	ua := useragent.Parse(c.Request().Header.Get("User-Agent"))
-	authToken.Name = fmt.Sprintf("%s %s, %s %s", ua.OS, ua.OSVersion, ua.Name, ua.Version)
-
-	if config.C.Api.TokenExpireSec != 0 {
-		authToken.ExpiresAt = time.Now().Add(config.C.Api.TokenExpire)
-	}
-
-	err = authToken.Init()
-	if err != nil {
-		return fmt.Errorf("init token: %v", err)
-	}
-	err = a.db.AuthStore.InsertToken(authToken)
-	if err != nil {
-		return fmt.Errorf("save auth token to database: %v", err)
-	}
-
-	token, err = newToken(strconv.Itoa(userId), authToken.Key, config.C.Api.Key)
+	token, err = newToken(strconv.Itoa(authToken.UserId), authToken.Key, config.C.Api.Key)
 	if err != nil {
 		c.Logger().Errorf("Create new token: %v", err)
 		return respInternalErrorV2(c, err)
 	}
-
-	user, err := a.db.UserStore.GetUser(userId)
-	if user.Email != "" {
-		c.Logger().Debugf("Send email for logged in user to %s", user.Email)
-
-		msg := fmt.Sprintf(`User logged in
-
-ip address: %s,
-user agent: %s,
-`, remoteAddr, req.Header.Get("user-agent"))
-
-		err := mail.SendMail(ctx, "User logged in", msg, user.Email)
-		if err != nil {
-			c.Logger().Errorf("send logged-in email to user: %s: %v", user.Email, err)
-		}
-	}
 	respBody := &LoginResponse{
-		UserId: userId,
+		UserId: authToken.UserId,
 		Token:  token,
 	}
-
 	return c.JSON(http.StatusOK, respBody)
 }
 
@@ -330,7 +278,7 @@ func (a *Api) Logout(c echo.Context) error {
 		// should not happen, user is required to authenticate
 		return c.JSON(200, map[string]string{"status": "ok"})
 	}
-	err := a.db.AuthStore.RevokeToken(ctx.TokenKey)
+	err := a.authService.RevokeToken(getContext(c), ctx.TokenKey)
 	if err != nil {
 		if errors.Is(err, errors.ErrRecordNotFound) {
 			return c.JSON(200, map[string]string{"status": "ok"})
@@ -357,56 +305,13 @@ func (a *Api) ResetPassword(c echo.Context) error {
 		return err
 	}
 
-	token, err := a.db.UserStore.GetPasswordResetTokenByHash(dto.Id)
+	err = a.authService.ResetPassword(getContext(c), &services.PasswordReset{
+		Token:    dto.Token,
+		Id:       dto.Id,
+		Password: dto.Password,
+	})
 	if err != nil {
-		if errors.Is(err, errors.ErrRecordNotFound) {
-			e := errors.ErrForbidden
-			c.Logger().Warnf("password reset token not found by id %d", dto.Id)
-			return e
-		}
 		return err
-	}
-
-	if token.HasExpired() {
-		c.Logger().Warnf("user %d attempted to change password with expired reset token %d, expired at %s",
-			token.UserId, token.Id, token.ExpiresAt)
-		e := errors.ErrInvalid
-		e.ErrMsg = "Token has expired. Please create a new reset link."
-		return e
-	}
-
-	match, err := token.TokenMatches(dto.Token)
-	if err != nil {
-		c.Logger().Warnf("user %d attempted to change password with bad reset token %d: %v", token.UserId, token.Id, err)
-		return fmt.Errorf("compare token to hash: %v", err)
-	}
-	if !match {
-		e := errors.ErrForbidden
-		e.ErrMsg = "Invalid token"
-		return e
-	}
-
-	user, err := a.db.UserStore.GetUser(token.UserId)
-	if err != nil {
-		c.Logger().Errorf("user %d not found for password reset token %d", token.UserId, token.Id)
-	}
-
-	if user != nil {
-		err = user.SetPassword(dto.Password)
-		if err != nil {
-			return fmt.Errorf("set new password: %v", err)
-		}
-
-		err = a.db.UserStore.Update(user)
-		if err != nil {
-			return fmt.Errorf("update user's passowrd: %v", err)
-		}
-	}
-
-	c.Logger().Warnf("Reset user's (%d) password with reset token %d", user.Id, token.Id)
-	err = a.db.UserStore.DeletePasswordResetToken(token.Id)
-	if err != nil {
-		c.Logger().Errorf("delete password token %d: %v", token.Id, err)
 	}
 	return c.JSON(200, "ok")
 }
@@ -432,52 +337,11 @@ func (a *Api) CreateResetPasswordToken(c echo.Context) error {
 		return e
 	}
 
-	user, err := a.db.UserStore.GetUserByEmail(dto.Email)
-	userOk := user != nil && err == nil
+	err = a.authService.CreateResetPasswordToken(getContext(c), dto.Email)
 	if err != nil {
-		c.Logger().Warnf("user by email '%s' not found when creating reset password link", dto.Email)
+		return err
 	}
-
-	// don't allow inactive users to reset passwords
-	if user != nil && userOk {
-		if !user.IsActive {
-			c.Logger().Warnf("user %d is not active, refure to send password reset link", user.Id)
-			userOk = false
-		}
-		if user.Email == "" {
-			c.Logger().Warnf("user %d does not have valid email, cannot send password reset link", user.Id)
-			userOk = false
-		}
-	}
-
-	token := &models.PasswordResetToken{}
-	rawToken, hash, err := newPasswordToken()
-	if err != nil {
-		return fmt.Errorf("generate random string for password reset token: %v", err)
-	}
-	token.Token = hash
-
 	msg := map[string]string{"status": "Password reset email has been sent"}
-
-	if !userOk {
-		// about the time it would take to save the token in db
-		time.Sleep(time.Millisecond * 2)
-		return c.JSON(200, msg)
-	}
-
-	// token is valid for 24 hours
-	token.ExpiresAt = time.Now().Add(time.Hour * 24)
-	token.Update()
-	token.CreatedAt = token.UpdatedAt
-
-	token.UserId = user.Id
-	err = a.db.UserStore.AddPasswordResetToken(token)
-	if err != nil {
-		return fmt.Errorf("save password reset token: %v", err)
-	}
-
-	c.Logger().Warnf("Create password reset token %d for user %d, expires at %s", token.Id, user.Id, token.ExpiresAt)
-	go mail.ResetPassword(getContext(c), user.Email, rawToken, token.Id)
 	return c.JSON(200, msg)
 }
 
@@ -496,46 +360,12 @@ func (a *Api) ConfirmAuthentication(c echo.Context) error {
 		return e
 	}
 	user := c.(UserContext)
-	userId, err := a.db.UserStore.TryLogin(user.User.Name, dto.Password)
 	remoteAddr := getRemoteAddr(req)
-	if userId == -1 || err != nil {
-		c.Logger().Infof("Failed authentication confirmation for user %d, token %s, from remote %s", user.UserId, user.TokenKey, remoteAddr)
-		return echo.ErrForbidden
-	}
-
-	token, err := a.db.AuthStore.GetToken(user.TokenKey, true)
+	err = a.authService.ConfirmAuthentication(getContext(c), user.User, dto.Password, remoteAddr, user.TokenKey)
 	if err != nil {
 		return err
 	}
-
-	token.LastConfirmed = time.Now()
-	err = a.db.AuthStore.UpdateTokenConfirmation(user.TokenKey, token.LastConfirmed)
-	if err != nil {
-		return err
-	}
-	c.Logger().Infof("Authentication confirmation successful for user %d, token %s, from remote %s", user.UserId, user.TokenKey, remoteAddr)
 	return c.JSON(200, "")
-}
-
-// get new password token, returns token, hashed token and error
-func newPasswordToken() (string, string, error) {
-	rawToken, err := config.RandomStringCrypt(70)
-	if err != nil {
-		return "", "", fmt.Errorf("generate random token: %v", err)
-	}
-	hash, err := hashPasswordResetToken(rawToken)
-	if err != nil {
-		return "", "", fmt.Errorf("hash token: %v", err)
-	}
-	return rawToken, hash, nil
-}
-
-func hashPasswordResetToken(token string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(token), 14)
-	if err != nil {
-		return "", fmt.Errorf("hash token: %v", err)
-	}
-	return string(bytes), nil
 }
 
 func ValidatePassword(password string) error {
