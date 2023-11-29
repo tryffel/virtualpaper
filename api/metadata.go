@@ -126,7 +126,7 @@ func (a *Api) getMetadataKeys(c echo.Context) error {
 		return err
 	}
 
-	keys, count, err := a.db.MetadataStore.GetKeys(ctx.UserId, filter, sort.ToKey(), paging.toPagination())
+	keys, count, err := a.metadataService.GetKeys(getContext(ctx), ctx.UserId, filter, sort.ToKey(), paging.toPagination())
 	if err != nil {
 		return err
 	}
