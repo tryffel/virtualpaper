@@ -10,6 +10,7 @@ import (
 var serverUrl = ""
 var dbHost = ""
 var meiliHost = ""
+var meilisearchKey = ""
 
 type httpTest struct {
 	client *baloo.Client
@@ -40,6 +41,8 @@ func initConfig() {
 	dbHost = getEnv("DATABASE_HOST", "localhost")
 	meiliHost = getEnv("MEILISEARCH_URL", "http://localhost:7700")
 	client = &httpTest{client: baloo.New(serverUrl)}
+
+	meilisearchKey = getEnv("MEILISEARCH_KEY", "")
 }
 
 func getEnv(key, defaultValue string) string {
