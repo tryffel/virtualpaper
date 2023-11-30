@@ -73,7 +73,6 @@ func (api *Api) addRoutesV2() {
 	api.privateRouter.GET("/documents/:id/content", api.getDocumentContent, mDocOwner("id"))
 	api.privateRouter.GET("/documents/:id/download", api.downloadDocument, mDocOwner("id"))
 	api.privateRouter.GET("/documents/:id/linked-documents", api.getLinkedDocuments, mDocOwner("id"))
-	api.privateRouter.POST("/documents/:id/metadata", api.updateDocumentMetadata, mDocOwner("id"))
 	api.privateRouter.POST("/documents/:id/process", api.requestDocumentProcessing, mDocOwner("id"))
 	api.privateRouter.PUT("/documents/:id/linked-documents", api.updateLinkedDocuments, mDocOwner("id"))
 	api.privateRouter.GET("/documents/:id/history", api.getDocumentHistory, mDocOwner("id"))

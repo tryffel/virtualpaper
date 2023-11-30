@@ -267,11 +267,6 @@ func updateDocument(t *testing.T, client *httpClient, doc *aggregates.Document, 
 	return nil
 }
 
-func updateDocumentMetadata(t *testing.T, client *httpClient, docId string, metadata api.MetadataUpdateRequest, wantHttpStatus int) {
-	client.Post(fmt.Sprintf("/api/v1/documents/%s/metadata", docId)).
-		Json(t, metadata).req.Expect(t).Status(wantHttpStatus).Done()
-}
-
 func getDocumentHistory(t *testing.T, client *httpClient, docId string, wantHttpStatus int) *[]models.DocumentHistory {
 	dto := &[]models.DocumentHistory{}
 	req := client.Get("/api/v1/documents/" + docId + "/history").Expect(t)

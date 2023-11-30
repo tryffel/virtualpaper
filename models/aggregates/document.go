@@ -108,6 +108,6 @@ type DocumentUpdate struct {
 	Description string
 	Filename    string
 	Date        time.Time
-	Metadata    []Metadata
+	Metadata    MetadataArray
 	Lang        string
 }

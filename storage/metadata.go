@@ -316,7 +316,7 @@ AND id = $2;
 }
 
 // GetValues returns all values to given key.
-func (s *MetadataStore) GetValues(userId int, keyId int, sort SortKey, paging Paging) (*[]models.MetadataValue, error) {
+func (s *MetadataStore) GetValues(keyId int, sort SortKey, paging Paging) (*[]models.MetadataValue, error) {
 	paging.Validate()
 	sort.Validate("id")
 	query := s.sq.Select(
@@ -331,7 +331,6 @@ func (s *MetadataStore) GetValues(userId int, keyId int, sort SortKey, paging Pa
 		From("metadata_values mv").
 		LeftJoin("document_metadata dm on mv.id = dm.value_id").
 		LeftJoin("metadata_keys mk on mv.key_id = mk.id").
-		Where(squirrel.Eq{"mv.user_id": userId}).
 		Where(squirrel.Eq{"mv.key_id": keyId}).GroupBy("mv.id", "mv.value", "mk.key").
 		OrderBy(sort.QueryKey() + " " + sort.SortOrder()).Limit(uint64(paging.Limit)).Offset(uint64(paging.Offset))
 

@@ -322,6 +322,17 @@ func (service *DocumentService) UpdateDocument(ctx context.Context, userId int, 
 		return nil, err
 	}
 
+	if len(updated.Metadata) > 0 {
+		uniqueKeys := updated.Metadata.UniqueKeys()
+		owns, err := service.db.MetadataStore.UserHasKeys(userId, uniqueKeys)
+		if err != nil {
+			return nil, err
+		}
+		if !owns {
+			return nil, errors.ErrRecordNotFound
+		}
+	}
+
 	if !updated.Date.IsZero() {
 		doc.Date = updated.Date
 	}

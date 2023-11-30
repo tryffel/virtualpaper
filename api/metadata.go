@@ -157,7 +157,6 @@ func (a *Api) getMetadataKeyValues(c echo.Context) error {
 	// Get metadata key values
 	// Responses:
 	//  200: MetadataKeyValueResponse
-	ctx := c.(UserContext)
 	key, err := bindPathIdInt(c)
 	if err != nil {
 		return err
@@ -165,38 +164,12 @@ func (a *Api) getMetadataKeyValues(c echo.Context) error {
 
 	paging := getPagination(c)
 	sort := getSort(c)
-	keys, err := a.db.MetadataStore.GetValues(ctx.UserId, key, sort.ToKey(), paging.toPagination())
+	keys, err := a.metadataService.GetKeyValue(getContext(c), key, sort.ToKey(), paging.toPagination())
 	if err != nil {
 		return err
 	}
 
 	return resourceList(c, keys, len(*keys))
-}
-
-func (a *Api) updateDocumentMetadata(c echo.Context) error {
-	// swagger:route POST /api/v1/documents/{id}/metadata Documents UpdateDocumentMetadata
-	// UpdateJob document metadata
-	// Responses:
-	//  200: DocumentResponse
-	ctx := c.(UserContext)
-	documentId := bindPathId(c)
-
-	opOk := false
-	defer logCrudMetadata(ctx.UserId, "update document metadata", &opOk, "document: %s", documentId)
-
-	dto := &MetadataUpdateRequest{}
-	err := unMarshalBody(c.Request(), dto)
-	if err != nil {
-		return err
-	}
-
-	metadata := dto.ToMetadataArray()
-	err = a.db.MetadataStore.UpdateDocumentKeyValues(ctx.UserId, documentId, metadata)
-	if err != nil {
-		return err
-	}
-	opOk = true
-	return c.String(http.StatusOK, "")
 }
 
 func (a *Api) addMetadataKey(c echo.Context) error {

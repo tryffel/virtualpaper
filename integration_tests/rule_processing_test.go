@@ -487,17 +487,13 @@ func (suite *RuleProcessingTestSuite) TestConditionMetadata() {
 		},
 	}
 
-	updateDocumentMetadata(suite.T(), suite.userHttp, testDocumentX86Intel.Id,
-		api.MetadataUpdateRequest{Metadata: []api.MetadataRequest{{
-			KeyId:   key1.Id,
-			ValueId: value1.Id,
-		},
-			{
-				KeyId:   key1.Id,
-				ValueId: value2.Id,
-			},
-		}}, 200)
-
+	doc := getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
+	doc.Metadata =
+		[]models.Metadata{
+			{KeyId: key1.Id, ValueId: value1.Id},
+			{KeyId: key1.Id, ValueId: value2.Id},
+		}
+	updateDocument(suite.T(), suite.userHttp, doc, 200)
 	gotRule := addRule(suite.T(), suite.userHttp, rule, 200, "add rule")
 	rule.Id = gotRule.Id
 
