@@ -20,7 +20,6 @@ package api
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 	"tryffel.net/go/virtualpaper/models/aggregates"
@@ -414,7 +413,7 @@ func (a *Api) getLinkedDocuments(c echo.Context) error {
 	docId := c.Param("id")
 	opOk := false
 	defer logCrudMetadata(ctx.UserId, "get linked documents", &opOk, "document: %s", docId)
-	docs, err := a.db.MetadataStore.GetLinkedDocuments(ctx.UserId, docId)
+	docs, err := a.documentService.GetLinkedDocuments(getContext(c), ctx.UserId, docId)
 	if err != nil {
 		return err
 	} else {
@@ -439,41 +438,11 @@ func (a *Api) updateLinkedDocuments(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-
-	if len(dto.DocumentIds) > 100 {
-		e := errors.ErrInvalid
-		e.ErrMsg = "Maximum number of linked documents is 100"
-		return e
-	}
-
-	ownership, err := a.db.DocumentStore.UserOwnsDocuments(ctx.UserId, append(dto.DocumentIds, docId))
+	err = a.documentService.UpdateLinkedDocuments(getContext(c), ctx.UserId, docId, dto.DocumentIds)
 	if err != nil {
 		return err
-	}
-	if !ownership {
-		e := errors.ErrRecordNotFound
-		e.ErrMsg = "document(s) not found"
-		return e
-	}
-
-	err = a.db.MetadataStore.UpdateLinkedDocuments(ctx.UserId, docId, dto.DocumentIds)
-	if err != nil {
-		return err
-	}
-
-	docIds := make([]string, len(dto.DocumentIds)+1)
-	docIds[0] = docId
-	for i, _ := range dto.DocumentIds {
-		docIds[i+1] = dto.DocumentIds[i]
-	}
-
-	err = a.db.DocumentStore.SetModifiedAt(docIds, time.Now())
-	if err != nil {
-		logrus.Errorf("update document updated_at when linking documents, docId: %s: %v", docId, err)
 	}
 	opOk = true
-
 	data := map[string]string{"id": "1"}
-
 	return c.JSON(http.StatusOK, data)
 }

@@ -397,3 +397,42 @@ func (service *DocumentService) RequestProcessing(ctx context.Context, userId in
 func (service *DocumentService) GetHistory(ctx context.Context, userId int, docId string) (*[]models.DocumentHistory, error) {
 	return service.db.DocumentStore.GetDocumentHistory(userId, docId)
 }
+
+func (service *DocumentService) GetLinkedDocuments(ctx context.Context, userId int, docId string) ([]*models.LinkedDocument, error) {
+	return service.db.MetadataStore.GetLinkedDocuments(userId, docId)
+}
+
+func (service *DocumentService) UpdateLinkedDocuments(ctx context.Context, userId int, targetDoc string, linkedDocs []string) error {
+	if len(targetDoc) > 100 {
+		e := errors.ErrInvalid
+		e.ErrMsg = "Maximum number of linked documents is 100"
+		return e
+	}
+
+	ownership, err := service.db.DocumentStore.UserOwnsDocuments(userId, append(linkedDocs, targetDoc))
+	if err != nil {
+		return err
+	}
+	if !ownership {
+		return errors.ErrRecordNotFound
+	}
+
+	err = service.db.MetadataStore.UpdateLinkedDocuments(userId, targetDoc, linkedDocs)
+	if err != nil {
+		return err
+	}
+
+	docIds := make([]string, len(linkedDocs)+1)
+	docIds[0] = targetDoc
+	for i, _ := range linkedDocs {
+		docIds[i+1] = linkedDocs[i]
+	}
+
+	err = service.db.DocumentStore.SetModifiedAt(docIds, time.Now())
+	if err != nil {
+		logger.Context(ctx).Errorf("update document updated_at when linking documents, docId: %s: %v", targetDoc, err)
+		return err
+	}
+	return nil
+
+}
