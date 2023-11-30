@@ -47,6 +47,34 @@ func (service *DocumentService) GetDocuments(userId int, paging storage.Paging, 
 	return service.db.DocumentStore.GetDocuments(userId, paging, sort, limitContent, false)
 }
 
+func (service *DocumentService) GetDocument(ctx context.Context, userId int, id string, addVisit bool) (*aggregates.Document, error) {
+	doc, err := service.db.DocumentStore.GetDocument(id)
+	if err != nil {
+		return nil, err
+	}
+
+	status, err := service.db.JobStore.GetDocumentStatus(doc.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	metadata, err := service.db.MetadataStore.GetDocumentMetadata(userId, id)
+	if err != nil {
+		return nil, err
+	}
+	doc.Metadata = *metadata
+
+	if addVisit {
+		err := service.db.DocumentStore.AddVisited(userId, id)
+		if err != nil {
+			logger.Context(ctx).Errorf("add document_visited record: %v", err)
+		}
+	}
+	aggregate := aggregates.DocumentToAggregate(doc)
+	aggregate.Status = status
+	return aggregate, nil
+}
+
 func (service *DocumentService) GetDeletedDocuments(userId int, paging storage.Paging, sort storage.SortKey, limitContent bool) (*[]models.Document, int, error) {
 	return service.db.DocumentStore.GetDocuments(userId, paging, sort, limitContent, true)
 }
@@ -434,5 +462,8 @@ func (service *DocumentService) UpdateLinkedDocuments(ctx context.Context, userI
 		return err
 	}
 	return nil
+}
 
+func (service *DocumentService) GetContent(ctx context.Context, docId string) (*string, error) {
+	return service.db.DocumentStore.GetContent(docId)
 }
