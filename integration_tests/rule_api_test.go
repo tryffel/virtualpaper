@@ -211,6 +211,7 @@ func (suite *RuleApiTestSuite) TestDeleteRule() {
 
 	deleteRule(suite.T(), suite.userHttp, addedRule.Id, 200)
 	gotRule = getRule(suite.T(), suite.userHttp, addedRule.Id, 404)
+	deleteRule(suite.T(), suite.userHttp, addedRule.Id, 404)
 	assert.Nil(suite.T(), gotRule, "rule exists")
 }
 

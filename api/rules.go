@@ -24,9 +24,6 @@ import (
 	"net/http"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
-	"tryffel.net/go/virtualpaper/services/process"
-
-	"github.com/sirupsen/logrus"
 	"tryffel.net/go/virtualpaper/models"
 )
 
@@ -214,18 +211,15 @@ func (a *Api) addUserRule(c echo.Context) error {
 		return err
 	}
 
-	err = a.db.RuleStore.AddRule(ctx.UserId, rule)
-	if err != nil {
-		return err
-	}
+	rule.UserId = ctx.UserId
 
-	rule, err = a.db.RuleStore.GetUserRule(ctx.UserId, rule.Id)
+	newRule, err := a.ruleService.Create(getContext(c), rule)
 	if err != nil {
 		return err
 	}
-	ruleId = rule.Id
+	ruleId = newRule.Id
 	opOk = true
-	return c.JSON(http.StatusOK, ruleToResp(rule))
+	return c.JSON(http.StatusOK, ruleToResp(newRule))
 }
 
 func (a *Api) getUserRules(c echo.Context) error {
@@ -237,7 +231,7 @@ func (a *Api) getUserRules(c echo.Context) error {
 	ctx := c.(UserContext)
 
 	paging := getPagination(c)
-	rules, total, err := a.db.RuleStore.GetUserRules(ctx.UserId, paging.toPagination())
+	rules, total, err := a.ruleService.GetRules(getContext(c), ctx.UserId, paging.toPagination())
 	if err != nil {
 		return err
 	}
@@ -257,7 +251,7 @@ func (a *Api) getUserRule(c echo.Context) error {
 
 	ctx := c.(UserContext)
 	id, err := bindPathIdInt(c)
-	rule, err := a.db.RuleStore.GetUserRule(ctx.UserId, id)
+	rule, err := a.ruleService.Get(getContext(c), ctx.UserId, id)
 	if err != nil {
 		return err
 	}
@@ -292,7 +286,7 @@ func (a *Api) updateUserRule(c echo.Context) error {
 	}
 	rule.Id = id
 	rule.UserId = ctx.UserId
-	err = a.db.RuleStore.UpdateRule(ctx.UserId, rule)
+	err = a.ruleService.Update(getContext(c), rule)
 	if err != nil {
 		return err
 	}
@@ -313,8 +307,7 @@ func (a *Api) deleteUserRule(c echo.Context) error {
 
 	opOk := false
 	defer logCrudRule(ctx.UserId, "update", &opOk, "rule: %d", id)
-
-	err = a.db.RuleStore.DeleteRule(ctx.UserId, id)
+	err = a.ruleService.Delete(getContext(c), id)
 	if err != nil {
 		return err
 	}
@@ -349,32 +342,10 @@ func (a *Api) testRule(c echo.Context) error {
 		logCrudRule(ctx.UserId, "test", &opOk, "rule: %d, document: %s, matched: %v", id, processingRule.DocumentId, matched)
 	}()
 
-	rule, err := a.db.RuleStore.GetUserRule(ctx.UserId, id)
+	status, err := a.ruleService.TestRule(getContext(c), ctx.UserId, id, processingRule.DocumentId)
 	if err != nil {
 		return err
 	}
-
-	doc, err := a.db.DocumentStore.GetDocument(processingRule.DocumentId)
-	if err != nil {
-		return err
-	}
-
-	if doc.UserId != ctx.UserId {
-		return echo.NewHTTPError(http.StatusNotFound, "not found")
-	}
-
-	metadata, err := a.db.MetadataStore.GetDocumentMetadata(ctx.UserId, processingRule.DocumentId)
-	if err != nil {
-		return err
-	}
-	doc.Metadata = *metadata
-	logrus.Infof("User %d tests processing rule %d on document %s", ctx.UserId, id, processingRule.DocumentId)
-
-	processRule := process.NewDocumentRule(doc, rule)
-	status := processRule.MatchTest()
-
-	logrus.Infof("processing rule test finished: %v", status.Match)
-
 	opOk = true
 	matched = status.Match
 	return c.JSON(http.StatusOK, status)
@@ -407,7 +378,7 @@ func (a *Api) reorderRules(c echo.Context) error {
 		logCrudRule(ctx.UserId, "reorder", &opOk, "")
 	}()
 
-	err = a.db.RuleStore.ReorderRules(ctx.UserId, processingRule.Ids)
+	err = a.ruleService.Reorder(getContext(c), ctx.UserId, processingRule.Ids)
 	if err != nil {
 		return err
 	}
