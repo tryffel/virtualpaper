@@ -19,9 +19,9 @@
 package api
 
 import (
-	"fmt"
 	"github.com/labstack/echo/v4"
 	"net/http"
+	"time"
 	"tryffel.net/go/virtualpaper/models"
 )
 
@@ -66,34 +66,14 @@ func (a *Api) getUserPreferences(c echo.Context) error {
 	//   403: RespNotFound
 	//   500: RespInternalError
 	//
-
-	//handler := "Api.getUserPreferences"
 	ctx := c.(UserContext)
-
-	/*
-
-		user, ok := getUser(req)
-		if !ok {
-			logrus.Errorf("no user in context")
-			respInternalError(resp)
-			return
-		}
-
-	*/
-
-	preferences, err := a.db.UserStore.GetUserPreferences(ctx.UserId)
+	preferences, err := a.userService.GetPreferences(getContext(c), ctx.UserId)
 	if err != nil {
 		return err
 	}
-
-	preferences.CreatedAt = ctx.User.CreatedAt
-	preferences.UpdatedAt = ctx.User.UpdatedAt
-	preferences.Email = ctx.User.Email
-
 	userPref := &UserPreferences{}
 	userPref.copyUser(preferences)
 	return c.JSON(http.StatusOK, userPref)
-	//respOk(resp, userPref)
 }
 
 // swagger:model UserPreferences
@@ -112,39 +92,28 @@ func (a *Api) updateUserPreferences(c echo.Context) error {
 		return err
 	}
 
-	user, err := a.db.UserStore.GetUser(ctx.UserId)
+	pref := &models.UserPreferences{
+		UserId:        ctx.UserId,
+		UserName:      ctx.User.Name,
+		Email:         dto.Email,
+		UpdatedAt:     time.Time{},
+		CreatedAt:     time.Time{},
+		DocumentCount: 0,
+		DocumentsSize: 0,
+		IsAdmin:       ctx.User.IsAdmin,
+		StopWords:     dto.StopWords,
+		Synonyms:      dto.Synonyms,
+	}
+
+	err = a.userService.UpdatePreferences(getContext(ctx), pref)
 	if err != nil {
-		return fmt.Errorf("get user: %v", err)
-	}
-	attributeChanged := false
-	searchParamsChanged := false
-	if len(dto.StopWords) > 0 || len(dto.Synonyms) > 0 {
-		searchParamsChanged = true
-		err = a.db.UserStore.UpdatePreferences(ctx.UserId, dto.StopWords, dto.Synonyms)
-		if err != nil {
-			return err
-		}
-
-		err = a.search.UpdateUserPreferences(ctx.UserId)
-		if err != nil {
-			return err
-		}
-	}
-	if dto.Email != "" {
-		user.Email = dto.Email
-		attributeChanged = true
+		return err
 	}
 
-	if searchParamsChanged || attributeChanged {
-		user.Update()
-		err = a.db.UserStore.Update(user)
-		if err != nil {
-			return err
-		}
-	}
+	userPref, err := a.userService.GetPreferences(getContext(c), ctx.UserId)
+	if err != nil {
+		return err
 
-	if !attributeChanged && !searchParamsChanged {
-		return c.String(http.StatusNotModified, "")
 	}
-	return a.getUserPreferences(c)
+	return c.JSON(http.StatusOK, userPref)
 }
