@@ -300,18 +300,16 @@ func (s *MetadataStore) GetKeys(userId int, ids []int, sort SortKey, paging Pagi
 	return keys, count, s.parseError(err, "get keys")
 }
 
-// GetKeys returns all possible metadata-keys for user.
-func (s *MetadataStore) GetKey(userId int, keyId int) (*models.MetadataKey, error) {
+func (s *MetadataStore) GetKey(keyId int) (*models.MetadataKey, error) {
 	sql := `
 SELECT *
 FROM metadata_keys
-WHERE user_id = $1
-AND id = $2;
+WHERE id = $1
 `
 
 	key := &models.MetadataKey{}
 
-	err := s.db.Get(key, sql, userId, keyId)
+	err := s.db.Get(key, sql, keyId)
 	return key, s.parseError(err, "get key")
 }
 
@@ -507,7 +505,7 @@ RETURNING id;
 }
 
 // CreateValue creates new metadata value.
-func (s *MetadataStore) CreateValue(userId int, value *models.MetadataValue) error {
+func (s *MetadataStore) CreateValue(value *models.MetadataValue) error {
 	sql := `
 INSERT INTO metadata_values
 (user_id, key_id, value, match_documents, match_type, match_filter)
@@ -515,7 +513,7 @@ VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id;
 `
 
-	res, err := s.db.Query(sql, userId, value.KeyId, value.Value, value.MatchDocuments, value.MatchType, value.MatchFilter)
+	res, err := s.db.Query(sql, value.UserId, value.KeyId, value.Value, value.MatchDocuments, value.MatchType, value.MatchFilter)
 	if err != nil {
 		return s.parseError(err, "create value")
 	}
@@ -829,10 +827,6 @@ WHERE
 // This will cascade the deletion to any table that uses metadata keys too: document_metadata, rules.
 func (s *MetadataStore) DeleteKey(userId int, keyId int) error {
 	query := s.sq.Delete("metadata_keys").Where("id=?", keyId)
-	if userId != 0 {
-		query = query.Where("user_id=?", userId)
-	}
-
 	sql, args, err := query.ToSql()
 	if err != nil {
 		e := errors.ErrInternalError

@@ -94,7 +94,7 @@ func NewApi(database *storage.Database) (*Api, error) {
 
 	api.authService = services.NewAuthService(database)
 	api.documentService = services.NewDocumentService(database, api.search, api.process)
-	api.metadataService = services.NewMetadataService(database)
+	api.metadataService = services.NewMetadataService(database, api.process)
 
 	api.addRoutesV2()
 	return api, err

@@ -139,13 +139,12 @@ func (a *Api) getMetadataKey(c echo.Context) error {
 	// Get metadata key
 	// Responses:
 	//  200: MetadataKeyResponse
-	ctx := c.(UserContext)
 	id, err := bindPathIdInt(c)
 	if err != nil {
 		return err
 	}
 
-	key, err := a.db.MetadataStore.GetKey(ctx.UserId, id)
+	key, err := a.metadataService.GetKey(getContext(c), id)
 	if err != nil {
 		return err
 	}
@@ -164,7 +163,7 @@ func (a *Api) getMetadataKeyValues(c echo.Context) error {
 
 	paging := getPagination(c)
 	sort := getSort(c)
-	keys, err := a.metadataService.GetKeyValue(getContext(c), key, sort.ToKey(), paging.toPagination())
+	keys, err := a.metadataService.GetKeyValues(getContext(c), key, sort.ToKey(), paging.toPagination())
 	if err != nil {
 		return err
 	}
@@ -201,7 +200,7 @@ func (a *Api) addMetadataKey(c echo.Context) error {
 		key.Style = "{}"
 	}
 
-	err = a.db.MetadataStore.CreateKey(ctx.UserId, key)
+	err = a.metadataService.Create(getContext(c), ctx.UserId, key)
 	if err != nil {
 		return err
 	}
@@ -251,7 +250,7 @@ func (a *Api) addMetadataValue(c echo.Context) error {
 		return err
 	}
 
-	err = a.db.MetadataStore.CreateValue(ctx.UserId, value)
+	err = a.metadataService.CreateValue(getContext(c), value)
 	if err != nil {
 		return err
 	}
@@ -296,18 +295,16 @@ func (a *Api) updateMetadataValue(c echo.Context) error {
 		MatchFilter:    dto.MatchFilter,
 	}
 	// rest should be enclodes in a transaction
-	err = a.db.MetadataStore.UpdateValue(value)
+	err = a.metadataService.UpdateValue(getContext(c), value)
 	if err != nil {
 		return err
 	}
 
-	err = a.db.JobStore.IndexDocumentsByMetadata(ctx.UserId, keyId, valueId)
 	if err != nil {
 		return err
-	} else {
-		opOk = true
-		return resourceList(c, value, 1)
 	}
+	opOk = true
+	return resourceList(c, value, 1)
 }
 
 func (a *Api) updateMetadataKey(c echo.Context) error {
@@ -345,18 +342,12 @@ func (a *Api) updateMetadataKey(c echo.Context) error {
 	}
 
 	// rest should be enclosed in a transaction
-	err = a.db.MetadataStore.UpdateKey(key)
+	err = a.metadataService.UpdateKey(getContext(c), key)
 	if err != nil {
 		return err
 	}
-
-	err = a.db.JobStore.IndexDocumentsByMetadata(ctx.UserId, keyId, 0)
-	if err != nil {
-		return err
-	} else {
-		opOk = true
-		return resourceList(c, key, 1)
-	}
+	opOk = true
+	return resourceList(c, key, 1)
 }
 
 func (a *Api) deleteMetadataKey(c echo.Context) error {
@@ -373,18 +364,10 @@ func (a *Api) deleteMetadataKey(c echo.Context) error {
 
 	opOk := false
 	defer logCrudMetadata(ctx.UserId, "delete key", &opOk, "key: %d", keyId)
-	// need to add processing when the metadata still exists
-	err = a.db.JobStore.IndexDocumentsByMetadata(ctx.UserId, keyId, 0)
+	err = a.metadataService.DeleteKey(getContext(c), ctx.UserId, keyId)
 	if err != nil {
 		return err
 	}
-
-	err = a.db.MetadataStore.DeleteKey(ctx.UserId, keyId)
-	if err != nil {
-		return err
-	}
-
-	a.process.PullDocumentsToProcess()
 	opOk = true
 	return c.String(http.StatusOK, "ok")
 }
@@ -408,17 +391,11 @@ func (a *Api) deleteMetadataValue(c echo.Context) error {
 
 	opOk := false
 	defer logCrudMetadata(ctx.UserId, "delete value", &opOk, "key: %d, value: %d", keyId, valueId)
-	// need to add processing when the metadata still exists
-	err = a.db.JobStore.IndexDocumentsByMetadata(ctx.UserId, keyId, valueId)
-	if err != nil {
-		return err
-	}
 
-	err = a.db.MetadataStore.DeleteValue(ctx.UserId, valueId)
+	err = a.metadataService.DeleteValue(getContext(c), ctx.UserId, keyId, valueId)
 	if err != nil {
 		return err
 	}
-	a.process.PullDocumentsToProcess()
 	opOk = true
 	return c.String(http.StatusOK, "ok")
 }

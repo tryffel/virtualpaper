@@ -36,14 +36,14 @@ func (suite *BulkEditTestSuite) SetupTest() {
 	suite.user2Values["category"] = map[string]*models.MetadataValue{}
 	suite.user2Values["subject"] = map[string]*models.MetadataValue{}
 
-	suite.user2Values["author"]["doyle"] = AddMetadataValue(suite.T(), suite.userHttp, suite.user2Keys["author"].Id, &models.MetadataValue{
-		Value:          "doyle",
+	suite.user2Values["author"]["doyle"] = AddMetadataValue(suite.T(), suite.adminHttp, suite.user2Keys["author"].Id, &models.MetadataValue{
+		Value:          "doyle-admin",
 		MatchDocuments: false,
 		MatchType:      "",
 		MatchFilter:    "",
 	}, 200)
-	suite.user2Values["author"]["darwin"] = AddMetadataValue(suite.T(), suite.userHttp, suite.user2Keys["author"].Id, &models.MetadataValue{
-		Value:          "darwin",
+	suite.user2Values["author"]["darwin"] = AddMetadataValue(suite.T(), suite.adminHttp, suite.user2Keys["author"].Id, &models.MetadataValue{
+		Value:          "darwin-admin",
 		MatchDocuments: false,
 		MatchType:      "",
 		MatchFilter:    "",
