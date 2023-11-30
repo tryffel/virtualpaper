@@ -116,6 +116,11 @@ func (suite *DocumentHistoryTestSuite) TestChangeMetadata() {
 			KeyId: key1.Id, ValueId: value1.Id, Key: "", Value: "",
 		}}
 	updateDocument(suite.T(), suite.userHttp, doc, 200)
+
+	adminDoc := getDocument(suite.T(), suite.adminHttp, testDocumentTransistorCountAdminUser.Id, 200)
+	adminDoc.Metadata = doc.Metadata
+	updateDocument(suite.T(), suite.adminHttp, adminDoc, 404)
+
 	doc = getDocument(suite.T(), suite.userHttp, testDocumentX86.Id, 200)
 	doc.Metadata =
 		[]models.Metadata{

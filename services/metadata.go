@@ -23,3 +23,7 @@ func (service *MetadataService) GetKeys(ctx context.Context, userId int, ids []i
 func (service *MetadataService) UserOwnsKey(ctx context.Context, userId, keyId int) (bool, error) {
 	return service.db.MetadataStore.UserHasKey(userId, keyId)
 }
+
+func (service *MetadataService) GetKeyValue(ctx context.Context, keyId int, sort storage.SortKey, paging storage.Paging) (*[]models.MetadataValue, error) {
+	return service.db.MetadataStore.GetValues(keyId, sort, paging)
+}
