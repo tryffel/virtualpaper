@@ -31,10 +31,6 @@ func (api *Api) addRoutesV2() {
 	api.privateRouter = api.apiRouter.Group("/v1", api.authorizeUserV2())
 	api.adminRouter = api.privateRouter.Group("/admin", api.AuthorizeAdminV2())
 
-	//a.oldPrivateRouter.HandleFunc("/tags/{id}", a.getTag).Methods(http.MethodGet)
-	//a.oldPrivateRouter.HandleFunc("/tags", a.createTag).Methods(http.MethodPost)
-	//a.oldPrivateRouter.HandleFunc("/tags/create", a.createTag).Methods(http.MethodPost)
-
 	api.publicRouter.StaticFS("/", static())
 	api.publicRouter.GET("/api/v1/swagger.json", serverSwaggerDoc)
 	api.publicRouter.GET("/api/v1/version", api.getVersionV2)
@@ -49,6 +45,7 @@ func (api *Api) addRoutesV2() {
 
 	mDocOwner := mDocumentOwner(api.documentService)
 	mMetadataOwner := mMetadataKeyOwner(api.metadataService)
+	mRule := mRuleOwner(api.ruleService)
 
 	authGroup.POST("/login", api.LoginV2)
 	api.privateRouter.POST("/auth/logout", api.Logout)
@@ -83,7 +80,6 @@ func (api *Api) addRoutesV2() {
 	api.privateRouter.POST("/documents/search/suggest", api.searchSuggestions).Name = "search-suggest"
 
 	api.privateRouter.GET("/jobs", api.GetJob, mPagination())
-	api.privateRouter.GET("/tags", api.getTags)
 
 	api.privateRouter.GET("/metadata/keys", api.getMetadataKeys, mPagination(), mSort(&models.MetadataKeyAnnotated{}))
 	api.privateRouter.POST("/metadata/keys", api.addMetadataKey)
@@ -98,10 +94,10 @@ func (api *Api) addRoutesV2() {
 	api.privateRouter.GET("/processing/rules", api.getUserRules, mPagination(), mSort(&models.Rule{}))
 	api.privateRouter.PUT("/processing/rules/reorder", api.reorderRules)
 	api.privateRouter.POST("/processing/rules", api.addUserRule)
-	api.privateRouter.GET("/processing/rules/:id", api.getUserRule)
-	api.privateRouter.PUT("/processing/rules/:id", api.updateUserRule)
-	api.privateRouter.DELETE("/processing/rules/:id", api.deleteUserRule)
-	api.privateRouter.PUT("/processing/rules/:id/test", api.testRule)
+	api.privateRouter.GET("/processing/rules/:id", api.getUserRule, mRule("id"))
+	api.privateRouter.PUT("/processing/rules/:id", api.updateUserRule, mRule("id"))
+	api.privateRouter.DELETE("/processing/rules/:id", api.deleteUserRule, mRule("id"))
+	api.privateRouter.PUT("/processing/rules/:id/test", api.testRule, mRule("id"))
 
 	api.privateRouter.GET("/preferences/user", api.getUserPreferences).Name = "get-user-preferences"
 	api.privateRouter.PUT("/preferences/user", api.updateUserPreferences)

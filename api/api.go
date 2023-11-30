@@ -57,6 +57,7 @@ type Api struct {
 	authService     *services.AuthService
 	documentService *services.DocumentService
 	metadataService *services.MetadataService
+	ruleService     *services.RuleService
 }
 
 // NewApi initializes new api instance. It connects to database and opens http port.
@@ -95,6 +96,7 @@ func NewApi(database *storage.Database) (*Api, error) {
 	api.authService = services.NewAuthService(database)
 	api.documentService = services.NewDocumentService(database, api.search, api.process)
 	api.metadataService = services.NewMetadataService(database, api.process)
+	api.ruleService = services.NewRuleService(database, api.search, api.process)
 
 	api.addRoutesV2()
 	return api, err

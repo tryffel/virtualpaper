@@ -116,11 +116,10 @@ func (s *RuleStore) GetUserRule(userId, ruleId int) (*models.Rule, error) {
 	sql := `
 SELECT *
 FROM rules
-WHERE user_id = $1
-AND id = $2;`
+WHERE id = $1`
 
 	rule := &models.Rule{}
-	err := s.db.Get(rule, sql, userId, ruleId)
+	err := s.db.Get(rule, sql, ruleId)
 	if err != nil {
 		return rule, s.parseError(err, "get user rule")
 	}
@@ -360,26 +359,14 @@ func (s *RuleStore) UpdateRule(userId int, rule *models.Rule) error {
 	return nil
 }
 
-func (s *RuleStore) DeleteRule(userId, ruleId int) error {
+func (s *RuleStore) DeleteRule(ruleId int) error {
 	sql := `
 	DELETE FROM rules 
-	WHERE user_id = $1
-	AND id = $2
-	`
+	WHERE id = $1`
 
-	res, err := s.db.Exec(sql, userId, ruleId)
+	_, err := s.db.Exec(sql, ruleId)
 	if err != nil {
 		return getDatabaseError(err, s, "delete")
-	}
-
-	affected, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("get rows affected: %v", err)
-	}
-	if affected == 0 {
-		err := errors.ErrRecordNotFound
-		err.ErrMsg = "rule not found"
-		return err
 	}
 	return nil
 }
