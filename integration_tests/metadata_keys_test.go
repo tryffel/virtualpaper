@@ -19,7 +19,8 @@ func (suite *MetadataKeySuite) SetupTest() {
 
 	suite.keys["category"] = AddMetadataKey(suite.T(), suite.userHttp, "category", "document category", 200)
 	suite.keys["test"] = AddMetadataKey(suite.T(), suite.userHttp, "test", "test key", 200)
-	assert.Equal(suite.T(), len(suite.keys), 3)
+	suite.keys["admin-test"] = AddMetadataKey(suite.T(), suite.adminHttp, "test", "test key", 200)
+	assert.Equal(suite.T(), 4, len(suite.keys))
 }
 
 func TestMetadataKeys(t *testing.T) {
@@ -63,7 +64,7 @@ func (suite *MetadataKeySuite) TestGetKeys() {
 	keys := GetMetadataKeys(suite.T(), suite.userHttp, 200, func(req *httpRequest) *httpRequest {
 		return req.Sort("key", "ASC")
 	})
-	assert.Equal(suite.T(), len(*keys), len(suite.keys), "number of keys match")
+	assert.Equal(suite.T(), len(suite.keys)-1, len(*keys), "number of keys match")
 	assert.Equal(suite.T(), (*keys)[0].Id, suite.keys["author"].Id, "1st key matches")
 	assert.Equal(suite.T(), (*keys)[1].Id, suite.keys["category"].Id, "2nd key matches")
 	assert.Equal(suite.T(), (*keys)[2].Id, suite.keys["test"].Id, "3rd key matches")
@@ -72,7 +73,7 @@ func (suite *MetadataKeySuite) TestGetKeys() {
 		return req.Sort("key", "DESC")
 	})
 
-	assert.Equal(suite.T(), len(*keys), len(suite.keys), "number of keys match")
+	assert.Equal(suite.T(), len(suite.keys)-1, len(*keys), "number of keys match")
 	assert.Equal(suite.T(), (*keys)[0].Id, suite.keys["test"].Id, "1st key matches")
 	assert.Equal(suite.T(), (*keys)[1].Id, suite.keys["category"].Id, "2nd key matches")
 	assert.Equal(suite.T(), (*keys)[2].Id, suite.keys["author"].Id, "3rd key matches")
@@ -81,7 +82,7 @@ func (suite *MetadataKeySuite) TestGetKeys() {
 		return req.Sort("created_at", "DESC")
 	})
 
-	assert.Equal(suite.T(), len(*keys), len(suite.keys), "number of keys match")
+	assert.Equal(suite.T(), len(suite.keys)-1, len(*keys), "number of keys match")
 	assert.Equal(suite.T(), (*keys)[0].Id, suite.keys["test"].Id, "1st key matches")
 	assert.Equal(suite.T(), (*keys)[1].Id, suite.keys["category"].Id, "2nd key matches")
 	assert.Equal(suite.T(), (*keys)[2].Id, suite.keys["author"].Id, "3rd key matches")
