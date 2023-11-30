@@ -48,6 +48,11 @@ func responseFromDocument(doc *models.Document) *aggregates.Document {
 	return resp
 }
 
+func documentAggregateToResponse(doc *aggregates.Document) {
+	doc.PreviewUrl = fmt.Sprintf("%s/api/v1/documents/%s/preview", config.C.Api.PublicUrl, doc.Id)
+	doc.DownloadUrl = fmt.Sprintf("%s/api/v1/documents/%s/download", config.C.Api.PublicUrl, doc.Id)
+}
+
 type DocumentExistsResponse struct {
 	Error string `json:"error"`
 	Id    string `json:"id"`
@@ -135,38 +140,13 @@ func (a *Api) getDocument(c echo.Context) error {
 		err.ErrMsg = "query parameter 'visit' must be either 1 or 0"
 		return err
 	}
-	doc, err := a.db.DocumentStore.GetDocument(id)
+
+	doc, err := a.documentService.GetDocument(getContext(c), ctx.UserId, id, visit == "1")
 	if err != nil {
 		return err
 	}
-
-	status, err := a.db.JobStore.GetDocumentStatus(doc.Id)
-	if err != nil {
-		return err
-	}
-
-	metadata, err := a.db.MetadataStore.GetDocumentMetadata(ctx.UserId, id)
-	if err != nil {
-		return err
-	}
-	doc.Metadata = *metadata
-
-	tags, err := a.db.MetadataStore.GetDocumentTags(ctx.UserId, id)
-	if err != nil {
-		return err
-	}
-	doc.Tags = *tags
-
-	respDoc := responseFromDocument(doc)
-	respDoc.Status = status
-
-	if visit == "1" {
-		err := a.db.DocumentStore.AddVisited(ctx.UserId, id)
-		if err != nil {
-			logrus.Errorf("add document_visited record: %v", err)
-		}
-	}
-	return c.JSON(http.StatusOK, respDoc)
+	documentAggregateToResponse(doc)
+	return c.JSON(http.StatusOK, doc)
 }
 
 func (a *Api) getDocumentContent(c echo.Context) error {
@@ -175,10 +155,8 @@ func (a *Api) getDocumentContent(c echo.Context) error {
 	// responses:
 	//   200: Document
 
-	ctx := c.(UserContext)
 	id := c.Param("id")
-
-	content, err := a.db.DocumentStore.GetContent(ctx.UserId, id)
+	content, err := a.documentService.GetContent(getContext(c), id)
 	if err != nil {
 		return err
 	}

@@ -277,23 +277,15 @@ WHERE id=$1;
 }
 
 // GetContent returns full content. If userId != 0, user must own the document of given id.
-func (s *DocumentStore) GetContent(userId int, id string) (*string, error) {
+func (s *DocumentStore) GetContent(id string) (*string, error) {
 	sql := `
 SELECT content
 FROM documents
 WHERE id=$1
 `
-	if userId != 0 {
-		sql += " AND user_id=$2"
-	}
-
 	content := ""
 	var err error
-	if userId != 0 {
-		err = s.db.Get(&content, sql, id, userId)
-	} else {
-		err = s.db.Get(&content, sql, id, userId)
-	}
+	err = s.db.Get(&content, sql, id)
 	return &content, s.parseError(err, "get content")
 }
 
