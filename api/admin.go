@@ -19,20 +19,12 @@
 package api
 
 import (
-	"bytes"
-	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 	"net/http"
-	"os/exec"
-	"runtime"
-	"strings"
-	"time"
-	"tryffel.net/go/virtualpaper/config"
-	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/services"
 	"tryffel.net/go/virtualpaper/services/process"
-	"tryffel.net/go/virtualpaper/services/search"
 )
 
 func (a *Api) AuthorizeAdminV2() echo.MiddlewareFunc {
@@ -153,7 +145,7 @@ func (a *Api) getDocumentProcessQueue(c echo.Context) error {
 	//   401: RespForbidden
 	//   500: RespInternalError
 
-	queue, n, err := a.db.JobStore.GetPendingProcessing()
+	queue, n, err := a.adminService.GetDocumentProcessQueue(getContext(c))
 	if err != nil {
 		return err
 	}
@@ -167,37 +159,6 @@ func (a *Api) getDocumentProcessQueue(c echo.Context) error {
 	return resourceList(c, processes, n)
 }
 
-// swagger:response SystemInfo
-type SystemInfo struct {
-	Name      string `json:"name"`
-	Version   string `json:"version"`
-	Commit    string `json:"commit"`
-	GoVersion string `json:"go_version"`
-
-	ImagemagickVersion string `json:"imagemagick_version"`
-	TesseractVersion   string `json:"tesseract_version"`
-	PopplerInstalled   bool   `json:"poppler_installed"`
-	PandocInstalled    bool   `json:"pandoc_installed"`
-
-	NumCpu     int    `json:"number_cpus"`
-	ServerLoad string `json:"server_load"`
-	Uptime     string `json:"uptime"`
-
-	DocumentsInQueue            int    `json:"documents_queued"`
-	DocumentsProcessedToday     int    `json:"documents_processed_today"`
-	DocumentsProcessedLastWeek  int    `json:"documents_processed_past_week"`
-	DocumentsProcessedLastMonth int    `json:"documents_processed_past_month"`
-	DocumentsTotal              int    `json:"documents_total"`
-	DocumentsTotalSize          int64  `json:"documents_total_size"`
-	DocumentsTotalSizeString    string `json:"documents_total_size_string"`
-
-	ProcessingStatus   []process.QueueStatus `json:"processing_queue"`
-	SearchEngineStatus search.EngineStatus   `json:"search_engine_status"`
-
-	ProcessingEnabled bool `json:"processing_enabled"`
-	CronJobsEnabled   bool `json:"cronjobs_enabled"`
-}
-
 func (a *Api) getSystemInfo(c echo.Context) error {
 	// swagger:route GET /api/v1/admin/systeminfo Admin AdminGetSystemInfo
 	// Get system information
@@ -207,59 +168,9 @@ func (a *Api) getSystemInfo(c echo.Context) error {
 	//   401: RespForbidden
 	//   500: RespInternalError
 
-	info := &SystemInfo{
-		Name:               "Virtualpaper",
-		Version:            config.Version,
-		Commit:             config.Commit,
-		NumCpu:             runtime.NumCPU(),
-		ImagemagickVersion: process.GetImagickVersion(),
-		TesseractVersion:   process.GetTesseractVersion(),
-		PopplerInstalled:   process.GetPdfToTextIsInstalled(),
-		GoVersion:          runtime.Version(),
-		Uptime:             config.UptimeString(),
-		PandocInstalled:    process.GetPandocInstalled(),
-		ProcessingStatus:   a.process.ProcessingStatus(),
-		ProcessingEnabled:  !config.C.Processing.Disabled,
-		CronJobsEnabled:    !config.C.CronJobs.Disabled,
-	}
-
-	stats, err := a.db.StatsStore.GetSystemStats()
+	info, err := a.adminService.GetSystemInfo(getContext(c))
 	if err != nil {
 		return err
-	}
-
-	info.DocumentsInQueue = stats.DocumentsInQueue
-	info.DocumentsProcessedToday = stats.DocumentsProcessedToday
-	info.DocumentsProcessedLastWeek = stats.DocumentsProcessedLastWeek
-	info.DocumentsProcessedLastMonth = stats.DocumentsProcessedLastMonth
-	info.DocumentsTotal = stats.DocumentsTotal
-	info.DocumentsTotalSize = stats.DocumentsTotalSize
-	info.DocumentsTotalSizeString = models.GetPrettySize(stats.DocumentsTotalSize)
-
-	stdout := &bytes.Buffer{}
-	cmd := exec.Command("uptime")
-	cmd.Stdout = stdout
-	err = cmd.Run()
-
-	if err != nil {
-		logrus.Warningf("exec 'uptime': %v", err)
-	} else {
-		text := stdout.String()
-		text = strings.Trim(text, " \n")
-		splits := strings.Split(text, " ")
-		if len(splits) != 13 {
-			logrus.Warningf("invalid 'uptime' result: %v", splits)
-		} else {
-			load := strings.Join(splits[10:], " ")
-			info.ServerLoad = load
-		}
-	}
-
-	engineStatus, err := a.search.GetStatus()
-	if err != nil {
-		logrus.Errorf("get search engine status: %v", err)
-	} else {
-		info.SearchEngineStatus = *engineStatus
 	}
 	return c.JSON(http.StatusOK, info)
 }
@@ -276,22 +187,9 @@ func (a *Api) adminGetUsers(c echo.Context) error {
 		logCrudAdminUsers(ctx.UserId, "list", &opOk, "get users")
 	}()
 
-	info, err := a.db.UserStore.GetUsersInfo()
+	info, err := a.adminService.GetUsers()
 	if err != nil {
 		return err
-	}
-
-	searchStatus, _, err := a.search.GetUserIndicesStatus()
-	if err != nil {
-		return err
-	}
-
-	for i, v := range *info {
-		indexStatus := searchStatus[v.UserId]
-		if indexStatus != nil {
-			(*info)[i].Indexing = indexStatus.Indexing
-			(*info)[i].TotalDocumentsIndexed = indexStatus.NumDocuments
-		}
 	}
 	opOk = true
 	return resourceList(c, info, len(*info))
@@ -314,29 +212,9 @@ func (a *Api) adminGetUser(c echo.Context) error {
 		logCrudAdminUsers(ctx.UserId, "get", &opOk, "get user %d", userId)
 	}()
 
-	userInfo, err := a.db.UserStore.GetUser(userId)
+	info, err := a.adminService.GetUser(getContext(ctx), userId)
 	if err != nil {
 		return err
-	}
-
-	searchStatus, err := a.search.GetUserIndexStatus(userId)
-	if err != nil {
-		return err
-	}
-
-	info := models.UserInfo{
-		UserId:                userInfo.Id,
-		UserName:              userInfo.Name,
-		Email:                 userInfo.Email,
-		IsActive:              userInfo.IsActive,
-		UpdatedAt:             userInfo.UpdatedAt,
-		CreatedAt:             userInfo.CreatedAt,
-		DocumentCount:         0,
-		DocumentsSize:         0,
-		IsAdmin:               userInfo.IsAdmin,
-		LastSeen:              time.Time{},
-		Indexing:              searchStatus.Indexing,
-		TotalDocumentsIndexed: searchStatus.NumDocuments,
 	}
 	opOk = true
 	return c.JSON(200, info)
@@ -378,69 +256,22 @@ func (a *Api) adminUpdateUser(c echo.Context) error {
 		logCrudAdminUsers(ctx.UserId, "update", &opOk, "update user, user_id: %d", userId)
 	}()
 
-	user, err := a.db.UserStore.GetUser(userId)
-	if err != nil {
-		return fmt.Errorf("get user %d: %v", userId, err)
+	user := &models.User{
+		Timestamp: models.Timestamp{},
+		Id:        userId,
+		Name:      "",
+		Password:  request.Password,
+		Email:     request.Email,
+		IsAdmin:   request.Administrator,
+		IsActive:  request.Active,
 	}
 
-	dataChanged := false
-	if user.IsActive != request.Active {
-		if request.Active {
-			logrus.Infof("Activate user %d by admin user %d", user.Id, ctx.UserId)
-		} else {
-			logrus.Infof("Deactivate user %d by admin user %d", user.Id, ctx.UserId)
-		}
-		user.IsActive = request.Active
-		dataChanged = true
+	info, err := a.adminService.UpdateUser(getContext(c), ctx.UserId, user)
+	if err != nil {
+		return err
 	}
-	if user.IsAdmin != request.Administrator {
-		if request.Administrator {
-			logrus.Infof("Add user %d to administrators by admin user %d", user.Id, ctx.UserId)
-		} else {
-			logrus.Infof("Remove user %d from administrators by admin user %d", user.Id, ctx.UserId)
-		}
-		user.IsAdmin = request.Administrator
-		dataChanged = true
-	}
-	if user.Email != request.Email {
-		logrus.Infof("Change user's %d email by admin user %d", user.Id, ctx.UserId)
-		user.Email = request.Email
-		dataChanged = true
-	}
-	if request.Password != "" {
-		logrus.Infof("Change user's %d password by admin user %d", user.Id, ctx.UserId)
-		err = user.SetPassword(request.Password)
-		if err != nil {
-			return fmt.Errorf("set user's password: %v", err)
-		}
-		dataChanged = true
-	}
-	if dataChanged {
-		user.Update()
-		err = a.db.UserStore.Update(user)
-		if err == nil {
-			info := models.UserInfo{
-				UserId:                user.Id,
-				UserName:              user.Name,
-				Email:                 user.Email,
-				IsActive:              user.IsActive,
-				UpdatedAt:             user.UpdatedAt,
-				CreatedAt:             user.CreatedAt,
-				DocumentCount:         0,
-				DocumentsSize:         0,
-				IsAdmin:               user.IsAdmin,
-				LastSeen:              time.Time{},
-				Indexing:              false,
-				TotalDocumentsIndexed: 0,
-			}
-			opOk = true
-			return c.JSON(200, info)
-		}
-	} else {
-		opOk = true
-		return c.JSON(http.StatusNotModified, user)
-	}
-	return err
+	opOk = true
+	return c.JSON(200, info)
 }
 
 type AdminAddUserRequest struct {
@@ -474,45 +305,16 @@ func (a *Api) adminAddUser(c echo.Context) error {
 	defer func() {
 		logCrudAdminUsers(ctx.UserId, "create", &opOk, "add user %d", userId)
 	}()
-
-	user := &models.User{
-		Timestamp: models.Timestamp{},
-		Id:        0,
-		Name:      request.UserName,
-		Email:     request.Email,
-		IsAdmin:   request.Administrator,
-		IsActive:  request.Active,
+	newUser := services.NewUser{
+		Name:     request.UserName,
+		Email:    request.Email,
+		Admin:    request.Administrator,
+		Active:   request.Active,
+		Password: request.Password,
 	}
-	err = user.SetPassword(request.Password)
-	if err != nil {
-		return fmt.Errorf("set password: %v", err)
-	}
-	user.CreatedAt = time.Now()
-	user.Update()
-
-	err = a.db.UserStore.AddUser(user)
+	info, err := a.adminService.CreateUser(getContext(c), ctx.UserId, newUser)
 	if err != nil {
 		return err
-	}
-
-	if user.IsAdmin {
-		logrus.Infof("admin user %d created new user %d with admin privileges", ctx.UserId, user.Id)
-	}
-
-	err = a.search.AddUserIndex(user.Id)
-	info := &models.UserInfo{
-		UserId:                user.Id,
-		UserName:              user.Name,
-		Email:                 user.Email,
-		IsActive:              user.IsActive,
-		UpdatedAt:             user.UpdatedAt,
-		CreatedAt:             user.CreatedAt,
-		DocumentCount:         0,
-		DocumentsSize:         0,
-		IsAdmin:               user.IsAdmin,
-		LastSeen:              time.Time{},
-		Indexing:              false,
-		TotalDocumentsIndexed: 0,
 	}
 	opOk = true
 	return c.JSON(200, info)
@@ -532,25 +334,9 @@ func (a *Api) adminRestoreDeletedDocument(c echo.Context) error {
 	defer func() {
 		logCrudAdminUsers(ctx.UserId, "restore deleted document", &opOk, "restore document %s", docId)
 	}()
-
-	document, err := a.db.DocumentStore.GetDocument(docId)
+	err := a.adminService.RestoreDeletedDocument(getContext(ctx), ctx.UserId, docId)
 	if err != nil {
 		return err
-	}
-	if !document.DeletedAt.Valid {
-		return errors.ErrRecordNotFound
-	}
-
-	err = a.db.DocumentStore.MarkDocumentNonDeleted(ctx.UserId, docId)
-	if err != nil {
-		return err
-	}
-
-	doc, err := a.db.DocumentStore.GetDocument(docId)
-	err = a.search.IndexDocuments(&[]models.Document{*doc}, doc.UserId)
-	if err != nil {
-		logrus.Errorf("delete document from search index: %v", err)
-		return respInternalErrorV2("delete from search index", err)
 	}
 	opOk = true
 	return c.JSON(200, nil)

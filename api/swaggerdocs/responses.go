@@ -21,6 +21,7 @@ package swaggerdocs
 import (
 	"tryffel.net/go/virtualpaper/api"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/models/aggregates"
 )
 
 // Request ok
@@ -77,7 +78,7 @@ type UserDocumentStatistics struct {
 // swagger:response RespAdminSystemInfo
 type AdminSystemInfo struct {
 	// in:body
-	Body api.SystemInfo
+	Body aggregates.SystemInfo
 }
 
 // Force processing documents

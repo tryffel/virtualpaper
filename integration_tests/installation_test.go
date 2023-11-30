@@ -6,6 +6,7 @@ import (
 	"testing"
 	"tryffel.net/go/virtualpaper/api"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/models/aggregates"
 )
 
 type AdminTestSuite struct {
@@ -20,7 +21,7 @@ func (suite *AdminTestSuite) TestGetServerInstallation() {
 	suite.publicHttp.Get("/api/v1/admin/systeminfo").Expect(suite.T()).e.Status(401).Done()
 	suite.userHttp.Get("/api/v1/admin/systeminfo").Expect(suite.T()).e.Status(200).Done()
 
-	data := &api.SystemInfo{}
+	data := &aggregates.SystemInfo{}
 	suite.adminHttp.Get("/api/v1/admin/systeminfo").Expect(suite.T()).Json(suite.T(), data).e.Status(200).Done()
 
 	assert.Equal(suite.T(), "Virtualpaper", data.Name)

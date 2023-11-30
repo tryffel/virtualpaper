@@ -54,6 +54,7 @@ type Api struct {
 	process *process.Manager
 	cron    *scheduler.CronJobs
 
+	adminService    *services.AdminService
 	authService     *services.AuthService
 	documentService *services.DocumentService
 	metadataService *services.MetadataService
@@ -99,7 +100,7 @@ func NewApi(database *storage.Database) (*Api, error) {
 	api.metadataService = services.NewMetadataService(database, api.process)
 	api.ruleService = services.NewRuleService(database, api.search, api.process)
 	api.userService = services.NewUserServices(database, api.search)
-
+	api.adminService = services.NewAdminService(database, api.process, api.search)
 	api.addRoutesV2()
 	return api, err
 }
