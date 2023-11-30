@@ -48,6 +48,7 @@ func (api *Api) addRoutesV2() {
 	}
 
 	mDocOwner := mDocumentOwner(api.documentService)
+	mMetadataOwner := mMetadataKeyOwner(api.metadataService)
 
 	authGroup.POST("/login", api.LoginV2)
 	api.privateRouter.POST("/auth/logout", api.Logout)
@@ -87,13 +88,13 @@ func (api *Api) addRoutesV2() {
 
 	api.privateRouter.GET("/metadata/keys", api.getMetadataKeys, mPagination(), mSort(&models.MetadataKeyAnnotated{}))
 	api.privateRouter.POST("/metadata/keys", api.addMetadataKey)
-	api.privateRouter.PUT("/metadata/keys/:id", api.updateMetadataKey)
-	api.privateRouter.GET("/metadata/keys/:id", api.getMetadataKey)
-	api.privateRouter.GET("/metadata/keys/:id/values", api.getMetadataKeyValues, mPagination(), mSort(&models.MetadataValue{}))
-	api.privateRouter.POST("/metadata/keys/:id/values", api.addMetadataValue)
-	api.privateRouter.DELETE("/metadata/keys/:id", api.deleteMetadataKey)
-	api.privateRouter.PUT("/metadata/keys/:keyId/values/:valueId", api.updateMetadataValue)
-	api.privateRouter.DELETE("/metadata/keys/:keyId/values/:valueId", api.deleteMetadataValue)
+	api.privateRouter.PUT("/metadata/keys/:id", api.updateMetadataKey, mMetadataOwner("id"))
+	api.privateRouter.GET("/metadata/keys/:id", api.getMetadataKey, mMetadataOwner("id"))
+	api.privateRouter.GET("/metadata/keys/:id/values", api.getMetadataKeyValues, mMetadataOwner("id"), mPagination(), mSort(&models.MetadataValue{}))
+	api.privateRouter.POST("/metadata/keys/:id/values", api.addMetadataValue, mMetadataOwner("id"))
+	api.privateRouter.DELETE("/metadata/keys/:id", api.deleteMetadataKey, mMetadataOwner("id"))
+	api.privateRouter.PUT("/metadata/keys/:keyId/values/:valueId", api.updateMetadataValue, mMetadataOwner("keyId"))
+	api.privateRouter.DELETE("/metadata/keys/:keyId/values/:valueId", api.deleteMetadataValue, mMetadataOwner("keyId"))
 
 	api.privateRouter.GET("/processing/rules", api.getUserRules, mPagination(), mSort(&models.Rule{}))
 	api.privateRouter.PUT("/processing/rules/reorder", api.reorderRules)

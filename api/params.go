@@ -200,6 +200,30 @@ func mDocumentOwner(service *services.DocumentService) func(idKey string) echo.M
 	}
 }
 
+func mMetadataKeyOwner(service *services.MetadataService) func(idKey string) echo.MiddlewareFunc {
+	return func(idKey string) echo.MiddlewareFunc {
+		return func(next echo.HandlerFunc) echo.HandlerFunc {
+			return func(c echo.Context) error {
+				ctx := c.(UserContext)
+				id, err := bindPathInt(c, idKey)
+				if err != nil {
+					userErr := errors.ErrInvalid
+					userErr.ErrMsg = "id must be integer"
+					return userErr
+				}
+				owns, err := service.UserOwnsKey(getContext(ctx), ctx.UserId, id)
+				if err != nil {
+					return err
+				}
+				if !owns {
+					return echo.NewHTTPError(http.StatusNotFound, "not found")
+				}
+				return next(c)
+			}
+		}
+	}
+}
+
 func bindPathId(c echo.Context) string {
 	return c.Param("id")
 }

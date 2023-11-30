@@ -322,16 +322,6 @@ func (a *Api) updateMetadataValue(c echo.Context) error {
 		MatchType:      models.MetadataRuleType(dto.MatchType),
 		MatchFilter:    dto.MatchFilter,
 	}
-	ownerShip, err := a.db.MetadataStore.UserHasKeyValue(ctx.UserId, keyId, valueId)
-	if err != nil {
-		return err
-	}
-
-	if !ownerShip {
-		err := errors.ErrRecordNotFound
-		return err
-	}
-
 	// rest should be enclodes in a transaction
 	err = a.db.MetadataStore.UpdateValue(value)
 	if err != nil {
@@ -368,17 +358,6 @@ func (a *Api) updateMetadataKey(c echo.Context) error {
 
 	opOk := false
 	defer logCrudMetadata(ctx.UserId, "update key", &opOk, "key: %d", keyId)
-
-	ownerShip, err := a.db.MetadataStore.UserHasKey(ctx.UserId, keyId)
-	if err != nil {
-		return err
-	}
-
-	if !ownerShip {
-		err := errors.ErrRecordNotFound
-		return err
-	}
-
 	key := &models.MetadataKey{
 		Id:      keyId,
 		UserId:  ctx.UserId,
@@ -421,16 +400,6 @@ func (a *Api) deleteMetadataKey(c echo.Context) error {
 
 	opOk := false
 	defer logCrudMetadata(ctx.UserId, "delete key", &opOk, "key: %d", keyId)
-	ownerShip, err := a.db.MetadataStore.UserHasKey(ctx.UserId, keyId)
-	if err != nil {
-		return err
-	}
-
-	if !ownerShip {
-		err := errors.ErrRecordNotFound
-		return err
-	}
-
 	// need to add processing when the metadata still exists
 	err = a.db.JobStore.IndexDocumentsByMetadata(ctx.UserId, keyId, 0)
 	if err != nil {
@@ -466,17 +435,6 @@ func (a *Api) deleteMetadataValue(c echo.Context) error {
 
 	opOk := false
 	defer logCrudMetadata(ctx.UserId, "delete value", &opOk, "key: %d, value: %d", keyId, valueId)
-
-	ownerShip, err := a.db.MetadataStore.UserHasKey(ctx.UserId, keyId)
-	if err != nil {
-		return err
-	}
-
-	if !ownerShip {
-		err := errors.ErrRecordNotFound
-		return err
-	}
-
 	// need to add processing when the metadata still exists
 	err = a.db.JobStore.IndexDocumentsByMetadata(ctx.UserId, keyId, valueId)
 	if err != nil {

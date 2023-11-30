@@ -23,7 +23,8 @@ func (suite *MetadataValueSuite) SetupTest() {
 	suite.keys["author"] = AddMetadataKey(suite.T(), suite.userHttp, "author", "document author", 200)
 	suite.keys["category"] = AddMetadataKey(suite.T(), suite.userHttp, "category", "document category", 200)
 	suite.keys["test"] = AddMetadataKey(suite.T(), suite.userHttp, "test", "test key", 200)
-	assert.Equal(suite.T(), len(suite.keys), 3)
+	suite.keys["admin-test"] = AddMetadataKey(suite.T(), suite.adminHttp, "test", "test key", 200)
+	assert.Equal(suite.T(), len(suite.keys), 4)
 
 	AddMetadataValue(suite.T(), suite.userHttp, suite.keys["author"].Id, &models.MetadataValue{
 		Value:          "doyle",
@@ -37,6 +38,14 @@ func (suite *MetadataValueSuite) SetupTest() {
 		MatchType:      "",
 		MatchFilter:    "",
 	}, 200)
+
+	AddMetadataValue(suite.T(), suite.adminHttp, suite.keys["admin-test"].Id, &models.MetadataValue{
+		Value:          "darwin",
+		MatchDocuments: false,
+		MatchType:      "",
+		MatchFilter:    "",
+	}, 200)
+
 }
 
 func (suite *MetadataValueSuite) TestInvalidValues() {
@@ -75,6 +84,15 @@ func (suite *MetadataValueSuite) TestInvalidValues() {
 		MatchType:      "",
 		MatchFilter:    testDocumentX86Intel.Content,
 	}, 400)
+}
+
+func (suite *MetadataValueSuite) TestUnauthorized() {
+	AddMetadataValue(suite.T(), suite.userHttp, suite.keys["admin-test"].Id, &models.MetadataValue{
+		Value:          "another",
+		MatchDocuments: false,
+		MatchType:      "",
+		MatchFilter:    "",
+	}, 404)
 }
 
 func initMetadataKeyValues(t *testing.T, client *httpClient) (map[string]*models.MetadataKey, map[string]map[string]*models.MetadataValue) {
