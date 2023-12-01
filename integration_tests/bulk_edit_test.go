@@ -250,7 +250,7 @@ func (suite *BulkEditTestSuite) TestPermissionDenied() {
 		},
 		},
 		RemoveMetadata: api.MetadataUpdateRequest{},
-	}, 403)
+	}, 404)
 
 	originalX86 := getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
 

@@ -205,6 +205,27 @@ func (service *DocumentService) DocumentFile(docId string) (*DocumentFile, error
 	}, nil
 }
 
+func (service *DocumentService) GetPreview(ctx context.Context, docId string) (io.ReadCloser, int, error) {
+	doc, err := service.db.DocumentStore.GetDocument(docId)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	filePath := storage.PreviewPath(doc.Id)
+	file, err := os.Open(filePath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, 0, err
+		}
+		return nil, 0, err
+	}
+	stat, err := file.Stat()
+	if err != nil {
+		return nil, 0, err
+	}
+	return file, int(stat.Size()), nil
+}
+
 func (service *DocumentService) FlushDeletedDocument(ctx context.Context, docId string) error {
 	document, err := service.db.DocumentStore.GetDocument(docId)
 	if err != nil {
@@ -279,6 +300,14 @@ func (service *DocumentService) RestoreDeletedDocument(ctx context.Context, docI
 }
 
 func (service *DocumentService) BulkEditDocuments(ctx context.Context, req *aggregates.BulkEditDocumentsRequest, userId int) error {
+	owns, err := service.db.DocumentStore.UserOwnsDocuments(userId, req.Documents)
+	if err != nil {
+		return err
+	}
+	if !owns {
+		return errors.ErrRecordNotFound
+	}
+
 	if len(req.AddMetadata) > 0 {
 		addMetadata := req.AddMetadata.ToMetadataArray()
 		keys := req.AddMetadata.UniqueKeys()
@@ -332,7 +361,7 @@ func (service *DocumentService) BulkEditDocuments(ctx context.Context, req *aggr
 	}
 
 	// need to reindex
-	err := service.db.JobStore.AddDocuments(userId, req.Documents, []models.ProcessStep{models.ProcessFts})
+	err = service.db.JobStore.AddDocuments(userId, req.Documents, []models.ProcessStep{models.ProcessFts})
 	if err != nil {
 		if errors.Is(err, errors.ErrAlreadyExists) {
 			// already indexing, skip
@@ -486,6 +515,10 @@ func (service *DocumentService) GetStatistics(ctx context.Context, userId int) (
 		stats.Indexing = searchStats.Indexing
 	}
 	return stats, nil
+}
+
+func (service *DocumentService) GetDocumentLogs(ctx context.Context, docId string) (*[]models.Job, error) {
+	return service.db.JobStore.GetJobsByDocumentId(docId)
 }
 
 func docStatsToUserStats(stats *models.UserDocumentStatistics) *aggregates.UserDocumentStatistics {
