@@ -49,13 +49,23 @@ import {
 import HistoryIcon from "@mui/icons-material/History";
 import TimelineIcon from "@mui/icons-material/Timeline";
 import CloseIcon from "@mui/icons-material/Close";
-import {DownloadDocumentButton, EmbedFile, ThumbnailField,} from "../Thumbnail";
-import {IndexingStatusField} from "../IndexingStatus";
-import {MarkdownField} from "../../../components/Markdown";
-import {ShowDocumentsEditHistory} from "./DocumentHistory";
-import {LinkedDocumentList} from "./LinkedDocuments";
-import {DocumentBasicInfo, DocumentIdField, DocumentJobsHistory, DocumentTitle, DocumentTopRow,} from "./Show";
-import {RequestIndexingModal} from "../RequestIndexing";
+import {
+  DownloadDocumentButton,
+  EmbedFile,
+  ThumbnailField,
+} from "../Thumbnail";
+import { IndexingStatusField } from "../IndexingStatus";
+import { MarkdownField } from "../../../components/Markdown";
+import { ShowDocumentsEditHistory } from "./DocumentHistory";
+import { LinkedDocumentList } from "./LinkedDocuments";
+import {
+  DocumentBasicInfo,
+  DocumentIdField,
+  DocumentJobsHistory,
+  DocumentTitle,
+  DocumentTopRow,
+} from "./Show";
+import { RequestIndexingModal } from "../RequestIndexing";
 import get from "lodash/get";
 import MenuItem from "@mui/material/MenuItem";
 import Menu from "@mui/material/Menu";
@@ -65,7 +75,7 @@ import ListItemText from "@mui/material/ListItemText";
 import NotesIcon from "@mui/icons-material/Notes";
 import SourceIcon from "@mui/icons-material/Source";
 import StickyNote2Icon from "@mui/icons-material/StickyNote2";
-import {MetadataList} from "./MetadataList";
+import { MetadataList } from "./MetadataList";
 
 export const DocumentShow = () => {
   const [asideMode, setAsideMode] = React.useState<AsideMode>("closed");
@@ -287,15 +297,6 @@ const DocumentGeneralTablSmall = () => {
           <MarkdownField source="description" />
         </Labeled>
       </Grid>
-      {record && record.tags ? (
-        <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-          <ArrayField source="tags">
-            <SingleFieldList>
-              <ChipField source="key" />
-            </SingleFieldList>
-          </ArrayField>
-        </Box>
-      ) : null}
       <Grid item xs={12}>
         <MetadataList />
       </Grid>
@@ -387,8 +388,6 @@ const DocumentPreviewTab = (props: {
     />
   );
 };
-
-
 
 type AsideMode = "closed" | "history" | "jobs";
 
