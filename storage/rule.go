@@ -135,16 +135,10 @@ WHERE id = $1`
 	return rule, nil
 }
 
-func (s *RuleStore) AddRule(userId int, rule *models.Rule) error {
+func (s *RuleStore) AddRule(execer SqlExecer, userId int, rule *models.Rule) error {
 	err := s.validateRule(userId, rule)
 	if err != nil {
 		return err
-	}
-
-	tx, err := s.beginTx()
-	defer tx.Close()
-	if err != nil {
-		return fmt.Errorf("begin tx: %v", err)
 	}
 
 	// insert rule
@@ -153,28 +147,22 @@ func (s *RuleStore) AddRule(userId int, rule *models.Rule) error {
 		Values(userId, rule.Name, rule.Description, rule.Enabled,
 			squirrel.Expr("(SELECT COALESCE(MAX(rule_order)+1, 1) FROM rules WHERE user_id=?)", userId), rule.Mode).
 		Suffix("RETURNING \"id\"")
-	sql, args, err := query.ToSql()
-	if err != nil {
-		return fmt.Errorf("build insert rule sql: %v", err)
-	}
-
 	var id int
-	err = tx.tx.Get(&id, sql, args...)
+	err = execer.GetSq(&id, query)
 	if err != nil {
 		return getDatabaseError(err, s, "insert rule")
 	}
 	rule.Id = id
-	err = s.addActionsToRule(tx, rule.Id, rule.Actions)
+	err = s.addActionsToRule(execer, rule.Id, rule.Actions)
 	if err != nil {
 		return fmt.Errorf("add actions: %v", err)
 	}
 
-	err = s.addConditionsToRule(tx, rule.Id, rule.Conditions)
+	err = s.addConditionsToRule(execer, rule.Id, rule.Conditions)
 	if err != nil {
 		return fmt.Errorf("add conditions: %v", err)
 	}
-	tx.ok = true
-	return tx.Commit()
+	return nil
 }
 
 // GetActiveUresRules returns all enabled rules (with some limit) for given user.
@@ -289,7 +277,7 @@ func (s *RuleStore) UserOwnsRule(userId, ruleId int) (bool, error) {
 }
 
 // UpdateRule updates rule.
-func (s *RuleStore) UpdateRule(userId int, rule *models.Rule) error {
+func (s *RuleStore) UpdateRule(exec ExecerSq, userId int, rule *models.Rule) error {
 	owns, err := s.UserOwnsRule(userId, rule.Id)
 	if err != nil {
 		return err
@@ -305,12 +293,6 @@ func (s *RuleStore) UpdateRule(userId int, rule *models.Rule) error {
 		return err
 	}
 
-	tx, err := s.beginTx()
-	if err != nil {
-		return err
-	}
-	defer tx.Close()
-
 	rule.Update()
 	query := s.sq.Update("rules").SetMap(map[string]interface{}{
 		"name":        rule.Name,
@@ -321,42 +303,29 @@ func (s *RuleStore) UpdateRule(userId int, rule *models.Rule) error {
 		"updated_at":  rule.UpdatedAt,
 	}).Where(squirrel.Eq{"user_id": userId, "id": rule.Id})
 
-	sql, args, err := query.ToSql()
+	_, err = exec.ExecSq(query)
 	if err != nil {
-		return fmt.Errorf("build sql: %v", err)
+		return err
+	}
+	_, err = exec.ExecSq(s.sq.Delete("rule_actions").Where("rule_id = ?", rule.Id))
+	if err != nil {
+		return err
+	}
+	_, err = exec.ExecSq(s.sq.Delete("rule_conditions").Where("rule_id = ?", rule.Id))
+	if err != nil {
+		return err
 	}
 
-	_, err = tx.tx.Exec(sql, args...)
-	if err != nil {
-		return getDatabaseError(err, s, "update")
-	}
-
-	sql = `DELETE FROM rule_actions WHERE rule_id = $1`
-	_, err = tx.tx.Exec(sql, rule.Id)
-	if err != nil {
-		return fmt.Errorf("delete old actions: %v", err)
-	}
-
-	sql = `DELETE FROM rule_conditions WHERE rule_id = $1`
-	_, err = tx.tx.Exec(sql, rule.Id)
-	if err != nil {
-		return fmt.Errorf("delete old conditions: %v", err)
-	}
-
-	err = s.addActionsToRule(tx, rule.Id, rule.Actions)
+	err = s.addActionsToRule(exec, rule.Id, rule.Actions)
 	if err != nil {
 		return fmt.Errorf("add actions: %v", err)
 	}
 
-	err = s.addConditionsToRule(tx, rule.Id, rule.Conditions)
+	err = s.addConditionsToRule(exec, rule.Id, rule.Conditions)
 	if err != nil {
 		return fmt.Errorf("add conditions: %v", err)
 	}
-
-	//TODO: handle changing rule_order
-
-	tx.ok = true
-	return tx.Commit()
+	return nil
 }
 
 func (s *RuleStore) DeleteRule(ruleId int) error {
@@ -406,7 +375,7 @@ func (s *RuleStore) validateRule(userId int, rule *models.Rule) error {
 	return nil
 }
 
-func (s *RuleStore) addActionsToRule(tx *tx, ruleId int, actions []*models.RuleAction) error {
+func (s *RuleStore) addActionsToRule(exec ExecerSq, ruleId int, actions []*models.RuleAction) error {
 	query := s.sq.Insert("rule_actions").
 		Columns("rule_id", "enabled", "on_condition", "action", "value", "metadata_key", "metadata_value")
 
@@ -414,24 +383,17 @@ func (s *RuleStore) addActionsToRule(tx *tx, ruleId int, actions []*models.RuleA
 		query = query.Values(ruleId, v.Enabled, v.OnCondition, v.Action, v.Value, v.MetadataKey, v.MetadataValue)
 	}
 
-	sql, args, err := query.ToSql()
-	if err != nil {
-		return fmt.Errorf("construct insert actions sql: %v", err)
-	}
-
-	if tx != nil {
-		_, err = tx.tx.Exec(sql, args...)
-	} else {
-		_, err = s.db.Exec(sql, args...)
-	}
-
+	_, err := exec.ExecSq(query)
 	if err != nil {
 		return getDatabaseError(err, s, "insert rule actions")
 	}
 	return nil
 }
 
-func (s *RuleStore) addConditionsToRule(tx *tx, ruleId int, conditions []*models.RuleCondition) error {
+func (s *RuleStore) addConditionsToRule(exec ExecerSq, ruleId int, conditions []*models.RuleCondition) error {
+	if len(conditions) == 0 {
+		return nil
+	}
 	query := s.sq.Insert("rule_conditions").
 		Columns("rule_id", "enabled", "case_insensitive", "inverted_match", "condition_type",
 			"is_regex", "value", "date_fmt", "metadata_key", "metadata_value")
@@ -441,17 +403,7 @@ func (s *RuleStore) addConditionsToRule(tx *tx, ruleId int, conditions []*models
 			v.MetadataKey, v.MetadataValue)
 	}
 
-	sql, args, err := query.ToSql()
-	if err != nil {
-		return fmt.Errorf("construct insert conditions sql: %v", err)
-	}
-
-	if tx != nil {
-		_, err = tx.tx.Exec(sql, args...)
-	} else {
-		_, err = s.db.Exec(sql, args...)
-
-	}
+	_, err := exec.ExecSq(query)
 	if err != nil {
 		return getDatabaseError(err, s, "insert rule conditions")
 	}

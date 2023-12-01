@@ -116,12 +116,11 @@ func (suite *RuleApiTestSuite) TestCreateRule() {
 	conditions := rule.Conditions
 
 	rule.Actions = nil
-	// TODO: should return 400
-	addRule(suite.T(), suite.userHttp, rule, 500, "invalid rule: no actions")
+	addRule(suite.T(), suite.userHttp, rule, 400, "invalid rule: no actions")
 
 	rule.Actions = actions
 	rule.Conditions = nil
-	addRule(suite.T(), suite.userHttp, rule, 500, "invalid rule: no conditions")
+	addRule(suite.T(), suite.userHttp, rule, 200, "ok rule: no conditions")
 
 	rule.Conditions = conditions
 	addRule(suite.T(), suite.userHttp, rule, 200, "ok")
