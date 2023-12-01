@@ -71,7 +71,7 @@ type DocumentProcessingResp struct {
 // swagger:response RespDocumentStatistics
 type UserDocumentStatistics struct {
 	// in:body
-	Body api.UserDocumentStatistics
+	Body aggregates.UserDocumentStatistics
 }
 
 // System information

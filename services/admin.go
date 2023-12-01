@@ -297,5 +297,25 @@ func (service *AdminService) RestoreDeletedDocument(ctx context.Context, adminUs
 		logrus.Errorf("delete document from search index: %v", err)
 	}
 	return nil
+}
 
+func (service *AdminService) ForceProcessingByUser(ctx context.Context, userId int, steps []models.ProcessStep) error {
+	return service.db.JobStore.ForceProcessingByUser(userId, steps)
+}
+
+func (service *AdminService) ForceProcessingByDocumentId(ctx context.Context, docId string, steps []models.ProcessStep) error {
+	doc, err := service.db.DocumentStore.GetDocument(docId)
+	if err != nil {
+		return err
+	}
+	err = service.db.JobStore.ForceProcessingDocument(doc.Id, steps)
+	if err != nil {
+		return err
+	}
+	err = service.process.AddDocumentForProcessing(doc.Id)
+	if err != nil {
+		return err
+	}
+	service.process.PullDocumentsToProcess()
+	return nil
 }

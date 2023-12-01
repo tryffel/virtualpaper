@@ -467,3 +467,51 @@ func (service *DocumentService) UpdateLinkedDocuments(ctx context.Context, userI
 func (service *DocumentService) GetContent(ctx context.Context, docId string) (*string, error) {
 	return service.db.DocumentStore.GetContent(docId)
 }
+
+func (service *DocumentService) SuggestSearch(ctx context.Context, userId int, filter string) (*search.QuerySuggestions, error) {
+	return service.search.SuggestSearch(userId, filter)
+}
+
+func (service *DocumentService) GetStatistics(ctx context.Context, userId int) (*aggregates.UserDocumentStatistics, error) {
+	baseStats, err := service.db.StatsStore.GetUserDocumentStats(userId)
+	if err != nil {
+		return nil, err
+	}
+	baseStats.UserId = userId
+	stats := docStatsToUserStats(baseStats)
+	searchStats, err := service.search.GetUserIndexStatus(userId)
+	if err != nil {
+		logger.Context(ctx).Warnf("get search engine indexing status: %v", err)
+	} else {
+		stats.Indexing = searchStats.Indexing
+	}
+	return stats, nil
+}
+
+func docStatsToUserStats(stats *models.UserDocumentStatistics) *aggregates.UserDocumentStatistics {
+	uds := &aggregates.UserDocumentStatistics{
+		UserId:               stats.UserId,
+		NumDocuments:         stats.NumDocuments,
+		YearlyStats:          stats.YearlyStats,
+		NumMetadataKeys:      stats.NumMetadataKeys,
+		NumMetadataValues:    stats.NumMetadataValues,
+		LastDocumentsUpdated: stats.LastDocumentsUpdated,
+		LastDocumentsAdded:   stats.LastDocumentsAdded,
+		LastDocumentsViewed:  stats.LastDocumentsViewed,
+	}
+
+	if uds.LastDocumentsUpdated == nil {
+		uds.LastDocumentsUpdated = []string{}
+	}
+	if uds.LastDocumentsAdded == nil {
+		uds.LastDocumentsAdded = []string{}
+	}
+	if uds.LastDocumentsViewed == nil {
+		uds.LastDocumentsViewed = []string{}
+	}
+
+	if uds.YearlyStats == nil {
+		uds.YearlyStats = []models.UserDocumentYearStat{}
+	}
+	return uds
+}

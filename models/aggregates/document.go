@@ -111,3 +111,26 @@ type DocumentUpdate struct {
 	Metadata    MetadataArray
 	Lang        string
 }
+
+type UserDocumentStatistics struct {
+	// user id
+	UserId int `json:"id"`
+	// total number of documents
+	// Example: 53
+	NumDocuments int `json:"num_documents"`
+	// per-year statistics
+	YearlyStats []models.UserDocumentYearStat `json:"yearly_stats"`
+	// total number of metadata keys
+	// Example: 4
+	NumMetadataKeys int `json:"num_metadata_keys"`
+	// total number of metadata values
+	// Example: 14
+	NumMetadataValues int `json:"num_metadata_values"`
+	// array of last updated document ids
+	// Example: [abcd]
+	LastDocumentsUpdated []string `json:"last_documents_updated"`
+	LastDocumentsAdded   []string `json:"last_documents_added"`
+	LastDocumentsViewed  []string `json:"last_documents_viewed"`
+
+	Indexing bool `json:"indexing"`
+}

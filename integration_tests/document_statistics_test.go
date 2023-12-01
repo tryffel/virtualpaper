@@ -5,7 +5,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"testing"
 	"time"
-	"tryffel.net/go/virtualpaper/api"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/models/aggregates"
 )
@@ -206,8 +205,8 @@ func (suite *DocumentStatisticsSuite) TestYearlyStats() {
 	}, data.YearlyStats)
 }
 
-func getDocumentStatistics(t *testing.T, client *httpClient, wantHttpStatus int) *api.UserDocumentStatistics {
-	data := api.UserDocumentStatistics{}
+func getDocumentStatistics(t *testing.T, client *httpClient, wantHttpStatus int) *aggregates.UserDocumentStatistics {
+	data := aggregates.UserDocumentStatistics{}
 	client.Get("/api/v1/documents/stats").ExpectName(t, "get document statistics", false).Json(t, &data).e.Status(wantHttpStatus).Done()
 
 	// indexing status in non-deterministic,
