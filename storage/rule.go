@@ -174,7 +174,7 @@ func (s *RuleStore) AddRule(userId int, rule *models.Rule) error {
 		return fmt.Errorf("add conditions: %v", err)
 	}
 	tx.ok = true
-	return nil
+	return tx.Commit()
 }
 
 // GetActiveUresRules returns all enabled rules (with some limit) for given user.
@@ -356,7 +356,7 @@ func (s *RuleStore) UpdateRule(userId int, rule *models.Rule) error {
 	//TODO: handle changing rule_order
 
 	tx.ok = true
-	return nil
+	return tx.Commit()
 }
 
 func (s *RuleStore) DeleteRule(ruleId int) error {

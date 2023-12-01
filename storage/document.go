@@ -120,19 +120,15 @@ WHERE id = $1
 }
 
 // GetDocument returns document by its id. If userId != 0, user must be owner of the document.
-func (s *DocumentStore) GetDocumentsById(userId int, id []string) (*[]models.Document, error) {
+func (s *DocumentStore) GetDocumentsById(exec SqlExecer, userId int, id []string) (*[]models.Document, error) {
 
 	query := s.sq.Select("*").From("documents").Where(squirrel.Eq{"id": id})
 	if userId != 0 {
 		query = query.Where("user_id = ?", userId)
 	}
 	query = query.OrderBy("id ASC")
-	sql, args, err := query.ToSql()
-	if err != nil {
-		return nil, fmt.Errorf("sql: %v", err)
-	}
 	dest := &[]models.Document{}
-	err = s.db.Select(dest, sql, args...)
+	err := exec.SelectSq(dest, query)
 	return dest, s.parseError(err, "get document")
 }
 
@@ -159,18 +155,12 @@ end;
 
 }
 
-func (s *DocumentStore) UserOwnsDocuments(userId int, documents []string) (bool, error) {
+func (s *DocumentStore) UserOwnsDocuments(queries SqlExecer, userId int, documents []string) (bool, error) {
 	query := s.sq.Select("count(distinct(id))").From("documents").Where("user_id = ?", userId).Where(
 		squirrel.Eq{"id": documents})
 
-	sql, args, err := query.ToSql()
-	if err != nil {
-		return false, err
-	}
-
 	var documentCount int
-	err = s.db.Get(&documentCount, sql, args...)
-
+	err := queries.GetSq(&documentCount, query)
 	if err != nil {
 		return false, s.parseError(err, "check user owns documents")
 	}
@@ -459,8 +449,8 @@ func (s *DocumentStore) GetDocumentsInTrashbin(deletedAt time.Time) ([]string, e
 	return ids, nil
 }
 
-func (s *DocumentStore) BulkUpdateDocuments(userId int, docs []string, lang models.Lang, date time.Time) error {
-	oldDocs, err := s.GetDocumentsById(userId, docs)
+func (s *DocumentStore) BulkUpdateDocuments(exec SqlExecer, userId int, docs []string, lang models.Lang, date time.Time) error {
+	oldDocs, err := s.GetDocumentsById(exec, userId, docs)
 	if err != nil {
 		return err
 	}
@@ -483,7 +473,7 @@ func (s *DocumentStore) BulkUpdateDocuments(userId int, docs []string, lang mode
 		return getDatabaseError(err, s, "bulk update document lang")
 	}
 
-	updatedDocs, err := s.GetDocumentsById(userId, docs)
+	updatedDocs, err := s.GetDocumentsById(exec, userId, docs)
 	if err != nil {
 		return err
 	}

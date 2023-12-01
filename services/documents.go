@@ -300,7 +300,12 @@ func (service *DocumentService) RestoreDeletedDocument(ctx context.Context, docI
 }
 
 func (service *DocumentService) BulkEditDocuments(ctx context.Context, req *aggregates.BulkEditDocumentsRequest, userId int) error {
-	owns, err := service.db.DocumentStore.UserOwnsDocuments(userId, req.Documents)
+	tx, err := storage.NewTx(service.db, ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Close()
+	owns, err := service.db.DocumentStore.UserOwnsDocuments(tx, userId, req.Documents)
 	if err != nil {
 		return err
 	}
@@ -311,14 +316,14 @@ func (service *DocumentService) BulkEditDocuments(ctx context.Context, req *aggr
 	if len(req.AddMetadata) > 0 {
 		addMetadata := req.AddMetadata.ToMetadataArray()
 		keys := req.AddMetadata.UniqueKeys()
-		ok, err := service.db.MetadataStore.UserHasKeys(userId, keys)
+		ok, err := service.db.MetadataStore.UserHasKeys(tx, userId, keys)
 		if err != nil {
 			return fmt.Errorf("check user owns keys: %v", err)
 		}
 		if !ok {
 			return errors.ErrRecordNotFound
 		}
-		err = service.db.MetadataStore.UpsertDocumentMetadata(userId, req.Documents, addMetadata)
+		err = service.db.MetadataStore.UpsertDocumentMetadata(tx, userId, req.Documents, addMetadata)
 		if err != nil {
 			return err
 		}
@@ -326,7 +331,7 @@ func (service *DocumentService) BulkEditDocuments(ctx context.Context, req *aggr
 	if len(req.RemoveMetadata) > 0 {
 		removeMetadata := req.RemoveMetadata.ToMetadataArray()
 		keys := req.RemoveMetadata.UniqueKeys()
-		ok, err := service.db.MetadataStore.UserHasKeys(userId, keys)
+		ok, err := service.db.MetadataStore.UserHasKeys(tx, userId, keys)
 		if err != nil {
 			return fmt.Errorf("check user owns keys: %v", err)
 		}
@@ -334,7 +339,7 @@ func (service *DocumentService) BulkEditDocuments(ctx context.Context, req *aggr
 			return errors.ErrRecordNotFound
 		}
 
-		err = service.db.MetadataStore.DeleteDocumentsMetadata(userId, req.Documents, removeMetadata)
+		err = service.db.MetadataStore.DeleteDocumentsMetadata(tx, userId, req.Documents, removeMetadata)
 		if err != nil {
 			return err
 		}
@@ -354,14 +359,14 @@ func (service *DocumentService) BulkEditDocuments(ctx context.Context, req *aggr
 	}
 
 	if req.Lang != "" || req.Date != 0 {
-		err := service.db.DocumentStore.BulkUpdateDocuments(userId, req.Documents, lang, date)
+		err := service.db.DocumentStore.BulkUpdateDocuments(tx, userId, req.Documents, lang, date)
 		if err != nil {
 			return err
 		}
 	}
 
 	// need to reindex
-	err = service.db.JobStore.AddDocuments(userId, req.Documents, []models.ProcessStep{models.ProcessFts})
+	err = service.db.JobStore.AddDocuments(tx, userId, req.Documents, []models.ProcessStep{models.ProcessFts})
 	if err != nil {
 		if errors.Is(err, errors.ErrAlreadyExists) {
 			// already indexing, skip
@@ -370,7 +375,7 @@ func (service *DocumentService) BulkEditDocuments(ctx context.Context, req *aggr
 		}
 	}
 	service.process.PullDocumentsToProcess()
-	return nil
+	return tx.Commit()
 }
 
 func (service *DocumentService) UpdateDocument(ctx context.Context, userId int, docId string, updated *aggregates.DocumentUpdate) (*models.Document, error) {
@@ -381,7 +386,7 @@ func (service *DocumentService) UpdateDocument(ctx context.Context, userId int, 
 
 	if len(updated.Metadata) > 0 {
 		uniqueKeys := updated.Metadata.UniqueKeys()
-		owns, err := service.db.MetadataStore.UserHasKeys(userId, uniqueKeys)
+		owns, err := service.db.MetadataStore.UserHasKeys(service.db, userId, uniqueKeys)
 		if err != nil {
 			return nil, err
 		}
@@ -466,7 +471,7 @@ func (service *DocumentService) UpdateLinkedDocuments(ctx context.Context, userI
 		return e
 	}
 
-	ownership, err := service.db.DocumentStore.UserOwnsDocuments(userId, append(linkedDocs, targetDoc))
+	ownership, err := service.db.DocumentStore.UserOwnsDocuments(service.db, userId, append(linkedDocs, targetDoc))
 	if err != nil {
 		return err
 	}

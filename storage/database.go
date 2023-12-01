@@ -1,9 +1,11 @@
 package storage
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
-
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"tryffel.net/go/virtualpaper/config"
@@ -21,6 +23,82 @@ type Database struct {
 	StatsStore    *StatsStore
 	RuleStore     *RuleStore
 	AuthStore     *AuthStore
+}
+
+func (d *Database) Exec(query string, args ...interface{}) (sql.Result, error) {
+	return d.conn.Exec(query, args)
+}
+
+func (d *Database) ExecSq(sql squirrel.Sqlizer) (sql.Result, error) {
+	query, args, err := sql.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("generate sql: %v", err)
+	}
+	return d.conn.Exec(query, args...)
+}
+
+func (d *Database) QuerySq(sql squirrel.Sqlizer) (*sqlx.Rows, error) {
+	query, args, err := sql.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("generate sql: %v", err)
+	}
+	return d.conn.Queryx(query, args...)
+}
+
+func (d *Database) SelectSq(destination interface{}, sql squirrel.Sqlizer) error {
+	query, args, err := sql.ToSql()
+	if err != nil {
+		return fmt.Errorf("generate sql: %v", err)
+	}
+	return d.conn.Select(destination, query, args...)
+}
+
+func (d *Database) GetSq(destination interface{}, sql squirrel.Sqlizer) error {
+	query, args, err := sql.ToSql()
+	if err != nil {
+		return fmt.Errorf("generate sql: %v", err)
+	}
+	return d.conn.Get(destination, query, args...)
+}
+
+func (d *Database) Get(destination interface{}, query string, args ...interface{}) error {
+	return d.conn.Get(destination, query, args...)
+}
+
+func (d *Database) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	return d.conn.ExecContext(ctx, query, args...)
+}
+
+func (d *Database) ExecContextSq(ctx context.Context, sql squirrel.Sqlizer) (sql.Result, error) {
+	query, args, err := sql.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("sql: %v", err)
+	}
+	return d.conn.ExecContext(ctx, query, args...)
+}
+
+func (d *Database) QueryContextSq(ctx context.Context, sql squirrel.Sqlizer) (*sqlx.Rows, error) {
+	query, args, err := sql.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("generate sql: %v", err)
+	}
+	return d.conn.QueryxContext(ctx, query, args...)
+}
+
+func (d *Database) SelectContextSq(ctx context.Context, destination interface{}, sql squirrel.Sqlizer) error {
+	query, args, err := sql.ToSql()
+	if err != nil {
+		return fmt.Errorf("sql: %v", err)
+	}
+	return d.conn.SelectContext(ctx, destination, query, args...)
+}
+
+func (d *Database) GetContextSq(ctx context.Context, destination interface{}, sql squirrel.Sqlizer) error {
+	query, args, err := sql.ToSql()
+	if err != nil {
+		return fmt.Errorf("sql: %v", err)
+	}
+	return d.conn.GetContext(ctx, destination, query, args...)
 }
 
 // NewDatabase returns working instance of database connection.
