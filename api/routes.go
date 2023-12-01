@@ -79,8 +79,6 @@ func (api *Api) addRoutesV2() {
 
 	api.privateRouter.POST("/documents/search/suggest", api.searchSuggestions).Name = "search-suggest"
 
-	api.privateRouter.GET("/jobs", api.GetJob, mPagination())
-
 	api.privateRouter.GET("/metadata/keys", api.getMetadataKeys, mPagination(), mSort(&models.MetadataKeyAnnotated{}))
 	api.privateRouter.POST("/metadata/keys", api.addMetadataKey)
 	api.privateRouter.PUT("/metadata/keys/:id", api.updateMetadataKey, mMetadataOwner("id"))
