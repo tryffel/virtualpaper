@@ -37,20 +37,37 @@ func (service *RuleService) Get(ctx context.Context, userId int, id int) (*model
 }
 
 func (service *RuleService) Create(ctx context.Context, rule *models.Rule) (*models.Rule, error) {
-	err := service.db.RuleStore.AddRule(rule.UserId, rule)
+	tx, err := storage.NewTx(service.db, ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	err = service.db.RuleStore.AddRule(tx, rule.UserId, rule)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit()
 	if err != nil {
 		return nil, err
 	}
 
 	createdRule, err := service.db.RuleStore.GetUserRule(rule.UserId, rule.Id)
-	if err != nil {
-		return nil, err
-	}
-	return createdRule, nil
+	return createdRule, err
 }
 
 func (service *RuleService) Update(ctx context.Context, rule *models.Rule) error {
-	return service.db.RuleStore.UpdateRule(rule.UserId, rule)
+	tx, err := storage.NewTx(service.db, ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Close()
+	err = service.db.RuleStore.UpdateRule(tx, rule.UserId, rule)
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (service *RuleService) Delete(ctx context.Context, ruleId int) error {

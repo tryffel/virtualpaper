@@ -87,6 +87,10 @@ func (r *Rule) Validate() error {
 			return err
 		}
 	}
+
+	if len(r.Actions) == 0 {
+		return errors.ErrInvalid
+	}
 	return nil
 }
 
