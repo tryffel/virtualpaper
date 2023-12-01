@@ -160,22 +160,16 @@ end;
 }
 
 func (s *DocumentStore) UserOwnsDocuments(userId int, documents []string) (bool, error) {
-	sql := `SELECT count(distinct(id)) FROM documents
-	WHERE user_id=$1 AND id IN (
-	`
+	query := s.sq.Select("count(distinct(id))").From("documents").Where("user_id = ?", userId).Where(
+		squirrel.Eq{"id": documents})
 
-	args := make([]interface{}, len(documents)+1)
-	args[0] = fmt.Sprintf("%d", userId)
-	for i, v := range documents {
-		if i > 0 {
-			sql += ","
-		}
-		sql += fmt.Sprintf("$%d", i+2)
-		args[i+1] = v
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return false, err
 	}
-	sql += ");"
+
 	var documentCount int
-	err := s.db.Get(&documentCount, sql, args...)
+	err = s.db.Get(&documentCount, sql, args...)
 
 	if err != nil {
 		return false, s.parseError(err, "check user owns documents")
@@ -184,23 +178,15 @@ func (s *DocumentStore) UserOwnsDocuments(userId int, documents []string) (bool,
 	return documentCount == len(documents), s.parseError(err, "check user owns documents")
 }
 
-// GetByHash returns a document by its hash.
-// If userId != 0, user has to be the owner of the document.
+// GetByHash returns a document by its hash and user.
 func (s *DocumentStore) GetByHash(userId int, hash string) (*models.Document, error) {
-
-	sql := `
-	SELECT *
-	FROM documents
-	WHERE hash = $1
-`
-	args := []interface{}{hash}
-	if userId != 0 {
-		sql += " AND user_id = $2"
-		args = append(args, userId)
+	query := s.sq.Select("*").From("documents").Where("hash = ?", hash).Where("user_id = ?", userId)
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return nil, err
 	}
-
 	object := &models.Document{}
-	err := s.db.Get(object, sql, args...)
+	err = s.db.Get(object, sql, args...)
 	if err != nil {
 		e := s.parseError(err, "get by hash")
 		if errors.Is(e, errors.ErrRecordNotFound) {

@@ -293,30 +293,6 @@ func (fp fileProcessor) ensureFileOpenAndLogFailure() error {
 	return nil
 }
 
-func (fp *fileProcessor) isDuplicate() (bool, error) {
-	err := fp.ensureFileOpen()
-	if err != nil {
-		return false, err
-	}
-	hash, err := GetFileHash(fp.rawFile)
-	if err != nil {
-		return false, err
-	}
-
-	document, err := fp.db.DocumentStore.GetByHash(0, hash)
-	if err != nil {
-		if errors.Is(err, errors.ErrRecordNotFound) {
-			return false, nil
-		}
-		return false, err
-	}
-
-	if document != nil {
-		return true, nil
-	}
-	return false, nil
-}
-
 func (fp *fileProcessor) indexSearchContent(ctx context.Context) error {
 	if fp.document == nil {
 		return errors.New("no document")
