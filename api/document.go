@@ -23,7 +23,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"io"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -38,7 +37,6 @@ import (
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/services/process"
-	"tryffel.net/go/virtualpaper/storage"
 )
 
 func responseFromDocument(doc *models.Document) *aggregates.Document {
@@ -169,7 +167,7 @@ func (a *Api) getDocumentLogs(c echo.Context) error {
 	// responses:
 	//   200: Document
 	id := c.Param("id")
-	job, err := a.db.JobStore.GetJobsByDocumentId(id)
+	job, err := a.documentService.GetDocumentLogs(getContext(c), id)
 	if err != nil {
 		return err
 	}
@@ -182,28 +180,15 @@ func (a *Api) getDocumentPreview(c echo.Context) error {
 	// responses:
 
 	id := c.Param("id")
-	doc, err := a.db.DocumentStore.GetDocument(id)
-	if err != nil {
-		return err
-	}
-
-	filePath := storage.PreviewPath(doc.Id)
-	file, err := os.Open(filePath)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return echo.NewHTTPError(http.StatusInternalServerError)
-		}
-		return err
-	}
-	stat, err := file.Stat()
+	file, size, err := a.documentService.GetPreview(getContext(c), id)
 	if err != nil {
 		return err
 	}
 
 	header := c.Response().Header()
 	header.Set("Content-Type", "image/png")
-	header.Set("Content-Length", strconv.Itoa(int(stat.Size())))
-	header.Set("Content-Disposition", "attachment; filename="+doc.Id+".png")
+	header.Set("Content-Length", strconv.Itoa(size))
+	header.Set("Content-Disposition", "attachment; filename="+id+".png")
 	header.Set("Cache-Control", "max-age=600")
 
 	defer file.Close()
@@ -487,14 +472,6 @@ func (a *Api) bulkEditDocuments(c echo.Context) error {
 	opOk := false
 	defer logCrudDocument(ctx.UserId, "bulk edit", &opOk, "documents: %v, add metadata: %d, remove metadata: %d, set lang: '%s'",
 		len(dto.Documents), len(dto.AddMetadata.Metadata), len(dto.RemoveMetadata.Metadata), dto.Lang)
-
-	owns, err := a.db.DocumentStore.UserOwnsDocuments(ctx.UserId, dto.Documents)
-	if err != nil {
-		return err
-	}
-	if !owns {
-		return respForbiddenV2()
-	}
 
 	req := aggregates.BulkEditDocumentsRequest{
 		Documents:      dto.Documents,
