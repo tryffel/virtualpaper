@@ -49,10 +49,8 @@ type Api struct {
 	adminRouter   *echo.Group
 
 	cors    http.Handler
-	db      *storage.Database
-	search  *search.Engine
-	process *process.Manager
 	cron    *scheduler.CronJobs
+	process *process.Manager
 
 	adminService    *services.AdminService
 	authService     *services.AuthService
@@ -65,7 +63,6 @@ type Api struct {
 // NewApi initializes new api instance. It connects to database and opens http port.
 func NewApi(database *storage.Database) (*Api, error) {
 	api := &Api{
-		db:   database,
 		echo: echo.New(),
 	}
 
@@ -80,12 +77,12 @@ func NewApi(database *storage.Database) (*Api, error) {
 	api.echo.Server.WriteTimeout = time.Second * 30
 
 	var err error
-	api.search, err = search.NewEngine(database, &config.C.Meilisearch)
+	search, err := search.NewEngine(database, &config.C.Meilisearch)
 	if err != nil {
 		return api, err
 	}
 
-	api.process, err = process.NewManager(database, api.search)
+	api.process, err = process.NewManager(database, search)
 	if err != nil {
 		return api, err
 	}
@@ -96,11 +93,11 @@ func NewApi(database *storage.Database) (*Api, error) {
 	}
 
 	api.authService = services.NewAuthService(database)
-	api.documentService = services.NewDocumentService(database, api.search, api.process)
+	api.documentService = services.NewDocumentService(database, search, api.process)
 	api.metadataService = services.NewMetadataService(database, api.process)
-	api.ruleService = services.NewRuleService(database, api.search, api.process)
-	api.userService = services.NewUserServices(database, api.search)
-	api.adminService = services.NewAdminService(database, api.process, api.search)
+	api.ruleService = services.NewRuleService(database, search, api.process)
+	api.userService = services.NewUserServices(database, search)
+	api.adminService = services.NewAdminService(database, api.process, search)
 	api.addRoutesV2()
 	return api, err
 }
