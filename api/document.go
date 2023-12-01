@@ -541,7 +541,7 @@ func (a *Api) searchSuggestions(c echo.Context) error {
 		return err
 	}
 
-	suggestions, err := a.search.SuggestSearch(ctx.UserId, dto.Filter)
+	suggestions, err := a.documentService.SuggestSearch(getContext(c), ctx.UserId, dto.Filter)
 	if err != nil {
 		return err
 	}

@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"testing"
 	"time"
-	"tryffel.net/go/virtualpaper/api"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/models/aggregates"
 )
@@ -249,7 +248,7 @@ func waitIndexingReady(t *testing.T, client *httpClient, timeoutSec int) {
 			return
 		}
 
-		dto := &api.UserDocumentStatistics{}
+		dto := &aggregates.UserDocumentStatistics{}
 		client.Get("/api/v1/documents/stats").Expect(t).Json(t, dto).e.Status(200).Done()
 
 		if !dto.Indexing {

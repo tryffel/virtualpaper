@@ -20,61 +20,8 @@ package api
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/sirupsen/logrus"
 	"net/http"
-	"tryffel.net/go/virtualpaper/models"
 )
-
-type UserDocumentStatistics struct {
-	// user id
-	UserId int `json:"id"`
-	// total number of documents
-	// Example: 53
-	NumDocuments int `json:"num_documents"`
-	// per-year statistics
-	YearlyStats []models.UserDocumentYearStat `json:"yearly_stats"`
-	// total number of metadata keys
-	// Example: 4
-	NumMetadataKeys int `json:"num_metadata_keys"`
-	// total number of metadata values
-	// Example: 14
-	NumMetadataValues int `json:"num_metadata_values"`
-	// array of last updated document ids
-	// Example: [abcd]
-	LastDocumentsUpdated []string `json:"last_documents_updated"`
-	LastDocumentsAdded   []string `json:"last_documents_added"`
-	LastDocumentsViewed  []string `json:"last_documents_viewed"`
-
-	Indexing bool `json:"indexing"`
-}
-
-func docStatsToUserStats(stats *models.UserDocumentStatistics) *UserDocumentStatistics {
-	uds := &UserDocumentStatistics{
-		UserId:               stats.UserId,
-		NumDocuments:         stats.NumDocuments,
-		YearlyStats:          stats.YearlyStats,
-		NumMetadataKeys:      stats.NumMetadataKeys,
-		NumMetadataValues:    stats.NumMetadataValues,
-		LastDocumentsUpdated: stats.LastDocumentsUpdated,
-		LastDocumentsAdded:   stats.LastDocumentsAdded,
-		LastDocumentsViewed:  stats.LastDocumentsViewed,
-	}
-
-	if uds.LastDocumentsUpdated == nil {
-		uds.LastDocumentsUpdated = []string{}
-	}
-	if uds.LastDocumentsAdded == nil {
-		uds.LastDocumentsAdded = []string{}
-	}
-	if uds.LastDocumentsViewed == nil {
-		uds.LastDocumentsViewed = []string{}
-	}
-
-	if uds.YearlyStats == nil {
-		uds.YearlyStats = []models.UserDocumentYearStat{}
-	}
-	return uds
-}
 
 func (a *Api) getUserDocumentStatistics(c echo.Context) error {
 	// swagger:route GET /api/v1/documents/stats Documents GetUserDocumentStatistics
@@ -89,18 +36,10 @@ func (a *Api) getUserDocumentStatistics(c echo.Context) error {
 	//   500: RespInternalError
 
 	ctx := c.(UserContext)
-	stats, err := a.db.StatsStore.GetUserDocumentStats(ctx.UserId)
+
+	stats, err := a.documentService.GetStatistics(getContext(c), ctx.UserId)
 	if err != nil {
 		return err
-	} else {
-		stats.UserId = ctx.UserId
-		statsDto := docStatsToUserStats(stats)
-		searchStats, err := a.search.GetUserIndexStatus(ctx.UserId)
-		if err != nil {
-			logrus.Warningf("get search engine indexing status: %v", err)
-		} else {
-			statsDto.Indexing = searchStats.Indexing
-		}
-		return c.JSON(http.StatusOK, statsDto)
 	}
+	return c.JSON(http.StatusOK, stats)
 }

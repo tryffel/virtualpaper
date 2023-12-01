@@ -20,7 +20,6 @@ package api
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/services"
@@ -107,26 +106,12 @@ func (a *Api) forceDocumentProcessing(c echo.Context) error {
 	steps := append(process.RequiredProcessingSteps(step), step)
 
 	if body.UserId != 0 {
-		err = a.db.JobStore.ForceProcessingByUser(body.UserId, steps)
+		err = a.adminService.ForceProcessingByUser(getContext(c), body.UserId, steps)
 	} else {
-		err = a.db.JobStore.ForceProcessingDocument(body.DocumentId, steps)
-		if err != nil {
-			return err
-		}
+		err = a.adminService.ForceProcessingByDocumentId(getContext(c), body.DocumentId, steps)
 	}
-
-	if body.DocumentId != "" {
-		doc, err := a.db.DocumentStore.GetDocument(body.DocumentId)
-		if err != nil {
-			logrus.Errorf("Get document to process: %v", err)
-		} else {
-			err = a.process.AddDocumentForProcessing(doc.Id)
-			if err != nil {
-				logrus.Errorf("schedule document processing: %v", err)
-			}
-		}
-	} else {
-		a.process.PullDocumentsToProcess()
+	if err != nil {
+		return err
 	}
 	return c.String(http.StatusOK, "")
 }
