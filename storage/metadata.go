@@ -664,7 +664,7 @@ THEN TRUE ELSE FALSE END AS exists;
 	return ownership, s.parseError(err, "check user has key")
 }
 
-func (s *MetadataStore) UserHasKeys(userId int, keys []int) (bool, error) {
+func (s *MetadataStore) UserHasKeys(exec SqlExecer, userId int, keys []int) (bool, error) {
 
 	sql := `
 SELECT count(distinct(id)) 
@@ -682,7 +682,8 @@ WHERE user_id=$1 AND id IN (
 	}
 	sql += ");"
 	var keyCount int
-	err := s.db.Get(&keyCount, sql, args...)
+
+	err := exec.Get(&keyCount, sql, args...)
 	if err != nil {
 		return false, s.parseError(err, "check user owns metadata keys")
 	}
@@ -745,7 +746,7 @@ func (s *MetadataStore) CheckKeyValuesExist(userId int, values []models.Metadata
 	return userErr
 }
 
-func (s *MetadataStore) UpsertDocumentMetadata(userId int, documents []string, metadata []models.Metadata) error {
+func (s *MetadataStore) UpsertDocumentMetadata(exec SqlExecer, userId int, documents []string, metadata []models.Metadata) error {
 	// when checking metadata: need to remove duplicate keys
 
 	sql := `
@@ -775,11 +776,11 @@ ON CONFLICT (document_id, key_id, value_id) DO NOTHING
 	}
 
 	sql = fmt.Sprintf(sql, sqlParams)
-	_, err := s.db.Exec(sql, args...)
+	_, err := exec.Exec(sql, args...)
 	return s.parseError(err, "upsert multiple documents metadata")
 }
 
-func (s *MetadataStore) DeleteDocumentsMetadata(userId int, documents []string, metadata []models.Metadata) error {
+func (s *MetadataStore) DeleteDocumentsMetadata(exec SqlExecer, userId int, documents []string, metadata []models.Metadata) error {
 
 	sqlFormat := `
 DELETE FROM document_metadata 
@@ -818,7 +819,7 @@ WHERE
 		index += 2
 	}
 	sql := fmt.Sprintf(sqlFormat, docArgs, keyArgs, valueArgs)
-	_, err := s.db.Exec(sql, args...)
+	_, err := exec.Exec(sql, args...)
 	return s.parseError(err, "remove multiple documents metadata")
 }
 
@@ -962,7 +963,6 @@ func (s *MetadataStore) UpdateLinkedDocuments(userId int, docId string, docs []s
 		UserId:     userId,
 		User:       "",
 	}
-	tx.ok = true
 	err = addDocumentHistoryAction(s.db, s.sq, []models.DocumentHistory{historyItem}, userId)
-	return nil
+	return tx.Commit()
 }

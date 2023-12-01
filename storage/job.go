@@ -410,7 +410,7 @@ func (s *JobStore) IndexDocumentsByMetadata(userId int, keyId int, valueId int) 
 	return getDatabaseError(err, s, "queue documents by metadata")
 }
 
-func (s *JobStore) AddDocuments(userId int, documents []string, steps []models.ProcessStep) error {
+func (s *JobStore) AddDocuments(exec SqlExecer, userId int, documents []string, steps []models.ProcessStep) error {
 
 	stepsSql := ""
 	for i, v := range steps {
@@ -434,13 +434,6 @@ func (s *JobStore) AddDocuments(userId int, documents []string, steps []models.P
 		Columns("document_id", "action", "action_order").
 		Select(selectQuery)
 
-	sql, args, err := query.ToSql()
-	if err != nil {
-		e := errors.ErrInternalError
-		e.Err = err
-		return e
-	}
-
-	_, err = s.db.Exec(sql, args...)
+	_, err := exec.ExecSq(query)
 	return getDatabaseError(err, s, "queue documents by metadata")
 }
