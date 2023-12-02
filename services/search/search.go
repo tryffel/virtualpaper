@@ -90,8 +90,13 @@ func (e *Engine) SearchDocuments(userId int, query string, sort storage.SortKey,
 			doc.Date = time.Unix(int64(getInt("date", isMap)), 0)
 			doc.Mimetype = getString("mimetype", isMap)
 			doc.Lang = models.Lang(getString("lang", isMap))
-			docs[i] = doc
 
+			shareArray, ok := isMap["shares"].([]interface{})
+			if !ok {
+				logrus.Warningf("scan meilisearch document shares, expect type []int, got %s", isMap["shares"])
+			} else {
+				doc.Shares = len(shareArray)
+			}
 			formatted := isMap["_formatted"]
 			if formattedMap, ok := formatted.(map[string]interface{}); ok {
 				name := getString("name", formattedMap)
@@ -103,6 +108,7 @@ func (e *Engine) SearchDocuments(userId int, query string, sort storage.SortKey,
 					doc.Content = content
 				}
 			}
+			docs[i] = doc
 
 		}
 	}
