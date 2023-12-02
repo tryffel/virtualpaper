@@ -77,6 +77,7 @@ import SourceIcon from "@mui/icons-material/Source";
 import StickyNote2Icon from "@mui/icons-material/StickyNote2";
 import { MetadataList } from "./MetadataList";
 import { ListSharedUsers } from "./SharedUsers";
+import { EditDocumentSharing } from "../EditSharing";
 
 export const DocumentShow = () => {
   const [asideMode, setAsideMode] = React.useState<AsideMode>("closed");
@@ -176,6 +177,7 @@ function DocumentShowActions(props: ActionsProps) {
         <MoreVertIcon />
       </Button>
       <Menu anchorEl={anchorEl} open={!!anchorEl} onClose={handleCloseMenu}>
+        <EditDocumentSharing onClose={handleCloseMenu} />
         <RequestIndexingModal onClose={handleCloseMenu} />
         <MenuItem color={"primary"} onClick={toggleHistory}>
           <ListItemIcon>
@@ -308,7 +310,7 @@ const DocumentGeneralTablSmall = () => {
         <LinkedDocumentList />
       </Grid>
       <Grid item xs={12}>
-        <ListSharedUsers/>
+        <ListSharedUsers />
       </Grid>
       <Grid item xs={4} sm={3}>
         <Labeled label={"File size"}>
