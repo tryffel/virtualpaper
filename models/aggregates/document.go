@@ -65,6 +65,7 @@ func DocumentToAggregate(doc *models.Document, shares *[]models.DocumentSharePer
 			perms[i] = userShaeToSharePermissions(v)
 		}
 		resp.SharedUsers = perms
+		resp.Shares = len(perms)
 	}
 	return resp
 }

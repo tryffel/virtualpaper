@@ -111,6 +111,15 @@ func (e *Engine) ping() error {
 func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 	data := make([]map[string]interface{}, len(*docs))
 	for i, v := range *docs {
+		shares, err := e.db.DocumentStore.GetSharedUsers(e.db, v.Id)
+		if err != nil {
+			return fmt.Errorf("get shares for document: %v", err)
+		}
+
+		sharedUsers := make([]int, len(*shares))
+		for i, v := range *shares {
+			sharedUsers[i] = v.UserId
+		}
 
 		tags := make([]string, len(v.Tags))
 		for tagI, tag := range v.Tags {
@@ -139,6 +148,7 @@ func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 			"description": v.Description,
 			"mimetype":    v.Mimetype,
 			"lang":        v.Lang,
+			"shares":      sharedUsers,
 		}
 	}
 
@@ -342,6 +352,7 @@ func (e *Engine) AddUserIndex(userId int) error {
 			"metadata_value",
 			"mimetype",
 			"lang",
+			"shared_users",
 		}
 		_, err = e.client.Index(index).UpdateFilterableAttributes(fields)
 		if err != nil {
