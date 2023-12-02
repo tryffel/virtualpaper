@@ -76,6 +76,7 @@ import NotesIcon from "@mui/icons-material/Notes";
 import SourceIcon from "@mui/icons-material/Source";
 import StickyNote2Icon from "@mui/icons-material/StickyNote2";
 import { MetadataList } from "./MetadataList";
+import { ListSharedUsers } from "./SharedUsers";
 
 export const DocumentShow = () => {
   const [asideMode, setAsideMode] = React.useState<AsideMode>("closed");
@@ -259,6 +260,9 @@ const DocumentGeneralTabLarge = () => {
           <Grid item xs={12} sm={12}>
             <LinkedDocumentList />
           </Grid>
+          <Grid item xs={12} sm={12}>
+            <ListSharedUsers />
+          </Grid>
           <Grid item xs={4} sm={2} md={4} alignContent={"flex-end"}>
             <Labeled label={"File size"}>
               <TextField source={"pretty_size"} />
@@ -302,6 +306,9 @@ const DocumentGeneralTablSmall = () => {
       </Grid>
       <Grid item xs={12}>
         <LinkedDocumentList />
+      </Grid>
+      <Grid item xs={12}>
+        <ListSharedUsers/>
       </Grid>
       <Grid item xs={4} sm={3}>
         <Labeled label={"File size"}>
