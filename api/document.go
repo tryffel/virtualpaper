@@ -371,6 +371,29 @@ func (a *Api) updateDocument(c echo.Context) error {
 	return resourceList(c, responseFromDocument(updatedDoc), 1)
 }
 
+func (a *Api) updateDocumentSharing(c echo.Context) error {
+	// swagger:route PUT /api/v1/documents/{id}/sharing Documents UpdateSharing
+	// Updates document sharing
+	// Responses:
+	//  200: Document
+
+	ctx := c.(UserContext)
+	id := c.Param("id")
+	dto := &aggregates.DocumentUpdateSharingRequest{}
+	err := unMarshalBody(c.Request(), dto)
+	if err != nil {
+		return err
+	}
+
+	opOk := false
+	defer logCrudDocument(ctx.UserId, "update-sharing", &opOk, "document: %s", id)
+	err = a.documentService.UpdateSharing(getContext(c), id, dto)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, "ok")
+}
+
 func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, c echo.Context) error {
 	paging := getPagination(c)
 	sort := getSort(c)
