@@ -472,10 +472,16 @@ func (service *DocumentService) UpdateSharing(ctx context.Context, docId string,
 		return err
 	}
 	defer tx.Close()
-	err = service.db.DocumentStore.UpdateSharing(service.db, docId, &data)
+	err = service.db.DocumentStore.UpdateSharing(tx, docId, &data)
 	if err != nil {
 		return err
 	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
 	err = service.db.JobStore.ForceProcessingDocument(docId, []models.ProcessStep{models.ProcessFts})
 	if err != nil {
 		logger.Context(ctx).Warnf("error marking document for processing (doc %s): %v", docId, err)
@@ -485,8 +491,7 @@ func (service *DocumentService) UpdateSharing(ctx context.Context, docId string,
 			logger.Context(ctx).Warnf("error adding updated document for processing (doc: %s): %v", docId, err)
 		}
 	}
-
-	return tx.Commit()
+	return nil
 }
 
 func (service *DocumentService) RequestProcessing(ctx context.Context, userId int, docId string) error {

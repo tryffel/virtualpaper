@@ -17,13 +17,13 @@ import ListItemAvatar from "@mui/material/ListItemAvatar";
 import PeopleIcon from "@mui/icons-material/People";
 import { pink } from "@mui/material/colors";
 
-type Permissions = {
+export type Permissions = {
   read: boolean;
   write: boolean;
   delete: boolean;
 };
 
-type SharedUser = {
+export type SharedUser = {
   user_id: number;
   user_name: string;
   permissions: Permissions;

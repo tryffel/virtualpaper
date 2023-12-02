@@ -571,8 +571,21 @@ func (s *DocumentStore) setUpdatedAt(userId int, docs []string, updatedAt time.T
 }
 
 func (s *DocumentStore) UpdateSharing(exec SqlExecer, docId string, sharing *[]models.UpdateUserSharing) error {
+	doc, err := s.GetDocument(docId)
+	if err != nil {
+		return err
+	}
+
+	for _, v := range *sharing {
+		if doc.UserId == v.UserId {
+			userErr := errors.ErrInvalid
+			userErr.ErrMsg = "cannot share with self"
+			return userErr
+		}
+	}
+
 	query := s.sq.Delete("user_shared_documents").Where("document_id = ?", docId)
-	_, err := exec.ExecSq(query)
+	_, err = exec.ExecSq(query)
 	if err != nil {
 		return fmt.Errorf("delete existing record: %v", err)
 	}
@@ -585,7 +598,16 @@ func (s *DocumentStore) UpdateSharing(exec SqlExecer, docId string, sharing *[]m
 		}
 
 		_, err = exec.ExecSq(insertQuery)
-		return getDatabaseError(err, s, "update user_shared_documents")
+		dbErr := getDatabaseError(err, s, "update user_shared_documents")
+		if dbErr == nil {
+			return nil
+		}
+
+		if errors.Is(dbErr, errors.ErrRecordNotFound) {
+			noUserErr := errors.ErrRecordNotFound
+			noUserErr.ErrMsg = "user not found"
+			return noUserErr
+		}
 	}
 	return nil
 }

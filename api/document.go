@@ -391,7 +391,7 @@ func (a *Api) updateDocumentSharing(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, "ok")
+	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (a *Api) searchDocuments(userId int, filter *search.DocumentFilter, c echo.Context) error {

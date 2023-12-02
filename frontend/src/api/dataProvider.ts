@@ -317,6 +317,8 @@ export const dataProvider: DataProvider = {
       url = `${apiUrl}/metadata/keys/${params.meta.key_id}/values/${params.data.id}`;
     } else if (resource === "reorder-rules") {
       url = `${apiUrl}/processing/rules/reorder`;
+    } else if (resource === "document-user-sharing") {
+      url = `${apiUrl}/documents/${params.id}/sharing`;
     }
     if (resource === "documents/deleted") {
       if (params.meta?.action === "restore") {
@@ -335,7 +337,8 @@ export const dataProvider: DataProvider = {
       if (resource === "preferences") {
         return { data: { ...json, id: json.user_id } };
       } else {
-        return { data: json };
+        const id = json.id ?? "1";
+        return { data: { ...json, id: id } };
       }
     });
   },
