@@ -130,6 +130,17 @@ WHERE id = $1
 	return dest, s.parseError(err, "get document")
 }
 
+func (s *DocumentStore) GetSharedUsers(exec SqlExecer, docId string) (*[]models.DocumentSharePermission, error) {
+	query := s.sq.Select("users.id as user_id, users.name as user_name, share.document_id as document_id, share.permission as permissions").
+		From("user_shared_documents share").
+		LeftJoin("users on share.user_id = users.id").
+		Where("document_id = ?", docId)
+
+	dest := &[]models.DocumentSharePermission{}
+	err := exec.SelectSq(dest, query)
+	return dest, s.parseError(err, "get document shared users")
+}
+
 // GetDocument returns document by its id. If userId != 0, user must be owner of the document.
 func (s *DocumentStore) GetDocumentsById(exec SqlExecer, userId int, id []string) (*[]models.Document, error) {
 

@@ -9,6 +9,7 @@ import (
 
 type DocumentSharePermission struct {
 	UserId      int         `db:"user_id"`
+	Username    string      `db:"user_name"`
 	DocumentId  string      `db:"document_id"`
 	Permissions Permissions `db:"permissions"`
 	Timestamp
