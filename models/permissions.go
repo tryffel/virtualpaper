@@ -26,6 +26,12 @@ func (p Permissions) Value() (driver.Value, error) {
 }
 
 func (p *Permissions) Scan(src interface{}) error {
+	if src == nil {
+		p.Read = false
+		p.Write = false
+		p.Delete = false
+		return nil
+	}
 	array, ok := src.([]byte)
 	if !ok {
 		return errors.New("source not array")
