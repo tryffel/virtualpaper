@@ -53,40 +53,50 @@ func (s DocumentStore) parseError(err error, action string) error {
 }
 
 // GetDocuments returns user's documents according to paging. In addition, return total count of documents available.
-func (s *DocumentStore) GetDocuments(userId int, paging Paging, sort SortKey, limitContent bool, showTrash bool) (*[]models.Document, int, error) {
+func (s *DocumentStore) GetDocuments(exec SqlExecer, userId int, paging Paging, sort SortKey, limitContent bool, showTrash bool, showSharesDocs bool) (*[]models.Document, int, error) {
 	sort.SetDefaults("date", false)
-
-	var contenSelect string
+	var contentSelect string
 	if limitContent {
-		contenSelect = "LEFT(content, 500) as content"
+		contentSelect = "LEFT(content, 500) as content"
 	} else {
-		contenSelect = "content"
+		contentSelect = "content"
 	}
 
-	sql := `
-SELECT id, name, ` + contenSelect + `, 
-	filename, created_at, updated_at,
-	hash, mimetype, size, date, description, lang, deleted_at
-FROM documents
-WHERE user_id = $1 AND deleted_at %s
-ORDER BY ` + sort.QueryKey() + " " + sort.SortOrder() + `
-OFFSET $2
-LIMIT $3
-`
+	query := s.sq.Select("id, name, filename, created_at, updated_at, hash, mimetype, size, date, description, lang, deleted_at", contentSelect).
+		From("documents")
 
-	var deletedAt = "IS NULL"
+	var trashQuery squirrel.Sqlizer
+	var ownerQuery squirrel.Sqlizer
+	isOwnerQuery := squirrel.Eq{"user_id": userId}
 	if showTrash {
-		deletedAt = "IS NOT NULL"
+		trashQuery = squirrel.NotEq{"deleted_at": nil}
+	} else {
+		trashQuery = squirrel.Eq{"deleted_at": nil}
 	}
 
-	sql = fmt.Sprintf(sql, deletedAt)
+	if showSharesDocs {
+		sharedQuery := squirrel.Expr(`documents.id IN ( SELECT share.document_id 
+FROM user_shared_documents share
+WHERE share.user_id = ? AND (share.permission -> 'read')::boolean = true)`, userId)
+
+		ownerQuery = squirrel.Or{
+			isOwnerQuery,
+			sharedQuery,
+		}
+	} else {
+		ownerQuery = isOwnerQuery
+	}
+
+	query = query.Where(squirrel.And{
+		trashQuery,
+		ownerQuery,
+	})
+	query = query.OrderBy(fmt.Sprintf("%s %s", sort.QueryKey(), sort.SortOrder()))
+	query = query.Offset(uint64(paging.Offset)).Limit(uint64(paging.Limit))
 
 	dest := &[]models.Document{}
-	err := s.db.Select(dest, sql, userId, paging.Offset, paging.Limit)
-	if err != nil {
-		return dest, 0, s.parseError(err, "get")
-	}
 
+	err := exec.SelectSq(dest, query)
 	if limitContent && len(*dest) > 0 {
 		for i, _ := range *dest {
 			if len((*dest)[i].Content) > 499 {
@@ -95,13 +105,15 @@ LIMIT $3
 		}
 	}
 
-	sql = `
-SELECT count(id) 
-FROM documents
-WHERE user_id = $1 AND deleted_at 
-` + deletedAt
+	query = s.sq.Select("count(id)").From("documents").Where("user_id = ?", userId)
+	if showTrash {
+		query = query.Where(squirrel.NotEq{"deleted_at": nil})
+	} else {
+		query = query.Where(squirrel.Eq{"deleted_at": nil})
+	}
+
 	var count int
-	err = s.db.Get(&count, sql, userId)
+	err = exec.GetSq(&count, query)
 	err = s.parseError(err, "get documents")
 	return dest, count, err
 }

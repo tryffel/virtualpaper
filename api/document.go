@@ -87,7 +87,7 @@ func (a *Api) getDocuments(c echo.Context) error {
 	}
 	paging := getPagination(c)
 	sort := getSort(c)
-	docs, count, err := a.documentService.GetDocuments(ctx.UserId, paging.toPagination(), sort.ToKey(), true)
+	docs, count, err := a.documentService.GetDocuments(ctx.UserId, paging.toPagination(), sort.ToKey(), true, true)
 	if err != nil {
 		logrus.Errorf("get documents: %v", err)
 		return err

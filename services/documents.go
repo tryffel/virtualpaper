@@ -43,8 +43,8 @@ func (service *DocumentService) SearchDocuments(userId int, query string, sort s
 	return service.search.SearchDocuments(userId, query, sort, paging)
 }
 
-func (service *DocumentService) GetDocuments(userId int, paging storage.Paging, sort storage.SortKey, limitContent bool) (*[]models.Document, int, error) {
-	return service.db.DocumentStore.GetDocuments(userId, paging, sort, limitContent, false)
+func (service *DocumentService) GetDocuments(userId int, paging storage.Paging, sort storage.SortKey, limitContent bool, showSharesDocuments bool) (*[]models.Document, int, error) {
+	return service.db.DocumentStore.GetDocuments(service.db, userId, paging, sort, limitContent, false, showSharesDocuments)
 }
 
 func (service *DocumentService) GetDocument(ctx context.Context, userId int, id string, addVisit bool) (*aggregates.Document, error) {
@@ -76,7 +76,7 @@ func (service *DocumentService) GetDocument(ctx context.Context, userId int, id 
 }
 
 func (service *DocumentService) GetDeletedDocuments(userId int, paging storage.Paging, sort storage.SortKey, limitContent bool) (*[]models.Document, int, error) {
-	return service.db.DocumentStore.GetDocuments(userId, paging, sort, limitContent, true)
+	return service.db.DocumentStore.GetDocuments(service.db, userId, paging, sort, limitContent, true, true)
 }
 
 func (service *DocumentService) UserOwnsDocument(documentId string, userId int) (bool, error) {
