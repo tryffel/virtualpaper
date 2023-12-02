@@ -569,3 +569,23 @@ func (s *DocumentStore) setUpdatedAt(userId int, docs []string, updatedAt time.T
 	_, err = s.db.Exec(sql, args...)
 	return getDatabaseError(err, s, "set updated_at")
 }
+
+func (s *DocumentStore) UpdateSharing(exec SqlExecer, docId string, sharing *[]models.UpdateUserSharing) error {
+	query := s.sq.Delete("user_shared_documents").Where("document_id = ?", docId)
+	_, err := exec.ExecSq(query)
+	if err != nil {
+		return fmt.Errorf("delete existing record: %v", err)
+	}
+
+	if len(*sharing) > 0 {
+		insertQuery := s.sq.Insert("user_shared_documents").Columns("user_id", "document_id", "permission")
+
+		for _, v := range *sharing {
+			insertQuery = insertQuery.Values(v.UserId, docId, v.Permissions)
+		}
+
+		_, err = exec.ExecSq(insertQuery)
+		return getDatabaseError(err, s, "update user_shared_documents")
+	}
+	return nil
+}

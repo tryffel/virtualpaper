@@ -161,3 +161,12 @@ type UserDocumentStatistics struct {
 
 	Indexing bool `json:"indexing"`
 }
+
+// DocumentUpdateSharingRequest
+// swagger:model DocumentUpdateSharingRequestBody
+type DocumentUpdateSharingRequest struct {
+	Users []struct {
+		UserId      int                `json:"user_id" valid:"-"`
+		Permissions models.Permissions `json:"permissions" valid:"-"`
+	} `json:"users" valid:"-"`
+}

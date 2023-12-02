@@ -64,6 +64,7 @@ func (api *Api) addRoutesV2() {
 	api.privateRouter.GET("/documents/deleted", api.getDeletedDocuments, mPagination(), mSort(&models.Document{})).Name = "get-deleted-documents"
 	api.privateRouter.GET("/documents/:id", api.getDocument, mDocCanRead("id")).Name = "get-document"
 	api.privateRouter.PUT("/documents/:id", api.updateDocument, mDocCanWrite("id"))
+	api.privateRouter.PUT("/documents/:id/sharing", api.updateDocumentSharing, mDocOwner("id"))
 	api.privateRouter.DELETE("/documents/:id", api.deleteDocument, mDocOwner("id"))
 	api.privateRouter.POST("/documents/deleted/:id/restore", api.restoreDeletedDocument, mDocOwner("id"))
 	api.privateRouter.DELETE("/documents/deleted/:id", api.flushDeletedDocument, mDocOwner("id"))

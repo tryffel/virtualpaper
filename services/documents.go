@@ -458,6 +458,37 @@ func (service *DocumentService) UpdateDocument(ctx context.Context, userId int, 
 	return doc, nil
 }
 
+func (service *DocumentService) UpdateSharing(ctx context.Context, docId string, sharing *aggregates.DocumentUpdateSharingRequest) error {
+	data := make([]models.UpdateUserSharing, len(sharing.Users))
+	for i, v := range sharing.Users {
+		data[i] = models.UpdateUserSharing{
+			UserId:      v.UserId,
+			Permissions: v.Permissions,
+		}
+	}
+
+	tx, err := storage.NewTx(service.db, ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Close()
+	err = service.db.DocumentStore.UpdateSharing(service.db, docId, &data)
+	if err != nil {
+		return err
+	}
+	err = service.db.JobStore.ForceProcessingDocument(docId, []models.ProcessStep{models.ProcessFts})
+	if err != nil {
+		logger.Context(ctx).Warnf("error marking document for processing (doc %s): %v", docId, err)
+	} else {
+		err = service.process.AddDocumentForProcessing(docId)
+		if err != nil {
+			logger.Context(ctx).Warnf("error adding updated document for processing (doc: %s): %v", docId, err)
+		}
+	}
+
+	return tx.Commit()
+}
+
 func (service *DocumentService) RequestProcessing(ctx context.Context, userId int, docId string) error {
 	steps := append(process.RequiredProcessingSteps(models.ProcessRules), models.ProcessRules)
 	err := service.db.JobStore.ForceProcessingDocument(docId, steps)

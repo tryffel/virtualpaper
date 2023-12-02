@@ -43,3 +43,8 @@ func (p *Permissions) Scan(src interface{}) error {
 	}
 	return nil
 }
+
+type UpdateUserSharing struct {
+	UserId      int         `json:"user_id"`
+	Permissions Permissions `json:"permissions"`
+}
