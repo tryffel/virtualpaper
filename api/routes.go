@@ -44,6 +44,8 @@ func (api *Api) addRoutesV2() {
 	}
 
 	mDocOwner := mDocumentOwner(api.documentService)
+	mDocCanRead := mDocumentReadAccess(api.documentService)
+	mDocCanWrite := mDocumentWriteAccess(api.documentService)
 	mMetadataOwner := mMetadataKeyOwner(api.metadataService)
 	mRule := mRuleOwner(api.ruleService)
 
@@ -60,20 +62,20 @@ func (api *Api) addRoutesV2() {
 	api.privateRouter.POST("/documents", api.uploadFile)
 	api.privateRouter.GET("/documents", api.getDocuments, mPagination(), mSort(&models.Document{})).Name = "get-documents"
 	api.privateRouter.GET("/documents/deleted", api.getDeletedDocuments, mPagination(), mSort(&models.Document{})).Name = "get-deleted-documents"
-	api.privateRouter.GET("/documents/:id", api.getDocument, mDocOwner("id")).Name = "get-document"
-	api.privateRouter.PUT("/documents/:id", api.updateDocument, mDocOwner("id"))
+	api.privateRouter.GET("/documents/:id", api.getDocument, mDocCanRead("id")).Name = "get-document"
+	api.privateRouter.PUT("/documents/:id", api.updateDocument, mDocCanWrite("id"))
 	api.privateRouter.DELETE("/documents/:id", api.deleteDocument, mDocOwner("id"))
 	api.privateRouter.POST("/documents/deleted/:id/restore", api.restoreDeletedDocument, mDocOwner("id"))
 	api.privateRouter.DELETE("/documents/deleted/:id", api.flushDeletedDocument, mDocOwner("id"))
 	api.privateRouter.GET("/documents/:id/show", api.getDocument, mDocOwner("id")).Name = "get-document"
-	api.privateRouter.GET("/documents/:id/preview", api.getDocumentPreview, mDocOwner("id"))
-	api.privateRouter.GET("/documents/:id/content", api.getDocumentContent, mDocOwner("id"))
-	api.privateRouter.GET("/documents/:id/download", api.downloadDocument, mDocOwner("id"))
+	api.privateRouter.GET("/documents/:id/preview", api.getDocumentPreview, mDocCanRead("id"))
+	api.privateRouter.GET("/documents/:id/content", api.getDocumentContent, mDocCanRead("id"))
+	api.privateRouter.GET("/documents/:id/download", api.downloadDocument, mDocCanRead("id"))
 	api.privateRouter.GET("/documents/:id/linked-documents", api.getLinkedDocuments, mDocOwner("id"))
 	api.privateRouter.POST("/documents/:id/process", api.requestDocumentProcessing, mDocOwner("id"))
 	api.privateRouter.PUT("/documents/:id/linked-documents", api.updateLinkedDocuments, mDocOwner("id"))
-	api.privateRouter.GET("/documents/:id/history", api.getDocumentHistory, mDocOwner("id"))
-	api.privateRouter.GET("/documents/:id/jobs", api.getDocumentLogs, mDocOwner("id"))
+	api.privateRouter.GET("/documents/:id/history", api.getDocumentHistory, mDocCanRead("id"))
+	api.privateRouter.GET("/documents/:id/jobs", api.getDocumentLogs, mDocCanRead("id"))
 
 	api.privateRouter.POST("/documents/bulkEdit", api.bulkEditDocuments)
 

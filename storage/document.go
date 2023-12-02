@@ -20,11 +20,10 @@ package storage
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
+	"time"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
 )
@@ -134,7 +133,6 @@ func (s *DocumentStore) GetDocumentsById(exec SqlExecer, userId int, id []string
 
 // UserOwnsDocumet returns true if user has ownership for document.
 func (s *DocumentStore) UserOwnsDocument(documentId string, userId int) (bool, error) {
-
 	sql := `
 select case when exists
     (
@@ -147,11 +145,60 @@ select case when exists
     else false
 end;
 `
-
 	var ownership bool
-
 	err := s.db.Get(&ownership, sql, documentId, userId)
 	return ownership, s.parseError(err, "check ownership")
+}
+
+func (s *DocumentStore) GetPermissions(exec SqlExecer, documentId string, userId int) (owner bool, perm models.Permissions, err error) {
+	type Result struct {
+		OwnerId    int                `db:"owner_id"`
+		DocumentId string             `db:"document_id"`
+		UserId     int                `db:"user_id"`
+		Permission models.Permissions `db:"permissions"`
+	}
+
+	query := s.sq.Select("share.document_id as document_id, share.user_id as user_id, share.permission as permissions, doc.user_id as owner_id").
+		From("user_shared_documents share").
+		LeftJoin("documents doc ON share.document_id = doc.id").
+		Where("share.user_id = ?", userId).
+		Where("document_id = ?", documentId)
+
+	result := &Result{}
+
+	err = exec.GetSq(result, query)
+	if err != nil {
+		err = getDatabaseError(err, s, "get permissions")
+		if errors.Is(err, errors.ErrRecordNotFound) {
+			perm = models.Permissions{
+				Read:   false,
+				Write:  false,
+				Delete: false,
+			}
+		}
+		return
+	}
+	/*
+		return &aggregates.DocumentPermissions{
+			UserId:            result.UserId,
+			Document:          result.DocumentId,
+			Owner:             result.OwnerId == userId,
+			SharedPermissions: result.Permission,
+		}, nil
+
+	*/
+	perm = result.Permission
+	owner = result.OwnerId == userId
+
+	/*
+		select share.*, d.user_id as owner
+		from user_shared_documents share
+		LEFT JOIN documents d ON share.document_id = d.id
+		where share.user_id=2
+		AND document_id='a85e0dae-dca2-c656-be2f-ef632539da18'
+		AND (permission -> 'read')::boolean = true;
+	*/
+	return
 
 }
 

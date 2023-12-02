@@ -83,6 +83,19 @@ func (service *DocumentService) UserOwnsDocument(documentId string, userId int) 
 	return service.db.DocumentStore.UserOwnsDocument(documentId, userId)
 }
 
+func (service *DocumentService) DocumentPermissions(ctx context.Context, documentId string, userId int) (*aggregates.DocumentPermissions, error) {
+	owner, perm, err := service.db.DocumentStore.GetPermissions(service.db, documentId, userId)
+	if err != nil {
+		return nil, err
+	}
+	return &aggregates.DocumentPermissions{
+		UserId:            userId,
+		Document:          documentId,
+		Owner:             owner,
+		SharedPermissions: perm,
+	}, nil
+}
+
 func (service *DocumentService) UploadFile(ctx context.Context, file *UploadedFile) (*models.Document, error) {
 	tempHash, err := config.RandomString(10)
 	if err != nil {

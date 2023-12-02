@@ -118,6 +118,11 @@ var Migrations = []Migrator{
 		Level:  18,
 		Schema: schemaV18,
 	},
+	&Migration{
+		Name:   "add user_shared_documents table",
+		Level:  19,
+		Schema: schemaV19,
+	},
 }
 
 type Schema struct {
