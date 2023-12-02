@@ -200,6 +200,44 @@ func mDocumentOwner(service *services.DocumentService) func(idKey string) echo.M
 	}
 }
 
+func mDocumentReadAccess(service *services.DocumentService) func(idKey string) echo.MiddlewareFunc {
+	return func(idKey string) echo.MiddlewareFunc {
+		return func(next echo.HandlerFunc) echo.HandlerFunc {
+			return func(c echo.Context) error {
+				ctx := c.(UserContext)
+				id := c.Param(idKey)
+				perms, err := service.DocumentPermissions(getContext(ctx), id, ctx.UserId)
+				if err != nil {
+					return err
+				}
+				if perms.Owner || perms.SharedPermissions.Read {
+					return next(c)
+				}
+				return echo.NewHTTPError(http.StatusNotFound, "not found")
+			}
+		}
+	}
+}
+
+func mDocumentWriteAccess(service *services.DocumentService) func(idKey string) echo.MiddlewareFunc {
+	return func(idKey string) echo.MiddlewareFunc {
+		return func(next echo.HandlerFunc) echo.HandlerFunc {
+			return func(c echo.Context) error {
+				ctx := c.(UserContext)
+				id := c.Param(idKey)
+				perms, err := service.DocumentPermissions(getContext(ctx), id, ctx.UserId)
+				if err != nil {
+					return err
+				}
+				if perms.Owner || perms.SharedPermissions.Write {
+					return next(c)
+				}
+				return echo.NewHTTPError(http.StatusNotFound, "not found")
+			}
+		}
+	}
+}
+
 func mMetadataKeyOwner(service *services.MetadataService) func(idKey string) echo.MiddlewareFunc {
 	return func(idKey string) echo.MiddlewareFunc {
 		return func(next echo.HandlerFunc) echo.HandlerFunc {
