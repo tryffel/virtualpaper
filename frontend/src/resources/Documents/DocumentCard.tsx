@@ -29,6 +29,7 @@ import get from "lodash/get";
 import { useState } from "react";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useNavigate } from "react-router-dom";
+import ShareIcon from "@mui/icons-material/Share";
 
 const cardStyle = {
   width: 230,
@@ -138,6 +139,8 @@ const DocumentContent = (props: { record: RaRecord }) => {
   const getMimetypeColor = (): colorTypes => mimetypeToColor(record?.mimetype);
   const getMimeTypeName = (): string => mimetypeToText(record?.mimetype);
 
+  const shared = get(record, "shares") > 0;
+
   return (
     <CardContent
       style={{ position: "relative" }}
@@ -164,6 +167,20 @@ const DocumentContent = (props: { record: RaRecord }) => {
         color={getMimetypeColor()}
         style={{ top: "4px", right: "16px", position: "absolute" }}
       />
+      {shared && (
+        <Chip
+          icon={<ShareIcon />}
+          label={"Shared"}
+          variant="filled"
+          color={"warning"}
+          style={{
+            top: "35px",
+            left: "16px",
+            position: "absolute",
+            height: "24px",
+          }}
+        />
+      )}
     </CardContent>
   );
 };

@@ -48,6 +48,7 @@ type Document struct {
 	Metadata    []Metadata
 	Tags        []Tag
 	Lang        Lang `db:"lang"`
+	Shares      int  `db:"shares"`
 
 	DeletedAt sql.NullTime `db:"deleted_at"`
 }

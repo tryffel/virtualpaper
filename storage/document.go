@@ -62,12 +62,13 @@ func (s *DocumentStore) GetDocuments(exec SqlExecer, userId int, paging Paging, 
 		contentSelect = "content"
 	}
 
-	query := s.sq.Select("id, name, filename, created_at, updated_at, hash, mimetype, size, date, description, lang, deleted_at", contentSelect).
-		From("documents")
+	query := s.sq.Select("id, name, filename, documents.created_at as created_at, documents.updated_at as updated_at, hash, mimetype, size, date, description, lang, deleted_at, count(shares.user_id) as shares", contentSelect).
+		From("documents").
+		LeftJoin("user_shared_documents shares on documents.id = shares.document_id")
 
 	var trashQuery squirrel.Sqlizer
 	var ownerQuery squirrel.Sqlizer
-	isOwnerQuery := squirrel.Eq{"user_id": userId}
+	isOwnerQuery := squirrel.Eq{"documents.user_id": userId}
 	if showTrash {
 		trashQuery = squirrel.NotEq{"deleted_at": nil}
 	} else {
@@ -91,6 +92,7 @@ WHERE share.user_id = ? AND (share.permission -> 'read')::boolean = true)`, user
 		trashQuery,
 		ownerQuery,
 	})
+	query = query.GroupBy("documents.id")
 	query = query.OrderBy(fmt.Sprintf("%s %s", sort.QueryKey(), sort.SortOrder()))
 	query = query.Offset(uint64(paging.Offset)).Limit(uint64(paging.Limit))
 

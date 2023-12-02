@@ -29,6 +29,7 @@ type Document struct {
 	SharedUsers []UserSharePermissions `json:"shared_users"`
 	Tags        []models.Tag           `json:"tags"`
 	Lang        string                 `json:"lang"`
+	Shares      int                    `json:"shares"`
 }
 
 func DocumentToAggregate(doc *models.Document, shares *[]models.DocumentSharePermission) *Document {
@@ -50,6 +51,7 @@ func DocumentToAggregate(doc *models.Document, shares *[]models.DocumentSharePer
 		Metadata:    doc.Metadata,
 		Tags:        doc.Tags,
 		Lang:        doc.Lang.String(),
+		Shares:      doc.Shares,
 	}
 	if doc.DeletedAt.Valid {
 		resp.DeletedAt = doc.DeletedAt.Time.Unix() * 1000
