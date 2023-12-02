@@ -16,21 +16,22 @@ type Document struct {
 	CreatedAt   int64  `json:"created_at"`
 	UpdatedAt   int64  `json:"updated_at"`
 	// swagger:strfmt either null or unix epoch in milliseconds
-	DeletedAt   interface{}       `json:"deleted_at"`
-	Date        int64             `json:"date"`
-	PreviewUrl  string            `json:"preview_url"`
-	DownloadUrl string            `json:"download_url"`
-	Mimetype    string            `json:"mimetype"`
-	Type        string            `json:"type"`
-	Size        int64             `json:"size"`
-	PrettySize  string            `json:"pretty_size"`
-	Status      string            `json:"status"`
-	Metadata    []models.Metadata `json:"metadata"`
-	Tags        []models.Tag      `json:"tags"`
-	Lang        string            `json:"lang"`
+	DeletedAt   interface{}            `json:"deleted_at"`
+	Date        int64                  `json:"date"`
+	PreviewUrl  string                 `json:"preview_url"`
+	DownloadUrl string                 `json:"download_url"`
+	Mimetype    string                 `json:"mimetype"`
+	Type        string                 `json:"type"`
+	Size        int64                  `json:"size"`
+	PrettySize  string                 `json:"pretty_size"`
+	Status      string                 `json:"status"`
+	Metadata    []models.Metadata      `json:"metadata"`
+	SharedUsers []UserSharePermissions `json:"shared_users"`
+	Tags        []models.Tag           `json:"tags"`
+	Lang        string                 `json:"lang"`
 }
 
-func DocumentToAggregate(doc *models.Document) *Document {
+func DocumentToAggregate(doc *models.Document, shares *[]models.DocumentSharePermission) *Document {
 	resp := &Document{
 		Id:          doc.Id,
 		Name:        doc.Name,
@@ -55,7 +56,30 @@ func DocumentToAggregate(doc *models.Document) *Document {
 	} else {
 		resp.DeletedAt = nil
 	}
+
+	if shares != nil {
+		perms := make([]UserSharePermissions, len(*shares))
+		for i, v := range *shares {
+			perms[i] = userShaeToSharePermissions(v)
+		}
+		resp.SharedUsers = perms
+	}
 	return resp
+}
+
+type UserSharePermissions struct {
+	UserId      int                `json:"user_id"`
+	Username    string             `json:"user_name"`
+	Permissions models.Permissions `json:"permissions"`
+	models.Timestamp
+}
+
+func userShaeToSharePermissions(perm models.DocumentSharePermission) UserSharePermissions {
+	return UserSharePermissions{
+		UserId:      perm.UserId,
+		Username:    perm.Username,
+		Permissions: perm.Permissions,
+	}
 }
 
 type BulkEditDocumentsRequest struct {

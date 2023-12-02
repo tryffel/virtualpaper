@@ -58,11 +58,19 @@ func (service *DocumentService) GetDocument(ctx context.Context, userId int, id 
 		return nil, err
 	}
 
-	metadata, err := service.db.MetadataStore.GetDocumentMetadata(userId, id)
-	if err != nil {
-		return nil, err
+	var sharedUsers *[]models.DocumentSharePermission
+
+	if userId == doc.UserId {
+		metadata, err := service.db.MetadataStore.GetDocumentMetadata(userId, id)
+		if err != nil {
+			return nil, err
+		}
+		doc.Metadata = *metadata
+		sharedUsers, err = service.db.DocumentStore.GetSharedUsers(service.db, id)
+		if err != nil {
+			return nil, err
+		}
 	}
-	doc.Metadata = *metadata
 
 	if addVisit {
 		err := service.db.DocumentStore.AddVisited(userId, id)
@@ -70,7 +78,7 @@ func (service *DocumentService) GetDocument(ctx context.Context, userId int, id 
 			logger.Context(ctx).Errorf("add document_visited record: %v", err)
 		}
 	}
-	aggregate := aggregates.DocumentToAggregate(doc)
+	aggregate := aggregates.DocumentToAggregate(doc, sharedUsers)
 	aggregate.Status = status
 	return aggregate, nil
 }

@@ -40,7 +40,7 @@ import (
 )
 
 func responseFromDocument(doc *models.Document) *aggregates.Document {
-	resp := aggregates.DocumentToAggregate(doc)
+	resp := aggregates.DocumentToAggregate(doc, nil)
 	resp.PreviewUrl = fmt.Sprintf("%s/api/v1/documents/%s/preview", config.C.Api.PublicUrl, doc.Id)
 	resp.DownloadUrl = fmt.Sprintf("%s/api/v1/documents/%s/download", config.C.Api.PublicUrl, doc.Id)
 	return resp
