@@ -152,21 +152,28 @@ end;
 
 func (s *DocumentStore) GetPermissions(exec SqlExecer, documentId string, userId int) (owner bool, perm models.Permissions, err error) {
 	type Result struct {
-		OwnerId    int                `db:"owner_id"`
+		Owner      bool               `db:"owner"`
 		DocumentId string             `db:"document_id"`
-		UserId     int                `db:"user_id"`
 		Permission models.Permissions `db:"permissions"`
 	}
 
-	query := s.sq.Select("share.document_id as document_id, share.user_id as user_id, share.permission as permissions, doc.user_id as owner_id").
-		From("user_shared_documents share").
-		LeftJoin("documents doc ON share.document_id = doc.id").
-		Where("share.user_id = ?", userId).
-		Where("document_id = ?", documentId)
+	sql := `
+SELECT doc.id AS document_id, doc.owner AS owner, share.permission AS permissions
+FROM (
+         SELECT doc.user_id = $1 AS owner, doc.id
+         FROM documents doc
+         WHERE doc.id = $2
+     ) AS doc
+LEFT JOIN
+    (
+        SELECT share.document_id, share.user_id, share.permission
+        FROM documents doc
+			LEFT JOIN user_shared_documents share ON doc.id = share.document_id
+        WHERE doc.id = $2 AND share.user_id = $1
+    ) AS share ON doc.id = share.document_id;`
 
 	result := &Result{}
-
-	err = exec.GetSq(result, query)
+	err = exec.Get(result, sql, userId, documentId)
 	if err != nil {
 		err = getDatabaseError(err, s, "get permissions")
 		if errors.Is(err, errors.ErrRecordNotFound) {
@@ -178,28 +185,9 @@ func (s *DocumentStore) GetPermissions(exec SqlExecer, documentId string, userId
 		}
 		return
 	}
-	/*
-		return &aggregates.DocumentPermissions{
-			UserId:            result.UserId,
-			Document:          result.DocumentId,
-			Owner:             result.OwnerId == userId,
-			SharedPermissions: result.Permission,
-		}, nil
-
-	*/
 	perm = result.Permission
-	owner = result.OwnerId == userId
-
-	/*
-		select share.*, d.user_id as owner
-		from user_shared_documents share
-		LEFT JOIN documents d ON share.document_id = d.id
-		where share.user_id=2
-		AND document_id='a85e0dae-dca2-c656-be2f-ef632539da18'
-		AND (permission -> 'read')::boolean = true;
-	*/
+	owner = result.Owner
 	return
-
 }
 
 func (s *DocumentStore) UserOwnsDocuments(queries SqlExecer, userId int, documents []string) (bool, error) {
