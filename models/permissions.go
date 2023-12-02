@@ -16,9 +16,9 @@ type DocumentSharePermission struct {
 }
 
 type Permissions struct {
-	Read   bool
-	Write  bool
-	Delete bool
+	Read   bool `json:"read"`
+	Write  bool `json:"write"`
+	Delete bool `json:"delete"`
 }
 
 func (p Permissions) Value() (driver.Value, error) {
