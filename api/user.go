@@ -117,3 +117,12 @@ func (a *Api) updateUserPreferences(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, userPref)
 }
+
+func (a *Api) GetUsers(c echo.Context) error {
+	ctx := c.(UserContext)
+	users, err := a.userService.GetUsers(getContext(ctx))
+	if err != nil {
+		return err
+	}
+	return resourceList(c, users, len(*users))
+}

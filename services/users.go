@@ -4,6 +4,7 @@ import (
 	"context"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/models/aggregates"
 	"tryffel.net/go/virtualpaper/services/search"
 	"tryffel.net/go/virtualpaper/storage"
 )
@@ -71,4 +72,20 @@ func (service *UserService) UpdatePreferences(ctx context.Context, preferences *
 		return errors.ErrAlreadyExists
 	}
 	return nil
+}
+
+func (service *UserService) GetUsers(ctx context.Context) (*[]aggregates.User, error) {
+	raw, err := service.db.UserStore.GetUsers()
+	if err != nil {
+		return nil, err
+	}
+	users := make([]aggregates.User, len(*raw))
+	for i, v := range *raw {
+		users[i] = aggregates.User{
+			Id:    v.Id,
+			Name:  v.Name,
+			Email: v.Email,
+		}
+	}
+	return &users, nil
 }
