@@ -116,9 +116,11 @@ func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 			return fmt.Errorf("get shares for document: %v", err)
 		}
 
-		sharedUsers := make([]int, len(*shares))
-		for i, v := range *shares {
-			sharedUsers[i] = v.UserId
+		sharedUsers := make([]int, 0, len(*shares))
+		for _, v := range *shares {
+			if v.Permissions.Read {
+				sharedUsers = append(sharedUsers, v.UserId)
+			}
 		}
 
 		tags := make([]string, len(v.Tags))
@@ -149,6 +151,7 @@ func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 			"mimetype":    v.Mimetype,
 			"lang":        v.Lang,
 			"shares":      sharedUsers,
+			"owner_id":    userId,
 		}
 	}
 
@@ -300,7 +303,7 @@ func (e *Engine) GetUserIndicesStatus() (map[int]*UserIndexStatus, int64, error)
 
 func (e *Engine) DeleteDocuments(userId int) error {
 	index := indexName(userId)
-	_, err := e.client.Index(index).DeleteAllDocuments()
+	_, err := e.client.Index(index).DeleteDocumentsByFilter(fmt.Sprintf("owner_id=%d", userId))
 	if err != nil {
 		return fmt.Errorf("delete index: %v", err)
 	}
@@ -352,7 +355,8 @@ func (e *Engine) AddUserIndex(userId int) error {
 			"metadata_value",
 			"mimetype",
 			"lang",
-			"shared_users",
+			"shares",
+			"owner_id",
 		}
 		_, err = e.client.Index(index).UpdateFilterableAttributes(fields)
 		if err != nil {

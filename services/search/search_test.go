@@ -313,6 +313,32 @@ func Test_parseFilter(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "owner",
+			args: args{"lang:en key:value and some text owner:me"},
+			want: &searchQuery{
+				RawQuery:       "lang:en key:value and some text owner:me",
+				MetadataQuery:  []string{`metadata="key:value"`, "AND"},
+				MetadataString: `metadata="key:value" AND`,
+				Query:          "some text",
+				Lang:           "en",
+				Owner:          "me",
+			},
+			wantErr: false,
+		},
+		{
+			name: "shared",
+			args: args{"lang:en key:value and some text shared:yes"},
+			want: &searchQuery{
+				RawQuery:       "lang:en key:value and some text shared:yes",
+				MetadataQuery:  []string{`metadata="key:value"`, "AND"},
+				MetadataString: `metadata="key:value" AND`,
+				Query:          "some text",
+				Lang:           "en",
+				Shared:         "yes",
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

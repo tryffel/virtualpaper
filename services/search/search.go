@@ -217,6 +217,8 @@ func parseFilter(filter string) (*searchQuery, error) {
 		"content":     parseContent,
 		"description": parseDescription,
 		"lang":        parseLang,
+		"owner":       parseOwner,
+		"shared":      parseShared,
 	}
 
 	tokensLeft := tokens
@@ -301,6 +303,16 @@ func parseLang(value string, sq *searchQuery) bool {
 
 func parseContent(value string, sq *searchQuery) bool {
 	sq.Content = value
+	return true
+}
+
+func parseOwner(value string, sq *searchQuery) bool {
+	sq.Owner = value
+	return true
+}
+
+func parseShared(value string, sq *searchQuery) bool {
+	sq.Shared = value
 	return true
 }
 
