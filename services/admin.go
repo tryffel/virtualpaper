@@ -101,18 +101,21 @@ func (service *AdminService) GetUsers() (*[]models.UserInfo, error) {
 		return nil, err
 	}
 
-	searchStatus, _, err := service.search.GetUserIndicesStatus()
-	if err != nil {
-		return nil, err
-	}
+	//searchStatus, _, err := service.search.GetUserIndicesStatus()
+	//if err != nil {
+	//return nil, err
+	//}
 
-	for i, v := range *info {
-		indexStatus := searchStatus[v.UserId]
-		if indexStatus != nil {
-			(*info)[i].Indexing = indexStatus.Indexing
-			(*info)[i].TotalDocumentsIndexed = indexStatus.NumDocuments
+	/*
+		for i, v := range *info {
+			//indexStatus := searchStatus[v.UserId]
+			if indexStatus != nil {
+				(*info)[i].Indexing = indexStatus.Indexing
+				(*info)[i].TotalDocumentsIndexed = indexStatus.NumDocuments
+			}
 		}
-	}
+
+	*/
 	return info, nil
 }
 

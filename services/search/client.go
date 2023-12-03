@@ -51,7 +51,7 @@ func (e *Engine) connect() error {
 }
 
 func indexName(userid int) string {
-	return "virtualpaper-" + strconv.Itoa(userid)
+	return "virtualpaper"
 }
 
 var indexNameToUserIdRegex = regexp.MustCompile("virtualpaper-(.+)")
