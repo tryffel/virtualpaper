@@ -127,6 +127,8 @@ type searchQuery struct {
 	MetadataString string
 	Lang           string
 	Suggestions    []string
+	Owner          string
+	Shared         string
 }
 
 func (s *searchQuery) addSuggestion(text string) {
@@ -138,7 +140,7 @@ func (s *searchQuery) prepareMeiliQuery(userId int, sort storage.SortKey, paging
 	request := &meilisearch.SearchRequest{
 		Offset:                int64(paging.Offset),
 		Limit:                 int64(paging.Limit),
-		AttributesToRetrieve:  []string{"document_id", "name", "content", "description", "date", "mimetype", "lang", "shares"},
+		AttributesToRetrieve:  []string{"document_id", "name", "content", "description", "date", "mimetype", "lang", "shares", "owner_id"},
 		AttributesToCrop:      []string{"content"},
 		CropLength:            1000,
 		AttributesToHighlight: []string{"name"},
@@ -185,6 +187,46 @@ func (s *searchQuery) prepareMeiliQuery(userId int, sort storage.SortKey, paging
 		datefilters = append(datefilters, q)
 	}
 
+	// TODO: need a better builder than strings.join-append, which join even empty tokens with AND
+
+	ownerFilter := ""
+	if s.Owner != "" {
+		switch s.Owner {
+		case "me":
+			ownerFilter = fmt.Sprintf("owner_id = %d", userId)
+		case "anyone":
+			ownerFilter = ""
+		case "others":
+			ownerFilter = fmt.Sprintf("owner_id != %d", userId)
+		}
+	}
+
+	if ownerFilter != "" {
+		if filter != "" {
+			filter = filter + " AND " + ownerFilter
+		} else {
+			filter = ownerFilter
+		}
+	}
+
+	sharedFilter := ""
+	if s.Shared != "" {
+		switch s.Shared {
+		case "yes":
+			sharedFilter = fmt.Sprintf("NOT shares IS EMPTY")
+		case "no":
+			sharedFilter = fmt.Sprintf("shares IS EMPTY")
+		}
+	}
+
+	if sharedFilter != "" {
+		if filter != "" {
+			filter = filter + " AND " + sharedFilter
+		} else {
+			filter = sharedFilter
+		}
+	}
+
 	filter = strings.Trim(filter, " ")
 	filter = strings.TrimSuffix(filter, "AND")
 	filter = strings.TrimPrefix(filter, "AND")
@@ -194,6 +236,14 @@ func (s *searchQuery) prepareMeiliQuery(userId int, sort storage.SortKey, paging
 		} else {
 			filter = strings.Join(datefilters, " AND ")
 		}
+	}
+
+	permission := fmt.Sprintf("(owner_id=%d OR shares=%d)", userId, userId)
+
+	if filter == "" {
+		filter = permission
+	} else {
+		filter = strings.Join([]string{filter, permission}, " AND ")
 	}
 
 	if filter != "" {
@@ -278,7 +328,7 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 		}
 	}
 
-	keys := []string{"name", "description", "content", "date", "lang"}
+	keys := []string{"name", "description", "content", "date", "lang", "owner", "shared"}
 	operators := []string{"AND", "OR", "NOT"}
 
 	parts := strings.Split(lastToken, ":")
@@ -339,6 +389,26 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 				//tokenPrefix = "date:"
 				addWhiteSpace = false
 				for _, v := range langSuggestions {
+					qs.addSuggestionValues(v, SuggestionTypeKey, "")
+				}
+			}
+		} else if parts[0] == "owner" {
+			ownerSuggestions := suggestOwner(parts[1])
+			tokenPrefix = "owner:"
+			if len(ownerSuggestions) > 0 {
+				//tokenPrefix = "date:"
+				addWhiteSpace = false
+				for _, v := range ownerSuggestions {
+					qs.addSuggestionValues(v, SuggestionTypeKey, "")
+				}
+			}
+		} else if parts[0] == "shared" {
+			ownerSuggestions := suggestShared(parts[1])
+			tokenPrefix = "shared:"
+			if len(ownerSuggestions) > 0 {
+				//tokenPrefix = "date:"
+				addWhiteSpace = false
+				for _, v := range ownerSuggestions {
 					qs.addSuggestionValues(v, SuggestionTypeKey, "")
 				}
 			}
@@ -410,7 +480,7 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 
 func suggestEmpty(metadata metadataQuerier) []Suggestion {
 
-	keys := []string{"name", "description", "content", "date", "lang"}
+	keys := []string{"name", "description", "content", "date", "lang", "owner"}
 	results := metadata.queryKeys("", "", ":")
 
 	suggestions := make([]Suggestion, 0, len(keys)+len(results))
@@ -570,6 +640,38 @@ func parseDateFromLayout(token string, addDigit bool, removeDigit bool) time.Tim
 		}
 	}
 	return time.Time{}
+}
+
+func suggestOwner(token string) []string {
+	keys := []string{"me", "anyone", "others"}
+	if token == "" {
+		return keys
+	}
+
+	suggestions := make([]string, 0, 5)
+
+	for _, v := range keys {
+		if strings.Contains(v, token) {
+			suggestions = append(suggestions, v)
+		}
+	}
+	return suggestions
+}
+
+func suggestShared(token string) []string {
+	keys := []string{"yes", "no"}
+	if token == "" {
+		return keys
+	}
+
+	suggestions := make([]string, 0, 5)
+
+	for _, v := range keys {
+		if strings.Contains(v, token) {
+			suggestions = append(suggestions, v)
+		}
+	}
+	return suggestions
 }
 
 type metadataQuerier interface {

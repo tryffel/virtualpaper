@@ -178,6 +178,7 @@ func Test_suggest(t *testing.T) {
 				{Value: "content", Type: "key", Hint: ""},
 				{Value: "date", Type: "key", Hint: ""},
 				{Value: "lang", Type: "key", Hint: ""},
+				{Value: "owner", Type: "key", Hint: ""},
 				{Value: "class", Type: "metadata", Hint: ""},
 				{Value: "author", Type: "metadata", Hint: ""},
 				{Value: "authentic", Type: "metadata", Hint: ""},
@@ -335,6 +336,37 @@ func Test_suggest(t *testing.T) {
 			want: &QuerySuggestions{Suggestions: []Suggestion{
 				{Value: "lang:", Type: "key"},
 			}, Prefix: "one ", ValidQuery: false},
+		},
+		{
+			name: "owner",
+			args: args{"own"},
+			want: &QuerySuggestions{Suggestions: []Suggestion{
+				{Value: "owner:", Type: "key"},
+			}, Prefix: " ", ValidQuery: false},
+		},
+		{
+			name: "owner value",
+			args: args{"owner:"},
+			want: &QuerySuggestions{Suggestions: []Suggestion{
+				{Value: "me", Type: "key"},
+				{Value: "anyone", Type: "key"},
+				{Value: "others", Type: "key"},
+			}, Prefix: "owner:", ValidQuery: false},
+		},
+		{
+			name: "shared",
+			args: args{"sha"},
+			want: &QuerySuggestions{Suggestions: []Suggestion{
+				{Value: "shared:", Type: "key"},
+			}, Prefix: " ", ValidQuery: false},
+		},
+		{
+			name: "shared value",
+			args: args{"shared:"},
+			want: &QuerySuggestions{Suggestions: []Suggestion{
+				{Value: "yes", Type: "key"},
+				{Value: "no", Type: "key"},
+			}, Prefix: "shared:", ValidQuery: false},
 		},
 	}
 
