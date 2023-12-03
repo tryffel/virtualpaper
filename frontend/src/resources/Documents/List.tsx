@@ -195,6 +195,21 @@ const DocumentHelp = () => {
         <Typography>- date:2015|today </Typography>
         <Typography>- date:2015-6-12|2022-8 </Typography>
       </p>
+      <p>
+        <Typography>Sharing</Typography>
+        <Typography>- owner:me (I own the document)</Typography>
+        <Typography>- owner:others (someone else owns the document)</Typography>
+        <Typography>- shared:yes (only shared documents) </Typography>
+        <Typography>- shared:no (only non-shared documents) </Typography>
+        <Typography>
+          - owner:me AND shared:yes (only documents that I have shared with
+          others)
+        </Typography>
+        <Typography>
+          - owner:me AND shared:no (only documents that I have not shared with
+          others)
+        </Typography>
+      </p>
 
       <p>
         <Typography variant="h6" color="textPrimary">
