@@ -480,7 +480,7 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 
 func suggestEmpty(metadata metadataQuerier) []Suggestion {
 
-	keys := []string{"name", "description", "content", "date", "lang", "owner"}
+	keys := []string{"name", "description", "content", "date", "lang", "owner", "shared"}
 	results := metadata.queryKeys("", "", ":")
 
 	suggestions := make([]Suggestion, 0, len(keys)+len(results))
