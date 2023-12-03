@@ -10,12 +10,14 @@ import (
 
 type ApiTestSuite struct {
 	suite.Suite
-	userClient  *baloo.Client
-	adminClient *baloo.Client
+	userClient   *baloo.Client
+	adminClient  *baloo.Client
+	testerClient *baloo.Client
 
 	publicHttp *httpClient
 	userHttp   *httpClient
 	adminHttp  *httpClient
+	testerHttp *httpClient
 
 	db *storage.Database
 }
@@ -42,10 +44,12 @@ func (suite *ApiTestSuite) Init() {
 
 	suite.userClient = baloo.New(serverUrl).SetHeader("Authorization", "Bearer "+UserToken)
 	suite.adminClient = baloo.New(serverUrl).SetHeader("Authorization", "Bearer "+AdminToken)
+	suite.testerClient = baloo.New(serverUrl).SetHeader("Authorization", "Bearer "+TesterToken)
 
 	suite.publicHttp = &httpClient{baloo.New(serverUrl)}
 	suite.userHttp = &httpClient{suite.userClient}
 	suite.adminHttp = &httpClient{suite.adminClient}
+	suite.testerHttp = &httpClient{suite.testerClient}
 	clearDbMetadataTables(suite.T(), suite.db)
 }
 

@@ -15,27 +15,31 @@ import (
 )
 
 const (
-	UserName      = "user"
-	UserPassword  = "superstronguser"
-	AdminName     = "admin"
-	AdminPassword = "superstrongadmin"
+	UserName       = "user"
+	UserPassword   = "superstronguser"
+	AdminName      = "admin"
+	AdminPassword  = "superstrongadmin"
+	TesterName     = "tester"
+	TesterPassword = "superstrongtester"
 )
 
 var (
-	UserToken  = ""
-	AdminToken = ""
+	UserToken   = ""
+	AdminToken  = ""
+	TesterToken = ""
 )
 
 func tokenFileName() string {
 	wd, _ := os.Getwd()
-	fileNamee := "TOKEN"
+	fileNamee := "TOKEN.json"
 	return path.Join(wd, fileNamee)
 }
 
 type tokenData struct {
-	Comment    string
-	UserToken  string
-	AdminToken string
+	Comment     string
+	UserToken   string
+	AdminToken  string
+	TesterToken string
 }
 
 func ReadTokenFromFile() error {
@@ -56,6 +60,7 @@ func ReadTokenFromFile() error {
 	}
 	UserToken = data.UserToken
 	AdminToken = data.AdminToken
+	TesterToken = data.TesterToken
 	return nil
 }
 
@@ -68,9 +73,10 @@ func SaveTokenToFile() error {
 	}
 	defer fd.Close()
 	data := &tokenData{
-		Comment:    "AUTOMATICALLY CREATED DATA. DO NOT EDIT BY HAND",
-		UserToken:  UserToken,
-		AdminToken: AdminToken,
+		Comment:     "AUTOMATICALLY CREATED DATA. DO NOT EDIT BY HAND",
+		UserToken:   UserToken,
+		AdminToken:  AdminToken,
+		TesterToken: TesterToken,
 	}
 
 	err = json.NewEncoder(fd).Encode(data)
@@ -101,6 +107,7 @@ func EnsureUserLoggedIn(t *testing.T) {
 	}
 	DoUserLogin(t)
 	DoAdminLogin(t)
+	DoTesterLogin(t)
 	err = SaveTokenToFile()
 	if err != nil {
 		panic(fmt.Errorf("save token to file: %v", err))
@@ -157,6 +164,30 @@ func DoAdminLogin(t *testing.T) {
 	}
 	client.IsJson().client.Post("/api/v1/auth/login").
 		BodyString(fmt.Sprintf(`{"Username": "%s", "Password": "%s"}`, AdminName, AdminPassword)).
+		Expect(t).Type("json").AssertFunc(assertToken(200, true, true)).Done()
+}
+
+func DoTesterLogin(t *testing.T) {
+	assertToken := func(wantCode int, wantToken bool, saveToken bool) func(res *http.Response, req *http.Request) error {
+		return func(res *http.Response, req *http.Request) error {
+			assert.Equal(t, res.StatusCode, wantCode, "status code")
+			data := &api.LoginResponse{}
+			err := json.NewDecoder(res.Body).Decode(data)
+			assert.Equal(t, err, nil, "invalid json", err)
+
+			if wantToken {
+				assert.NotEqual(t, data.Token, "", "token can't be empty")
+			} else {
+				assert.Equal(t, data.Token, "", "token must be empty")
+			}
+			if saveToken {
+				TesterToken = data.Token
+			}
+			return nil
+		}
+	}
+	client.IsJson().client.Post("/api/v1/auth/login").
+		BodyString(fmt.Sprintf(`{"Username": "%s", "Password": "%s"}`, TesterName, TesterPassword)).
 		Expect(t).Type("json").AssertFunc(assertToken(200, true, true)).Done()
 }
 

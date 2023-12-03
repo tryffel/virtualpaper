@@ -22,6 +22,7 @@ func (suite *LoginTestSuite) TestLogin() {
 	log.Println(suite.T().Name())
 	DoUserLogin(suite.T())
 	DoAdminLogin(suite.T())
+	DoTesterLogin(suite.T())
 	EnsureUserLoggedIn(suite.T())
 	err := SaveTokenToFile()
 	if err != nil {

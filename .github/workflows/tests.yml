@@ -57,6 +57,7 @@ jobs:
              go run . migrate --config config.sample.toml
              go run . manage --config config.sample.toml add-user -U user -P superstronguser -a false
              go run . manage --config config.sample.toml add-user -U admin -P superstrongadmin -a true
+             go run . manage --config config.sample.toml add-user -U tester -P superstrongtester -a false
 
       - name: Run tests
         run: |
