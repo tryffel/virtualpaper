@@ -91,7 +91,7 @@ func clearTestUsersTables(t *testing.T, db *storage.Database) {
 
 	ids := make([]int, 0, 10)
 	for _, user := range *users {
-		if user.Name != "user" && user.Name != "admin" {
+		if user.Name != "user" && user.Name != "admin" && user.Name != "tester" {
 			ids = append(ids, user.Id)
 		}
 	}

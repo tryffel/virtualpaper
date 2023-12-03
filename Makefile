@@ -49,6 +49,8 @@ test-start:
 	docker-compose run --rm --entrypoint "/app/virtualpaper --config /config/config.toml" server migrate
 	docker-compose run --rm --entrypoint "/app/virtualpaper --config /config/config.toml" server manage add-user -U user -P superstronguser -a false
 	docker-compose run --rm --entrypoint "/app/virtualpaper --config /config/config.toml" server manage add-user -U admin -P superstrongadmin -a true
+	docker-compose run --rm --entrypoint "/app/virtualpaper --config /config/config.toml" server manage add-user -U tester -P superstrongtester -a false
+
 	docker-compose start server
 
 ci-test-unit:
