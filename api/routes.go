@@ -102,6 +102,7 @@ func (api *Api) addRoutesV2() {
 
 	api.privateRouter.GET("/preferences/user", api.getUserPreferences).Name = "get-user-preferences"
 	api.privateRouter.PUT("/preferences/user", api.updateUserPreferences)
+	api.privateRouter.GET("/users", api.GetUsers)
 
 	api.adminRouter.GET("/documents/process", api.getDocumentProcessQueue)
 	api.adminRouter.POST("/documents/process", api.forceDocumentProcessing)
