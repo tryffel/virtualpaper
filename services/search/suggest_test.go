@@ -179,6 +179,7 @@ func Test_suggest(t *testing.T) {
 				{Value: "date", Type: "key", Hint: ""},
 				{Value: "lang", Type: "key", Hint: ""},
 				{Value: "owner", Type: "key", Hint: ""},
+				{Value: "shared", Type: "key", Hint: ""},
 				{Value: "class", Type: "metadata", Hint: ""},
 				{Value: "author", Type: "metadata", Hint: ""},
 				{Value: "authentic", Type: "metadata", Hint: ""},
