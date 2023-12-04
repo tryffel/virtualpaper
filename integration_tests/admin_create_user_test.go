@@ -36,7 +36,7 @@ func (suite *AdminCreateUserTest) TestCreateNoPermission() {
 		Administrator: false,
 	}
 	AdminCreateUser(suite.T(), suite.userHttp, data, 401)
-	assertUsersCount(&suite.ApiTestSuite, 2)
+	assertUsersCount(&suite.ApiTestSuite, 3)
 }
 
 func (suite *AdminCreateUserTest) TestCreateBadInput() {
@@ -48,7 +48,7 @@ func (suite *AdminCreateUserTest) TestCreateBadInput() {
 		Administrator: false,
 	}
 	AdminCreateUser(suite.T(), suite.adminHttp, data, 400)
-	assertUsersCount(&suite.ApiTestSuite, 2)
+	assertUsersCount(&suite.ApiTestSuite, 3)
 
 	data = &api.AdminAddUserRequest{
 		UserName:      "valid user",
@@ -58,7 +58,7 @@ func (suite *AdminCreateUserTest) TestCreateBadInput() {
 		Administrator: false,
 	}
 	AdminCreateUser(suite.T(), suite.adminHttp, data, 400)
-	assertUsersCount(&suite.ApiTestSuite, 2)
+	assertUsersCount(&suite.ApiTestSuite, 3)
 
 	data = &api.AdminAddUserRequest{
 		UserName:      "a",
@@ -68,7 +68,7 @@ func (suite *AdminCreateUserTest) TestCreateBadInput() {
 		Administrator: false,
 	}
 	AdminCreateUser(suite.T(), suite.adminHttp, data, 400)
-	assertUsersCount(&suite.ApiTestSuite, 2)
+	assertUsersCount(&suite.ApiTestSuite, 3)
 
 	data = &api.AdminAddUserRequest{
 		UserName:      "valid name",
@@ -78,7 +78,7 @@ func (suite *AdminCreateUserTest) TestCreateBadInput() {
 		Administrator: false,
 	}
 	AdminCreateUser(suite.T(), suite.adminHttp, data, 400)
-	assertUsersCount(&suite.ApiTestSuite, 2)
+	assertUsersCount(&suite.ApiTestSuite, 3)
 }
 
 func (suite *AdminCreateUserTest) TestCreateOk() {
@@ -90,7 +90,7 @@ func (suite *AdminCreateUserTest) TestCreateOk() {
 		Administrator: false,
 	}
 	user := AdminCreateUser(suite.T(), suite.adminHttp, data, 200)
-	assertUsersCount(&suite.ApiTestSuite, 3)
+	assertUsersCount(&suite.ApiTestSuite, 4)
 
 	assert.NotEqual(suite.T(), 0, user.UserId)
 	assert.Equal(suite.T(), data.UserName, user.UserName)
@@ -106,7 +106,7 @@ func (suite *AdminCreateUserTest) TestCreateOk() {
 		Administrator: false,
 	}
 	user = AdminCreateUser(suite.T(), suite.adminHttp, data, 200)
-	assertUsersCount(&suite.ApiTestSuite, 4)
+	assertUsersCount(&suite.ApiTestSuite, 5)
 
 	assert.NotEqual(suite.T(), 0, user.UserId)
 	assert.Equal(suite.T(), data.UserName, user.UserName)
@@ -152,7 +152,7 @@ func (suite *AdminCreateUserTest) TestCreateUserExists() {
 		Administrator: false,
 	}
 	AdminCreateUser(suite.T(), suite.adminHttp, data, 200)
-	assertUsersCount(&suite.ApiTestSuite, 3)
+	assertUsersCount(&suite.ApiTestSuite, 4)
 
 	data = &api.AdminAddUserRequest{
 		UserName:      "valid name",
@@ -162,7 +162,7 @@ func (suite *AdminCreateUserTest) TestCreateUserExists() {
 		Administrator: false,
 	}
 	AdminCreateUser(suite.T(), suite.adminHttp, data, http.StatusNotModified)
-	assertUsersCount(&suite.ApiTestSuite, 3)
+	assertUsersCount(&suite.ApiTestSuite, 4)
 
 	data = &api.AdminAddUserRequest{
 		UserName:      "existing user",
@@ -172,7 +172,7 @@ func (suite *AdminCreateUserTest) TestCreateUserExists() {
 		Administrator: false,
 	}
 	AdminCreateUser(suite.T(), suite.adminHttp, data, 200)
-	assertUsersCount(&suite.ApiTestSuite, 4)
+	assertUsersCount(&suite.ApiTestSuite, 5)
 
 	data = &api.AdminAddUserRequest{
 		UserName:      "Existing USER",
@@ -182,7 +182,7 @@ func (suite *AdminCreateUserTest) TestCreateUserExists() {
 		Administrator: false,
 	}
 	AdminCreateUser(suite.T(), suite.adminHttp, data, 304)
-	assertUsersCount(&suite.ApiTestSuite, 4)
+	assertUsersCount(&suite.ApiTestSuite, 5)
 
 	data = &api.AdminAddUserRequest{
 		UserName:      "new user",
@@ -192,7 +192,7 @@ func (suite *AdminCreateUserTest) TestCreateUserExists() {
 		Administrator: false,
 	}
 	AdminCreateUser(suite.T(), suite.adminHttp, data, 304)
-	assertUsersCount(&suite.ApiTestSuite, 4)
+	assertUsersCount(&suite.ApiTestSuite, 5)
 }
 
 func (suite *AdminCreateUserTest) TestLoginCaseInsensitive() {
