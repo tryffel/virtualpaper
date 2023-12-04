@@ -47,6 +47,7 @@ var dbProcessingRuleTables = []string{
 }
 
 var dbDocumentTables = []string{
+	"user_shared_documents",
 	"document_view_history",
 	"document_history",
 	"linked_documents",

@@ -10,6 +10,7 @@ import (
 	"time"
 	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/models/aggregates"
+	"tryffel.net/go/virtualpaper/storage"
 )
 
 type DocumentSearchSuite struct {
@@ -240,6 +241,7 @@ func (suite *DocumentSearchSuite) TestSearchCombined() {
 }
 
 func waitIndexingReady(t *testing.T, client *httpClient, timeoutSec int) {
+	time.Sleep(time.Millisecond * 300)
 	startTs := time.Now()
 	for {
 		if time.Now().Sub(startTs).Seconds() > float64(timeoutSec) {
@@ -255,6 +257,25 @@ func waitIndexingReady(t *testing.T, client *httpClient, timeoutSec int) {
 			return
 		}
 		time.Sleep(500 * time.Millisecond)
+	}
+}
+
+func waitNoJobsRunning(t *testing.T, db *storage.Database, timeoutSec int) {
+	startTs := time.Now()
+	for {
+		if time.Now().Sub(startTs).Seconds() > float64(timeoutSec) {
+			t.Errorf("timeout while waiting for indexing status")
+			t.Skip()
+			return
+		}
+		_, pendingCount, err := db.JobStore.GetPendingProcessing()
+		if err != nil {
+			t.Error("get jobs pending processing", err)
+			return
+		}
+		if pendingCount == 0 {
+			return
+		}
 	}
 }
 
@@ -294,4 +315,19 @@ func assertDocInDocs(t *testing.T, docId string, docs *[]*aggregates.Document, m
 	}
 	assert.Errorf(t, errors.New("expected document to exist in collection"), msg, docId, &docs)
 	t.Fail()
+}
+
+func searchDocumentsAndAssertResult(t *testing.T, client *httpClient, filter interface{}, expectDocs ...*models.Document) {
+	docs := searchDocuments(t, client, filter, 1, 100, "name", "ASC", 200)
+	assert.Len(t, docs, len(expectDocs), "number of documents match")
+	for i, v := range expectDocs {
+		found := false
+		for _, doc := range docs {
+			if doc.Id == v.Id {
+				found = true
+				break
+			}
+		}
+		assert.Truef(t, found, "found document %d, '%s' from results", i, v.Id)
+	}
 }

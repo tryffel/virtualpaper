@@ -165,8 +165,10 @@ type UserDocumentStatistics struct {
 // DocumentUpdateSharingRequest
 // swagger:model DocumentUpdateSharingRequestBody
 type DocumentUpdateSharingRequest struct {
-	Users []struct {
-		UserId      int                `json:"user_id" valid:"-"`
-		Permissions models.Permissions `json:"permissions" valid:"-"`
-	} `json:"users" valid:"-"`
+	Users []UserPermissions `json:"users" valid:"-"`
+}
+
+type UserPermissions struct {
+	UserId      int                `json:"user_id" valid:"-"`
+	Permissions models.Permissions `json:"permissions" valid:"-"`
 }
