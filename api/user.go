@@ -28,17 +28,15 @@ import (
 // swagger:model UserPreferences
 type UserPreferences struct {
 	// user
-	Id                  int        `json:"user_id"`
-	Name                string     `json:"user_name"`
-	Email               string     `json:"email"`
-	UpdatedAt           int64      `json:"updated_at"`
-	CreatedAt           int64      `json:"created_at"`
-	DocumentsCount      int64      `json:"documents_count"`
-	DocumentsSize       int64      `json:"documents_size"`
-	DocumentsSizeString string     `json:"documents_size_string"`
-	IsAdmin             bool       `json:"is_admin"`
-	StopWords           []string   `json:"stop_words"`
-	Synonyms            [][]string `json:"synonyms"`
+	Id                  int    `json:"user_id"`
+	Name                string `json:"user_name"`
+	Email               string `json:"email"`
+	UpdatedAt           int64  `json:"updated_at"`
+	CreatedAt           int64  `json:"created_at"`
+	DocumentsCount      int64  `json:"documents_count"`
+	DocumentsSize       int64  `json:"documents_size"`
+	DocumentsSizeString string `json:"documents_size_string"`
+	IsAdmin             bool   `json:"is_admin"`
 }
 
 func (u *UserPreferences) copyUser(userPref *models.UserPreferences) {
@@ -51,8 +49,6 @@ func (u *UserPreferences) copyUser(userPref *models.UserPreferences) {
 	u.DocumentsSize = int64(userPref.DocumentsSize)
 	u.DocumentsSizeString = models.GetPrettySize(u.DocumentsSize)
 	u.IsAdmin = userPref.IsAdmin
-	u.StopWords = userPref.StopWords
-	u.Synonyms = userPref.Synonyms
 }
 
 func (a *Api) getUserPreferences(c echo.Context) error {
@@ -78,9 +74,7 @@ func (a *Api) getUserPreferences(c echo.Context) error {
 
 // swagger:model UserPreferences
 type ReqUserPreferences struct {
-	StopWords []string   `json:"stop_words" valid:"optional"`
-	Synonyms  [][]string `json:"synonyms" valid:"optional"`
-	Email     string     `json:"email" valid:"email,optional"`
+	Email string `json:"email" valid:"email,optional"`
 }
 
 func (a *Api) updateUserPreferences(c echo.Context) error {
@@ -101,8 +95,6 @@ func (a *Api) updateUserPreferences(c echo.Context) error {
 		DocumentCount: 0,
 		DocumentsSize: 0,
 		IsAdmin:       ctx.User.IsAdmin,
-		StopWords:     dto.StopWords,
-		Synonyms:      dto.Synonyms,
 	}
 
 	err = a.userService.UpdatePreferences(getContext(ctx), pref)

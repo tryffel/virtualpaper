@@ -19,7 +19,6 @@
 package storage
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"strings"
@@ -149,7 +148,6 @@ VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;
 		return errors.New("no id returned")
 	}
 
-	err = s.UpdatePreferences(user.Id, []string{}, [][]string{})
 	return err
 }
 
@@ -319,38 +317,11 @@ GROUP BY(s.id);`
 	if err != nil {
 		return pref, s.parseError(err, "get preferences")
 	}
-
-	stopWords, err := s.GetPreferenceValue(userid, PreferenceStopWords)
-	if err != nil {
-		return pref, fmt.Errorf("get stopwords: %v", err)
-	}
-	if stopWords != "" {
-		err = json.Unmarshal([]byte(stopWords), &pref.StopWords)
-		if err != nil {
-			return pref, fmt.Errorf("unmarshal stopwords: %v", err)
-		}
-	}
-
-	synonyms, err := s.GetPreferenceValue(userid, PreferenceSynonyms)
-	if err != nil {
-		return pref, fmt.Errorf("get synonyms: %v", err)
-	}
-	if synonyms != "" {
-		err = json.Unmarshal([]byte(synonyms), &pref.Synonyms)
-		if err != nil {
-			return pref, fmt.Errorf("unmarshal synonyms: %v", err)
-		}
-	}
 	return pref, err
 
 }
 
 type PreferenceKey string
-
-const (
-	PreferenceStopWords PreferenceKey = "stop_words"
-	PreferenceSynonyms  PreferenceKey = "synonyms"
-)
 
 func (s *UserStore) GetPreferenceValue(userId int, key PreferenceKey) (string, error) {
 	sql := `
@@ -378,29 +349,6 @@ AND user_preferences.key=$2;
 `
 	_, err := s.db.Exec(sql, userId, key, value, now)
 	return s.parseError(err, "set preference value")
-}
-
-func (s *UserStore) UpdatePreferences(userId int, stopWords []string, synonyms [][]string) error {
-
-	stopWordsB, err := json.Marshal(stopWords)
-	if err != nil {
-		return fmt.Errorf("serialize stopwords: %v", err)
-	}
-	synonymsB, err := json.Marshal(synonyms)
-	if err != nil {
-		return fmt.Errorf("serialize synonyms: %v", err)
-	}
-
-	err = s.SetPreferenceValue(userId, PreferenceStopWords, string(stopWordsB))
-	if err != nil {
-		return fmt.Errorf("save stopwords: %v", err)
-	}
-
-	err = s.SetPreferenceValue(userId, PreferenceSynonyms, string(synonymsB))
-	if err != nil {
-		return fmt.Errorf("save synonyms: %v", err)
-	}
-	return nil
 }
 
 func (s *UserStore) AddPasswordResetToken(token *models.PasswordResetToken) error {
