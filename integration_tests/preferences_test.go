@@ -30,7 +30,6 @@ func (suite *PreferencesTest) SetupTest() {
 		userIds[i] = v.Id
 		suite.users[v.Name] = v
 	}
-	clearMeilisearchPreferences(suite.T(), userIds)
 }
 
 func (suite *PreferencesTest) TearDownSuite() {
@@ -40,35 +39,6 @@ func (suite *PreferencesTest) TearDownSuite() {
 
 func TestPreferences(t *testing.T) {
 	suite.Run(t, new(PreferencesTest))
-}
-
-func (suite *PreferencesTest) TestUpdateSynonyms() {
-	originalAdminStopwords, originalAdminSynonyms := getMeilisearchPreferences(suite.T(), suite.users["user"].Id)
-	assert.Empty(suite.T(), originalAdminStopwords)
-	assert.Empty(suite.T(), originalAdminSynonyms)
-
-	updatedPref := &api.ReqUserPreferences{
-		StopWords: []string{"elephant", "lion"},
-		Synonyms: [][]string{{
-			"animal", "elephant", "lion",
-		},
-			{
-				"drink", "tea", "coffee",
-			},
-		},
-		Email: "",
-	}
-	updateUserPreferences(suite.T(), suite.userHttp, updatedPref, 200)
-	time.Sleep(time.Millisecond * 500)
-	updatedAdminStopwords, updatedAdminSynonyms := getMeilisearchPreferences(suite.T(), suite.users["user"].Id)
-	assert.NotEmpty(suite.T(), *updatedAdminStopwords)
-	assert.NotEmpty(suite.T(), *updatedAdminSynonyms)
-
-	assert.Contains(suite.T(), *updatedAdminStopwords, "elephant")
-	assert.Contains(suite.T(), *updatedAdminStopwords, "lion")
-
-	preferences := getUserPreferences(suite.T(), suite.userHttp, 200)
-	assert.NotEmpty(suite.T(), preferences)
 }
 
 func getMeilisearchPreferences(t *testing.T, userId int) (stopWords *[]string, synonyms *map[string][]string) {

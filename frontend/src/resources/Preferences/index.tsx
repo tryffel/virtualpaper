@@ -29,6 +29,7 @@ import {
   Button,
   TabbedForm,
   Toolbar,
+  SimpleForm,
 } from "react-admin";
 
 import {
@@ -56,8 +57,7 @@ export const ProfileEdit = (...props: any) => {
       title="Profile"
       {...props}
     >
-      <TabbedForm
-        syncWithLocation={false}
+      <SimpleForm
         warnWhenUnsavedChanges
         toolbar={
           <Toolbar>
@@ -65,23 +65,15 @@ export const ProfileEdit = (...props: any) => {
           </Toolbar>
         }
       >
-        <TabbedForm.Tab label={"user"}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} lg={6}>
-              <UserBasicInfo />
-            </Grid>
-            <Grid item xs={12} lg={6}>
-              <Statistics />
-            </Grid>
+        <Grid container spacing={2}>
+          <Grid item xs={12} lg={6}>
+            <UserBasicInfo />
           </Grid>
-        </TabbedForm.Tab>
-        <TabbedForm.Tab label={"Stop words"}>
-          <StopWordsTab />
-        </TabbedForm.Tab>
-        <TabbedForm.Tab label={"Synonyms"}>
-          <SynonymsTab />
-        </TabbedForm.Tab>
-      </TabbedForm>
+          <Grid item xs={12} lg={6}>
+            <Statistics />
+          </Grid>
+        </Grid>
+      </SimpleForm>
     </Edit>
   );
 };

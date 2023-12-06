@@ -43,32 +43,19 @@ func (service *UserService) UpdatePreferences(ctx context.Context, preferences *
 		return err
 	}
 	attributeChanged := false
-	searchParamsChanged := false
-	if len(preferences.StopWords) > 0 || len(preferences.Synonyms) > 0 {
-		searchParamsChanged = true
-		err = service.db.UserStore.UpdatePreferences(preferences.UserId, preferences.StopWords, preferences.Synonyms)
-		if err != nil {
-			return err
-		}
-
-		err = service.search.UpdateUserPreferences(preferences.UserId)
-		if err != nil {
-			return err
-		}
-	}
 	if preferences.Email != "" {
 		user.Email = preferences.Email
 		attributeChanged = true
 	}
 
-	if searchParamsChanged || attributeChanged {
+	if attributeChanged {
 		user.Update()
 		err = service.db.UserStore.Update(user)
 		if err != nil {
 			return err
 		}
 	}
-	if !attributeChanged && !searchParamsChanged {
+	if !attributeChanged {
 		return errors.ErrAlreadyExists
 	}
 	return nil

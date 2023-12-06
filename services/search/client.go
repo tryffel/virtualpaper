@@ -73,27 +73,6 @@ func (e *Engine) ensureIndexExists() error {
 	return nil
 }
 
-func (e *Engine) UpdateUserPreferences(userId int) error {
-
-	preferences, err := e.db.UserStore.GetUserPreferences(userId)
-	if err != nil {
-		return fmt.Errorf("get preferences: %v", err)
-	}
-	index := indexName(userId)
-
-	_, err = e.client.Index(index).UpdateStopWords(&preferences.StopWords)
-	if err != nil {
-		return fmt.Errorf("update stopwords: %v", err)
-	}
-
-	synonyms := buildSynonyms(preferences.Synonyms)
-	_, err = e.client.Index(index).UpdateSynonyms(&synonyms)
-	if err != nil {
-		return fmt.Errorf("update synonyms: %v", err)
-	}
-	return nil
-}
-
 func (e *Engine) ping() error {
 	v, err := e.client.GetVersion()
 	if err != nil {
