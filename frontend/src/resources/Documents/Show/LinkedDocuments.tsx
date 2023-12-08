@@ -35,7 +35,7 @@ export const LinkedDocumentList = () => {
     id: record?.id,
   });
   if (isLoading) {
-    return <Loading />;
+    return null;
   }
 
   return (
