@@ -125,24 +125,23 @@ func (service *AdminService) GetUser(ctx context.Context, id int) (*models.UserI
 		return nil, err
 	}
 
-	searchStatus, err := service.search.GetUserIndexStatus(id)
+	searchStatus, err := service.search.GetIndexStatus()
 	if err != nil {
 		return nil, err
 	}
 
 	info := &models.UserInfo{
-		UserId:                userInfo.Id,
-		UserName:              userInfo.Name,
-		Email:                 userInfo.Email,
-		IsActive:              userInfo.IsActive,
-		UpdatedAt:             userInfo.UpdatedAt,
-		CreatedAt:             userInfo.CreatedAt,
-		DocumentCount:         0,
-		DocumentsSize:         0,
-		IsAdmin:               userInfo.IsAdmin,
-		LastSeen:              time.Time{},
-		Indexing:              searchStatus.Indexing,
-		TotalDocumentsIndexed: searchStatus.NumDocuments,
+		UserId:        userInfo.Id,
+		UserName:      userInfo.Name,
+		Email:         userInfo.Email,
+		IsActive:      userInfo.IsActive,
+		UpdatedAt:     userInfo.UpdatedAt,
+		CreatedAt:     userInfo.CreatedAt,
+		DocumentCount: 0,
+		DocumentsSize: 0,
+		IsAdmin:       userInfo.IsAdmin,
+		LastSeen:      time.Time{},
+		Indexing:      searchStatus.Indexing,
 	}
 	return info, nil
 }
@@ -190,36 +189,34 @@ func (service *AdminService) UpdateUser(ctx context.Context, adminUser int, upda
 		err = service.db.UserStore.Update(user)
 		if err == nil {
 			info := &models.UserInfo{
-				UserId:                user.Id,
-				UserName:              user.Name,
-				Email:                 user.Email,
-				IsActive:              user.IsActive,
-				UpdatedAt:             user.UpdatedAt,
-				CreatedAt:             user.CreatedAt,
-				DocumentCount:         0,
-				DocumentsSize:         0,
-				IsAdmin:               user.IsAdmin,
-				LastSeen:              time.Time{},
-				Indexing:              false,
-				TotalDocumentsIndexed: 0,
+				UserId:        user.Id,
+				UserName:      user.Name,
+				Email:         user.Email,
+				IsActive:      user.IsActive,
+				UpdatedAt:     user.UpdatedAt,
+				CreatedAt:     user.CreatedAt,
+				DocumentCount: 0,
+				DocumentsSize: 0,
+				IsAdmin:       user.IsAdmin,
+				LastSeen:      time.Time{},
+				Indexing:      false,
 			}
 			return info, nil
 		}
 		return nil, err
 	}
 	return &models.UserInfo{
-		UserId:                user.Id,
-		UserName:              user.Name,
-		Email:                 user.Email,
-		IsActive:              user.IsActive,
-		UpdatedAt:             user.UpdatedAt,
-		CreatedAt:             user.CreatedAt,
-		DocumentCount:         0,
-		DocumentsSize:         0,
-		IsAdmin:               user.IsAdmin,
-		LastSeen:              time.Time{},
-		Indexing:              false,
-		TotalDocumentsIndexed: 0,
+		UserId:        user.Id,
+		UserName:      user.Name,
+		Email:         user.Email,
+		IsActive:      user.IsActive,
+		UpdatedAt:     user.UpdatedAt,
+		CreatedAt:     user.CreatedAt,
+		DocumentCount: 0,
+		DocumentsSize: 0,
+		IsAdmin:       user.IsAdmin,
+		LastSeen:      time.Time{},
+		Indexing:      false,
 	}, nil
 }
 
@@ -259,23 +256,18 @@ func (service *AdminService) CreateUser(ctx context.Context, adminUser int, newU
 	if err != nil {
 		return nil, err
 	}
-	err = service.search.AddUserIndex(user.Id)
-	if err != nil {
-		logger.Context(ctx).Infof("add user to search index: %v", err)
-	}
 	info := &models.UserInfo{
-		UserId:                createdUser.Id,
-		UserName:              user.Name,
-		Email:                 user.Email,
-		IsActive:              user.IsActive,
-		UpdatedAt:             user.UpdatedAt,
-		CreatedAt:             user.CreatedAt,
-		DocumentCount:         0,
-		DocumentsSize:         0,
-		IsAdmin:               user.IsAdmin,
-		LastSeen:              time.Time{},
-		Indexing:              false,
-		TotalDocumentsIndexed: 0,
+		UserId:        createdUser.Id,
+		UserName:      user.Name,
+		Email:         user.Email,
+		IsActive:      user.IsActive,
+		UpdatedAt:     user.UpdatedAt,
+		CreatedAt:     user.CreatedAt,
+		DocumentCount: 0,
+		DocumentsSize: 0,
+		IsAdmin:       user.IsAdmin,
+		LastSeen:      time.Time{},
+		Indexing:      false,
 	}
 	return info, nil
 }

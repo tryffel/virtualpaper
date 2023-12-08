@@ -570,7 +570,7 @@ func (service *DocumentService) GetStatistics(ctx context.Context, userId int) (
 	}
 	baseStats.UserId = userId
 	stats := docStatsToUserStats(baseStats)
-	searchStats, err := service.search.GetUserIndexStatus(userId)
+	searchStats, err := service.search.GetIndexStatus()
 	if err != nil {
 		logger.Context(ctx).Warnf("get search engine indexing status: %v", err)
 	} else {

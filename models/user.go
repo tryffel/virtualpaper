@@ -92,8 +92,7 @@ type UserInfo struct {
 	IsAdmin       bool      `json:"is_admin" db:"admin"`
 	LastSeen      time.Time `json:"last_seen" db:"last_seen"`
 
-	Indexing              bool `json:"indexing"`
-	TotalDocumentsIndexed int  `json:"documents_indexed_count"`
+	Indexing bool `json:"indexing"`
 }
 
 type PasswordResetToken struct {

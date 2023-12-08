@@ -58,7 +58,7 @@ func (e *Engine) SearchDocuments(userId int, query string, sort storage.SortKey,
 
 	docs := make([]*models.Document, 0)
 
-	res, err := e.client.Index(indexName(userId)).Search(qs.Query, request)
+	res, err := e.client.Index(indexName()).Search(qs.Query, request)
 	if err != nil {
 		if meiliError, ok := err.(*meilisearch.Error); ok {
 			if meiliError.StatusCode == 400 {
