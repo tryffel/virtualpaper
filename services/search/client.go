@@ -2,8 +2,6 @@ package search
 
 import (
 	"fmt"
-	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -50,26 +48,17 @@ func (e *Engine) connect() error {
 	return e.ensureIndexExists()
 }
 
-func indexName(userid int) string {
+func indexName() string {
 	return "virtualpaper"
 }
 
-var indexNameToUserIdRegex = regexp.MustCompile("virtualpaper-(.+)")
-
 func (e *Engine) ensureIndexExists() error {
 	logrus.Debugf("ensure meilisearch indices exist")
-	users, err := e.db.UserStore.GetUsers()
+	err := e.AddIndex()
 	if err != nil {
-		return fmt.Errorf("get users: %v", err)
+		logrus.Errorf("error checking & creating index: %v", err)
 	}
 
-	for _, v := range *users {
-		err = e.AddUserIndex(v.Id)
-		if err != nil {
-			logrus.Errorf("error checking & creating index for user %d: %v", v.Id, err)
-		}
-
-	}
 	return nil
 }
 
@@ -134,7 +123,7 @@ func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 		}
 	}
 
-	_, err := e.client.Index(indexName(userId)).UpdateDocuments(data)
+	_, err := e.client.Index(indexName()).UpdateDocuments(data)
 	if err != nil {
 		return fmt.Errorf("index documents: %v", err)
 	}
@@ -144,7 +133,7 @@ func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 
 func (e *Engine) DeleteDocument(docId string, userId int) error {
 
-	_, err := e.client.Index(indexName(userId)).DeleteDocument(docId)
+	_, err := e.client.Index(indexName()).DeleteDocument(docId)
 	if err != nil {
 		return fmt.Errorf("delete documents: %v", err)
 	}
@@ -226,62 +215,25 @@ func (e *Engine) GetStatus() (*EngineStatus, error) {
 
 }
 
-type UserIndexStatus struct {
-	UserId       int  `json:"user_id"`
+type IndexStatus struct {
 	NumDocuments int  `json:"documents_count"`
 	Indexing     bool `json:"indexing"`
 }
 
-func (e *Engine) GetUserIndexStatus(userId int) (UserIndexStatus, error) {
-	stats, err := e.client.Index(indexName(userId)).GetStats()
+func (e *Engine) GetIndexStatus() (IndexStatus, error) {
+	stats, err := e.client.Index(indexName()).GetStats()
 	if err != nil {
-		return UserIndexStatus{}, err
+		return IndexStatus{}, err
 	}
-	stat := UserIndexStatus{
-		UserId:       userId,
+	stat := IndexStatus{
 		NumDocuments: int(stats.NumberOfDocuments),
 		Indexing:     stats.IsIndexing,
 	}
 	return stat, err
 }
 
-// GetUserIndicesStatus returns list of indices, total db size in bytes and possible error.
-func (e *Engine) GetUserIndicesStatus() (map[int]*UserIndexStatus, int64, error) {
-	var err errors.Error
-	stats, meiliErr := e.client.GetStats()
-	if meiliErr != nil {
-		err = errors.ErrInternalError
-		err.Err = meiliErr
-		err.ErrMsg = "get stats"
-
-		return map[int]*UserIndexStatus{}, 0, err
-	}
-
-	indices := make(map[int]*UserIndexStatus, len(stats.Indexes))
-	counter := 0
-	for i, v := range stats.Indexes {
-		user := indexNameToUserIdRegex.FindStringSubmatch(i)
-		if len(user) != 2 {
-			logrus.Warningf("not virtualpaper index: %s, skipping", user)
-		}
-		userId, err := strconv.Atoi(user[1])
-		if err != nil {
-			logrus.Warningf("not virtualpaper index: %s, skipping", user[1])
-			continue
-		}
-		userStats := &UserIndexStatus{
-			UserId:       userId,
-			Indexing:     v.IsIndexing,
-			NumDocuments: int(v.NumberOfDocuments),
-		}
-		indices[userId] = userStats
-		counter += 1
-	}
-	return indices, stats.DatabaseSize, nil
-}
-
 func (e *Engine) DeleteDocuments(userId int) error {
-	index := indexName(userId)
+	index := indexName()
 	_, err := e.client.Index(index).DeleteDocumentsByFilter(fmt.Sprintf("owner_id=%d", userId))
 	if err != nil {
 		return fmt.Errorf("delete index: %v", err)
@@ -289,8 +241,8 @@ func (e *Engine) DeleteDocuments(userId int) error {
 	return nil
 }
 
-func (e *Engine) AddUserIndex(userId int) error {
-	index := indexName(userId)
+func (e *Engine) AddIndex() error {
+	index := indexName()
 	indexExists := false
 	logrus.Debugf("ensure meilisearch index %s exists", index)
 	var err error
