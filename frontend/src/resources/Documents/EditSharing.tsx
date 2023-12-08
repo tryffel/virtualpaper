@@ -5,13 +5,14 @@ import {
   Button,
   Form,
   HttpError,
-  NumberInput,
   RecordContext,
+  ReferenceInput,
   SaveButton,
+  SelectInput,
   SimpleFormIterator,
-  TextField,
   useNotify,
   useRecordContext,
+  useRefresh,
   useUpdate,
 } from "react-admin";
 import ShareIcon from "@mui/icons-material/Share";
@@ -24,14 +25,11 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Tooltip,
   Typography,
 } from "@mui/material";
-import { RequestIndexSelect } from "./RequestIndexing";
 
 export const EditDocumentSharing = (props: { onClose: () => void }) => {
-  const [step, setStep] = React.useState("fts");
-  const record = useRecordContext();
-  const notify = useNotify();
   const [open, setOpen] = React.useState(false);
   const handleClickOpen = () => {
     setOpen(true);
@@ -66,6 +64,7 @@ const EditDialogContent = ({
   onClose: () => void;
   open: boolean;
 }) => {
+  const refresh = useRefresh();
   const notify = useNotify();
   const record = useRecordContext();
 
@@ -75,6 +74,7 @@ const EditDialogContent = ({
     {
       onSuccess: () => {
         notify("Updated");
+        refresh();
         onClose();
       },
       onError: (err: HttpError) => {
@@ -86,7 +86,6 @@ const EditDialogContent = ({
   );
 
   const handleUpdate = (data: any) => {
-    console.log("saving", data);
     update("document-user-sharing", { id: record.id, data: data });
   };
 
@@ -109,26 +108,29 @@ const EditDialogContent = ({
             <DialogContentText>
               <ArrayInput
                 source={"users"}
+                label={""}
                 defaultValue={{
                   user_id: 0,
                   permissions: { read: true, write: false, delete: false },
                 }}
               >
                 <SimpleFormIterator inline disableReordering>
-                  <NumberInput source={"user_id"} label={"User Id"} />
-                  <TextField source={"user_name"} label={"Username"} />
-                  <BooleanInput
-                    source={"permissions.read"}
-                    label={"Can view"}
-                  />
-                  <BooleanInput
-                    source={"permissions.write"}
-                    label={"Can edit"}
-                  />
-                  <BooleanInput
-                    source={"permissions.delete"}
-                    label={"Can delete"}
-                  />
+                  <ReferenceInput source={"user_id"} reference={"users"}>
+                    <SelectInput
+                      source={"user_id"}
+                      label={"User"}
+                      optionText={"name"}
+                      required
+                    />
+                  </ReferenceInput>
+                  <Tooltip
+                    title={"Does user have permission to edit the document"}
+                  >
+                    <BooleanInput
+                      source={"permissions.write"}
+                      label={"Can edit"}
+                    />
+                  </Tooltip>
                 </SimpleFormIterator>
               </ArrayInput>
             </DialogContentText>
