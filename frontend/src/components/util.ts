@@ -45,7 +45,7 @@ export const LimitStringLength = (val: string, limit: number): string => {
 };
 
 export const EscapeWhitespace = (input: string): string => {
-  if (input.includes(" ")) {
+  if (input && input.includes(" ")) {
     return `"${input}"`;
   }
   return input;

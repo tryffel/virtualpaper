@@ -62,9 +62,9 @@ const MetadataValue = ({ metadata }: { metadata: Metadata }) => {
       pathname: "/documents",
       search: `filter=${JSON.stringify({
         q:
-          EscapeWhitespace(metadata.key) +
+          EscapeWhitespace(get(metadata, "key")) +
           ":" +
-          EscapeWhitespace(metadata.value),
+          EscapeWhitespace(get(metadata, "value")),
       })}`,
     };
   }
