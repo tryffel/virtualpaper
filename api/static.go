@@ -8,7 +8,7 @@ import (
 )
 
 func staticServer() http.Handler {
-	htmlContent, err := fs.Sub(frontend.StaticFiles, "build")
+	htmlContent, err := fs.Sub(frontend.StaticFiles, "dist")
 	if err != nil {
 		logrus.Panic(err)
 	}
@@ -16,7 +16,7 @@ func staticServer() http.Handler {
 }
 
 func static() fs.FS {
-	htmlContent, err := fs.Sub(frontend.StaticFiles, "build")
+	htmlContent, err := fs.Sub(frontend.StaticFiles, "dist")
 	if err != nil {
 		logrus.Panic(err)
 	}
