@@ -16,7 +16,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 const dev = {
   url: "http://localhost:8000/api/v1",
   queryDevtools: false,
@@ -27,4 +26,4 @@ const prod = {
   queryDevtools: false,
 };
 
-export const config = import.meta.env.REACT_APP_STAGE === "prod" ? prod : dev;
+export const config = import.meta.env.PROD ? prod : dev;
