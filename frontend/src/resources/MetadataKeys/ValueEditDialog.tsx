@@ -109,7 +109,7 @@ const MetadataValueUpdateDialog = (props: MetadataValueUpdateDialogProps) => {
     notify("Metadata value deleted");
   };
 
-  const handleDelete = async (values: any) => {
+  const handleDelete = async () => {
     setConfirmOpen(true);
   };
 
