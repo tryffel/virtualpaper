@@ -82,7 +82,7 @@ const LargeDocumentList = () => {
   );
 };
 
-const DocumentGrid = (props: any) => {
+const DocumentGrid = () => {
   const { data, isLoading } = useListContext();
   const theme = useTheme();
 

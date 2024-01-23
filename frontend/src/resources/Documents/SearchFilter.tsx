@@ -192,7 +192,7 @@ interface Suggestion {
   prefixed: string;
 }
 
-export const FullTextSeachFilter = (props: any) => {
+export const FullTextSeachFilter = () => {
   const { filterValues, setFilters } = useListContext();
   const addFilter = (q: string) => {
     setFilters({ ...filterValues, q: q }, false);
@@ -311,12 +311,12 @@ export const FullTextSeachFilter = (props: any) => {
       includeInputInList
       value={value}
       // @ts-ignore
-      onChange={(event: any, newValue: Suggestion) => {
+      onChange={(_, newValue: Suggestion) => {
         // use selected suggestion
         setQuery(newValue.prefixed);
         setValue(newValue);
       }}
-      onInputChange={(event, input) => {
+      onInputChange={(_, input) => {
         // user entered text
         setQuery(input);
         setValue({ value: input, type: "", hint: "", prefixed: input });
