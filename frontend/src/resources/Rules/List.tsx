@@ -72,7 +72,6 @@ const ExpandRule = () => {
       <Grid item xs={6} md={6} lg={6}>
         <Box display={{ xs: "block", sm: "flex" }}>
           <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-            <Typography variant="body2">Description</Typography>
             <MarkdownField label="Description" source="description" />
           </Box>
           <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>

@@ -252,9 +252,7 @@ const DocumentGeneralTabLarge = () => {
           alignContent={"space-between"}
         >
           <Grid item xs={12}>
-            <Labeled label="Description">
               <MarkdownField source="description" />
-            </Labeled>
           </Grid>
           <Grid item xs={12} sm={8}>
             <MetadataList />
