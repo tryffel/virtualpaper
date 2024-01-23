@@ -29,7 +29,6 @@ import {
 } from "react-admin";
 
 import { Box, Grid, Typography, useTheme } from "@mui/material";
-import { MarkdownInput } from "../../../components/Markdown";
 import TestButton from "../Test";
 import { RuleEditHelp } from "./Help";
 import { ConditionEdit } from "./Condition";

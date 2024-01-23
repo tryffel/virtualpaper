@@ -24,7 +24,6 @@ import {
   BooleanInput,
 } from "react-admin";
 import { Typography } from "@mui/material";
-import { MarkdownInput } from "../../components/Markdown";
 
 const defaultValue = {
   name: "",

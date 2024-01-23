@@ -17,10 +17,10 @@
     "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-admin": "^4.16.7",
-    "react-dom": "^18.2.0",
-    "react-markdown": "^9.0.1"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@types/lodash": "^4.14.202",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
@@ -29,6 +29,7 @@
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "prettier": "^3.2.4",
     "typescript": "^5.2.2",
     "vite": "^5.0.8"
   }

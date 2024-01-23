@@ -16,28 +16,40 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import ReactMarkdown from "react-markdown";
-import {Labeled, useInput, useRecordContext, useTheme} from "react-admin";
-import {Box} from "@mui/material";
-import MDEditor from '@uiw/react-md-editor';
+import { Labeled, useInput, useRecordContext, useTheme } from "react-admin";
+import { Box } from "@mui/material";
+import MDEditor from "@uiw/react-md-editor";
+import { get } from "lodash";
 
-export const MarkdownField = (props: any) => {
-  const record = useRecordContext(props);
-  return <ReactMarkdown>{record[props.source]}</ReactMarkdown>;
+export type MarkdownProps = {
+  source: string;
+  label?: string;
 };
 
-export const MarkdownInput = (props: any) => {
-  const theme = useTheme()
-  const { onChange, onBlur} = props;
-  const { field} = useInput({onChange, onBlur, ...props});
+export const MarkdownField = (props: MarkdownProps) => {
+  const record = useRecordContext(props);
+  const theme = useTheme();
+
+  return (
+    <Labeled label={props.label ?? props.source}>
+      <Box data-color-mode={theme} sx={{ p: 1 }}>
+        <MDEditor.Markdown source={get(record, props.source)} />
+      </Box>
+    </Labeled>
+  );
+};
+
+export const MarkdownInput = (props: MarkdownProps) => {
+  const theme = useTheme();
+  const { field } = useInput(props);
   return (
     <Labeled label={props.label} fullWidth>
       <Box data-color-mode={theme}>
         <MDEditor
-            value={field.value}
-            onChange={field.onChange}
-            preview="edit"
-          />
+          value={field.value}
+          onChange={field.onChange}
+          preview="edit"
+        />
       </Box>
     </Labeled>
   );
