@@ -42,7 +42,7 @@ import {
   useRecordContext,
 } from "react-admin";
 
-import {MarkdownInput, MarkdownProps} from "../../components/Markdown";
+import { MarkdownInput } from "../../components/Markdown";
 import { Typography, Grid, Box, useMediaQuery } from "@mui/material";
 import LinkIcon from "@mui/icons-material/Link";
 import ArticleIcon from "@mui/icons-material/Article";
@@ -226,7 +226,7 @@ const ToggledEmbedFile = (props: any) => {
 const DocumentEditActions = (props: { open: any; setOpen: any }) => {
   const isMedium = useMediaQuery((theme: any) => theme.breakpoints.down("md"));
   const { open, setOpen } = props;
-  const onClick = (e: any) => {
+  const onClick = () => {
     setOpen(!open);
   };
 

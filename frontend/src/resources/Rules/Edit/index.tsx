@@ -16,7 +16,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import * as React from "react";
 import {
   ArrayInput,
   BooleanInput,
@@ -33,6 +32,7 @@ import TestButton from "../Test";
 import { RuleEditHelp } from "./Help";
 import { ConditionEdit } from "./Condition";
 import { ActionEdit } from "./Action";
+import { MarkdownInput } from "../../../components/Markdown.tsx";
 
 export const RuleEdit = () => {
   const theme = useTheme();

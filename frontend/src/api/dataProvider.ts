@@ -36,7 +36,7 @@ const fetchJson = (url: string, options = {}) => {
         statusText: response.statusText,
         headers: response.headers,
         body: text,
-      }))
+      })),
     )
     .then(({ status, statusText, headers, body }) => {
       let json;
@@ -47,7 +47,7 @@ const fetchJson = (url: string, options = {}) => {
       }
       if (status < 200 || status >= 300) {
         return Promise.reject(
-          new HttpError((json && json.Error) || statusText, status, json)
+          new HttpError((json && json.Error) || statusText, status, json),
         );
       }
       return Promise.resolve({ status, headers, body, json });
@@ -81,7 +81,7 @@ export const dataProvider: DataProvider = {
     let url = `${apiUrl}/${resource}?${stringify(query)}`;
 
     if (resource === "metadata/values") {
-      // @ts-ignore
+      // @ts-expect-error
       if (!params.id) {
         // @ts-ignore
         params.id = 1;
@@ -107,7 +107,7 @@ export const dataProvider: DataProvider = {
         .then(({ headers, json }) => {
           if (!headers.has(countHeader)) {
             throw new Error(
-              `The ${countHeader} header is missing in the HTTP Response. The simple REST data provider expects responses for lists of resources to contain this header with the total number of results to build the pagination. If you are using CORS, did you declare ${countHeader} in the Access-Control-Expose-Headers header?`
+              `The ${countHeader} header is missing in the HTTP Response. The simple REST data provider expects responses for lists of resources to contain this header with the total number of results to build the pagination. If you are using CORS, did you declare ${countHeader} in the Access-Control-Expose-Headers header?`,
             );
           }
           return {
@@ -117,7 +117,7 @@ export const dataProvider: DataProvider = {
                 ? parseInt(
                     // @ts-ignore
                     headers.get("content-range").split("/").pop(),
-                    10
+                    10,
                   )
                 : // @ts-ignore
                   parseInt(headers.get(countHeader.toLowerCase())),
@@ -140,7 +140,7 @@ export const dataProvider: DataProvider = {
     return httpClient(url, options).then(({ headers, json }) => {
       if (!headers.has(countHeader)) {
         throw new Error(
-          `The ${countHeader} header is missing in the HTTP Response. The simple REST data provider expects responses for lists of resources to contain this header with the total number of results to build the pagination. If you are using CORS, did you declare ${countHeader} in the Access-Control-Expose-Headers header?`
+          `The ${countHeader} header is missing in the HTTP Response. The simple REST data provider expects responses for lists of resources to contain this header with the total number of results to build the pagination. If you are using CORS, did you declare ${countHeader} in the Access-Control-Expose-Headers header?`,
         );
       }
       return {
@@ -150,7 +150,7 @@ export const dataProvider: DataProvider = {
             ? parseInt(
                 // @ts-ignore
                 headers.get("content-range").split("/").pop(),
-                10
+                10,
               )
             : // @ts-ignore
               parseInt(headers.get(countHeader.toLowerCase())),
@@ -171,7 +171,7 @@ export const dataProvider: DataProvider = {
       }
       const rawUrlParams = urlParams.toString() && "?" + urlParams.toString();
       return httpClient(
-        `${apiUrl}/${resource}/${params.id}${rawUrlParams}`
+        `${apiUrl}/${resource}/${params.id}${rawUrlParams}`,
       ).then(({ json }) => ({
         data: { ...json, id: json.id ? json.id : params.id },
       }));
@@ -202,7 +202,7 @@ export const dataProvider: DataProvider = {
       return httpClient(`${apiUrl}/${resource}/${params.id}`).then(
         ({ json }) => ({
           data: { ...json, style: JSON.parse(json.style) },
-        })
+        }),
       );
     } else {
       if (params.id === null || params.id === "") {
@@ -213,7 +213,7 @@ export const dataProvider: DataProvider = {
         return httpClient(`${apiUrl}/${resource}/${params.id}`).then(
           ({ json }) => ({
             data: { ...json, id: json.id ? json.id : params.id },
-          })
+          }),
         );
       }
     }
@@ -231,7 +231,7 @@ export const dataProvider: DataProvider = {
       params.ids.length === 0
     ) {
       url = `${apiUrl}/metadata/keys/${params.ids[0]}/values?${stringify(
-        query
+        query,
       )}`;
     }
 
@@ -240,8 +240,8 @@ export const dataProvider: DataProvider = {
         params.ids.map((id) =>
           httpClient(`${apiUrl}/${resource}/${id}`, {
             method: "GET",
-          })
-        )
+          }),
+        ),
       ).then((responses) => ({
         data: responses.map(({ json }) => ({ ...json, id: json.id })),
       }));
@@ -276,7 +276,7 @@ export const dataProvider: DataProvider = {
       url = `${apiUrl}/documents/${params.id}/history?${stringify(query)}`;
     } else if (resource === "documents/linked" && params.id) {
       url = `${apiUrl}/documents/${params.id}/linked-documents?${stringify(
-        query
+        query,
       )}`;
     }
     const options =
@@ -292,7 +292,7 @@ export const dataProvider: DataProvider = {
     return httpClient(url, options).then(({ headers, json }) => {
       if (!headers.has(countHeader)) {
         throw new Error(
-          `The ${countHeader} header is missing in the HTTP Response. The simple REST data provider expects responses for lists of resources to contain this header with the total number of results to build the pagination. If you are using CORS, did you declare ${countHeader} in the Access-Control-Expose-Headers header?`
+          `The ${countHeader} header is missing in the HTTP Response. The simple REST data provider expects responses for lists of resources to contain this header with the total number of results to build the pagination. If you are using CORS, did you declare ${countHeader} in the Access-Control-Expose-Headers header?`,
         );
       }
       return {
@@ -302,7 +302,7 @@ export const dataProvider: DataProvider = {
             ? parseInt(
                 // @ts-ignore
                 headers.get("content-range").split("/").pop(),
-                10
+                10,
               )
             : // @ts-ignore
               parseInt(headers.get(countHeader.toLowerCase())),
@@ -350,8 +350,8 @@ export const dataProvider: DataProvider = {
         httpClient(`${apiUrl}/${resource}/${id}`, {
           method: "PUT",
           body: JSON.stringify(params.data),
-        })
-      )
+        }),
+      ),
     ).then((responses) => ({ data: responses.map(({ json }) => json.id) })),
 
   // @ts-ignore
@@ -417,8 +417,8 @@ export const dataProvider: DataProvider = {
       params.ids.map((id) =>
         httpClient(`${apiUrl}/${resource}/${id}`, {
           method: "DELETE",
-        })
-      )
+        }),
+      ),
     ).then((responses) => ({ data: responses.map(({ json }) => json.id) })),
 
   testRule: (resource: any, params: any) =>

@@ -16,7 +16,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import * as React from "react";
 import { useState } from "react";
 import {
   List,
@@ -30,7 +29,7 @@ import { Grid, Typography, useMediaQuery, useTheme } from "@mui/material";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 
 import { HelpButton } from "../../components/Help";
-import { DocumentSearchFilter, FullTextSeachFilter } from "./SearchFilter";
+import { DocumentSearchFilter } from "./SearchFilter";
 import { DocumentCard } from "./DocumentCard";
 import { EmptyResourcePage } from "../../components/primitives/EmptyPage";
 

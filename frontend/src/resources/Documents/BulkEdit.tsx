@@ -16,7 +16,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import * as React from "react";
 import {
   useGetMany,
   Loading,
@@ -46,31 +45,18 @@ import { HelpButton } from "../../components/Help";
 import { DocumentCard } from "./DocumentCard";
 import { LanguageSelectInput, MetadataValueInput } from "./Edit";
 
-interface Metadata {
-  KeyId: number;
-  Key: string;
-  Valueid: number;
-  Value: string;
-}
-interface body {
-  documents: string[];
-  addMetadata: Metadata[];
-  removeMetadata: Metadata[];
-}
-
 const BulkEditDocuments = () => {
-  const [documentIds, setStore] = useStore("bulk-edit-document-ids", []);
-  // @ts-ignore
+  const [documentIds] = useStore("bulk-edit-document-ids", []);
   const idList = documentIds;
   const ids = documentIds;
   console.log("ids to edit: ", idList);
-  const { data, isLoading, error, refetch } = useGetMany("documents", {
+  const { data, isLoading } = useGetMany("documents", {
     ids: idList,
   });
   const notify = useNotify();
   const redirect = useRedirect();
 
-  const onSuccess = (data: any) => {
+  const onSuccess = () => {
     notify(`Documents modified`);
     redirect("list", "documents");
   };
@@ -148,7 +134,7 @@ const BulkEditDocuments = () => {
                   </ReferenceInput>
 
                   <FormDataConsumer>
-                    {({ formData, scopedFormData, getSource }) =>
+                    {({ scopedFormData, getSource }) =>
                       scopedFormData && scopedFormData.key_id ? (
                         <MetadataValueInput
                           source={getSource ? getSource("value_id") : ""}
@@ -190,7 +176,7 @@ const BulkEditDocuments = () => {
                   </ReferenceInput>
 
                   <FormDataConsumer>
-                    {({ formData, scopedFormData, getSource }) =>
+                    {({ scopedFormData, getSource }) =>
                       scopedFormData && scopedFormData.key_id ? (
                         <MetadataValueInput
                           source={getSource ? getSource("value_id") : ""}

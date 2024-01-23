@@ -16,7 +16,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import * as React from "react";
 import {
   Datagrid,
   DateField,
@@ -30,18 +29,15 @@ import {
   useEditController,
   TextInput,
   useRecordContext,
-  FunctionField,
-  FormDataConsumer,
 } from "react-admin";
 
 import { MarkdownInput } from "../../components/Markdown";
-import { Typography, useMediaQuery } from "@mui/material";
+import { useMediaQuery } from "@mui/material";
 
 import MetadataValueCreateButton from "./ValueCreate";
 import MetadataValueUpdateDialog from "./ValueEditDialog";
 import { useState } from "react";
 import get from "lodash/get";
-import { IconByName, iconExists } from "../../components/icons";
 import { IconColorSelect, IconSelect } from "./IconSelect";
 
 export const MetadataKeyEdit = () => {
@@ -67,15 +63,6 @@ export const MetadataKeyEdit = () => {
   if (record && keyId == 0) {
     setKeyId(record.id);
   }
-
-  const renderIcon = (record: any) => () => {
-    console.log("record", record);
-    if (!iconExists(record.icon)) {
-      return <Typography color={"error"}>Icon does not exist</Typography>;
-    } else {
-      return <IconByName name={record.icon} />;
-    }
-  };
 
   return (
     <Edit

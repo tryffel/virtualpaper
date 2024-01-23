@@ -79,10 +79,10 @@ test: test-unit test-integration test-start test-api test-e2e test-stop
 
 
 run-frontend: 
-	cd frontend; yarn start
+	cd frontend; npm run dev
 
 build-frontend: 
-	cd frontend; REACT_APP_STAGE=prod yarn build
+	cd frontend; NODE_ENV='production'; npm run build 
 
 
 swagger:
@@ -148,10 +148,6 @@ dev-start-container-no-server:
 		--network virtualpaper_virtualpaper \
 		-v virtualpaper-dev-go:/go/pkg/ \
 		tryffel/virtualpaper-devenv:latest /bin/sh
-
-
-
-
 
 
 all: test release build-frontend 

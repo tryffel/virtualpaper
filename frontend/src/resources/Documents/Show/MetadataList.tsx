@@ -7,7 +7,6 @@ import LabelIcon from "@mui/icons-material/Label";
 import ListItem from "@mui/material/ListItem";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import React from "react";
 import { EscapeWhitespace } from "../../../components/util";
 import { Link } from "react-router-dom";
 
@@ -53,8 +52,9 @@ const MetadataValue = ({ metadata }: { metadata: Metadata }) => {
 
   const linkDocsLabel = `Show documents`;
 
-  let to: any = {
+  let to = {
     pathname: "/documents",
+    search: "",
   };
 
   if (metadata) {

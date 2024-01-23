@@ -68,7 +68,6 @@ const authProvider: AuthProvider = {
       }),
   checkAuth: () =>
     localStorage.getItem("auth") ? Promise.resolve() : Promise.reject(),
-  // @ts-ignore
   checkError: (error: HttpError) => {
     if (error.status === 401) {
       if (error.message === "invalid token") {
@@ -81,7 +80,7 @@ const authProvider: AuthProvider = {
     }
     return Promise.resolve();
   },
-  getPermissions: (params: any) => {
+  getPermissions: () => {
     const isAdmin = localStorage.getItem("is_admin");
     const authRequired = localStorage.getItem("requires_reauthentication");
     const requiresReauthentication = authRequired

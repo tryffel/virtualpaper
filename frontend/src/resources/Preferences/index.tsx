@@ -27,7 +27,6 @@ import {
   Labeled,
   SaveButton,
   Button,
-  TabbedForm,
   Toolbar,
   SimpleForm,
 } from "react-admin";
@@ -44,7 +43,6 @@ import {
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { Link } from "react-router-dom";
-import { StopWordsInput, SynonymsInput } from "./Settings";
 import KeyIcon from "@mui/icons-material/Key";
 
 export const ProfileEdit = (...props: any) => {
@@ -106,7 +104,7 @@ const ShowToken = () => {
   };
 
   const handleMouseDownPassword = (
-    event: React.MouseEvent<HTMLButtonElement>
+    event: React.MouseEvent<HTMLButtonElement>,
   ) => {
     event.preventDefault();
   };
@@ -202,53 +200,6 @@ const Statistics = () => {
     </Grid>
   );
 };
-
-const StopWordsTab = () => {
-  return (
-    <Grid container spacing={3}>
-      <Grid item xs={12}>
-        <Typography variant={"h5"}>Search experience: stop words</Typography>
-      </Grid>
-      <Grid item xs={12}>
-        <Typography variant="body2">
-          Stop words are language-specific words that are excluded when
-          documents during search query. They will not modify the documents in
-          any way, they are only meant to improve the relevancy of search
-          results.
-        </Typography>
-      </Grid>
-      <Grid item xs={12}>
-        <Typography variant="body2">Format: one stop word per line</Typography>
-        <StopWordsInput />
-      </Grid>
-    </Grid>
-  );
-};
-
-const SynonymsTab = () => {
-  return (
-    <Grid container spacing={3}>
-      <Grid item xs={12}>
-        <Typography variant={"h5"}>Search experience: synonyms</Typography>
-      </Grid>
-      <Grid item xs={12}>
-        <Typography variant="body2">
-          Synonyms are words that are treated as same when searching documents.
-          They will not modify the contents of documents in any way, they will
-          only improve the relevancy of the search results.
-        </Typography>
-      </Grid>
-      <Grid item xs={12}>
-        <Typography variant="body2">
-          Format: list of synonyms separated by comma, e.g.
-          ('food','spaghetti','pasta')
-        </Typography>
-        <SynonymsInput />
-      </Grid>
-    </Grid>
-  );
-};
-
 export default {
   edit: ProfileEdit,
 };

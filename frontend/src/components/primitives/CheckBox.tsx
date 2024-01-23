@@ -1,4 +1,3 @@
-import * as React from "react";
 import CheckBox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormGroup from "@mui/material/FormGroup";
@@ -13,13 +12,7 @@ export const CheckBoxInput = (props: {
 }) => {
   const { source, defaultValue, label } = props;
 
-  const {
-    id,
-    field,
-    isRequired,
-    fieldState: { error, invalid, isTouched },
-    formState: { isSubmitted },
-  } = useInput({
+  const { field, isRequired } = useInput({
     defaultValue,
     source,
     type: "checkbox",
@@ -31,7 +24,7 @@ export const CheckBoxInput = (props: {
       // Ensure field is considered as touched
       field.onBlur();
     },
-    [field]
+    [field],
   );
 
   return (

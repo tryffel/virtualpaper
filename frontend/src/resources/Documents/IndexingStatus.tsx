@@ -17,12 +17,10 @@
  */
 
 import React from "react";
-import { Labeled, useRecordContext } from "react-admin";
+import { Labeled } from "react-admin";
 import { Box, CircularProgress, Typography } from "@mui/material";
 
 export const IndexingStatusField = (props: any) => {
-  const record = useRecordContext(props);
-
   const [value, setValue] = React.useState("ready");
   const [label, setLabel] = React.useState("Ready");
 

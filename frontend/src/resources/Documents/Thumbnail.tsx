@@ -130,7 +130,7 @@ export function EmbedFile(
     source: string;
     filename: string;
     setDownloadUrl?: (url: string) => void;
-  } = { source: "", filename: "" }
+  } = { source: "", filename: "" },
 ) {
   const style = {
     width: "100%",
@@ -139,10 +139,9 @@ export function EmbedFile(
     height: "100%",
   };
 
-  const { source, filename, setDownloadUrl } = props;
+  const { source, setDownloadUrl } = props;
 
   const record = useRecordContext();
-  const url = get(record, source || "");
   const [imgData, setImage] = React.useState("");
 
   React.useEffect(() => {

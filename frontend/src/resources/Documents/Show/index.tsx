@@ -18,14 +18,11 @@
 
 import React from "react";
 import {
-  ArrayField,
   Button,
-  ChipField,
   DateField,
   EditButton,
   Labeled,
   Show,
-  SingleFieldList,
   Tab,
   TabbedShowLayout,
   TextField,
@@ -252,7 +249,7 @@ const DocumentGeneralTabLarge = () => {
           alignContent={"space-between"}
         >
           <Grid item xs={12}>
-              <MarkdownField source="description" />
+            <MarkdownField source="description" />
           </Grid>
           <Grid item xs={12} sm={8}>
             <MetadataList />
@@ -285,8 +282,6 @@ const DocumentGeneralTabLarge = () => {
 };
 
 const DocumentGeneralTablSmall = () => {
-  const record = useRecordContext();
-
   return (
     <Grid container spacing={2}>
       <Grid item xs={12}>

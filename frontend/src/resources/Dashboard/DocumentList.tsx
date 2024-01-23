@@ -17,18 +17,14 @@
  */
 
 import * as React from "react";
-
 import { Loading, useGetMany, useStore } from "react-admin";
-
 import {
-  useTheme,
   Typography,
   Box,
   Paper,
   ToggleButtonGroup,
   ToggleButton,
   useMediaQuery,
-  Divider,
 } from "@mui/material";
 import { DocumentCard } from "../Documents/DocumentCard";
 
@@ -37,12 +33,11 @@ export const LastUpdatedDocumentList = (props: {
   lastAddedIds: string[];
   lastViewedIds: string[];
 }) => {
-  const theme = useTheme();
   const isNotSmall = useMediaQuery((theme: any) => theme.breakpoints.up("xs"));
   const { lastUpdatedIds, lastAddedIds, lastViewedIds } = props;
   const [showMode, setShowMode] = useStore<ShowMode>(
     "dashboard.latest_documents.mode",
-    "lastUpdated"
+    "lastUpdated",
   );
 
   const getDocumentIds = () => {
@@ -58,7 +53,7 @@ export const LastUpdatedDocumentList = (props: {
     }
   };
 
-  const { data, isLoading, error, refetch } = useGetMany("documents", {
+  const { data, isLoading } = useGetMany("documents", {
     ids: getDocumentIds()?.slice(0, 10) ?? [],
   });
 
@@ -106,7 +101,7 @@ const ShowModeButton = (props: {
 
   const handleAlignment = (
     event: React.MouseEvent<HTMLElement>,
-    newAlignment: ShowMode
+    newAlignment: ShowMode,
   ) => {
     setShowMode(newAlignment);
   };

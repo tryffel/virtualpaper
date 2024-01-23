@@ -20,6 +20,7 @@ import * as React from "react";
 
 import {
   Button,
+  RaRecord,
   RecordContextProvider,
   useDataProvider,
   useGetOne,
@@ -100,7 +101,11 @@ const TestButton = (record: any) => {
   );
 };
 
-const TestDialog = (props: any) => {
+const TestDialog = (props: {
+  open: boolean;
+  onClose: () => void;
+  record: RaRecord;
+}) => {
   const record = useRecordContext();
   const [scroll] = React.useState("paper");
 
@@ -112,9 +117,7 @@ const TestDialog = (props: any) => {
   };
 
   const [documentId, setDocumentId] = React.useState("");
-  const [result, setResult] = React.useState<RuleTestResult>();
-
-  const [textResult, setTextResult] = React.useState("");
+  const [result, setResult] = React.useState<RuleTestResult | null>();
 
   const { data, isSuccess, refetch, isError, isLoadingError, failureCount } =
     useGetOne("documents", {
@@ -134,23 +137,18 @@ const TestDialog = (props: any) => {
   };
 
   const handleClear = () => {
-    // @ts-ignore
     setResult(null);
-    setTextResult("");
     setDocumentId("");
   };
 
   const exec = () => {
-    // @ts-ignore
     dataProvider
       .testRule("processing/rules", {
         id: record.id,
         data: { document_id: documentId },
       })
-      // @ts-ignore
       .then((data: { data: RuleTestResult }) => {
         setResult(data.data);
-        setTextResult(data.data.log);
       });
   };
 
@@ -191,7 +189,6 @@ const TestDialog = (props: any) => {
             id="document_id"
             label="Document id"
             variant="outlined"
-            // @ts-ignore
             onChange={onDocIdchanged}
             color={isError || failureCount > 1 || true ? "error" : "primary"}
           />
@@ -287,7 +284,7 @@ const Log = (props: { log: string }) => {
             <li>
               <Typography variant="body2">{line}</Typography>
             </li>
-          ) : null
+          ) : null,
         )}
       </ol>
     </Accordion>

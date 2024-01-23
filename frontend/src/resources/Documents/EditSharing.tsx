@@ -68,22 +68,18 @@ const EditDialogContent = ({
   const notify = useNotify();
   const record = useRecordContext();
 
-  const [update, { isLoading }] = useUpdate(
-    "document-user-sharing",
-    undefined,
-    {
-      onSuccess: () => {
-        notify("Updated");
-        refresh();
-        onClose();
-      },
-      onError: (err: HttpError) => {
-        notify(`Error: ${err.message} (status: ${err.status})`, {
-          type: "error",
-        });
-      },
-    }
-  );
+  const [update] = useUpdate("document-user-sharing", undefined, {
+    onSuccess: () => {
+      notify("Updated");
+      refresh();
+      onClose();
+    },
+    onError: (err: HttpError) => {
+      notify(`Error: ${err.message} (status: ${err.status})`, {
+        type: "error",
+      });
+    },
+  });
 
   const handleUpdate = (data: any) => {
     update("document-user-sharing", { id: record.id, data: data });
