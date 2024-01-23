@@ -3,7 +3,7 @@ import { config } from "../env";
 export const doResetPassword = (
   token: string,
   tokenId: string,
-  password: string
+  password: string,
 ) => {
   const request = new Request(config.url + "/auth/reset-password", {
     method: "POST",
@@ -22,7 +22,7 @@ export const doResetPassword = (
       }
       return response.json();
     })
-    .then((auth) => {});
+    .then(() => {});
 };
 
 export const doForgotPassword = (email: string) => {

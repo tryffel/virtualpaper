@@ -17,12 +17,11 @@
  */
 
 import { useGetOne, Loading, CreateButton } from "react-admin";
-import { Box, Grid, Typography, Container } from "@mui/material";
+import { Grid } from "@mui/material";
 
 import { LastUpdatedDocumentList } from "./DocumentList";
 import { get } from "lodash";
 import { IndexingStatusRow, IndexingStatusRowSmall } from "./Status";
-import * as React from "react";
 import { EmptyDocumentList } from "../Documents/List";
 
 export const Dashboard = () => {

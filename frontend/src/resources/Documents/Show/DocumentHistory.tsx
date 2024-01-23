@@ -16,7 +16,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import React from "react";
 import { useRecordContext, useGetManyReference, Loading } from "react-admin";
 import {
   Grid,
@@ -54,7 +53,7 @@ export const ShowDocumentsEditHistory = () => {
         field: "created_at",
         order: "DESC",
       },
-    }
+    },
   );
 
   if (isLoading) {
@@ -154,7 +153,6 @@ const ShowDocumentsEditHistoryItem = (props: { item: DocumentHistoryItem }) => {
 // create, rename, add metadata, remove metadata, date, description, content
 //
 const ItemLabel = (props: HistoryProps) => {
-  const ref = React.createRef();
   const { item, pretty_time } = props;
   // @ts-ignore
   const fullTime = new Date(Date.parse(item.created_at)).toLocaleString();
@@ -169,7 +167,7 @@ const ItemLabel = (props: HistoryProps) => {
 };
 
 const DocumentHistoryCreate = (props: HistoryProps) => {
-  const { item, pretty_time } = props;
+  const { item } = props;
 
   return (
     <Step key={`${item.id}`} expanded active completed>
@@ -183,7 +181,7 @@ const DocumentHistoryCreate = (props: HistoryProps) => {
 };
 
 const DocumentHistoryDescription = (props: HistoryProps) => {
-  const { item, pretty_time } = props;
+  const { item } = props;
   return (
     <Step key={`${item.id}`} expanded active completed>
       <StepLabel icon={<ArticleIcon />}>Changed description</StepLabel>
@@ -196,7 +194,7 @@ const DocumentHistoryDescription = (props: HistoryProps) => {
 };
 
 const DocumentHistoryRename = (props: HistoryProps) => {
-  const { item, pretty_time } = props;
+  const { item } = props;
   return (
     <Step key={`${item.id}`} expanded active completed>
       <StepLabel icon={<ArticleIcon />}>Renamed document</StepLabel>
@@ -209,14 +207,16 @@ const DocumentHistoryRename = (props: HistoryProps) => {
 };
 
 const DocumentHistoryAddMetadata = (props: HistoryProps) => {
-  const { item, pretty_time } = props;
+  const { item } = props;
   let keyId = "";
   let valueId = "";
   let parsed = {};
   let jsonMode = true;
   try {
     parsed = JSON.parse(item.new_value);
+    // @ts-ignore
     keyId = get(parsed, "key_id");
+    // @ts-ignore
     valueId = get(parsed, "value_id");
   } catch (e) {
     // old mode without json and notation is key_name:value_name
@@ -246,14 +246,16 @@ const DocumentHistoryAddMetadata = (props: HistoryProps) => {
 };
 
 const DocumentHistoryRemoveMetadata = (props: HistoryProps) => {
-  const { item, pretty_time } = props;
+  const { item } = props;
   let keyId = "";
   let valueId = "";
   let parsed = {};
   let jsonMode = true;
   try {
     parsed = JSON.parse(item.old_value);
+    // @ts-ignore
     keyId = get(parsed, "key_id");
+    // @ts-ignore
     valueId = get(parsed, "value_id");
   } catch (e) {
     [keyId, valueId] = item.old_value.split(":");
@@ -281,7 +283,7 @@ const DocumentHistoryRemoveMetadata = (props: HistoryProps) => {
 };
 
 const DocumentHistoryContent = (props: HistoryProps) => {
-  const { item, pretty_time } = props;
+  const { item } = props;
   return (
     <Step key={`${item.id}`} expanded active completed>
       <StepLabel icon={<ArticleIcon />}>Changed content</StepLabel>
@@ -294,9 +296,7 @@ const DocumentHistoryContent = (props: HistoryProps) => {
 };
 
 const DocumentHistoryDate = (props: HistoryProps) => {
-  const { item, pretty_time } = props;
-
-  const oldDate = new Date(Number(item.old_value) * 1000).toLocaleDateString();
+  const { item } = props;
   const newDate = new Date(Number(item.new_value) * 1000).toLocaleDateString();
 
   return (
@@ -311,7 +311,7 @@ const DocumentHistoryDate = (props: HistoryProps) => {
 };
 
 const DocumentHistoryModifyLinkedDocuments = (props: HistoryProps) => {
-  const { item, pretty_time } = props;
+  const { item } = props;
   return (
     <Step key={`${item.id}`} expanded active completed>
       <StepLabel icon={<FormatListBulletedIcon />}>

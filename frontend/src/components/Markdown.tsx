@@ -31,11 +31,9 @@ export const MarkdownField = (props: MarkdownProps) => {
   const theme = useTheme();
 
   return (
-    <Labeled label={props.label ?? props.source}>
-      <Box data-color-mode={theme} sx={{ p: 1 }}>
-        <MDEditor.Markdown source={get(record, props.source)} />
-      </Box>
-    </Labeled>
+    <Box data-color-mode={theme} sx={{ p: 1 }}>
+      <MDEditor.Markdown source={get(record, props.source)} />
+    </Box>
   );
 };
 

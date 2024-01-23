@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import * as React from "react";
 import {
   Create,
   SimpleForm,
@@ -24,6 +23,7 @@ import {
   BooleanInput,
 } from "react-admin";
 import { Typography } from "@mui/material";
+import { MarkdownInput } from "../../components/Markdown.tsx";
 
 const defaultValue = {
   name: "",
@@ -52,7 +52,7 @@ export const RuleCreate = () => {
         <Typography variant="h5">Processing Rule</Typography>
         <BooleanInput label="Enabled" source="enabled" />
         <TextInput source="name" fullWidth={true} />
-        <MarkdownInput source="description" fullWidth={true} />
+        <MarkdownInput source="description" />
         <RadioButtonGroupInput
           label="Match conditions"
           source="mode"

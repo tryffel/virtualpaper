@@ -6,8 +6,7 @@ import {
   SimpleFormIterator,
   TextInput,
 } from "react-admin";
-import * as React from "react";
-import { Box, Grid, Tooltip, Typography } from "@mui/material";
+import { Box, Grid } from "@mui/material";
 import { CheckBoxInput } from "../../../components/primitives/CheckBox";
 import { MetadataValueInput } from "./Metadata";
 
@@ -99,7 +98,7 @@ export const ConditionEdit = () => {
                   scopedFormData.condition_type &&
                   (scopedFormData.condition_type.startsWith("date") ||
                     !scopedFormData.condition_type.startsWith(
-                      "metadata_has_key"
+                      "metadata_has_key",
                     )) ? (
                     <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
                       <TextInput
@@ -128,7 +127,7 @@ export const ConditionEdit = () => {
                   {scopedFormData &&
                   scopedFormData.condition_type &&
                   scopedFormData.condition_type.startsWith(
-                    "metadata_has_key"
+                    "metadata_has_key",
                   ) ? (
                     <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
                       <ReferenceInput

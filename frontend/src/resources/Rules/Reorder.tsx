@@ -5,7 +5,6 @@ import {
   DialogTitle,
   Typography,
   List,
-  ListItemButton,
   IconButton,
 } from "@mui/material";
 import {
@@ -76,14 +75,14 @@ export const ReorderRulesDialog = (props: ReorderProps) => {
         setOriginalIds(ids);
         setUpdatedIds(ids);
       },
-    }
+    },
   );
 
   const [update] = useUpdate(
     "reorder-rules",
     {},
     {
-      onSuccess: (data) => {
+      onSuccess: () => {
         notify("Order saved");
         setModalOpen(false);
         refresh();
@@ -91,7 +90,7 @@ export const ReorderRulesDialog = (props: ReorderProps) => {
       onError: (data) => {
         notify(`${data}`, { type: "error" });
       },
-    }
+    },
   );
 
   const handleSave = () => {
@@ -151,7 +150,7 @@ export const ReorderRulesDialog = (props: ReorderProps) => {
                     <RuleEntry
                       key={activeId}
                       record={data?.find(
-                        (entry) => get(entry, "id") == activeId
+                        (entry) => get(entry, "id") == activeId,
                       )}
                     />
                   )}

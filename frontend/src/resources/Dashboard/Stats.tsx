@@ -16,45 +16,36 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import * as React from "react";
-import {Card, Typography, CardContent, Grid} from '@mui/material';
-
+import { Card, Typography, CardContent, Grid } from "@mui/material";
 
 export interface StatProps {
-    title: string;
-    count: string;
+  title: string;
+  count: string;
 }
-
 
 export const SingleStat = (props: StatProps) => {
-
-    return (
-        <Grid item xs={4} sm={4}>
-            <Card>
-                <CardContent>
-                    <Typography
-                        variant="h6"
-                        color="textSecondary"
-                    >
-                        {props.title}
-                    </Typography>
-                    <Typography variant="h6" component="h4">
-                        {props.count|| ' '}
-                    </Typography>
-                </CardContent>
-            </Card>
-        </Grid>
-    )
-}
-
+  return (
+    <Grid item xs={4} sm={4}>
+      <Card>
+        <CardContent>
+          <Typography variant="h6" color="textSecondary">
+            {props.title}
+          </Typography>
+          <Typography variant="h6" component="h4">
+            {props.count || " "}
+          </Typography>
+        </CardContent>
+      </Card>
+    </Grid>
+  );
+};
 
 export const Stats = (data: any) => {
-
-    return (
-        <Grid container spacing={1}>
-            <SingleStat title={"Total documents"} count={data.num_documents}/>
-            <SingleStat title={"Metadata keys"} count={data.num_metadata_keys}/>
-            <SingleStat title={"Metadata values"} count={data.num_metadata_values}/>
-        </Grid>
-    )
-}
+  return (
+    <Grid container spacing={1}>
+      <SingleStat title={"Total documents"} count={data.num_documents} />
+      <SingleStat title={"Metadata keys"} count={data.num_metadata_keys} />
+      <SingleStat title={"Metadata values"} count={data.num_metadata_values} />
+    </Grid>
+  );
+};

@@ -14,7 +14,6 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import React from "react";
 import { ExpandMore } from "@mui/icons-material";
 import get from "lodash/get";
 import { languages } from "../../../languages";
@@ -63,10 +62,10 @@ function DocumentJobListItem(props: any) {
   if (!props.record) {
     return null;
   }
-  const ok = props.record.status === "Finished";
   let style = {};
   let prefix = "";
   if (props.record.status === "Finished") {
+    // pass
   } else if (props.record.status === "Running") {
     style = { fontStyle: "italic", background: "#ff0" };
     prefix = "Running";
@@ -77,7 +76,7 @@ function DocumentJobListItem(props: any) {
   const startTime = PrettifyAbsoluteTime(props.record.started_at);
   const took = PrettifyTimeInterval(
     props.record.started_at,
-    props.record.stopped_at
+    props.record.stopped_at,
   );
 
   return (

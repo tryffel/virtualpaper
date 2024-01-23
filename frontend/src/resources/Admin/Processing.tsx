@@ -274,7 +274,7 @@ const RequestSingleDocumentProcessing = () => {
 const ShowDocumentsPendingProcessing = () => {
   const { data, total, isLoading, error, refetch } = useGetList(
     "admin/documents/processing",
-    {}
+    {},
   );
 
   let interval: number = 0;
@@ -358,7 +358,7 @@ export const Runners = (props: any) => {
           <Grid item xs={3} key={runner.id}>
             <RunnerStatus runner={runner} />
           </Grid>
-        )
+        ),
       )}
     </Grid>
   );

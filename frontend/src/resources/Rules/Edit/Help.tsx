@@ -1,9 +1,8 @@
 import { HelpButton } from "../../../components/Help";
 import { Typography } from "@mui/material";
-import * as React from "react";
 
 export const RuleEditHelp = () => {
-  const dateRegexExample = `(\d{4}-\d{1,2}-\d{1,2})`;
+  const dateRegexExample = "/(d{4}-d{1,2}-d{1,2})";
 
   return (
     <HelpButton title="Edit Rule">
@@ -106,8 +105,10 @@ export const RuleEditHelp = () => {
           <li>Date format would thus be '2006-1-2'</li>
         </ol>
       </p>
-      In this case the user must set the 'filter' as a valid regular expression
-      to match the date. E.g.
+      <p>
+        In this case the user must set the 'filter' as a valid regular
+        expression to match the date. E.g.
+      </p>
       <Typography variant="h6" color="textPrimary">
         Tips
       </Typography>

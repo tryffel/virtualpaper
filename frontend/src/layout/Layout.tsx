@@ -16,22 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import React from "react";
 import { Layout, LayoutProps, Menu } from "react-admin";
 import AppBar from "./AppBar";
-import { ReactQueryDevtools } from 'react-query/devtools';
+import { ReactQueryDevtools } from "react-query/devtools";
 import { config } from "../env";
 
 const myLayout = (props: LayoutProps) => {
-  
-  return <>
-    <Layout 
-  {...props} 
-  appBar={AppBar} 
-  menu={Menu} />
-  <ReactQueryDevtools initialIsOpen={config.queryDevtools} />
-  </>
-
+  return (
+    <>
+      <Layout {...props} appBar={AppBar} menu={Menu} />
+      <ReactQueryDevtools initialIsOpen={config.queryDevtools} />
+    </>
+  );
 };
 
 export default myLayout;

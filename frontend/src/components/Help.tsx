@@ -19,17 +19,23 @@
 import * as React from "react";
 import { Button } from "react-admin";
 import { Help as HelpIcon } from "@mui/icons-material";
-import { Dialog, DialogTitle, DialogContentText, DialogContent, DialogActions, Typography} from '@mui/material';
-
+import {
+  Dialog,
+  DialogTitle,
+  DialogContentText,
+  DialogContent,
+  DialogActions,
+  Typography,
+} from "@mui/material";
 
 export interface HelpButtonProps {
   label?: string;
   title: string;
-  children?: JSX.Element | JSX.Element[] | any;
+  children?: JSX.Element | JSX.Element[] | never;
 }
 
 export const HelpButton = (props: HelpButtonProps) => {
-  const {label, ...rest } = props;
+  const { label, ...rest } = props;
   const [open, setOpen] = React.useState(false);
   const handleClickOpen = () => {
     setOpen(true);
@@ -42,27 +48,25 @@ export const HelpButton = (props: HelpButtonProps) => {
   return (
     <div>
       <Button
-        label={label ? label: "Help"}
+        label={label ? label : "Help"}
         size="small"
         alignIcon="left"
         onClick={handleClickOpen}
       >
         <HelpIcon />
       </Button>
-      <HelpDialog open={open} onClose={handleClose} {...rest}/>
+      <HelpDialog open={open} onClose={handleClose} {...rest} />
     </div>
   );
-}
-
+};
 
 interface Props extends HelpButtonProps {
-  onClose: () => any;
+  onClose: () => void;
   open: boolean;
 }
 
-
 const HelpDialog = (props: Props) => {
-  const [scroll, setScroll] = React.useState("paper");
+  const [scroll] = React.useState("paper");
   const { onClose, open, title } = props;
   const handleClose = () => {
     onClose();
@@ -76,9 +80,7 @@ const HelpDialog = (props: Props) => {
     >
       <DialogTitle id="simple-dialog-title">Help: {title}</DialogTitle>
       <DialogContent dividers={scroll === "paper"}>
-        <DialogContentText>
-        {props.children}
-        </DialogContentText>
+        <DialogContentText>{props.children}</DialogContentText>
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose}>

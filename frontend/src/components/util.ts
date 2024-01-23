@@ -22,7 +22,7 @@ import * as dateFns from "date-fns";
 export const ByteToString = (byte: number | string): string => {
   const classes = ["B", "KiB", "MiB", "GiB", "TiB", "PiB"];
   let val = Number(byte);
-  if (val === NaN) {
+  if (Number.isNaN(val)) {
     return byte.toString();
   }
 
@@ -55,7 +55,6 @@ export const EscapeWhitespace = (input: string): string => {
 //e.g. -> 'Just now', '30 minutes ago', '5 days ago', '7/7/2022'.
 export const PrettifyRelativeTime = (time: number | string): string => {
   const now = Date.now();
-  const d = typeof time === "string" ? Date.parse(time) : time;
   // @ts-ignore
   const secondsDiff =
     (now - (typeof time === "string" ? Date.parse(time) : time)) / 1000;
@@ -89,7 +88,7 @@ export const PrettifyAbsoluteTime = (time: number | string): string => {
 
 export const PrettifyTimeInterval = (
   startTime: number | string,
-  stopTime: number | string
+  stopTime: number | string,
 ): string => {
   const start =
     typeof startTime === "string" ? Date.parse(startTime) : startTime;

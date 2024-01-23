@@ -1,4 +1,3 @@
-import * as React from "react";
 import {
   CreateBase,
   email,
@@ -20,7 +19,7 @@ export const ForgotPassword = () => {
       .then(() => {
         notify(
           "Password reset link has been sent. Please check your email to proceed.",
-          { type: "warning" }
+          { type: "warning" },
         );
         setTimeout(() => redirect("/#"), 5000);
       })

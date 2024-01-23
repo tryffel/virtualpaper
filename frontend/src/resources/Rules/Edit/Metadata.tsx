@@ -1,12 +1,6 @@
 import get from "lodash/get";
-import {
-  AutocompleteInput,
-  Loading,
-  SelectInput,
-  useGetManyReference,
-} from "react-admin";
+import { AutocompleteInput, Loading, useGetManyReference } from "react-admin";
 import { Typography } from "@mui/material";
-import * as React from "react";
 import { MetadataValueInputProps } from "../../Documents/Edit";
 
 interface InputProps extends MetadataValueInputProps {

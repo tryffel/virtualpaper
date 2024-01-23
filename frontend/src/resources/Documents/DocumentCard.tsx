@@ -23,12 +23,10 @@ import {
 import { ThumbnailSmall } from "./Thumbnail";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
-import * as React from "react";
 import "./document.css";
 import get from "lodash/get";
 import { useState } from "react";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { useNavigate } from "react-router-dom";
 import ShareIcon from "@mui/icons-material/Share";
 
 const cardStyle = {
@@ -49,7 +47,6 @@ export interface DocumentCardProps {
 
 export const DocumentCard = (props: DocumentCardProps) => {
   const [theme] = useTheme();
-  const navigate = useNavigate();
 
   const { record } = props;
   const { selected, setSelected } = props;
@@ -243,15 +240,12 @@ const RestoreDocumentButton = (props: { record: RaRecord }) => {
   const notify = useNotify();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const [update, { isLoading, error, isSuccess }] = useUpdate(
-    "documents/deleted",
-    {
-      id: get(record, "id"),
-      data: {},
-      previousData: record,
-      meta: { action: "restore" },
-    }
-  );
+  const [update, { isLoading, error }] = useUpdate("documents/deleted", {
+    id: get(record, "id"),
+    data: {},
+    previousData: record,
+    meta: { action: "restore" },
+  });
 
   const handleClick = () => setConfirmOpen(true);
   const handleDialogClose = () => setConfirmOpen(false);
@@ -291,13 +285,10 @@ const ConfirmDeleteDocumentButton = (props: { record: RaRecord }) => {
   const notify = useNotify();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const [update, { isLoading, error, isSuccess }] = useDelete(
-    "documents/deleted",
-    {
-      id: get(record, "id"),
-      previousData: record,
-    }
-  );
+  const [update, { isLoading, error }] = useDelete("documents/deleted", {
+    id: get(record, "id"),
+    previousData: record,
+  });
 
   const handleClick = () => setConfirmOpen(true);
   const handleDialogClose = () => setConfirmOpen(false);

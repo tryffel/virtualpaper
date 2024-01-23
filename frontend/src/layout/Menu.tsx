@@ -36,8 +36,8 @@ import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 const UserMenuPreferences = React.forwardRef((props: any, ref: any) => {
   const dataProvider = useDataProvider();
 
-  const { data, isLoading, error } = useQuery(["preferences", "user"], () =>
-    dataProvider.getOne("preferences", { id: "user" })
+  const { isLoading, error } = useQuery(["preferences", "user"], () =>
+    dataProvider.getOne("preferences", { id: "user" }),
   );
 
   if (isLoading) return <Loading />;
@@ -59,8 +59,8 @@ const UserMenuPreferences = React.forwardRef((props: any, ref: any) => {
 const UserMenuAdmin = React.forwardRef((props: any, ref: any) => {
   const dataProvider = useDataProvider();
 
-  const { data, isLoading, error } = useQuery(["preferences", "user"], () =>
-    dataProvider.getOne("preferences", { id: "user" })
+  const { isLoading, error } = useQuery(["preferences", "user"], () =>
+    dataProvider.getOne("preferences", { id: "user" }),
   );
 
   if (isLoading) return <Loading />;
@@ -84,9 +84,7 @@ const UserMenu = (props: any) => {
   const isAdmin = authProvider.isAdmin();
 
   return (
-    <RaUserMenu {...props}
-    label="User"
-    >
+    <RaUserMenu {...props} label="User">
       <UserMenuPreferences />
       {isAdmin ? <UserMenuAdmin /> : null}
       <Logout />

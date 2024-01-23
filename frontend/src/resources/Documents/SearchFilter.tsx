@@ -26,7 +26,6 @@ import {
   Autocomplete,
   Grid,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
 import { DesktopDatePicker } from "@mui/x-date-pickers/DesktopDatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -37,7 +36,6 @@ import {
   useDataProvider,
   useListContext,
   useListFilterContext,
-  useTheme,
 } from "react-admin";
 import {
   endOfYesterday,
@@ -48,8 +46,7 @@ import {
 } from "date-fns";
 import { AccessTime } from "@mui/icons-material";
 import * as React from "react";
-import { debounce, filter, throttle, values } from "lodash";
-import { string } from "prop-types";
+import { debounce } from "lodash";
 
 export const DocumentSearchFilter = () => {
   return (
@@ -117,7 +114,7 @@ const DatePicker = (props) => {
     const filters = Object.keys(filterValues).reduce(
       (acc, key) =>
         keysToRemove.includes(key) ? acc : { ...acc, [key]: filterValues[key] },
-      {}
+      {},
     );
     setFilters(filters, null, false);
     setValue(null);
@@ -131,8 +128,8 @@ const DatePicker = (props) => {
       <LocalizationProvider dateAdapter={AdapterDateFns}>
         <DesktopDatePicker
           onChange={handleChange}
-          inputFormat="MM/dd/yyyy"
           value={value}
+          // @ts-ignore
           renderInput={(params) => <TextField {...params} />}
         />
       </LocalizationProvider>
@@ -196,8 +193,6 @@ interface Suggestion {
 }
 
 export const FullTextSeachFilter = (props: any) => {
-  const theme = useTheme();
-
   const { filterValues, setFilters } = useListContext();
   const addFilter = (q: string) => {
     setFilters({ ...filterValues, q: q }, false);
@@ -205,10 +200,9 @@ export const FullTextSeachFilter = (props: any) => {
 
   const removeFilter = () => {
     //const keysToRemove = Object.keys(value);
-    const keyToRemove = "q";
     const filters = Object.keys(filterValues).reduce(
       (acc, key) => (key === "q" ? acc : { ...acc, [key]: filterValues[key] }),
-      {}
+      {},
     );
 
     setFilters(filters, null, false);
@@ -227,7 +221,7 @@ export const FullTextSeachFilter = (props: any) => {
     prefixed: filterValues.q ? filterValues.q : "",
   });
 
-  const [validQuery, setValidQuery] = React.useState(true);
+  const [, setValidQuery] = React.useState(true);
   const [initial, setInitial] = React.useState(filterValues.q === undefined);
 
   const dataProvider = useDataProvider();
@@ -250,8 +244,8 @@ export const FullTextSeachFilter = (props: any) => {
               hint: val.hint,
               prefixed: data.data.prefix.trimStart() + val.value,
               value: val.value,
-            })
-          )
+            }),
+          ),
         );
         setPrefix(data.data.prefix);
         setValidQuery(data.data.validQuery);
@@ -263,20 +257,20 @@ export const FullTextSeachFilter = (props: any) => {
 
   const doNavigate = (q: string) => {
     if (q === "") {
-    removeFilter();
+      removeFilter();
     } else {
-    addFilter(q);
+      addFilter(q);
     }
   };
 
   const throttledSuggestions = React.useCallback(
     debounce(getSuggestions, 100, { leading: true, trailing: false }),
-    [query]
+    [query],
   );
 
   const throttledNavigate = React.useMemo(
     () => debounce(doNavigate, 500, { leading: false, trailing: true }),
-    [query]
+    [query],
   );
 
   React.useEffect(() => {
@@ -327,10 +321,10 @@ export const FullTextSeachFilter = (props: any) => {
         setQuery(input);
         setValue({ value: input, type: "", hint: "", prefixed: input });
       }}
-      isOptionEqualToValue={(option, value): boolean => {
+      isOptionEqualToValue={
+        (): boolean => false
         // set to never equal to ensure list of options is always visible
-        return false;
-      }}
+      }
       renderInput={(params) => (
         <TextField {...params} label="Search documents" fullWidth />
       )}

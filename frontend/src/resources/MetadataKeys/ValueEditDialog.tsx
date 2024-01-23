@@ -59,15 +59,15 @@ const MetadataValueUpdateDialog = (props: MetadataValueUpdateDialogProps) => {
     return null;
   }
 
-  const { showDialog, setShowDialog, basePath, record, keyId } = props;
+  const { showDialog, setShowDialog, record, keyId } = props;
 
-  const [update, { data, error, isSuccess: updateSuccess }] = useUpdate(
+  const [update, { error, isSuccess: updateSuccess }] = useUpdate(
     "metadata/values",
     {
       id: record?.id,
       data: {},
       previousData: record,
-    }
+    },
   );
 
   const [deleteOne, { error: deleteError }] = useDelete("metadata/values", {

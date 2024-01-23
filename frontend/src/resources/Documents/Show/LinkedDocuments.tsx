@@ -16,21 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import React from "react";
 import { Link } from "react-router-dom";
-import {
-  useGetManyReference,
-  useRecordContext,
-  Loading,
-  Labeled,
-} from "react-admin";
+import { useGetManyReference, useRecordContext, Labeled } from "react-admin";
 import { LimitStringLength } from "../../../components/util";
 import { Typography } from "@mui/material";
 
 export const LinkedDocumentList = () => {
   const record = useRecordContext();
 
-  const { data, isLoading, error } = useGetManyReference("documents/linked", {
+  const { data, isLoading } = useGetManyReference("documents/linked", {
     target: "id",
     id: record?.id,
   });

@@ -16,7 +16,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import * as React from "react";
 import { useState } from "react";
 import {
   Button,
@@ -27,7 +26,6 @@ import {
   SortButton,
   TopToolbar,
   useListContext,
-  useStore,
 } from "react-admin";
 import {
   Grid,
@@ -35,7 +33,6 @@ import {
   Toolbar as MuiToolbar,
   Typography,
   useMediaQuery,
-  useTheme,
 } from "@mui/material";
 
 import { HelpButton } from "../../components/Help";
@@ -100,12 +97,9 @@ const LargeDocumentList = () => {
   );
 };
 
-const DocumentGrid = (props: any) => {
+const DocumentGrid = () => {
   const { data, isLoading } = useListContext();
-  const theme = useTheme();
-
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-
   const isSelected = (id: string) => {
     const found = selectedIds.includes(id);
     return found;
@@ -233,20 +227,13 @@ const DocumentHelp = () => {
 };
 
 const BulkEditToolbar = (props: any) => {
-  const { selectedIds, clear, edit } = props;
+  const { selectedIds, clear } = props;
   if (!selectedIds || !selectedIds.length) {
     return null;
   }
 
-  const [store, setStore] = useStore("bulk-edit-document-ids", []);
-
   const onClear = () => {
-    setStore([]);
     clear();
-  };
-
-  const onClick = () => {
-    setStore(selectedIds);
   };
 
   return (
@@ -277,7 +264,6 @@ const BulkEditToolbar = (props: any) => {
         }}
         label="Edit"
         style={{ fontSize: "1em" }}
-        onClick={onClick}
       >
         <EditIcon />
       </Button>

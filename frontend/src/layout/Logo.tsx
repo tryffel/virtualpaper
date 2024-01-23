@@ -1,10 +1,6 @@
-import * as React from "react";
-import { SVGProps } from "react";
 import { useTheme } from "@mui/material/styles";
 
-const Logo = (props: { color?: "primary" | "secondary" }) => {
-  const color = props.color ?? "secondary";
-
+const Logo = () => {
   const theme = useTheme();
   return (
     <svg

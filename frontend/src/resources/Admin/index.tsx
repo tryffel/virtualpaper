@@ -16,11 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import * as React from "react";
 import { useEffect } from "react";
 
 import {
-  Button,
   RecordContextProvider,
   useAuthProvider,
   useShowController,

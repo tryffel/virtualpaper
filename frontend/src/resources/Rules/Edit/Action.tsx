@@ -10,7 +10,6 @@ import {
 import { Grid } from "@mui/material";
 import { CheckBoxInput } from "../../../components/primitives/CheckBox";
 import { MetadataValueInput } from "./Metadata";
-import * as React from "react";
 
 export const ActionTypeInput = (props: any) => {
   return (
@@ -36,7 +35,7 @@ export const ActionEdit = () => {
   return record ? (
     <SimpleFormIterator source={"actions"}>
       <FormDataConsumer>
-        {({ formData, scopedFormData, getSource }) => {
+        {({ scopedFormData, getSource }) => {
           return getSource ? (
             <ScopedActionEdit
               scopedFormData={scopedFormData}

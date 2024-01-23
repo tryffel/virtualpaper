@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   required,
   Button,
@@ -28,7 +28,6 @@ import {
   Form,
   useRefresh,
   RadioButtonGroupInput,
-  useRecordContext,
 } from "react-admin";
 
 import {
@@ -42,7 +41,7 @@ import { Create, Cancel } from "@mui/icons-material";
 
 const MetadataValueCreateButton = (record: any) => {
   const [showDialog, setShowDialog] = useState(false);
-  const [create, { data, isLoading, error }] = useCreate("metadata/values", {});
+  const [create, { data, error }] = useCreate("metadata/values", {});
 
   const [waitingResponse, setWaitingResponse] = useState(false);
 

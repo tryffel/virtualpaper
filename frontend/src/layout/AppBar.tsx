@@ -16,22 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import * as React from "react";
-
 import Logo from "./Logo";
 
 import { AppBar } from "react-admin";
 import { Box, Typography, useMediaQuery, Theme } from "@mui/material";
 import UserMenu from "./Menu";
 
-const MyAppBar = (props: any) => {
+const MyAppBar = () => {
   const isLargeEnough = useMediaQuery<Theme>((theme) =>
-    theme.breakpoints.up("sm")
+    theme.breakpoints.up("sm"),
   );
   return (
-    <AppBar {...props} color="primary" elevation={1}
-    userMenu={<UserMenu/>}
-    >
+    <AppBar color="primary" elevation={1} userMenu={<UserMenu />}>
       <Typography
         variant="h6"
         color="inherit"

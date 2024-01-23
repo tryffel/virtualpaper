@@ -20,7 +20,6 @@ import {
   TextField,
   Paper,
 } from "@mui/material";
-import { useEffect } from "react";
 import CancelIcon from "@mui/icons-material/Cancel";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
@@ -52,7 +51,7 @@ export const EditLinkedDocuments = (props: EditLinkedDocumentsProps) => {
         setDocuments(data.data as LinkedDocument[]);
         setOriginalDocuments(data.data as LinkedDocument[]);
       },
-    }
+    },
   );
 
   const closeModal = () => {
@@ -81,7 +80,7 @@ export const EditLinkedDocuments = (props: EditLinkedDocumentsProps) => {
         closeModal();
         notify("Documents linked");
       },
-    }
+    },
   );
 
   useGetOne(
@@ -103,7 +102,7 @@ export const EditLinkedDocuments = (props: EditLinkedDocumentsProps) => {
         }
       },
       enabled: newDocumentId !== null,
-    }
+    },
   );
 
   const handleSubmit = React.useCallback(
@@ -116,7 +115,7 @@ export const EditLinkedDocuments = (props: EditLinkedDocumentsProps) => {
         meta: { documentId },
       });
     },
-    [documents]
+    [documents],
   );
 
   const addDocument = (id: string) => {

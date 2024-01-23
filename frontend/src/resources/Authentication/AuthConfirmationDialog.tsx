@@ -1,4 +1,3 @@
-import * as React from "react";
 import {
   CreateBase,
   Form,
@@ -23,7 +22,7 @@ export const ConfirmAuthentication = () => {
         notify("User confirmed", { type: "success" });
         navigate(-1);
       })
-      .catch((err: any) => {
+      .catch((err: Error) => {
         notify(String(err), { type: "error" });
       });
   };
@@ -35,10 +34,7 @@ export const ConfirmAuthentication = () => {
 
   return (
     <CreateBase resource={"reauthenticate"}>
-      <Form
-        /* @ts-ignore*/
-        onSubmit={handleSubmit}
-      >
+      <Form onSubmit={handleSubmit}>
         <Grid
           container
           style={{

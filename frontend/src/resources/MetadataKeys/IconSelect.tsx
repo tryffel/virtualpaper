@@ -4,9 +4,8 @@ import {
   TextInput,
   useRecordContext,
 } from "react-admin";
-import * as React from "react";
 import { IconByName, iconExists } from "../../components/icons";
-import { InputAdornment, Typography } from "@mui/material";
+import { InputAdornment } from "@mui/material";
 import { get } from "lodash";
 
 export const IconSelect = ({

@@ -10,7 +10,6 @@ import {
   Typography,
 } from "@mui/material";
 import { get } from "lodash";
-import * as React from "react";
 
 export const ServerStatistics = () => {
   const record = useRecordContext();

@@ -16,7 +16,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import * as React from "react";
 import { Create, SimpleForm, TextInput } from "react-admin";
 import { IconSelect } from "./IconSelect";
 
