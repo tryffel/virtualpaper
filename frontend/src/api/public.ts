@@ -37,10 +37,9 @@ export const doForgotPassword = (email: string) => {
   return fetch(request)
     .then((response) => {
       if (response.status < 200 || response.status >= 300) {
-        // @ts-ignore
         throw new Error(response.statusText);
       }
       return response.json();
     })
-    .then((auth) => {});
+    .then(() => {});
 };
