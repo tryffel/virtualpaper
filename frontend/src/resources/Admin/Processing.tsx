@@ -337,7 +337,7 @@ const ShowDocumentsPendingProcessing = () => {
   );
 };
 
-export const Runners = (props: any) => {
+export const Runners = () => {
   const record = useRecordContext();
   const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
 

@@ -129,7 +129,7 @@ export const DocumentEdit = () => {
                   </ReferenceInput>
 
                   <FormDataConsumer>
-                    {({ formData, scopedFormData, getSource }) =>
+                    {({ scopedFormData, getSource }) =>
                       scopedFormData && scopedFormData.key_id ? (
                         <MetadataValueInput
                           source={getSource ? getSource("value_id") : ""}

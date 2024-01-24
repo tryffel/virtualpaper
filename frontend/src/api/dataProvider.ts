@@ -21,7 +21,14 @@ import { HttpError } from "react-admin";
 import { fetchUtils, DataProvider } from "ra-core";
 
 import { config } from ".././env";
+import { get } from "lodash";
 const apiUrl = config.url;
+
+const parseTotalCount = (headers: Headers): { total: number } => {
+  const total =
+      parseInt(headers?.get("content-range")?.split("/")?.pop() ?? "0", 10)
+  return { total };
+};
 
 /* modified from ra-core fetchUtils, use json.error if any. */
 const fetchJson = (url: string, options = {}) => {
@@ -79,15 +86,9 @@ export const dataProvider: DataProvider = {
       filter: JSON.stringify(params.filter),
     };
     let url = `${apiUrl}/${resource}?${stringify(query)}`;
-
     if (resource === "metadata/values") {
-      // @ts-expect-error
-      if (!params.id) {
-        // @ts-ignore
-        params.id = 1;
-      }
-      // @ts-ignore
-      url = `${apiUrl}/metadata/keys/${params.id}/values?${stringify(query)}`;
+      const id = get(params, "id") ?? 1;
+      url = `${apiUrl}/metadata/keys/${id}/values?${stringify(query)}`;
     } else if (resource === "admin/documents/processing") {
       url = `${apiUrl}/admin/documents/process?${stringify(query)}`;
     }
@@ -112,15 +113,7 @@ export const dataProvider: DataProvider = {
           }
           return {
             data: json,
-            total:
-              countHeader === "Content-Range"
-                ? parseInt(
-                    // @ts-ignore
-                    headers.get("content-range").split("/").pop(),
-                    10,
-                  )
-                : // @ts-ignore
-                  parseInt(headers.get(countHeader.toLowerCase())),
+            ...parseTotalCount(headers),
           };
         })
         .catch((error) => {
@@ -145,27 +138,18 @@ export const dataProvider: DataProvider = {
       }
       return {
         data: json,
-        total:
-          countHeader === "Content-Range"
-            ? parseInt(
-                // @ts-ignore
-                headers.get("content-range").split("/").pop(),
-                10,
-              )
-            : // @ts-ignore
-              parseInt(headers.get(countHeader.toLowerCase())),
+        ...parseTotalCount(headers),
       };
     });
   },
 
-  // @ts-ignore
   getOne: (resource, params) => {
     if (resource === "documents/stats") {
       return httpClient(`${apiUrl}/${resource}`).then(({ json }) => ({
         data: json,
       }));
     } else if (resource === "documents") {
-      let urlParams = new URLSearchParams();
+      const urlParams = new URLSearchParams();
       if (!params.meta?.noVisit) {
         urlParams.append("visit", "1");
       }
@@ -178,12 +162,8 @@ export const dataProvider: DataProvider = {
     } else if (resource === "preferences") {
       return httpClient(`${apiUrl}/${resource}/${params.id}`)
         .then(({ json }) => {
-          // @ts-ignore
           const isAdmin = json.is_admin;
-          // @ts-ignore
-          localStorage.setItem("is_admin", isAdmin == true);
-
-          // @ts-ignore
+          localStorage.setItem("is_admin", isAdmin ? "true" : "false");
           return {
             data: { ...json, id: "user" },
           };
@@ -297,15 +277,7 @@ export const dataProvider: DataProvider = {
       }
       return {
         data: json,
-        total:
-          countHeader === "Content-Range"
-            ? parseInt(
-                // @ts-ignore
-                headers.get("content-range").split("/").pop(),
-                10,
-              )
-            : // @ts-ignore
-              parseInt(headers.get(countHeader.toLowerCase())),
+        ...parseTotalCount(headers),
       };
     });
   },
@@ -354,12 +326,11 @@ export const dataProvider: DataProvider = {
       ),
     ).then((responses) => ({ data: responses.map(({ json }) => json.id) })),
 
-  // @ts-ignore
   create: (resource, params) => {
     if (resource === "documents" && params.data.file) {
       const file = params.data.file;
 
-      let data = new FormData();
+      const data = new FormData();
       data.append("name", file.rawFile.name);
       data.append(file.rawFile.name, file.rawFile);
 
@@ -375,7 +346,6 @@ export const dataProvider: DataProvider = {
         data: { ...json },
       }));
     }
-    // @ts-ignore
     if (resource === "metadata/values" && params.data) {
       return httpClient(`${apiUrl}/metadata/keys/${params.data.id}/values`, {
         method: "POST",
@@ -388,7 +358,7 @@ export const dataProvider: DataProvider = {
       return httpClient(`${apiUrl}/${resource}`, {
         method: "POST",
         body: JSON.stringify(params.data),
-      }).then(({ json }) => ({
+      }).then(() => ({
         data: { id: "empty" },
       }));
     } else {
@@ -421,7 +391,7 @@ export const dataProvider: DataProvider = {
       ),
     ).then((responses) => ({ data: responses.map(({ json }) => json.id) })),
 
-  testRule: (resource: any, params: any) =>
+  testRule: (resource: string, params: ApiParams) =>
     httpClient(`${apiUrl}/${resource}/${params.id}/test`, {
       method: "PUT",
       body: JSON.stringify(params.data),
@@ -429,7 +399,7 @@ export const dataProvider: DataProvider = {
       data: { ...params.data, ...json },
     })),
 
-  adminRequestProcessing: (params: any) =>
+  adminRequestProcessing: (params: ApiParams) =>
     httpClient(`${apiUrl}/admin/documents/process`, {
       method: "POST",
       body: JSON.stringify(params.data),
@@ -437,14 +407,14 @@ export const dataProvider: DataProvider = {
       data: { ...params.data, ...json },
     })),
 
-  suggestSearch: (params: any) =>
+  suggestSearch: (params: ApiParams) =>
     httpClient(`${apiUrl}/documents/search/suggest`, {
       method: "POST",
       body: JSON.stringify(params.data),
     }).then(({ json }) => ({
       data: { ...json },
     })),
-  confirmAuthentication: (params: any) =>
+  confirmAuthentication: (params: ApiParams) =>
     httpClient(`${apiUrl}/auth/confirm`, {
       method: "POST",
       body: JSON.stringify(params.data),
@@ -460,4 +430,9 @@ export const requestDocumentProcessing = (documentId: string) => {
   httpClient(`${apiUrl}/documents/${documentId}/process`, {
     method: "POST",
   }).then(({ json }) => ({ data: json }));
+};
+
+type ApiParams = {
+  data?: object;
+  id: string;
 };

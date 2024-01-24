@@ -100,7 +100,7 @@ const ShowModeButton = (props: {
   const { showMode, setShowMode } = props;
 
   const handleAlignment = (
-    event: React.MouseEvent<HTMLElement>,
+    _event: React.MouseEvent<HTMLElement>,
     newAlignment: ShowMode,
   ) => {
     setShowMode(newAlignment);

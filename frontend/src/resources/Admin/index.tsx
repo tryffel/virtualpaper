@@ -104,7 +104,7 @@ export const AdminView = (props: any) => {
                 <ProcessingStatistics />
               </Grid>
               <Grid item xs={12} marginTop={1}>
-                <Runners record={record} />
+                <Runners />
               </Grid>
               <Grid item xs={12} marginTop={1}>
                 <SearchEngineStatus />
