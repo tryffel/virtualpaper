@@ -11,12 +11,10 @@ RUN apk --no-cache add \
     nodejs \
     npm
 
-RUN yarn add react-scripts
-
 WORKDIR /virtualpaper
 COPY . /virtualpaper
 
-RUN cd frontend; yarn install
+RUN cd frontend; npm install
 RUN make build-frontend
 
 # Backend build
@@ -32,7 +30,7 @@ RUN apk --no-cache add \
 
 WORKDIR /virtualpaper
 COPY . /virtualpaper
-COPY --from=frontend /virtualpaper/frontend/build /virtualpaper/frontend/build
+COPY --from=frontend /virtualpaper/frontend/dist /virtualpaper/frontend/dist
 
 RUN go mod download
 RUN make build
