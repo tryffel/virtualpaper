@@ -32,7 +32,7 @@ import TestButton from "../Test";
 import { RuleEditHelp } from "./Help";
 import { ConditionEdit } from "./Condition";
 import { ActionEdit } from "./Action";
-import { MarkdownInput } from "../../../components/Markdown.tsx";
+import { MarkdownInput } from "../../../components/markdown";
 
 export const RuleEdit = () => {
   const theme = useTheme();

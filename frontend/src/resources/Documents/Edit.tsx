@@ -42,7 +42,7 @@ import {
   useRecordContext,
 } from "react-admin";
 
-import { MarkdownInput } from "../../components/Markdown";
+import { MarkdownInput } from "../../components/markdown";
 import { Typography, Grid, Box, useMediaQuery } from "@mui/material";
 import LinkIcon from "@mui/icons-material/Link";
 import ArticleIcon from "@mui/icons-material/Article";

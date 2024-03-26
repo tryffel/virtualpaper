@@ -31,7 +31,7 @@ import {
 import ReorderIcon from "@mui/icons-material/Reorder";
 
 import { Box, Chip, Grid, Typography } from "@mui/material";
-import { MarkdownField } from "../../components/Markdown";
+import { MarkdownField } from "../../components/markdown";
 import get from "lodash/get";
 import { EmptyResourcePage } from "../../components/primitives/EmptyPage";
 import { ReorderRulesDialog, RuleTitle } from "./Reorder";

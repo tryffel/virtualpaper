@@ -23,7 +23,7 @@ import {
   BooleanInput,
 } from "react-admin";
 import { Typography } from "@mui/material";
-import { MarkdownInput } from "../../components/Markdown.tsx";
+import { MarkdownInput } from "../../components/markdown";
 
 const defaultValue = {
   name: "",

@@ -32,7 +32,7 @@ import {
   useRecordContext,
 } from "react-admin";
 
-import { MarkdownInput } from "../../components/Markdown";
+import { MarkdownInput } from "../../components/markdown";
 import { useMediaQuery } from "@mui/material";
 
 import MetadataValueCreateButton from "./ValueCreate";

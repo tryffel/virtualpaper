@@ -16,9 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { Labeled, useInput, useRecordContext, useTheme } from "react-admin";
+import { useRecordContext, useTheme } from "react-admin";
 import { Box } from "@mui/material";
-import MDEditor from "@uiw/react-md-editor";
+import MDEditor from "@uiw/react-md-editor/nohighlight";
+
 import get from "lodash/get";
 
 export type MarkdownProps = {
@@ -37,18 +38,4 @@ export const MarkdownField = (props: MarkdownProps) => {
   );
 };
 
-export const MarkdownInput = (props: MarkdownProps) => {
-  const theme = useTheme();
-  const { field } = useInput(props);
-  return (
-    <Labeled label={props.label} fullWidth>
-      <Box data-color-mode={theme}>
-        <MDEditor
-          value={field.value}
-          onChange={field.onChange}
-          preview="edit"
-        />
-      </Box>
-    </Labeled>
-  );
-};
+export default MarkdownField;
