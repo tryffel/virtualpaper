@@ -20,11 +20,12 @@ import { Layout, LayoutProps, Menu } from "react-admin";
 import AppBar from "./AppBar";
 import { ReactQueryDevtools } from "react-query/devtools";
 import { config } from "../env";
+import { AppMenu } from "./AppMenu.tsx";
 
 const myLayout = (props: LayoutProps) => {
   return (
     <>
-      <Layout {...props} appBar={AppBar} menu={Menu} />
+      <Layout {...props} appBar={AppBar} menu={Menu} sidebar={AppMenu} />
       <ReactQueryDevtools initialIsOpen={config.queryDevtools} />
     </>
   );

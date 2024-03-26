@@ -56,7 +56,7 @@ const App = () => (
     <Resource name="metadata/values" options={{ label: "metadata values" }} />
     <Resource
       name="processing/rules"
-      options={{ label: "Processing" }}
+      options={{ label: "Processing rules" }}
       {...Rules}
       icon={ConstructionIcon}
     />
