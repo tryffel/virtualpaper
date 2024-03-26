@@ -1,4 +1,5 @@
 import * as Icons from "@mui/icons-material";
+import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";
 import React from "react";
 const iconNames = Object.keys(Icons);
 
@@ -14,8 +15,14 @@ export const IconByName = ({
   color?: string;
 }) => {
   const exists = iconExists(name);
-  return exists
-    ? // @ts-ignore
-      React.createElement(Icons[name], { color })
-    : null;
+  return exists ? (
+    // @ts-ignore
+    React.createElement(Icons[name], {
+      color,
+    })
+  ) : (
+    <ErrorOutlineOutlinedIcon color={"error"} />
+  );
 };
+
+export default IconByName;

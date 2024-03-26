@@ -1,9 +1,9 @@
+import React, { Suspense } from "react";
 import { Button, LabeledClasses, useRecordContext } from "react-admin";
 import get from "lodash/get";
 import { Grid, Tooltip, Typography } from "@mui/material";
 import List from "@mui/material/List";
-import { IconByName, iconExists } from "../../../components/icons";
-import LabelIcon from "@mui/icons-material/Label";
+const IconByName = React.lazy(() => import("../../../components/icons.tsx"));
 import ListItem from "@mui/material/ListItem";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
@@ -44,10 +44,11 @@ export const MetadataList = () => {
 const MetadataValue = ({ metadata }: { metadata: Metadata }) => {
   const style = JSON.parse(metadata.style);
   const color = get(style, "color") ?? "inherit";
-  const icon = iconExists(metadata.icon) ? (
-    <IconByName name={metadata.icon} color={color} />
-  ) : (
-    <LabelIcon color={color} />
+
+  const icon = (
+    <Suspense fallback={null}>
+      <IconByName name={metadata.icon} color={color} />
+    </Suspense>
   );
 
   const linkDocsLabel = `Show documents`;

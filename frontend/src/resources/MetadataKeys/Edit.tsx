@@ -16,6 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import React from "react";
 import {
   Datagrid,
   DateField,
@@ -38,7 +39,8 @@ import MetadataValueCreateButton from "./ValueCreate";
 import MetadataValueUpdateDialog from "./ValueEditDialog";
 import { useState } from "react";
 import get from "lodash/get";
-import { IconColorSelect, IconSelect } from "./IconSelect";
+const IconSelect = React.lazy(() => import("./IconSelect"));
+import { IconColorSelect } from "./IconColorSelect.tsx";
 
 export const MetadataKeyEdit = () => {
   const { record } = useEditController();
