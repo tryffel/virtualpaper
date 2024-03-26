@@ -44,7 +44,8 @@ import {
   AccordionDetails,
 } from "@mui/material";
 
-import { ExpandMore, Settings as SettingsIcon } from "@mui/icons-material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import SettingsIcon from "@mui/icons-material/Settings";
 import NotInterestedIcon from "@mui/icons-material/NotInterested";
 import { DocumentCard } from "../Documents/DocumentCard";
 
@@ -270,7 +271,7 @@ const Log = (props: { log: string }) => {
   return (
     <Accordion>
       <AccordionSummary
-        expandIcon={<ExpandMore />}
+        expandIcon={<ExpandMoreIcon />}
         style={{ marginTop: "1rem" }}
       >
         <Typography variant="h5" color="textPrimary" sx={{ mt: 1 }}>

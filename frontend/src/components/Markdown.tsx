@@ -19,7 +19,7 @@
 import { Labeled, useInput, useRecordContext, useTheme } from "react-admin";
 import { Box } from "@mui/material";
 import MDEditor from "@uiw/react-md-editor";
-import { get } from "lodash";
+import get from "lodash/get";
 
 export type MarkdownProps = {
   source: string;

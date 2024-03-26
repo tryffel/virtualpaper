@@ -33,7 +33,7 @@ import {
   RaRecord,
 } from "react-admin";
 
-import { Cancel } from "@mui/icons-material";
+import CancelIcon from "@mui/icons-material/Cancel";
 import {
   Dialog,
   DialogTitle,
@@ -203,7 +203,7 @@ const MetadataValueUpdateDialog = (props: MetadataValueUpdateDialogProps) => {
               onClick={handleCloseClick}
               // @ts-ignore
             >
-              <Cancel />
+              <CancelIcon />
             </Button>
             <Button
               label="Delete"

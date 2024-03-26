@@ -1,4 +1,4 @@
-import { get } from "lodash";
+import get from "lodash/get";
 import { useRecordContext } from "react-admin";
 import { Chip, Grid } from "@mui/material";
 import ListSubheader from "@mui/material/ListSubheader";

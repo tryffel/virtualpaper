@@ -9,7 +9,7 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { get } from "lodash";
+import get from "lodash/get";
 
 export const ServerStatistics = () => {
   const record = useRecordContext();

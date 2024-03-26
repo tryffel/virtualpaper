@@ -14,7 +14,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { ExpandMore } from "@mui/icons-material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import get from "lodash/get";
 import { languages } from "../../../languages";
 import {
@@ -81,7 +81,7 @@ function DocumentJobListItem(props: any) {
 
   return (
     <Accordion sx={{ minWidth: "15em" }}>
-      <AccordionSummary expandIcon={<ExpandMore />} style={style}>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />} style={style}>
         <Typography>
           {prefix} {props.record.message}
         </Typography>
