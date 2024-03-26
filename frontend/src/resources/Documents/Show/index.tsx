@@ -52,7 +52,7 @@ import {
   ThumbnailField,
 } from "../Thumbnail";
 import { IndexingStatusField } from "../IndexingStatus";
-import { MarkdownField } from "../../../components/Markdown";
+import { MarkdownField } from "../../../components/markdown";
 import { ShowDocumentsEditHistory } from "./DocumentHistory";
 import { LinkedDocumentList } from "./LinkedDocuments";
 import {
