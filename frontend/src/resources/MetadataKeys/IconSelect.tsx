@@ -1,12 +1,18 @@
-import {
-  FormDataConsumer,
-  SelectInput,
-  TextInput,
-  useRecordContext,
-} from "react-admin";
-import { IconByName, iconExists } from "../../components/icons";
+import React, { Suspense } from "react";
+import { FormDataConsumer, TextInput } from "react-admin";
+const IconByName = React.lazy(() => import("../../components/icons.tsx"));
+
 import { InputAdornment } from "@mui/material";
 import get from "lodash/get";
+
+const iconExists = (iconName: string) => {
+  const icon = (
+    <Suspense fallback={null}>
+      <IconByName name={iconName} />
+    </Suspense>
+  );
+  return icon !== null;
+};
 
 export const IconSelect = ({
   displayIcon,
@@ -15,19 +21,23 @@ export const IconSelect = ({
   displayIcon?: boolean;
   source: string;
 }) => {
-  const validateIcon = (value: any) => {
+  const validateIcon = (value: string) => {
     if (iconExists(value)) {
       return undefined;
     }
     return "Icon is invalid. Must be Material-ui icon. Leave empty to disable";
   };
 
-  const renderIcon = (form: any) => {
+  const renderIcon = (form: object) => {
     const color = get(form, "style.color") ?? undefined;
     if (!iconExists(get(form, source))) {
       return null;
     } else {
-      return <IconByName name={get(form, source)} color={color} />;
+      return (
+        <Suspense fallback={null}>
+          <IconByName name={get(form, source)} color={color} />
+        </Suspense>
+      );
     }
   };
 
@@ -54,22 +64,4 @@ export const IconSelect = ({
   );
 };
 
-export const IconColorSelect = () => {
-  const record = useRecordContext();
-  const choices = [
-    { id: "primary", name: "primary" },
-    { id: "secondary", name: "secondary" },
-    { id: "info", name: "info" },
-    { id: "success", name: "success" },
-    { id: "warning", name: "warning" },
-    { id: "error", name: "error" },
-  ];
-
-  if (record) {
-    console.log("record", record);
-  }
-
-  return (
-    <SelectInput choices={choices} emptyValue={""} source={"style.color"} />
-  );
-};
+export default IconSelect;
