@@ -49,7 +49,7 @@ import { RequestIndexSelect } from "../Documents/RequestIndexing";
 import OfflinePinIcon from "@mui/icons-material/OfflinePin";
 import ReportProblemIcon from "@mui/icons-material/ReportProblem";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
-import { get } from "lodash";
+import get from "lodash/get";
 
 export const Processing = () => {
   return (

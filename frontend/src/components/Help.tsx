@@ -18,7 +18,7 @@
 
 import * as React from "react";
 import { Button } from "react-admin";
-import { Help as HelpIcon } from "@mui/icons-material";
+import HelpIcon from "@mui/icons-material/Help";
 import {
   Dialog,
   DialogTitle,

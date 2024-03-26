@@ -37,7 +37,8 @@ import {
   DialogActions,
 } from "@mui/material";
 
-import { Create, Cancel } from "@mui/icons-material";
+import CreateIcon from "@mui/icons-material/Create";
+import CancelIcon from "@mui/icons-material/Cancel";
 
 const MetadataValueCreateButton = (record: any) => {
   const [showDialog, setShowDialog] = useState(false);
@@ -75,7 +76,7 @@ const MetadataValueCreateButton = (record: any) => {
   return (
     <>
       <Button onClick={handleClick} label="Add metadata value">
-        <Create />
+        <CreateIcon />
       </Button>
       <Dialog
         fullWidth
@@ -108,7 +109,7 @@ const MetadataValueCreateButton = (record: any) => {
           </DialogContent>
           <DialogActions>
             <Button label="ra.action.cancel" onClick={handleCloseClick}>
-              <Cancel />
+              <CancelIcon />
             </Button>
             <SaveButton />
           </DialogActions>

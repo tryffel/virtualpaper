@@ -44,9 +44,9 @@ import {
   startOfYear,
   subYears,
 } from "date-fns";
-import { AccessTime } from "@mui/icons-material";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import * as React from "react";
-import { debounce } from "lodash";
+import debounce from "lodash/debounce";
 
 export const DocumentSearchFilter = () => {
   return (
@@ -139,7 +139,7 @@ const DatePicker = (props) => {
 };
 
 const LastVisitedFilter = () => (
-  <FilterList label="Document date" icon={<AccessTime />}>
+  <FilterList label="Document date" icon={<AccessTimeIcon />}>
     <FilterListItem
       label="Today"
       value={{

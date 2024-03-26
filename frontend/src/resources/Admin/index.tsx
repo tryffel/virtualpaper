@@ -32,7 +32,7 @@ import {
   Typography,
 } from "@mui/material";
 
-import { ExpandMore } from "@mui/icons-material";
+import ExpandMore from "@mui/icons-material/ExpandMore";
 import {
   DocumentList,
   Processing,

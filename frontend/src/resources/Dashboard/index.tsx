@@ -20,7 +20,7 @@ import { useGetOne, Loading, CreateButton } from "react-admin";
 import { Grid } from "@mui/material";
 
 import { LastUpdatedDocumentList } from "./DocumentList";
-import { get } from "lodash";
+import get from "lodash/get";
 import { IndexingStatusRow, IndexingStatusRowSmall } from "./Status";
 import { EmptyDocumentList } from "../Documents/List";
 

@@ -40,7 +40,8 @@ import {
   AccordionDetails,
   Box,
 } from "@mui/material";
-import { ExpandMore, Clear } from "@mui/icons-material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ClearIcon from "@mui/icons-material/Clear";
 import { HelpButton } from "../../components/Help";
 import { DocumentCard } from "./DocumentCard";
 import { LanguageSelectInput, MetadataValueInput } from "./Edit";
@@ -91,7 +92,7 @@ const BulkEditDocuments = () => {
         <Toolbar cancel={cancel} />
         <Box width="100%">
           <Accordion>
-            <AccordionSummary expandIcon={<ExpandMore />}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h5" sx={{ width: "33%" }}>
                 Documents
               </Typography>
@@ -111,7 +112,7 @@ const BulkEditDocuments = () => {
         </Box>
         <Box width="100%">
           <Accordion>
-            <AccordionSummary expandIcon={<ExpandMore />}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h5" sx={{ width: "33%" }}>
                 Add metadata
               </Typography>
@@ -152,7 +153,7 @@ const BulkEditDocuments = () => {
         </Box>
         <Box width="100%">
           <Accordion>
-            <AccordionSummary expandIcon={<ExpandMore />}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h5">Remove metadata</Typography>
             </AccordionSummary>
             <AccordionDetails style={{ flexDirection: "column" }}>
@@ -194,7 +195,7 @@ const BulkEditDocuments = () => {
         </Box>
         <Box width="100%">
           <Accordion>
-            <AccordionSummary expandIcon={<ExpandMore />}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h5">General</Typography>
             </AccordionSummary>
             <AccordionDetails style={{ flexDirection: "column" }}>
@@ -214,7 +215,7 @@ const Toolbar = (props: any) => {
   return (
     <TopToolbar>
       <BulkEditHelp />
-      <Button label="Cancel" startIcon={<Clear />} onClick={cancel} />
+      <Button label="Cancel" startIcon={<ClearIcon />} onClick={cancel} />
     </TopToolbar>
   );
 };

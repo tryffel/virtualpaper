@@ -6,7 +6,7 @@ import {
 } from "react-admin";
 import { IconByName, iconExists } from "../../components/icons";
 import { InputAdornment } from "@mui/material";
-import { get } from "lodash";
+import get from "lodash/get";
 
 export const IconSelect = ({
   displayIcon,
