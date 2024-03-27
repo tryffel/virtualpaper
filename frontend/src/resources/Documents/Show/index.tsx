@@ -22,7 +22,7 @@ import {
   DateField,
   EditButton,
   Labeled,
-  Show,
+  ShowBase,
   Tab,
   TabbedShowLayout,
   TextField,
@@ -33,13 +33,14 @@ import {
   Box,
   Card,
   CardContent,
+  CardHeader,
   Container,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
   Grid,
+  Paper,
   Typography,
   useMediaQuery,
 } from "@mui/material";
@@ -80,61 +81,72 @@ import { ShowDocumentContent } from "../../../components/document/ShowContent.ts
 export const DocumentShow = () => {
   const [asideMode, setAsideMode] = React.useState<AsideMode>("closed");
   const [downloadUrl, setDownloadUrl] = React.useState("");
-  const isNotSmall = useMediaQuery((theme: any) => theme.breakpoints.up("sm"));
-  const isNotMedium = useMediaQuery((theme: any) => theme.breakpoints.up("md"));
+  const isNotSmall = useMediaQuery((theme) => theme.breakpoints.up("sm"));
+  const isNotMedium = useMediaQuery((theme) => theme.breakpoints.up("md"));
   const iconPosition = isNotSmall ? "start" : "top";
 
+  const tabbedContentOverride = isNotSmall
+    ? {}
+    : { ".RaTabbedShowLayout-content": { pl: 0, pr: 0 } };
+
   return (
-    <Show
-      title="Document"
-      actions={
-        <DocumentShowActions
-          showHistory={() => setAsideMode("history")}
-          showJobs={() => setAsideMode("jobs")}
-          downloadUrl={downloadUrl}
-        />
-      }
-      aside={
-        isNotSmall ? (
-          <DocumentShowAside mode={asideMode} setMode={setAsideMode} />
-        ) : undefined
-      }
-    >
-      <Container>
-        <TabbedShowLayout
-          sx={{
-            ".MuiTab-root": { minHeight: "36px" },
-            marginBottom: 1,
-            marginTop: 1,
-          }}
-        >
-          <Tab
-            label="general"
-            icon={<StickyNote2Icon />}
-            iconPosition={iconPosition}
+    <ShowBase>
+      <>
+        <Container sx={{ p: 0 }} maxWidth={"lg"}>
+          <DocumentShowActions
+            showHistory={() => setAsideMode("history")}
+            showJobs={() => setAsideMode("jobs")}
+            downloadUrl={downloadUrl}
+          />
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "row",
+              gap: "10px",
+              width: "100%",
+            }}
           >
-            {isNotMedium ? (
-              <DocumentGeneralTabLarge />
-            ) : (
-              <DocumentGeneralTablSmall />
-            )}
-          </Tab>
-          <Tab label="Content" icon={<NotesIcon />} iconPosition={iconPosition}>
-            <DocumentContentTab />
-          </Tab>
-          <Tab
-            label="preview"
-            icon={<SourceIcon />}
-            iconPosition={iconPosition}
-          >
-            <DocumentPreviewTab setDownloadUrl={setDownloadUrl} />
-          </Tab>
-        </TabbedShowLayout>
-      </Container>
-      {!isNotSmall && (
+            <Paper elevation={1} sx={{ pl: 1, pr: 1, pt: 0.2, width: "100%" }}>
+              <TabbedShowLayout
+                sx={{
+                  ".MuiTab-root": { minHeight: "36px" },
+                  ...tabbedContentOverride,
+                  marginBottom: 1,
+                  marginTop: 1,
+                }}
+              >
+                <Tab
+                  label="general"
+                  icon={<StickyNote2Icon />}
+                  iconPosition={iconPosition}
+                >
+                  {isNotMedium ? (
+                    <DocumentGeneralTabLarge />
+                  ) : (
+                    <DocumentGeneralTablSmall />
+                  )}
+                </Tab>
+                <Tab
+                  label="Content"
+                  icon={<NotesIcon />}
+                  iconPosition={iconPosition}
+                >
+                  <DocumentContentTab />
+                </Tab>
+                <Tab
+                  label="preview"
+                  icon={<SourceIcon />}
+                  iconPosition={iconPosition}
+                >
+                  <DocumentPreviewTab setDownloadUrl={setDownloadUrl} />
+                </Tab>
+              </TabbedShowLayout>
+            </Paper>
+          </Box>
+        </Container>
         <DocumentShowAsideModal mode={asideMode} setMode={setAsideMode} />
-      )}
-    </Show>
+      </>
+    </ShowBase>
   );
 };
 
@@ -357,15 +369,30 @@ const DocumentShowAside = (props: AsideProps) => {
   }
 
   return (
-    <Box ml={1} sx={{ maxWidth: "30%" }}>
+    <Box sx={{ margin: 0, padding: 0 }}>
       <Card>
+        <CardHeader
+          title={
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
+              }}
+            >
+              <Typography>
+                {mode === "history" ? "Document history" : "Processing history"}
+              </Typography>
+              <Button
+                label={"Close"}
+                variant="outlined"
+                onClick={() => setMode("closed")}
+                sx={{ mb: 2 }}
+              />
+            </Box>
+          }
+        />
         <CardContent>
-          <Button
-            label={"Close"}
-            variant="outlined"
-            onClick={() => setMode("closed")}
-            sx={{ mb: 2 }}
-          />
           {mode == "history" && <ShowDocumentsEditHistory />}
           {mode == "jobs" && <DocumentJobsHistory />}
         </CardContent>
