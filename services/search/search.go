@@ -40,6 +40,7 @@ type DocumentFilter struct {
 	Metadata string    `json:"metadata"`
 	Sort     string    `json:"sort"`
 	SortMode string    `json:"sort_mode"`
+	Favorite bool      `json:"favorite"`
 }
 
 // SearchDocuments searches documents for given user. Query can be anything. If field="", search in any field,
@@ -90,6 +91,7 @@ func (e *Engine) SearchDocuments(userId int, query string, sort storage.SortKey,
 			doc.Date = time.Unix(int64(getInt("date", isMap)), 0)
 			doc.Mimetype = getString("mimetype", isMap)
 			doc.Lang = models.Lang(getString("lang", isMap))
+			doc.Favorite = getBool("favorite", isMap)
 
 			shareArray, ok := isMap["shares"].([]interface{})
 			if !ok {
@@ -122,6 +124,14 @@ func getString(key string, container map[string]interface{}) string {
 	val, ok := container[key].(string)
 	if !ok {
 		return ""
+	}
+	return val
+}
+
+func getBool(key string, container map[string]interface{}) bool {
+	val, ok := container[key].(bool)
+	if !ok {
+		return false
 	}
 	return val
 }
@@ -219,6 +229,7 @@ func parseFilter(filter string) (*searchQuery, error) {
 		"lang":        parseLang,
 		"owner":       parseOwner,
 		"shared":      parseShared,
+		"favorite":    parseFavorite,
 	}
 
 	tokensLeft := tokens
@@ -313,6 +324,15 @@ func parseOwner(value string, sq *searchQuery) bool {
 
 func parseShared(value string, sq *searchQuery) bool {
 	sq.Shared = value
+	return true
+}
+
+func parseFavorite(value string, sq *searchQuery) bool {
+	if value == "yes" {
+		sq.Favorite = "true"
+	} else if value == "no" {
+		sq.Favorite = "false"
+	}
 	return true
 }
 

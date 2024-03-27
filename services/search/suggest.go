@@ -129,6 +129,7 @@ type searchQuery struct {
 	Suggestions    []string
 	Owner          string
 	Shared         string
+	Favorite       string
 }
 
 func (s *searchQuery) addSuggestion(text string) {
@@ -140,7 +141,7 @@ func (s *searchQuery) prepareMeiliQuery(userId int, sort storage.SortKey, paging
 	request := &meilisearch.SearchRequest{
 		Offset:                int64(paging.Offset),
 		Limit:                 int64(paging.Limit),
-		AttributesToRetrieve:  []string{"document_id", "name", "content", "description", "date", "mimetype", "lang", "shares", "owner_id"},
+		AttributesToRetrieve:  []string{"document_id", "name", "content", "description", "date", "mimetype", "lang", "shares", "owner_id", "favorite"},
 		AttributesToCrop:      []string{"content"},
 		CropLength:            1000,
 		AttributesToHighlight: []string{"name"},
@@ -224,6 +225,15 @@ func (s *searchQuery) prepareMeiliQuery(userId int, sort storage.SortKey, paging
 			filter = filter + " AND " + sharedFilter
 		} else {
 			filter = sharedFilter
+		}
+	}
+
+	if s.Favorite != "" {
+		favorite := fmt.Sprintf("favorite=%s", s.Favorite)
+		if filter != "" {
+			filter = filter + " AND " + favorite
+		} else {
+			filter = favorite
 		}
 	}
 
@@ -328,7 +338,7 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 		}
 	}
 
-	keys := []string{"name", "description", "content", "date", "lang", "owner", "shared"}
+	keys := []string{"name", "description", "content", "date", "lang", "owner", "shared", "favorite"}
 	operators := []string{"AND", "OR", "NOT"}
 
 	parts := strings.Split(lastToken, ":")
@@ -412,6 +422,16 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 					qs.addSuggestionValues(v, SuggestionTypeKey, "")
 				}
 			}
+		} else if parts[0] == "favorite" {
+			favoriteSuggestions := suggestFavorite(parts[1])
+			tokenPrefix = "favorite:"
+			if len(favoriteSuggestions) > 0 {
+				//tokenPrefix = "date:"
+				addWhiteSpace = false
+				for _, v := range favoriteSuggestions {
+					qs.addSuggestionValues(v, SuggestionTypeKey, "")
+				}
+			}
 		} else {
 
 			values := metadata.queryValues(parts[0], parts[1])
@@ -480,7 +500,7 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 
 func suggestEmpty(metadata metadataQuerier) []Suggestion {
 
-	keys := []string{"name", "description", "content", "date", "lang", "owner", "shared"}
+	keys := []string{"name", "description", "content", "date", "lang", "owner", "shared", "favorite"}
 	results := metadata.queryKeys("", "", ":")
 
 	suggestions := make([]Suggestion, 0, len(keys)+len(results))
@@ -659,6 +679,22 @@ func suggestOwner(token string) []string {
 }
 
 func suggestShared(token string) []string {
+	keys := []string{"yes", "no"}
+	if token == "" {
+		return keys
+	}
+
+	suggestions := make([]string, 0, 5)
+
+	for _, v := range keys {
+		if strings.Contains(v, token) {
+			suggestions = append(suggestions, v)
+		}
+	}
+	return suggestions
+}
+
+func suggestFavorite(token string) []string {
 	keys := []string{"yes", "no"}
 	if token == "" {
 		return keys
