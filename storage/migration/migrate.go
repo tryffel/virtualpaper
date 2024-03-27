@@ -123,6 +123,11 @@ var Migrations = []Migrator{
 		Level:  19,
 		Schema: schemaV19,
 	},
+	&Migration{
+		Name:   "add favorite column to documents",
+		Level:  20,
+		Schema: schemaV20,
+	},
 }
 
 type Schema struct {
