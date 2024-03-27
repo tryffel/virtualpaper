@@ -120,6 +120,7 @@ func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 			"lang":        v.Lang,
 			"shares":      sharedUsers,
 			"owner_id":    userId,
+			"favorite":    v.Favorite,
 		}
 	}
 
@@ -288,6 +289,7 @@ func (e *Engine) AddIndex() error {
 			"lang",
 			"shares",
 			"owner_id",
+			"favorite",
 		}
 		_, err = e.client.Index(index).UpdateFilterableAttributes(fields)
 		if err != nil {

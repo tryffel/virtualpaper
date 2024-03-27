@@ -180,6 +180,7 @@ func Test_suggest(t *testing.T) {
 				{Value: "lang", Type: "key", Hint: ""},
 				{Value: "owner", Type: "key", Hint: ""},
 				{Value: "shared", Type: "key", Hint: ""},
+				{Value: "favorite", Type: "key", Hint: ""},
 				{Value: "class", Type: "metadata", Hint: ""},
 				{Value: "author", Type: "metadata", Hint: ""},
 				{Value: "authentic", Type: "metadata", Hint: ""},
@@ -368,6 +369,21 @@ func Test_suggest(t *testing.T) {
 				{Value: "yes", Type: "key"},
 				{Value: "no", Type: "key"},
 			}, Prefix: "shared:", ValidQuery: false},
+		},
+		{
+			name: "favorite",
+			args: args{"fav"},
+			want: &QuerySuggestions{Suggestions: []Suggestion{
+				{Value: "favorite:", Type: "key"},
+			}, Prefix: " ", ValidQuery: false},
+		},
+		{
+			name: "favorite value",
+			args: args{"favorite:"},
+			want: &QuerySuggestions{Suggestions: []Suggestion{
+				{Value: "yes", Type: "key"},
+				{Value: "no", Type: "key"},
+			}, Prefix: "favorite:", ValidQuery: false},
 		},
 	}
 
