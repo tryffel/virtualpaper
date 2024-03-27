@@ -594,6 +594,7 @@ func docStatsToUserStats(stats *models.UserDocumentStatistics) *aggregates.UserD
 		LastDocumentsUpdated: stats.LastDocumentsUpdated,
 		LastDocumentsAdded:   stats.LastDocumentsAdded,
 		LastDocumentsViewed:  stats.LastDocumentsViewed,
+		Favorites:            stats.Favorites,
 	}
 
 	if uds.LastDocumentsUpdated == nil {
@@ -604,6 +605,9 @@ func docStatsToUserStats(stats *models.UserDocumentStatistics) *aggregates.UserD
 	}
 	if uds.LastDocumentsViewed == nil {
 		uds.LastDocumentsViewed = []string{}
+	}
+	if uds.Favorites == nil {
+		uds.Favorites = []string{}
 	}
 
 	if uds.YearlyStats == nil {

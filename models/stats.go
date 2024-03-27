@@ -38,6 +38,7 @@ type UserDocumentStatistics struct {
 	LastDocumentsUpdated []string               `json:"last_documents_updated"`
 	LastDocumentsAdded   []string               `json:"last_documents_added"`
 	LastDocumentsViewed  []string               `json:"last_documents_viewed"`
+	Favorites            []string               `json:"favorites"`
 }
 
 type SystemStatistics struct {

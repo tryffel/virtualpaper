@@ -32,9 +32,10 @@ export const LastUpdatedDocumentList = (props: {
   lastUpdatedIds: string[];
   lastAddedIds: string[];
   lastViewedIds: string[];
+  favorites: string[];
 }) => {
   const isNotSmall = useMediaQuery((theme: any) => theme.breakpoints.up("xs"));
-  const { lastUpdatedIds, lastAddedIds, lastViewedIds } = props;
+  const { lastUpdatedIds, lastAddedIds, lastViewedIds, favorites } = props;
   const [showMode, setShowMode] = useStore<ShowMode>(
     "dashboard.latest_documents.mode",
     "lastUpdated",
@@ -48,6 +49,8 @@ export const LastUpdatedDocumentList = (props: {
         return lastAddedIds;
       case "lastViewed":
         return lastViewedIds;
+      case "favorites":
+        return favorites;
       default:
         return lastUpdatedIds;
     }
@@ -69,7 +72,7 @@ export const LastUpdatedDocumentList = (props: {
             pt: 2,
             pb: 2,
             display: "flex",
-            flexDirection: "row",
+            flexDirection: "column",
             justifyContent: "space-between",
           }}
         >
@@ -91,7 +94,7 @@ export const LastUpdatedDocumentList = (props: {
   return null;
 };
 
-type ShowMode = "lastUpdated" | "lastAdded" | "lastViewed";
+type ShowMode = "lastUpdated" | "lastAdded" | "lastViewed" | "favorites";
 
 const ShowModeButton = (props: {
   showMode: ShowMode;
@@ -103,7 +106,7 @@ const ShowModeButton = (props: {
     _event: React.MouseEvent<HTMLElement>,
     newAlignment: ShowMode,
   ) => {
-    setShowMode(newAlignment);
+    newAlignment && setShowMode(newAlignment);
   };
 
   return (
@@ -113,10 +116,13 @@ const ShowModeButton = (props: {
       onChange={handleAlignment}
       sx={{ pr: 1 }}
     >
-      <ToggleButton size="small" value="lastUpdated" color="primary">
-        Added
+      <ToggleButton size="small" value="favorites" color="primary">
+        Favorites
       </ToggleButton>
       <ToggleButton size="small" value="lastAdded" color="primary">
+        Added
+      </ToggleButton>
+      <ToggleButton size="small" value="lastUpdated" color="primary">
         Updated
       </ToggleButton>
       <ToggleButton size="small" value="lastViewed" color="primary">
