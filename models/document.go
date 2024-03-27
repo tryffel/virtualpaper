@@ -49,6 +49,7 @@ type Document struct {
 	Tags        []Tag
 	Lang        Lang `db:"lang"`
 	Shares      int  `db:"shares"`
+	Favorite    bool `db:"favorite"`
 
 	DeletedAt sql.NullTime `db:"deleted_at"`
 }
@@ -106,7 +107,7 @@ func (d *Document) GetSize() string {
 
 func (d *Document) FilterAttributes() []string {
 	ts := d.Timestamp.FilterAttributes()
-	doc := []string{"id", "name", "content", "description", "filename", "hash", "mimetype", "size", "date", "deleted_at", "created_at", "updated_at"}
+	doc := []string{"id", "name", "content", "description", "filename", "hash", "mimetype", "size", "date", "deleted_at", "created_at", "updated_at", "favorite"}
 	return append(doc, ts...)
 }
 
@@ -115,7 +116,7 @@ func (d *Document) SortAttributes() []string {
 }
 
 func (d *Document) SortNoCase() []string {
-	return []string{"name", "content", "description", "filename", "hash", "mimetype"}
+	return []string{"name", "content", "description", "filename", "hash", "mimetype", "favorite"}
 }
 
 // HasMetadataKey returns true if document has given metadata key.
@@ -311,6 +312,8 @@ const (
 	DocumentHistoryActionMetadataAdd    = "add metadata"
 	DocumentHistoryActionDelete         = "delete"
 	DocumentHistoryActionRestore        = "restore"
+	DocumentHistoryActionFavorite       = "favorite"
+	DocumentHistoryActionUnFavorite     = "unfavorite"
 )
 
 // Diffs returns a list of DocumentHistory items from d -> newDocument.
@@ -349,6 +352,13 @@ func (d *Document) Diff(newDocument *Document, userId int) ([]DocumentHistory, e
 	}
 	if d.Lang != d2.Lang {
 		addHistoryItem(DocumentHistoryActionLanguage, d.Lang.String(), d2.Lang.String())
+	}
+	if d.Favorite != d2.Favorite {
+		if d.Favorite {
+			addHistoryItem(DocumentHistoryActionUnFavorite, "", "")
+		} else {
+			addHistoryItem(DocumentHistoryActionFavorite, "", "")
+		}
 	}
 	return history, nil
 }

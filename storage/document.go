@@ -62,7 +62,7 @@ func (s *DocumentStore) GetDocuments(exec SqlExecer, userId int, paging Paging, 
 		contentSelect = "content"
 	}
 
-	query := s.sq.Select("id, name, filename, documents.created_at as created_at, documents.updated_at as updated_at, hash, mimetype, size, date, description, lang, deleted_at, count(shares.user_id) as shares", contentSelect).
+	query := s.sq.Select("id, name, filename, documents.created_at as created_at, documents.updated_at as updated_at, hash, mimetype, size, date, description, lang, deleted_at, count(shares.user_id) as shares, favorite", contentSelect).
 		From("documents").
 		LeftJoin("user_shared_documents shares on documents.id = shares.document_id")
 
@@ -249,13 +249,13 @@ func (s *DocumentStore) GetByHash(userId int, hash string) (*models.Document, er
 
 func (s *DocumentStore) Create(doc *models.Document) error {
 	sql := `
-INSERT INTO documents (id, user_id, name, content, filename, hash, mimetype, size, description, date, lang)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id;`
+INSERT INTO documents (id, user_id, name, content, filename, hash, mimetype, size, description, date, lang, favorite)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id;`
 
 	doc.Init()
 
 	rows, err := s.db.Query(sql, doc.Id, doc.UserId, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
-		doc.Description, doc.Date, doc.Lang)
+		doc.Description, doc.Date, doc.Lang, doc.Favorite)
 	if err != nil {
 		return s.parseError(err, "created")
 	}
@@ -361,12 +361,12 @@ func (s *DocumentStore) Update(userId int, doc *models.Document) error {
 	sql := `
 UPDATE documents SET 
 name=$2, content=$3, filename=$4, hash=$5, mimetype=$6, size=$7, date=$8,
-updated_at=$9, description=$10, lang=$11
+updated_at=$9, description=$10, lang=$11, favorite=$12
 WHERE id=$1
 `
 
 	_, err = s.db.Exec(sql, doc.Id, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
-		doc.Date, doc.UpdatedAt, doc.Description, doc.Lang)
+		doc.Date, doc.UpdatedAt, doc.Description, doc.Lang, doc.Favorite)
 	if err != nil {
 		return s.parseError(err, "update")
 	}

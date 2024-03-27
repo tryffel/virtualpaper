@@ -66,6 +66,7 @@ type DocumentUpdateRequest struct {
 	Date        int64             `json:"date" valid:"optional,range(0|4106139691000)"` // year 2200 in ms
 	Metadata    []MetadataRequest `json:"metadata" valid:"-"`
 	Lang        string            `json:"lang" valid:"language, optional"`
+	Favorite    bool              `json:"favorite" valid:"-"`
 }
 
 func (a *Api) getDocuments(c echo.Context) error {

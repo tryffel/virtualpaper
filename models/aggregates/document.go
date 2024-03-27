@@ -30,6 +30,7 @@ type Document struct {
 	Tags        []models.Tag           `json:"tags"`
 	Lang        string                 `json:"lang"`
 	Shares      int                    `json:"shares"`
+	Favorite    bool                   `json:"favorite"`
 }
 
 func DocumentToAggregate(doc *models.Document, shares *[]models.DocumentSharePermission) *Document {
@@ -52,6 +53,7 @@ func DocumentToAggregate(doc *models.Document, shares *[]models.DocumentSharePer
 		Tags:        doc.Tags,
 		Lang:        doc.Lang.String(),
 		Shares:      doc.Shares,
+		Favorite:    doc.Favorite,
 	}
 	if doc.DeletedAt.Valid {
 		resp.DeletedAt = doc.DeletedAt.Time.Unix() * 1000
