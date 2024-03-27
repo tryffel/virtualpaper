@@ -47,7 +47,7 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import SettingsIcon from "@mui/icons-material/Settings";
 import NotInterestedIcon from "@mui/icons-material/NotInterested";
-import { DocumentCard } from "../Documents/DocumentCard";
+import { DocumentCard } from "@components/document/card";
 
 interface ConditionResult {
   condition_id: number;

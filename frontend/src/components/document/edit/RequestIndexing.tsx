@@ -11,7 +11,7 @@ import {
   Select,
   Typography,
 } from "@mui/material";
-import { requestDocumentProcessing } from "../../api/dataProvider";
+import { requestDocumentProcessing } from "@api/dataProvider.ts";
 import AutoFixNormalIcon from "@mui/icons-material/AutoFixNormal";
 import MenuItem from "@mui/material/MenuItem";
 import ListItemIcon from "@mui/material/ListItemIcon";

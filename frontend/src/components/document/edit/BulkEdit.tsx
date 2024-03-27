@@ -42,9 +42,12 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ClearIcon from "@mui/icons-material/Clear";
-import { HelpButton } from "../../components/Help";
-import { DocumentCard } from "./DocumentCard";
-import { LanguageSelectInput, MetadataValueInput } from "./Edit";
+import { HelpButton } from "../../Help.tsx";
+import { DocumentCard } from "@components/document/card";
+import {
+  LanguageSelectInput,
+  MetadataValueInput,
+} from "@resources/Documents/Edit.tsx";
 
 const BulkEditDocuments = () => {
   const [documentIds] = useStore("bulk-edit-document-ids", []);

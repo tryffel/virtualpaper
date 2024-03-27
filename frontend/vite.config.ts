@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import { VitePWA } from "vite-plugin-pwa";
+import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -53,5 +54,14 @@ export default defineConfig({
   ],
   define: {
     "process.env": process.env,
+  },
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      "@layout": path.resolve(__dirname, "./src/layout"),
+      "@components": path.resolve(__dirname, "./src/components"),
+      "@resources": path.resolve(__dirname, "./src/resources"),
+      "@api": path.resolve(__dirname, "./src/api"),
+    },
   },
 });

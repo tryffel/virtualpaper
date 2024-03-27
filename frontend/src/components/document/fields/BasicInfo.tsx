@@ -1,108 +1,17 @@
-import {
-  Loading,
-  TextField,
-  useGetManyReference,
-  useRecordContext,
-} from "react-admin";
-import { Badge, mimetypeToColor, mimetypeToText } from "../DocumentCard";
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Box,
-  Grid,
-  Tooltip,
-  Typography,
-} from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { TextField, useRecordContext } from "react-admin";
 import get from "lodash/get";
-import { languages } from "../../../languages";
 import {
-  PrettifyAbsoluteTime,
-  PrettifyTimeInterval,
-} from "../../../components/util";
-import { DocumentIdField } from "../../../components/document/fields/DocumentId.tsx";
+  Badge,
+  mimetypeToColor,
+  mimetypeToText,
+} from "@components/document/card";
+import { Box, Grid } from "@mui/material";
+import { DocumentIdField } from "@components/document/fields/DocumentId.tsx";
+import { languages } from "@/languages.ts";
 
 function getLanguageLabel(code: string): string {
   const lang = languages[code as keyof typeof languages];
   return lang ? (lang as string) : code;
-}
-
-export function DocumentJobsHistory() {
-  const record = useRecordContext();
-  const { data, isLoading, error } = useGetManyReference("document/jobs", {
-    target: "id",
-    id: record?.id,
-    sort: {
-      field: "timestamp",
-      order: "ASC",
-    },
-  });
-
-  if (isLoading) {
-    return <Loading />;
-  }
-  if (error) {
-    return null;
-    // return <Error />;
-  }
-
-  if (data !== undefined) {
-    return (
-      <div>
-        {data.map((index) => (
-          <DocumentJobListItem record={index} />
-        ))}
-      </div>
-    );
-  }
-  return null;
-}
-
-function DocumentJobListItem(props: any) {
-  if (!props.record) {
-    return null;
-  }
-  let style = {};
-  let prefix = "";
-  if (props.record.status === "Finished") {
-    // pass
-  } else if (props.record.status === "Running") {
-    style = { fontStyle: "italic", background: "#ff0" };
-    prefix = "Running";
-  } else if (props.record.status === "Error") {
-    style = { fontStyle: "italic", background: "red" };
-    prefix = "Error";
-  }
-  const startTime = PrettifyAbsoluteTime(props.record.started_at);
-  const took = PrettifyTimeInterval(
-    props.record.started_at,
-    props.record.stopped_at,
-  );
-
-  return (
-    <Accordion sx={{ minWidth: "15em" }}>
-      <AccordionSummary expandIcon={<ExpandMoreIcon />} style={style}>
-        <Typography>
-          {prefix} {props.record.message}
-        </Typography>
-      </AccordionSummary>
-      <AccordionDetails style={{ flexDirection: "column" }}>
-        <Typography>
-          Status:
-          {props.record.status}
-        </Typography>
-        <Typography>
-          Job id:
-          {props.record.id}
-        </Typography>
-
-        <Tooltip title={`Time: ${took !== "" ? took : "< 1 sec"}`}>
-          <Typography>Started at: {startTime}</Typography>
-        </Tooltip>
-      </AccordionDetails>
-    </Accordion>
-  );
 }
 
 export const DocumentTopRow = () => {
@@ -171,7 +80,6 @@ export const DocumentTopRow = () => {
     </Grid>
   );
 };
-
 export const DocumentBasicInfo = () => {
   const record = useRecordContext();
   const isDeleted = get(record, "deleted_at") !== null;
@@ -230,7 +138,6 @@ export const DocumentBasicInfo = () => {
     </Box>
   );
 };
-
 export const DocumentTitle = () => {
   return (
     <TextField

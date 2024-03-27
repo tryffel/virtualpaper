@@ -29,7 +29,7 @@ export type SharedUser = {
   permissions: Permissions;
 };
 
-export const ListSharedUsers = () => {
+export const SharedUsersList = () => {
   const [open, setOpen] = React.useState(false);
 
   const record = useRecordContext();
