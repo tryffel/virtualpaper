@@ -87,6 +87,7 @@ export const DocumentEdit = () => {
       actions={
         <DocumentEditActions open={previewOpen} setOpen={setPreviewOpen} />
       }
+      redirect={"show"}
     >
       <SimpleForm warnWhenUnsavedChanges toolbar={<EditToolBar />}>
         <Grid container spacing={2}>
