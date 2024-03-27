@@ -120,11 +120,15 @@ export const InstallationInfo = () => {
               </TableRow>
               <TableRow>
                 <TableCell>Poppler installed</TableCell>
-                <TableCell>{get(record, "poppler_installed")}</TableCell>
+                <TableCell>
+                  {get(record, "poppler_installed") ? "yes" : "no"}
+                </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>Pandoc installed</TableCell>
-                <TableCell>{get(record, "pandoc_installed")}</TableCell>
+                <TableCell>
+                  {get(record, "pandoc_installed") ? "yes" : "no"}
+                </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>Number of CPUs</TableCell>
