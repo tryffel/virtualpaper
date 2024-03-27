@@ -53,7 +53,7 @@ export const EscapeWhitespace = (input: string): string => {
 
 // Prettify time since now().
 //e.g. -> 'Just now', '30 minutes ago', '5 days ago', '7/7/2022'.
-export const PrettifyRelativeTime = (time: number | string): string => {
+export const prettifyRelativeTime = (time: number | string): string => {
   const now = Date.now();
   // @ts-ignore
   const secondsDiff =

@@ -31,7 +31,7 @@ import {
   Tooltip,
   Box,
 } from "@mui/material";
-import { PrettifyRelativeTime } from "../../../components/util";
+import { prettifyRelativeTime } from "../../../components/util";
 
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import ArticleIcon from "@mui/icons-material/Article";
@@ -103,7 +103,7 @@ interface HistoryProps {
 
 const ShowDocumentsEditHistoryItem = (props: { item: DocumentHistoryItem }) => {
   const { item } = props;
-  const timeString = PrettifyRelativeTime(item.created_at);
+  const timeString = prettifyRelativeTime(item.created_at);
 
   switch (item.action) {
     case "create":
