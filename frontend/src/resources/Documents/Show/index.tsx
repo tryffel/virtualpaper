@@ -75,6 +75,7 @@ import StickyNote2Icon from "@mui/icons-material/StickyNote2";
 import { MetadataList } from "./MetadataList";
 import { ListSharedUsers } from "./SharedUsers";
 import { EditDocumentSharing } from "../EditSharing";
+import { ShowDocumentContent } from "../../../components/document/ShowContent.tsx";
 
 export const DocumentShow = () => {
   const [asideMode, setAsideMode] = React.useState<AsideMode>("closed");
@@ -325,57 +326,7 @@ const DocumentGeneralTablSmall = () => {
 };
 
 const DocumentContentTab = () => {
-  const [enableFormatting, setState] = React.useState(true);
-
-  const toggleFormatting = () => {
-    if (enableFormatting) {
-      setState(false);
-    } else {
-      setState(true);
-    }
-  };
-
-  return (
-    <Grid container maxWidth={800}>
-      <Grid item sx={{ pb: 3, pt: 2 }}>
-        <Box
-          style={{
-            display: "flex",
-            flexFlow: " row",
-            justifyContent: "flex-end",
-          }}
-        >
-          <Button
-            color="primary"
-            size="small"
-            variant="contained"
-            onClick={toggleFormatting}
-            sx={{ mr: 4 }}
-          >
-            <div>
-              {enableFormatting ? "Enable formatting" : "Disable formatting"}
-            </div>
-          </Button>
-          <div style={{ maxWidth: 400 }}>
-            <Typography variant="body2">
-              This page show automatically extracted content for the document.
-              The quality and accuracy may vary depending on document type and
-              quality.
-            </Typography>
-          </div>
-        </Box>
-      </Grid>
-      <Grid item>
-        <Typography variant="h5">Document content</Typography>
-        <Divider sx={{ pt: 1 }} />
-        {enableFormatting ? (
-          <TextField source="content" label="Raw parsed text content" />
-        ) : (
-          <MarkdownField source="content" label="Raw parsed text content" />
-        )}
-      </Grid>
-    </Grid>
-  );
+  return <ShowDocumentContent />;
 };
 
 const DocumentPreviewTab = (props: {
