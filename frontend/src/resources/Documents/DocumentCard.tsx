@@ -59,7 +59,13 @@ export const DocumentCard = (props: DocumentCardProps) => {
     <Card
       key={record.id}
       style={{ ...cardStyle }}
-      sx={{ backgroundColor: theme === "dark" ? "#292929" : "#FAFAFA" }}
+      sx={{
+        backgroundColor: theme === "dark" ? "#272727" : "#FAFAFA",
+        border:
+          theme === "dark"
+            ? "1px solid rgba(255, 255, 255, 0.12)"
+            : "1px solid rgba(0, 0, 0, 0.12)",
+      }}
     >
       <CardActionArea href={`/#/documents/${record.id}/show`}>
         <CardHeader
