@@ -16,15 +16,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useRecordContext, useGetManyReference, Loading } from "react-admin";
 import {
-  Grid,
+  useRecordContext,
+  useGetManyReference,
+  Loading,
+  RecordContextProvider,
+} from "react-admin";
+import {
   Stepper,
   Step,
   StepLabel,
   StepContent,
   Typography,
   Tooltip,
+  Box,
+  useMediaQuery,
 } from "@mui/material";
 import { PrettifyRelativeTime } from "../../../components/util";
 
@@ -40,6 +46,7 @@ import TranslateIcon from "@mui/icons-material/Translate";
 
 import get from "lodash/get";
 import { languages } from "../../../languages";
+import { MarkdownField } from "../../../components/markdown";
 
 export const ShowDocumentsEditHistory = () => {
   const record = useRecordContext();
@@ -64,18 +71,18 @@ export const ShowDocumentsEditHistory = () => {
   }
 
   return (
-    <Grid container>
-      <Grid item xs={8} md={8}>
-        <Typography variant="overline">Document edit history</Typography>
-      </Grid>
-      <Grid item xs={12} md={12}>
-        <Stepper orientation="vertical" sx={{ mt: 1 }}>
-          {data?.map((item: DocumentHistoryItem) => (
-            <ShowDocumentsEditHistoryItem item={item} />
-          ))}
-        </Stepper>
-      </Grid>
-    </Grid>
+    <Box
+      sx={{
+        maxHeight: "100vh",
+        overflowY: "scroll",
+      }}
+    >
+      <Stepper orientation="vertical" sx={{ mt: 1 }}>
+        {data?.map((item: DocumentHistoryItem) => (
+          <ShowDocumentsEditHistoryItem item={item} />
+        ))}
+      </Stepper>
+    </Box>
   );
 };
 
@@ -150,19 +157,63 @@ const ShowDocumentsEditHistoryItem = (props: { item: DocumentHistoryItem }) => {
   );
 };
 
-// create, rename, add metadata, remove metadata, date, description, content
-//
-const ItemLabel = (props: HistoryProps) => {
+const iconColor = "secondary";
+
+const textStyle = { variant: "body2", fontSize: "0.8rem", fontStyle: "italic" };
+
+const ItemText = ({ text }: { text: string }) => {
+  return (
+    <Typography variant={"body2"} fontSize={"0.8rem"} fontStyle={"italic"}>
+      {text}
+    </Typography>
+  );
+};
+
+const ItemLabel = (props: HistoryProps & { action?: string }) => {
+  const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
   const { item, pretty_time } = props;
   // @ts-ignore
   const fullTime = new Date(Date.parse(item.created_at)).toLocaleString();
 
   return (
-    <Tooltip title={`Time: ${fullTime}`}>
-      <Typography variant="body2" gutterBottom>
-        {item.user} - {pretty_time}:
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "row",
+        justifyContent: "space-between",
+      }}
+    >
+      <Typography variant={"body2"} fontSize={"0.9rem"} component={"span"}>
+        {props.action}
       </Typography>
-    </Tooltip>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "flex-end",
+          gap: "5px",
+        }}
+      >
+        <Tooltip title={`Time: ${fullTime}`}>
+          <Typography
+            variant="body2"
+            fontSize={"0.8rem"}
+            fontWeight={"600"}
+            gutterBottom
+          >
+            {pretty_time}
+          </Typography>
+        </Tooltip>
+        <Typography
+          variant="body2"
+          fontSize={"0.8rem"}
+          gutterBottom
+          minWidth={"50px"}
+        >
+          ({item.user})
+        </Typography>
+      </Box>
+    </Box>
   );
 };
 
@@ -171,10 +222,11 @@ const DocumentHistoryCreate = (props: HistoryProps) => {
 
   return (
     <Step key={`${item.id}`} expanded active completed>
-      <StepLabel icon={<AddCircleIcon />}>Created document</StepLabel>
+      <StepLabel icon={<AddCircleIcon color={iconColor} />}>
+        <ItemLabel {...props} action={"Created document"} />
+      </StepLabel>
       <StepContent>
-        <ItemLabel {...props} />
-        <Typography variant="body1">Name: {item.new_value}</Typography>
+        <ItemText text={`Name: ${item.new_value}`} />
       </StepContent>
     </Step>
   );
@@ -184,10 +236,20 @@ const DocumentHistoryDescription = (props: HistoryProps) => {
   const { item } = props;
   return (
     <Step key={`${item.id}`} expanded active completed>
-      <StepLabel icon={<ArticleIcon />}>Changed description</StepLabel>
+      <StepLabel icon={<ArticleIcon color={iconColor} />}>
+        <ItemLabel {...props} action={"Changed description"} />
+      </StepLabel>
       <StepContent>
-        <ItemLabel {...props} />
-        <Typography variant="body1">To: {item.new_value}</Typography>
+        <Box
+          sx={{
+            maxHeight: "40vh",
+            overflowY: "scroll",
+          }}
+        >
+          <RecordContextProvider value={props.item}>
+            <MarkdownField source={"new_value"} />
+          </RecordContextProvider>
+        </Box>
       </StepContent>
     </Step>
   );
@@ -197,10 +259,11 @@ const DocumentHistoryRename = (props: HistoryProps) => {
   const { item } = props;
   return (
     <Step key={`${item.id}`} expanded active completed>
-      <StepLabel icon={<ArticleIcon />}>Renamed document</StepLabel>
+      <StepLabel icon={<ArticleIcon color={iconColor} />}>
+        <ItemLabel {...props} action={"Renamed document"} />
+      </StepLabel>
       <StepContent>
-        <ItemLabel {...props} />
-        <Typography variant="body1">To: {item.new_value}</Typography>
+        <ItemText text={`To: ${item.new_value}`} />
       </StepContent>
     </Step>
   );
@@ -226,19 +289,18 @@ const DocumentHistoryAddMetadata = (props: HistoryProps) => {
 
   return (
     <Step key={`${item.id}`} expanded active completed>
-      <StepLabel icon={<TagIcon />}>Added metadata</StepLabel>
+      <StepLabel icon={<TagIcon color={iconColor} />}>
+        <ItemLabel {...props} action={"Added metadata"} />
+      </StepLabel>
       <StepContent>
-        <ItemLabel {...props} />
         {jsonMode ? (
           <Tooltip
             title={`Metadata info: key_id: ${keyId}, value_id: ${valueId}`}
           >
-            <Typography variant="body1">No data</Typography>
+            <ItemText text={"no data"} />
           </Tooltip>
         ) : (
-          <Typography variant="body1">
-            Metadata: {keyId}:{valueId}
-          </Typography>
+          <ItemText text={"no data"} />
         )}
       </StepContent>
     </Step>
@@ -263,19 +325,18 @@ const DocumentHistoryRemoveMetadata = (props: HistoryProps) => {
   }
   return (
     <Step key={`${item.id}`} expanded active completed>
-      <StepLabel icon={<ContentCut />}>Removed metadata</StepLabel>
+      <StepLabel icon={<ContentCut color={iconColor} />}>
+        <ItemLabel {...props} action={"Removed metadata"} />
+      </StepLabel>
       <StepContent>
-        <ItemLabel {...props} />
         {jsonMode ? (
           <Tooltip
             title={`Metadata info: key_id: ${keyId}, value_id: ${valueId}`}
           >
-            <Typography variant="body1">No data</Typography>
+            <ItemText text={"no data"} />
           </Tooltip>
         ) : (
-          <Typography variant="body1">
-            Metadata: {keyId}:{valueId}
-          </Typography>
+          <ItemText text={`Metadata: ${keyId}:${valueId}`} />
         )}
       </StepContent>
     </Step>
@@ -286,10 +347,11 @@ const DocumentHistoryContent = (props: HistoryProps) => {
   const { item } = props;
   return (
     <Step key={`${item.id}`} expanded active completed>
-      <StepLabel icon={<ArticleIcon />}>Changed content</StepLabel>
+      <StepLabel icon={<ArticleIcon color={iconColor} />}>
+        <ItemLabel {...props} action={"Changed content"} />
+      </StepLabel>
       <StepContent>
-        <ItemLabel {...props} />
-        <Typography variant="body1">Content</Typography>
+        <ItemText text={"Content"} />
       </StepContent>
     </Step>
   );
@@ -301,10 +363,11 @@ const DocumentHistoryDate = (props: HistoryProps) => {
 
   return (
     <Step key={`${item.id}`} expanded active completed>
-      <StepLabel icon={<ScheduleIcon />}>Changed date</StepLabel>
+      <StepLabel icon={<ScheduleIcon color={iconColor} />}>
+        <ItemLabel {...props} action={"Changed date"} />
+      </StepLabel>
       <StepContent>
-        <ItemLabel {...props} />
-        <Typography variant="body1">To: {newDate}</Typography>
+        <ItemText text={`To: ${newDate}`} />
       </StepContent>
     </Step>
   );
@@ -314,12 +377,11 @@ const DocumentHistoryModifyLinkedDocuments = (props: HistoryProps) => {
   const { item } = props;
   return (
     <Step key={`${item.id}`} expanded active completed>
-      <StepLabel icon={<FormatListBulletedIcon />}>
-        Modified linked documents
+      <StepLabel icon={<FormatListBulletedIcon color={iconColor} />}>
+        <ItemLabel {...props} action={"Modified linked documents"} />
       </StepLabel>
       <StepContent>
-        <ItemLabel {...props} />
-        <Typography variant="body1">{item.new_value}</Typography>
+        <ItemText text={item.new_value} />
       </StepContent>
     </Step>
   );
@@ -330,10 +392,9 @@ const DocumentHistoryDelete = (props: HistoryProps) => {
 
   return (
     <Step key={`${item.id}`} expanded active completed>
-      <StepLabel icon={<DeleteIcon />}>Deleted</StepLabel>
-      <StepContent>
-        <ItemLabel {...props} />
-      </StepContent>
+      <StepLabel icon={<DeleteIcon color={iconColor} />}>
+        <ItemLabel {...props} action={"Deleted document"} />
+      </StepLabel>
     </Step>
   );
 };
@@ -343,10 +404,9 @@ const DocumentHistoryRestore = (props: HistoryProps) => {
 
   return (
     <Step key={`${item.id}`} expanded active completed>
-      <StepLabel icon={<RestoreFromTrashIcon />}>Restored</StepLabel>
-      <StepContent>
-        <ItemLabel {...props} />
-      </StepContent>
+      <StepLabel icon={<RestoreFromTrashIcon color={iconColor} />}>
+        <ItemLabel {...props} action={"Restored document"} />
+      </StepLabel>
     </Step>
   );
 };
@@ -357,10 +417,11 @@ const DocumentHistoryLang = (props: HistoryProps) => {
 
   return (
     <Step key={`${item.id}`} expanded active completed>
-      <StepLabel icon={<TranslateIcon />}>Set language</StepLabel>
+      <StepLabel icon={<TranslateIcon color={iconColor} />}>
+        <ItemLabel {...props} action={"Set language"} />
+      </StepLabel>
       <StepContent>
-        <ItemLabel {...props} />
-        <Typography variant="body1">{newLang}</Typography>
+        <ItemText text={`To: ${newLang}`} />
       </StepContent>
     </Step>
   );
