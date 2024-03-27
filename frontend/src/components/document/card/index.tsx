@@ -7,6 +7,7 @@ import {
   ToggleButton,
   Typography,
   Chip,
+  Box,
 } from "@mui/material";
 import RestoreIcon from "@mui/icons-material/Restore";
 import {
@@ -28,6 +29,7 @@ import get from "lodash/get";
 import { useState } from "react";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ShareIcon from "@mui/icons-material/Share";
+import BookmarkIcon from "@mui/icons-material/Bookmark";
 
 const cardStyle = {
   width: 230,
@@ -141,6 +143,7 @@ const DocumentContent = (props: { record: RaRecord }) => {
 
   const getMimetypeColor = (): colorTypes => mimetypeToColor(record?.mimetype);
   const getMimeTypeName = (): string => mimetypeToText(record?.mimetype);
+  const isFavorite = record && get(record, "favorite");
 
   const shared = get(record, "shares") > 0;
 
@@ -170,6 +173,33 @@ const DocumentContent = (props: { record: RaRecord }) => {
         color={getMimetypeColor()}
         style={{ top: "4px", right: "16px", position: "absolute" }}
       />
+      {isFavorite && (
+        <Box
+          style={{
+            top: "35px",
+            right: "16px",
+            position: "absolute",
+            backgroundColor: "transparent",
+            width: "10px",
+            height: "10px",
+            boxShadow:
+              "0px 30px 10px -10px rgba(100, 115, 120,0.3),0px 1px 20px 0px rgba(100, 115, 120,0.3),-2px 5px 20px 4px rgba(100, 115, 120,0.3)",
+            borderRadius: "20px",
+          }}
+        >
+          <BookmarkIcon
+            color={"info"}
+            style={{
+              height: "30px",
+              width: "30px",
+              position: "absolute",
+              top: "-4px",
+              right: "-6px",
+            }}
+          />
+        </Box>
+      )}
+
       {shared && (
         <Chip
           icon={<ShareIcon />}
