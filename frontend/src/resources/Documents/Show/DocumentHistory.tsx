@@ -30,7 +30,6 @@ import {
   Typography,
   Tooltip,
   Box,
-  useMediaQuery,
 } from "@mui/material";
 import { PrettifyRelativeTime } from "../../../components/util";
 
@@ -159,8 +158,6 @@ const ShowDocumentsEditHistoryItem = (props: { item: DocumentHistoryItem }) => {
 
 const iconColor = "secondary";
 
-const textStyle = { variant: "body2", fontSize: "0.8rem", fontStyle: "italic" };
-
 const ItemText = ({ text }: { text: string }) => {
   return (
     <Typography variant={"body2"} fontSize={"0.8rem"} fontStyle={"italic"}>
@@ -170,7 +167,6 @@ const ItemText = ({ text }: { text: string }) => {
 };
 
 const ItemLabel = (props: HistoryProps & { action?: string }) => {
-  const isSmall = useMediaQuery((theme: any) => theme.breakpoints.down("sm"));
   const { item, pretty_time } = props;
   // @ts-ignore
   const fullTime = new Date(Date.parse(item.created_at)).toLocaleString();

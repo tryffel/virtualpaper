@@ -31,9 +31,6 @@ import {
 } from "react-admin";
 import {
   Box,
-  Card,
-  CardContent,
-  CardHeader,
   Container,
   Dialog,
   DialogActions,
@@ -81,7 +78,9 @@ import { ShowDocumentContent } from "../../../components/document/ShowContent.ts
 export const DocumentShow = () => {
   const [asideMode, setAsideMode] = React.useState<AsideMode>("closed");
   const [downloadUrl, setDownloadUrl] = React.useState("");
+  // @ts-ignore
   const isNotSmall = useMediaQuery((theme) => theme.breakpoints.up("sm"));
+  // @ts-ignore
   const isNotMedium = useMediaQuery((theme) => theme.breakpoints.up("md"));
   const iconPosition = isNotSmall ? "start" : "top";
 
@@ -106,7 +105,7 @@ export const DocumentShow = () => {
               width: "100%",
             }}
           >
-            <Paper elevation={1} sx={{ pl: 1, pr: 1, pt: 0.2, width: "100%" }}>
+            <Paper elevation={3} sx={{ pl: 1, pr: 1, pt: 0.2, width: "100%" }}>
               <TabbedShowLayout
                 sx={{
                   ".MuiTab-root": { minHeight: "36px" },
@@ -360,46 +359,6 @@ interface AsideProps {
   mode: AsideMode;
   setMode: (mode: AsideMode) => void;
 }
-
-const DocumentShowAside = (props: AsideProps) => {
-  const { mode, setMode } = props;
-
-  if (mode == "closed") {
-    return null;
-  }
-
-  return (
-    <Box sx={{ margin: 0, padding: 0 }}>
-      <Card>
-        <CardHeader
-          title={
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "space-between",
-              }}
-            >
-              <Typography>
-                {mode === "history" ? "Document history" : "Processing history"}
-              </Typography>
-              <Button
-                label={"Close"}
-                variant="outlined"
-                onClick={() => setMode("closed")}
-                sx={{ mb: 2 }}
-              />
-            </Box>
-          }
-        />
-        <CardContent>
-          {mode == "history" && <ShowDocumentsEditHistory />}
-          {mode == "jobs" && <DocumentJobsHistory />}
-        </CardContent>
-      </Card>
-    </Box>
-  );
-};
 
 const DocumentShowAsideModal = (props: AsideProps) => {
   const { mode, setMode } = props;
