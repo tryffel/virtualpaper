@@ -139,6 +139,7 @@ type DocumentUpdate struct {
 	Date        time.Time
 	Metadata    MetadataArray
 	Lang        string
+	Favorite    bool
 }
 
 type UserDocumentStatistics struct {
