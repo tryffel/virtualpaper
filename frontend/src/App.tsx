@@ -19,7 +19,7 @@ import Rules from "./resources/Rules";
 
 import { ProfileEdit } from "./resources/Preferences";
 import AdminView from "./resources/Admin";
-import BulkEditDocuments from "./resources/Documents/BulkEdit";
+import BulkEditDocuments from "@components/document/edit/BulkEdit";
 import { Dashboard } from "./resources/Dashboard";
 import { ResetPassword } from "./resources/Public/ResetPassword";
 import { ForgotPassword } from "./resources/Public/ForgotPassword";

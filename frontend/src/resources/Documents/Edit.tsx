@@ -39,17 +39,17 @@ import {
   useRecordContext,
 } from "react-admin";
 
-import { MarkdownInput } from "../../components/markdown";
+import { MarkdownInput } from "@components/markdown";
 import { Typography, Grid, Box, useMediaQuery } from "@mui/material";
 import LinkIcon from "@mui/icons-material/Link";
 import ArticleIcon from "@mui/icons-material/Article";
 import get from "lodash/get";
-import { IndexingStatusField } from "./IndexingStatus";
-import { EmbedFile } from "./Thumbnail";
-import { EditLinkedDocuments } from "./EditLinkedDocuments";
-import { languages } from "../../languages";
-import { DocumentIdField } from "../../components/document/fields/DocumentId.tsx";
-import { TimestampField } from "../../components/primitives/TimestampField.tsx";
+import { IndexingStatusField } from "@components/document/fields/IndexingStatus.tsx";
+import { EmbedFile } from "@components/document/fields/Thumbnail.tsx";
+import { EditLinkedDocuments } from "@components/document/edit/EditLinkedDocuments.tsx";
+import { languages } from "@/languages.ts";
+import { DocumentIdField } from "@components/document/fields/DocumentId.tsx";
+import { TimestampField } from "@components/primitives/TimestampField.tsx";
 
 const EditToolBar = () => {
   return (

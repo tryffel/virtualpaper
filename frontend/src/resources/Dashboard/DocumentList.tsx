@@ -26,7 +26,7 @@ import {
   ToggleButton,
   useMediaQuery,
 } from "@mui/material";
-import { DocumentCard } from "../Documents/DocumentCard";
+import { DocumentCard } from "@components/document/card";
 
 export const LastUpdatedDocumentList = (props: {
   lastUpdatedIds: string[];

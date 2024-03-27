@@ -20,7 +20,7 @@ import {
   useTheme,
   useUpdate,
 } from "react-admin";
-import { ThumbnailSmall } from "./Thumbnail";
+import { ThumbnailSmall } from "@components/document/fields/Thumbnail.tsx";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import "./document.css";

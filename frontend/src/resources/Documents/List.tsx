@@ -35,15 +35,15 @@ import {
   useMediaQuery,
 } from "@mui/material";
 
-import { HelpButton } from "../../components/Help";
+import { HelpButton } from "@components/Help.tsx";
 import { DocumentSearchFilter, FullTextSeachFilter } from "./SearchFilter";
 import ClearIcon from "@mui/icons-material/Clear";
 import EditIcon from "@mui/icons-material/Edit";
 import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
 import { Link } from "react-router-dom";
-import { DocumentCard } from "./DocumentCard";
+import { DocumentCard } from "@components/document/card";
 import { ShowDocumentsIndexing } from "../Dashboard";
-import { EmptyResourcePage } from "../../components/primitives/EmptyPage";
+import { EmptyResourcePage } from "@components/primitives/EmptyPage.tsx";
 
 const DocumentPagination = () => (
   <Pagination rowsPerPageOptions={[10, 25, 50, 100]} />

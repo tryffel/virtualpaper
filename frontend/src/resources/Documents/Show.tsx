@@ -47,18 +47,12 @@ import {
   DownloadDocumentButton,
   EmbedFile,
   ThumbnailField,
-} from "../Thumbnail";
-import { IndexingStatusField } from "../IndexingStatus";
-import { MarkdownField } from "../../../components/markdown";
-import { ShowDocumentsEditHistory } from "./DocumentHistory";
-import { LinkedDocumentList } from "./LinkedDocuments";
-import {
-  DocumentBasicInfo,
-  DocumentJobsHistory,
-  DocumentTitle,
-  DocumentTopRow,
-} from "./Show";
-import { RequestIndexingModal } from "../RequestIndexing";
+} from "@components/document/fields/Thumbnail.tsx";
+import { IndexingStatusField } from "@components/document/fields/IndexingStatus.tsx";
+import { MarkdownField } from "@components/markdown";
+import { ShowDocumentsEditHistory } from "@components/document/ShowHistory.tsx";
+import { LinkedDocumentList } from "@components/document/fields/LinkedDocuments.tsx";
+import { RequestIndexingModal } from "@components/document/edit/RequestIndexing.tsx";
 import get from "lodash/get";
 import MenuItem from "@mui/material/MenuItem";
 import Menu from "@mui/material/Menu";
@@ -68,12 +62,18 @@ import ListItemText from "@mui/material/ListItemText";
 import NotesIcon from "@mui/icons-material/Notes";
 import SourceIcon from "@mui/icons-material/Source";
 import StickyNote2Icon from "@mui/icons-material/StickyNote2";
-import { MetadataList } from "./MetadataList";
-import { ListSharedUsers } from "./SharedUsers";
-import { EditDocumentSharing } from "../EditSharing";
-import { ShowDocumentContent } from "../../../components/document/ShowContent.tsx";
-import { DocumentIdField } from "../../../components/document/fields/DocumentId.tsx";
-import { TimestampField } from "../../../components/primitives/TimestampField.tsx";
+import { MetadataList } from "@components/document/fields/MetadataList.tsx";
+import { SharedUsersList } from "@components/document/fields/SharedUsers";
+import { EditDocumentSharing } from "@components/document/edit/EditSharing.tsx";
+import { ShowDocumentContent } from "@components/document/ShowContent.tsx";
+import { DocumentIdField } from "@components/document/fields/DocumentId.tsx";
+import { TimestampField } from "@components/primitives/TimestampField.tsx";
+import { DocumentJobsHistory } from "@components/document/fields/ProcessingHistory.tsx";
+import {
+  DocumentBasicInfo,
+  DocumentTitle,
+  DocumentTopRow,
+} from "@components/document/fields/BasicInfo.tsx";
 
 export const DocumentShow = () => {
   const [asideMode, setAsideMode] = React.useState<AsideMode>("closed");
@@ -153,9 +153,9 @@ export const DocumentShow = () => {
 };
 
 interface ActionsProps {
-  showHistory: (shown: boolean) => any;
+  showHistory: (shown: boolean) => void;
   downloadUrl?: string;
-  showJobs: (shown: boolean) => any;
+  showJobs: (shown: boolean) => void;
 }
 
 function DocumentShowActions(props: ActionsProps) {
@@ -270,7 +270,7 @@ const DocumentGeneralTabLarge = () => {
             <LinkedDocumentList />
           </Grid>
           <Grid item xs={12} sm={12}>
-            <ListSharedUsers />
+            <SharedUsersList />
           </Grid>
           <Grid item xs={12}>
             <Labeled label={"File size"}>
@@ -312,7 +312,7 @@ const DocumentGeneralTablSmall = () => {
         </Labeled>
       </Grid>
       <Grid item xs={12} sm={6}>
-        <ListSharedUsers />
+        <SharedUsersList />
       </Grid>
       <Grid item xs={12}>
         <TimestampField />

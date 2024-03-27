@@ -19,7 +19,7 @@
 import { DocumentShow } from "./Show";
 import { DocumentEdit } from "./Edit";
 import { DocumentList } from "./List";
-import { DocumentCreate } from "./Create";
+import { DocumentCreate } from "@components/document/edit/Create.tsx";
 
 const documents = {
   create: DocumentCreate,

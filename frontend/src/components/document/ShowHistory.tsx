@@ -31,7 +31,7 @@ import {
   Tooltip,
   Box,
 } from "@mui/material";
-import { prettifyRelativeTime } from "../../../components/util";
+import { prettifyRelativeTime } from "@components/util";
 
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import ArticleIcon from "@mui/icons-material/Article";
@@ -44,8 +44,8 @@ import RestoreFromTrashIcon from "@mui/icons-material/RestoreFromTrash";
 import TranslateIcon from "@mui/icons-material/Translate";
 
 import get from "lodash/get";
-import { languages } from "../../../languages";
-import { MarkdownField } from "../../../components/markdown";
+import { languages } from "@/languages";
+import { MarkdownField } from "@components/markdown";
 
 export const ShowDocumentsEditHistory = () => {
   const record = useRecordContext();

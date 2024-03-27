@@ -45,7 +45,7 @@ import {
   CardHeader,
   useMediaQuery,
 } from "@mui/material";
-import { RequestIndexSelect } from "../Documents/RequestIndexing";
+import { RequestIndexSelect } from "@components/document/edit/RequestIndexing.tsx";
 import OfflinePinIcon from "@mui/icons-material/OfflinePin";
 import ReportProblemIcon from "@mui/icons-material/ReportProblem";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
