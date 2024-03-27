@@ -32,8 +32,7 @@ export const DocumentTopRow = () => {
   const getLang = () => getLanguageLabel(record?.lang);
   const isFavorite = record && get(record, "favorite");
 
-
-    return (
+  return (
     <Grid container justifyContent={"align-center"}>
       <Grid item>
         <TextField source="name" label="" style={{ fontSize: "2em" }} />
