@@ -17,6 +17,7 @@
  */
 
 import { defaultDarkTheme, defaultTheme } from "react-admin";
+import { alpha } from "@mui/material";
 
 export const lightTheme = {
   ...defaultTheme,
@@ -35,7 +36,7 @@ export const lightTheme = {
     shape: {
       borderRadius: 10,
     },
-    mode: "light" as "light",
+    mode: "light" as const,
   },
   components: {
     MuiButtonBase: {
@@ -112,6 +113,17 @@ export const lightTheme = {
   },
 };
 
+const darkThemeBackgroundColor = "rgb(22,22,22)";
+
+const darkThemePaperShadows = [
+  alpha(darkThemeBackgroundColor, 0.2),
+  alpha(darkThemeBackgroundColor, 0.1),
+  alpha(darkThemeBackgroundColor, 0.05),
+];
+
+const elevationShadow = `${darkThemePaperShadows[0]} -2px 2px, ${darkThemePaperShadows[1]} -6px 6px,${darkThemePaperShadows[2]} -6px 6px`;
+const shadow = { boxShadow: elevationShadow };
+
 export const darkTheme = {
   ...defaultDarkTheme,
   palette: {
@@ -121,25 +133,27 @@ export const darkTheme = {
       main: "#a97aff",
     },
     background: {
-      default: "#313131",
+      default: "#181818",
       secondary: "#673ab7",
     },
   },
-  /*
   components: {
-    MuiCard: {
+    MuiPaper: {
       styleOverrides: {
-        root: ({ ownerState }) => ({
-          ...(ownerState.isDocument && {
-            backgroundColor: "white",
-          }),
-        }),
+        elevation1: shadow,
+        elevation2: shadow,
+        elevation3: shadow,
+        elevation4: shadow,
+        elevation5: shadow,
+        elevation6: shadow,
+        elevation7: shadow,
+        elevation8: shadow,
+        elevation9: shadow,
+        elevation10: shadow,
+        root: {
+          backgroundClip: "padding-box",
+        },
       },
     },
-    MuiDocumentCard: {
-      backgroundColor: "white",
-    },
   },
-
-   */
 };
