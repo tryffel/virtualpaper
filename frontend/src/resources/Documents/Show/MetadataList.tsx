@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import { Button, LabeledClasses, useRecordContext } from "react-admin";
+import { Button, Labeled, useRecordContext } from "react-admin";
 import get from "lodash/get";
 import { Grid, Tooltip, Typography } from "@mui/material";
 import List from "@mui/material/List";
@@ -30,18 +30,20 @@ export const MetadataList = () => {
   }
 
   return (
-    <>
-      <Typography className={LabeledClasses.label}>Metadata</Typography>
+    <Labeled label={"Metadata"}>
       <List dense>
         {array.map((item) => {
           return <MetadataValue metadata={item} />;
         })}
       </List>
-    </>
+    </Labeled>
   );
 };
 
 const MetadataValue = ({ metadata }: { metadata: Metadata }) => {
+  if (!metadata || !metadata.style) {
+    return null;
+  }
   const style = JSON.parse(metadata.style);
   const color = get(style, "color") ?? "inherit";
 

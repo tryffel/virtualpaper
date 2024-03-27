@@ -55,7 +55,6 @@ import { ShowDocumentsEditHistory } from "./DocumentHistory";
 import { LinkedDocumentList } from "./LinkedDocuments";
 import {
   DocumentBasicInfo,
-  DocumentIdField,
   DocumentJobsHistory,
   DocumentTitle,
   DocumentTopRow,
@@ -74,6 +73,8 @@ import { MetadataList } from "./MetadataList";
 import { ListSharedUsers } from "./SharedUsers";
 import { EditDocumentSharing } from "../EditSharing";
 import { ShowDocumentContent } from "../../../components/document/ShowContent.tsx";
+import { DocumentIdField } from "../../../components/document/fields/DocumentId.tsx";
+import { TimestampField } from "../../../components/primitives/TimestampField.tsx";
 
 export const DocumentShow = () => {
   const [asideMode, setAsideMode] = React.useState<AsideMode>("closed");
@@ -139,6 +140,9 @@ export const DocumentShow = () => {
                 >
                   <DocumentPreviewTab setDownloadUrl={setDownloadUrl} />
                 </Tab>
+                <Box sx={{ ml: "auto", mr: 0 }}>
+                  <IndexingStatusField source="status" />
+                </Box>
               </TabbedShowLayout>
             </Paper>
           </Box>
@@ -223,9 +227,6 @@ const DocumentGeneralTabLarge = () => {
         <Grid item sm={9} xl={11} height={"fitContent"}>
           <DocumentTitle />
         </Grid>
-        <Grid item sm={3} xl={1} alignContent={"flex-end"}>
-          <IndexingStatusField source="status" label="" />
-        </Grid>
       </Grid>
 
       <Grid container spacing={3}>
@@ -272,20 +273,13 @@ const DocumentGeneralTabLarge = () => {
           <Grid item xs={12} sm={12}>
             <ListSharedUsers />
           </Grid>
-          <Grid item xs={4} sm={2} md={4} alignContent={"flex-end"}>
+          <Grid item xs={12}>
             <Labeled label={"File size"}>
               <TextField source={"pretty_size"} />
             </Labeled>
           </Grid>
-          <Grid item xs={4} sm={2} md={4}>
-            <Labeled label="Uploaded">
-              <DateField source="created_at" showTime={false} />
-            </Labeled>
-          </Grid>
-          <Grid item xs={4} sm={2} md={4}>
-            <Labeled label={"Last updated"}>
-              <DateField source="updated_at" showTime />
-            </Labeled>
+          <Grid item xs={12}>
+            <TimestampField />
           </Grid>
         </Grid>
       </Grid>
@@ -298,7 +292,6 @@ const DocumentGeneralTablSmall = () => {
     <Grid container spacing={2}>
       <Grid item xs={12}>
         <DocumentTopRow />
-        <IndexingStatusField source="status" label="" />
       </Grid>
       <Grid item xs={12}>
         <ThumbnailField source="preview_url" label="Thumbnail" />
@@ -314,23 +307,16 @@ const DocumentGeneralTablSmall = () => {
       <Grid item xs={12}>
         <LinkedDocumentList />
       </Grid>
-      <Grid item xs={12}>
-        <ListSharedUsers />
-      </Grid>
-      <Grid item xs={4} sm={3}>
+      <Grid item xs={12} sm={6}>
         <Labeled label={"File size"}>
           <TextField source={"pretty_size"} />
         </Labeled>
       </Grid>
-      <Grid item xs={4} sm={3}>
-        <Labeled label="Uploaded">
-          <DateField source="created_at" showTime={false} />
-        </Labeled>
+      <Grid item xs={12} sm={6}>
+        <ListSharedUsers />
       </Grid>
-      <Grid item xs={4} sm={3}>
-        <Labeled label={"Last updated"}>
-          <DateField source="updated_at" showTime />
-        </Labeled>
+      <Grid item xs={12}>
+        <TimestampField />
       </Grid>
     </Grid>
   );

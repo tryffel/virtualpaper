@@ -21,6 +21,7 @@ import {
   PrettifyAbsoluteTime,
   PrettifyTimeInterval,
 } from "../../../components/util";
+import { DocumentIdField } from "../../../components/document/fields/DocumentId.tsx";
 
 function getLanguageLabel(code: string): string {
   const lang = languages[code as keyof typeof languages];
@@ -237,18 +238,5 @@ export const DocumentTitle = () => {
       label=""
       style={{ fontSize: "2em", paddingBottom: "0.8em" }}
     />
-  );
-};
-
-export const DocumentIdField = () => {
-  const record = useRecordContext();
-
-  const id = record ? record.id : "";
-
-  return (
-    <div style={{ marginLeft: "10px", fontWeight: 100, fontSize: "small" }}>
-      <span style={{ userSelect: "none" }}>Id: </span>
-      <span>{id}</span>
-    </div>
   );
 };

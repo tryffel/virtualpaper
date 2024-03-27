@@ -32,7 +32,6 @@ import {
   FormDataConsumer,
   AutocompleteInput,
   useGetManyReference,
-  Labeled,
   Toolbar,
   SaveButton,
   DeleteWithConfirmButton,
@@ -51,6 +50,8 @@ import { IndexingStatusField } from "./IndexingStatus";
 import { EmbedFile } from "./Thumbnail";
 import { EditLinkedDocuments } from "./EditLinkedDocuments";
 import { languages } from "../../languages";
+import { DocumentIdField } from "../../components/document/fields/DocumentId.tsx";
+import { TimestampField } from "../../components/primitives/TimestampField.tsx";
 
 const EditToolBar = () => {
   return (
@@ -92,69 +93,77 @@ export const DocumentEdit = () => {
       <SimpleForm warnWhenUnsavedChanges toolbar={<EditToolBar />}>
         <Grid container spacing={2}>
           <Grid item xs={12} md={10} lg={10}>
-            <Typography variant="h6">Basic Info</Typography>
-            <Labeled label="Document id">
-              <TextField label="Id" source="id" id="document-id" />
-            </Labeled>
-            <Box display={{ xs: "block", sm: "flex" }}>
-              <Box flex={2} mr={{ xs: 0, sm: "0.5em" }}>
-                <TextInput source="name" fullWidth />
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                gap: "10px",
+                alignItems: "space-between",
+              }}
+            >
+              <Box>
+                <Typography variant="h6">Basic Info</Typography>
+                <DocumentIdField />
               </Box>
-              <IndexingStatusField source="status" />
-            </Box>
-            <Box display={{ xs: "block", sm: "flex" }}>
-              <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
-                <DateInput source="date" fullWidth />
-              </Box>
-              <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
-                <LanguageSelectInput source={"lang"} label={"language"} />
+              <Box sx={{ ml: "auto", mr: 0 }}>
+                <IndexingStatusField source="status" showLabel />
               </Box>
             </Box>
-            <Box display={{ xs: "block", sm: "flex" }}>
-              <MarkdownInput source="description" label="Description" />
-            </Box>
-            <Box display={{ xs: "block", sm: "block" }}>
-              <EditLinkedDocumentsButton />
-            </Box>
-            <Box display={{ xs: "block", sm: "block" }}>
-              <ArrayInput source="metadata" label={"Metadata"}>
-                <SimpleFormIterator inline disableReordering fullWidth>
-                  <ReferenceInput
-                    label="Key"
-                    source="key_id"
-                    reference="metadata/keys"
-                    fullWidth
-                    className="MuiBox"
-                  >
-                    <SelectInput optionText="key" data-testid="metadata-key" />
-                  </ReferenceInput>
-
-                  <FormDataConsumer>
-                    {({ scopedFormData, getSource }) =>
-                      scopedFormData && scopedFormData.key_id ? (
-                        <MetadataValueInput
-                          source={getSource ? getSource("value_id") : ""}
-                          record={scopedFormData}
-                          label={"Value"}
-                        />
-                      ) : null
-                    }
-                  </FormDataConsumer>
-                </SimpleFormIterator>
-              </ArrayInput>
-            </Box>
-            <Box display={{ xs: "block", sm: "block" }}>
-              <Labeled label="Created at">
-                <DateField source="created_at" />
-              </Labeled>
-              <Labeled label="Updated at">
-                <DateField source="updated_at" />
-              </Labeled>
-            </Box>
+          </Grid>
+          <Grid item xs={12}>
+            <TextInput source="name" fullWidth variant={"standard"} />
+          </Grid>
+          <Grid item xs={6} sm={6}>
+            <DateInput source="date" fullWidth variant={"standard"} />
+          </Grid>
+          <Grid item xs={6} sm={6}>
+            <LanguageSelectInput source={"lang"} label={"Language"} />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <MarkdownInput source="description" label="Description" />
+          </Grid>
+          <Grid item xs={12}>
+            <EditLinkedDocumentsButton />
+          </Grid>
+          <Grid item xs={12}>
+            <MetadataArrayInput />
+          </Grid>
+          <Grid item xs={12}>
+            <TimestampField />
           </Grid>
         </Grid>
       </SimpleForm>
     </Edit>
+  );
+};
+
+const MetadataArrayInput = () => {
+  return (
+    <ArrayInput source="metadata" label={"Metadata"}>
+      <SimpleFormIterator inline disableReordering fullWidth>
+        <ReferenceInput
+          label="Key"
+          source="key_id"
+          reference="metadata/keys"
+          fullWidth
+          className="MuiBox"
+        >
+          <SelectInput optionText="key" data-testid="metadata-key" />
+        </ReferenceInput>
+
+        <FormDataConsumer>
+          {({ scopedFormData, getSource }) =>
+            scopedFormData && scopedFormData.key_id ? (
+              <MetadataValueInput
+                source={getSource ? getSource("value_id") : ""}
+                record={scopedFormData}
+                label={"Value"}
+              />
+            ) : null
+          }
+        </FormDataConsumer>
+      </SimpleFormIterator>
+    </ArrayInput>
   );
 };
 
@@ -209,7 +218,9 @@ export const LanguageSelectInput = (props: any) => {
     };
   });
 
-  return <AutocompleteInput {...props} choices={choices} />;
+  return (
+    <AutocompleteInput {...props} choices={choices} variant={"standard"} />
+  );
 };
 
 const ToggledEmbedFile = (props: any) => {

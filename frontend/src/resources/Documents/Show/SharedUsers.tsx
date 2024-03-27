@@ -1,6 +1,6 @@
 import get from "lodash/get";
 import { useRecordContext } from "react-admin";
-import { Chip, Grid } from "@mui/material";
+import { Chip, Paper } from "@mui/material";
 import ListSubheader from "@mui/material/ListSubheader";
 import List from "@mui/material/List";
 import ListItemButton from "@mui/material/ListItemButton";
@@ -41,27 +41,26 @@ export const ListSharedUsers = () => {
   }
 
   return (
-    <Grid container spacing={2}>
-      <Grid item xs={12}>
-        <List subheader={<ListSubheader>Sharing</ListSubheader>}>
-          <ListItemButton onClick={() => setOpen(!open)}>
-            <ListItemIcon>
-              <PeopleIcon />
-            </ListItemIcon>
-            <ListItemText primary={`Users (${record.shared_users.length})`} />
-            {open ? <ExpandLess /> : <ExpandMore />}
-          </ListItemButton>
-          <Collapse in={open} timeout={"auto"} unmountOnExit>
-            <List>
-              {record.shared_users.map((entry: SharedUser) => (
-                <SharedUser entry={entry} />
-              ))}
-            </List>
-          </Collapse>
-        </List>
-      </Grid>
-      <Grid item xs={12}></Grid>
-    </Grid>
+    <Paper elevation={1}>
+      <List subheader={<ListSubheader>Document sharing</ListSubheader>}>
+        <ListItemButton onClick={() => setOpen(!open)}>
+          <ListItemIcon>
+            <PeopleIcon color={"primary"} />
+          </ListItemIcon>
+          <ListItemText
+            primary={`${record.shared_users.length} ${record.shared_users.length > 1 ? "users" : "user"}`}
+          />
+          {open ? <ExpandLess /> : <ExpandMore />}
+        </ListItemButton>
+        <Collapse in={open} timeout={"auto"} unmountOnExit>
+          <List>
+            {record.shared_users.map((entry: SharedUser) => (
+              <SharedUser entry={entry} />
+            ))}
+          </List>
+        </Collapse>
+      </List>
+    </Paper>
   );
 };
 

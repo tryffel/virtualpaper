@@ -17,10 +17,16 @@
  */
 
 import React from "react";
-import { Labeled } from "react-admin";
+import { Labeled, RaRecord } from "react-admin";
 import { Box, CircularProgress, Typography } from "@mui/material";
 
-export const IndexingStatusField = (props: any) => {
+export type IndexingStatusFieldProps = {
+  source: string;
+  showLabel?: boolean;
+  record?: RaRecord;
+};
+
+export const IndexingStatusField = (props: IndexingStatusFieldProps) => {
   const [value, setValue] = React.useState("ready");
   const [label, setLabel] = React.useState("Ready");
 
@@ -40,8 +46,22 @@ export const IndexingStatusField = (props: any) => {
 
   return value === "ready" ? null : (
     <Box flex={0} mr={{ xs: 0, sm: "0.5em" }}>
-      <Labeled label="Document processing status">
-        <>
+      {props.showLabel ? (
+        <Labeled label="Status">
+          <Box>
+            <CircularProgress
+              variant="indeterminate"
+              size={25}
+              color="secondary"
+              {...props}
+            />
+            <Typography variant="caption" component="div" color="textSecondary">
+              {label}
+            </Typography>
+          </Box>
+        </Labeled>
+      ) : (
+        <Box>
           <CircularProgress
             variant="indeterminate"
             size={25}
@@ -51,8 +71,8 @@ export const IndexingStatusField = (props: any) => {
           <Typography variant="caption" component="div" color="textSecondary">
             {label}
           </Typography>
-        </>
-      </Labeled>
+        </Box>
+      )}
     </Box>
   );
 };
