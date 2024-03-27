@@ -22,8 +22,6 @@ import {
   Edit,
   SimpleForm,
   TextInput,
-  DateField,
-  TextField,
   ReferenceInput,
   Loading,
   SelectInput,
