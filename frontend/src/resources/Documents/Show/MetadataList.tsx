@@ -9,6 +9,7 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import { EscapeWhitespace } from "../../../components/util";
 import { Link } from "react-router-dom";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 
 type Metadata = {
   id: number;
@@ -95,7 +96,9 @@ const MetadataValue = ({ metadata }: { metadata: Metadata }) => {
                   color={"primary"}
                   component={Link}
                   to={to}
-                />
+                >
+                  <OpenInNewIcon />
+                </Button>
               </Grid>
             }
           >
