@@ -123,6 +123,16 @@ order by created_at desc limit 10;
 `
 
 	err = s.db.Select(&stats.LastDocumentsAdded, sql, userId)
+
+	sql = `
+select id
+from documents
+where user_id = $1 AND deleted_at IS NULL AND favorite=true
+order by date desc limit 50;
+`
+
+	err = s.db.Select(&stats.Favorites, sql, userId)
+
 	sql = `
 select t.document_id as document_id
 from (
