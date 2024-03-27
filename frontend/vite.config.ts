@@ -8,6 +8,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+        // allow up to 5MiB assets to be cached
+        maximumFileSizeToCacheInBytes: 5242880,
+      },
       devOptions: {
         enabled: true,
       },
