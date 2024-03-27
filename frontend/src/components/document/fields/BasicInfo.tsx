@@ -30,8 +30,10 @@ export const DocumentTopRow = () => {
   const getMimetypeColor = () => mimetypeToColor(record?.mimetype);
   const getMimeTypeName = (): string => mimetypeToText(record?.mimetype);
   const getLang = () => getLanguageLabel(record?.lang);
+  const isFavorite = record && get(record, "favorite");
 
-  return (
+
+    return (
     <Grid container justifyContent={"align-center"}>
       <Grid item>
         <TextField source="name" label="" style={{ fontSize: "2em" }} />
@@ -64,6 +66,16 @@ export const DocumentTopRow = () => {
           style={{ top: "4px", right: "16px" }}
           sx={{ m: 1 }}
         />
+        {isFavorite && (
+          <Badge
+            label={"Favorite"}
+            variant="filled"
+            // @ts-ignore
+            color={"favorite"}
+            style={{ top: "4px", right: "16px" }}
+            sx={{ m: 1 }}
+          />
+        )}
         {isDeleted && (
           <Badge
             label={"Document is deleted"}
@@ -96,6 +108,7 @@ export const DocumentBasicInfo = () => {
   const getMimetypeColor = () => mimetypeToColor(record?.mimetype);
   const getMimeTypeName = (): string => mimetypeToText(record?.mimetype);
   const getLang = () => getLanguageLabel(record?.lang);
+  const isFavorite = record && get(record, "favorite");
 
   return (
     <Box>
@@ -126,6 +139,16 @@ export const DocumentBasicInfo = () => {
         style={{ top: "4px", right: "16px" }}
         sx={{ m: 1 }}
       />
+      {isFavorite && (
+        <Badge
+          label={"Favorite"}
+          variant="filled"
+          // @ts-ignore
+          color={"favorite"}
+          style={{ top: "4px", right: "16px" }}
+          sx={{ m: 1 }}
+        />
+      )}
       {isDeleted && (
         <Badge
           label={"Document is deleted"}

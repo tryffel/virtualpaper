@@ -23,6 +23,7 @@ export const lightTheme = {
   ...defaultTheme,
   palette: {
     logo: "#fff",
+    favorite: { main: "#FFB300", contrastText: "#000" },
     primary: {
       main: "#673ab7",
     },
@@ -129,6 +130,7 @@ export const darkTheme = {
   palette: {
     ...defaultDarkTheme.palette,
     logo: "#673ab7",
+    favorite: { main: "#FF8F00", contrastText: "#000" },
     primary: {
       main: "#a97aff",
     },
