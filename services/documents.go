@@ -423,6 +423,7 @@ func (service *DocumentService) UpdateDocument(ctx context.Context, userId int, 
 	doc.Name = updated.Name
 	doc.Description = updated.Description
 	doc.Filename = updated.Filename
+	doc.Favorite = updated.Favorite
 	metadata := make([]models.Metadata, len(updated.Metadata))
 	if updated.Lang != "" {
 		doc.Lang = models.Lang(updated.Lang)

@@ -46,6 +46,8 @@ import TranslateIcon from "@mui/icons-material/Translate";
 import get from "lodash/get";
 import { languages } from "@/languages";
 import { MarkdownField } from "@components/markdown";
+import BookmarkIcon from "@mui/icons-material/Bookmark";
+import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
 
 export const ShowDocumentsEditHistory = () => {
   const record = useRecordContext();
@@ -139,6 +141,10 @@ const ShowDocumentsEditHistoryItem = (props: { item: DocumentHistoryItem }) => {
           item={item}
         />
       );
+    case "favorite":
+      return <DocumentHistoryFavorite item={item} pretty_time={timeString} />;
+    case "unfavorite":
+      return <DocumentHistoryUnfavorite item={item} pretty_time={timeString} />;
   }
 
   return (
@@ -419,6 +425,31 @@ const DocumentHistoryLang = (props: HistoryProps) => {
       <StepContent>
         <ItemText text={`To: ${newLang}`} />
       </StepContent>
+    </Step>
+  );
+};
+
+const DocumentHistoryFavorite = (props: HistoryProps) => {
+  const { item } = props;
+  return (
+    <Step key={`${item.id}`} expanded active completed>
+      <StepLabel icon={<BookmarkIcon color={iconColor} />}>
+        <ItemLabel {...props} action={"Added to favorites"} />
+      </StepLabel>
+      <StepContent></StepContent>
+    </Step>
+  );
+};
+
+const DocumentHistoryUnfavorite = (props: HistoryProps) => {
+  const { item } = props;
+
+  return (
+    <Step key={`${item.id}`} expanded active completed>
+      <StepLabel icon={<BookmarkBorderIcon color={iconColor} />}>
+        <ItemLabel {...props} action={"Removed from favorites"} />
+      </StepLabel>
+      <StepContent></StepContent>
     </Step>
   );
 };

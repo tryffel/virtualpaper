@@ -37,6 +37,7 @@ import {
   TopToolbar,
   ShowButton,
   useRecordContext,
+  Labeled,
 } from "react-admin";
 
 import { MarkdownInput } from "@components/markdown";
@@ -50,6 +51,7 @@ import { EditLinkedDocuments } from "@components/document/edit/EditLinkedDocumen
 import { languages } from "@/languages.ts";
 import { DocumentIdField } from "@components/document/fields/DocumentId.tsx";
 import { TimestampField } from "@components/primitives/TimestampField.tsx";
+import { FavoriteDocumentInput } from "@components/document/edit/Favorite.tsx";
 
 const EditToolBar = () => {
   return (
@@ -102,6 +104,11 @@ export const DocumentEdit = () => {
               <Box>
                 <Typography variant="h6">Basic Info</Typography>
                 <DocumentIdField />
+              </Box>
+              <Box sx={{ ml: "auto", mr: "10px" }}>
+                <Labeled label={"Favorite"}>
+                  <FavoriteDocumentInput source={"favorite"} />
+                </Labeled>
               </Box>
               <Box sx={{ ml: "auto", mr: 0 }}>
                 <IndexingStatusField source="status" showLabel />

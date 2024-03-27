@@ -358,6 +358,7 @@ func (a *Api) updateDocument(c echo.Context) error {
 		Date:        time.Time{},
 		Metadata:    metadata,
 		Lang:        dto.Lang,
+		Favorite:    dto.Favorite,
 	}
 
 	if dto.Date != 0 {
