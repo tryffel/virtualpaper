@@ -4,10 +4,10 @@ import {
   CardActionArea,
   CardContent,
   CardHeader,
-  ToggleButton,
   Typography,
   Chip,
   Box,
+  IconButton,
 } from "@mui/material";
 import RestoreIcon from "@mui/icons-material/Restore";
 import {
@@ -89,11 +89,10 @@ export const DocumentCard = (props: DocumentCardProps) => {
             <>
               <EditButton resource="documents" record={record} />
               {setSelected && (
-                <ToggleButton
+                <IconButton
                   size="small"
                   value={record.id}
-                  selected={isSelected}
-                  onChange={select}
+                  onClick={select}
                   sx={{
                     borderWidth: "0px",
                     background: "primary",
@@ -104,9 +103,9 @@ export const DocumentCard = (props: DocumentCardProps) => {
                   {isSelected ? (
                     <CheckCircleIcon color="primary" />
                   ) : (
-                    <RadioButtonUncheckedIcon />
+                    <RadioButtonUncheckedIcon color="disabled" />
                   )}
-                </ToggleButton>
+                </IconButton>
               )}
             </>
           ) : (

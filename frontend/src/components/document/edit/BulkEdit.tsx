@@ -27,7 +27,6 @@ import {
   SimpleFormIterator,
   FormDataConsumer,
   SelectInput,
-  useStore,
   useNotify,
   useRedirect,
   TopToolbar,
@@ -48,14 +47,12 @@ import {
   LanguageSelectInput,
   MetadataValueInput,
 } from "@resources/Documents/Edit.tsx";
+import { useSearchParams } from "react-router-dom";
+import React from "react";
 
-const BulkEditDocuments = () => {
-  const [documentIds] = useStore("bulk-edit-document-ids", []);
-  const idList = documentIds;
-  const ids = documentIds;
-  console.log("ids to edit: ", idList);
+const BulkEditForm = ({ ids }: { ids: string[] }) => {
   const { data, isLoading } = useGetMany("documents", {
-    ids: idList,
+    ids,
   });
   const notify = useNotify();
   const redirect = useRedirect();
@@ -100,7 +97,7 @@ const BulkEditDocuments = () => {
                 Documents
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                {idList ? "Editing " + idList.length + " documents" : null}
+                {ids ? "Editing " + ids.length + " documents" : null}
               </Typography>
             </AccordionSummary>
             <AccordionDetails style={{ flexDirection: "column" }}>
@@ -210,6 +207,20 @@ const BulkEditDocuments = () => {
       </SimpleForm>
     </CreateBase>
   );
+};
+
+const BulkEditDocuments = () => {
+  const [params] = useSearchParams();
+  const ids = params.get("documents");
+  const array = React.useMemo(() => {
+    if (!ids) {
+      console.error("document id-array parameter is empty");
+      return [];
+    }
+    return JSON.parse(ids) as string[];
+  }, [ids]);
+
+  return <BulkEditForm ids={array} />;
 };
 
 const Toolbar = (props: any) => {
