@@ -7,6 +7,7 @@ import {
   ToggleButton,
   Typography,
   Chip,
+  Box,
 } from "@mui/material";
 import RestoreIcon from "@mui/icons-material/Restore";
 import {
@@ -76,35 +77,45 @@ export const DocumentCard = (props: DocumentCardProps) => {
         <DocumentContent record={record} />
       </CardActionArea>
       <CardActions style={{ textAlign: "right", paddingTop: "0" }}>
-        {!isDeleted ? (
-          <>
-            <EditButton resource="documents" record={record} />
-            {setSelected && (
-              <ToggleButton
-                size="small"
-                value={record.id}
-                selected={isSelected}
-                onChange={select}
-                sx={{
-                  borderWidth: "0px",
-                  background: "primary",
-                  marginLeft: "auto",
-                }}
-              >
-                {isSelected ? (
-                  <CheckCircleIcon color="primary" />
-                ) : (
-                  <RadioButtonUncheckedIcon />
-                )}
-              </ToggleButton>
-            )}
-          </>
-        ) : (
-          <>
-            <RestoreDocumentButton record={record} />
-            <ConfirmDeleteDocumentButton record={record} />
-          </>
-        )}
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            justifyItems: "flex-end",
+            width: "100%",
+          }}
+        >
+          {!isDeleted ? (
+            <>
+              <EditButton resource="documents" record={record} />
+              {setSelected && (
+                <ToggleButton
+                  size="small"
+                  value={record.id}
+                  selected={isSelected}
+                  onChange={select}
+                  sx={{
+                    borderWidth: "0px",
+                    background: "primary",
+                    ml: "auto",
+                    mr: 0,
+                  }}
+                >
+                  {isSelected ? (
+                    <CheckCircleIcon color="primary" />
+                  ) : (
+                    <RadioButtonUncheckedIcon />
+                  )}
+                </ToggleButton>
+              )}
+            </>
+          ) : (
+            <>
+              <RestoreDocumentButton record={record} />
+              <ConfirmDeleteDocumentButton record={record} />
+            </>
+          )}
+        </Box>
       </CardActions>
     </Card>
   );
