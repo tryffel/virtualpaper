@@ -18,33 +18,25 @@
 
 import * as React from "react";
 import {
+  AutocompleteInput,
+  Button,
   DateInput,
+  DeleteWithConfirmButton,
   Edit,
+  Labeled,
+  SaveButton,
+  ShowButton,
   SimpleForm,
   TextInput,
-  ReferenceInput,
-  Loading,
-  SelectInput,
-  ArrayInput,
-  SimpleFormIterator,
-  FormDataConsumer,
-  AutocompleteInput,
-  useGetManyReference,
   Toolbar,
-  SaveButton,
-  DeleteWithConfirmButton,
-  Button,
   TopToolbar,
-  ShowButton,
   useRecordContext,
-  Labeled,
 } from "react-admin";
 
 import { MarkdownInput } from "@components/markdown";
-import { Typography, Grid, Box, useMediaQuery } from "@mui/material";
+import { Box, Grid, Typography, useMediaQuery } from "@mui/material";
 import LinkIcon from "@mui/icons-material/Link";
 import ArticleIcon from "@mui/icons-material/Article";
-import get from "lodash/get";
 import { IndexingStatusField } from "@components/document/fields/IndexingStatus.tsx";
 import { EmbedFile } from "@components/document/fields/Thumbnail.tsx";
 import { EditLinkedDocuments } from "@components/document/edit/EditLinkedDocuments.tsx";
@@ -52,6 +44,7 @@ import { languages } from "@/languages.ts";
 import { DocumentIdField } from "@components/document/fields/DocumentId.tsx";
 import { TimestampField } from "@components/primitives/TimestampField.tsx";
 import { FavoriteDocumentInput } from "@components/document/edit/Favorite.tsx";
+import { MetadataArrayInput } from "@components/document/edit/MetadataInput.tsx";
 
 const EditToolBar = () => {
   return (
@@ -131,7 +124,7 @@ export const DocumentEdit = () => {
             <EditLinkedDocumentsButton />
           </Grid>
           <Grid item xs={12}>
-            <MetadataArrayInput />
+            <MetadataArrayInput source={"metadata"} />
           </Grid>
           <Grid item xs={12}>
             <TimestampField />
@@ -140,79 +133,6 @@ export const DocumentEdit = () => {
       </SimpleForm>
     </Edit>
   );
-};
-
-const MetadataArrayInput = () => {
-  return (
-    <ArrayInput source="metadata" label={"Metadata"}>
-      <SimpleFormIterator inline disableReordering fullWidth>
-        <ReferenceInput
-          label="Key"
-          source="key_id"
-          reference="metadata/keys"
-          fullWidth
-          className="MuiBox"
-        >
-          <SelectInput optionText="key" data-testid="metadata-key" />
-        </ReferenceInput>
-
-        <FormDataConsumer>
-          {({ scopedFormData, getSource }) =>
-            scopedFormData && scopedFormData.key_id ? (
-              <MetadataValueInput
-                source={getSource ? getSource("value_id") : ""}
-                record={scopedFormData}
-                label={"Value"}
-              />
-            ) : null
-          }
-        </FormDataConsumer>
-      </SimpleFormIterator>
-    </ArrayInput>
-  );
-};
-
-export interface MetadataValueInputProps {
-  source: string;
-  record: any;
-  label: string;
-  fullWidth?: boolean;
-}
-
-export const MetadataValueInput = (props: MetadataValueInputProps) => {
-  let keyId = 0;
-  if (props.record) {
-    // @ts-ignore
-    keyId = get(props.record, "key_id");
-  }
-  const { data, isLoading, error } = useGetManyReference("metadata/values", {
-    target: "id",
-    id: keyId !== 0 ? keyId : -1,
-    pagination: { page: 1, perPage: 500 },
-    sort: {
-      field: "value",
-      order: "ASC",
-    },
-  });
-
-  if (!props.record) {
-    return null;
-  }
-
-  if (isLoading) return <Loading />;
-  if (error) return <Typography>Error {error.message}</Typography>;
-  if (data) {
-    return (
-      <AutocompleteInput
-        {...props}
-        choices={data}
-        optionText="value"
-        className="MuiBox"
-      />
-    );
-  } else {
-    return <Loading />;
-  }
 };
 
 export const LanguageSelectInput = (props: any) => {

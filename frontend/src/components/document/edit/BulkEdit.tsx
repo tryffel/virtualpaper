@@ -22,33 +22,32 @@ import {
   Button,
   CreateBase,
   SimpleForm,
-  ArrayInput,
-  ReferenceInput,
-  SimpleFormIterator,
-  FormDataConsumer,
-  SelectInput,
   useNotify,
   useRedirect,
   TopToolbar,
   DateInput,
+  SaveButton,
 } from "react-admin";
 import {
   Typography,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Box,
+  Container,
+  Paper,
 } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ClearIcon from "@mui/icons-material/Clear";
 import { HelpButton } from "../../Help.tsx";
 import { DocumentCard } from "@components/document/card";
-import {
-  LanguageSelectInput,
-  MetadataValueInput,
-} from "@resources/Documents/Edit.tsx";
+import { LanguageSelectInput } from "@resources/Documents/Edit.tsx";
 import { useSearchParams } from "react-router-dom";
 import React from "react";
+import {
+  MetadataArrayInput,
+} from "@components/document/edit/MetadataInput.tsx";
+
+type BulkForm = {
+  language: string;
+  date: Date | null;
+};
 
 const BulkEditForm = ({ ids }: { ids: string[] }) => {
   const { data, isLoading } = useGetMany("documents", {
@@ -76,7 +75,7 @@ const BulkEditForm = ({ ids }: { ids: string[] }) => {
     return <Loading />;
   }
 
-  const transform = (data: any) => ({
+  const transform = (data: BulkForm) => ({
     ...data,
     date: Date.parse(`${data.date}`),
   });
@@ -88,123 +87,44 @@ const BulkEditForm = ({ ids }: { ids: string[] }) => {
       mutationOptions={{ onSuccess }}
       transform={transform}
     >
-      <SimpleForm>
-        <Toolbar cancel={cancel} />
-        <Box width="100%">
-          <Accordion>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h5" sx={{ width: "33%" }}>
-                Documents
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                {ids ? "Editing " + ids.length + " documents" : null}
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails style={{ flexDirection: "column" }}>
-              <Typography variant="body1">
-                {data ? data.length : "0"} Documents to edit
-              </Typography>
-              {data
-                ? data.map((document) => <DocumentCard record={document} />)
-                : null}
-            </AccordionDetails>
-          </Accordion>
-        </Box>
-        <Box width="100%">
-          <Accordion>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h5" sx={{ width: "33%" }}>
-                Add metadata
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails style={{ flexDirection: "column" }}>
-              <ArrayInput source="add_metadata.metadata" label={"Add metadata"}>
-                <SimpleFormIterator disableReordering={true}>
-                  <ReferenceInput
-                    label="Key"
-                    source="key_id"
-                    reference="metadata/keys"
-                    fullWidth
-                    className="MuiBox"
-                  >
-                    <SelectInput
-                      optionText="key"
-                      fullWidth
-                      data-testid="metadata-key"
-                    />
-                  </ReferenceInput>
-
-                  <FormDataConsumer>
-                    {({ scopedFormData, getSource }) =>
-                      scopedFormData && scopedFormData.key_id ? (
-                        <MetadataValueInput
-                          source={getSource ? getSource("value_id") : ""}
-                          record={scopedFormData}
-                          label={"Value"}
-                          fullWidth
-                        />
-                      ) : null
-                    }
-                  </FormDataConsumer>
-                </SimpleFormIterator>
-              </ArrayInput>
-            </AccordionDetails>
-          </Accordion>
-        </Box>
-        <Box width="100%">
-          <Accordion>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h5">Remove metadata</Typography>
-            </AccordionSummary>
-            <AccordionDetails style={{ flexDirection: "column" }}>
-              <ArrayInput
-                source="remove_metadata.metadata"
-                label={"Add metadata"}
+      <Container>
+        <Paper elevation={2}>
+          <SimpleForm toolbar={<Toolbar cancel={cancel} />}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                justifyItems: "space-between",
+                alignItems: "flex-start",
+                ml: 1,
+                mr: 1,
+                gap: "20px",
+              }}
+            >
+              <Box
+                sx={{ width: "100%", maxHeight: "50vh", overflow: "scroll" }}
               >
-                <SimpleFormIterator disableReordering={true}>
-                  <ReferenceInput
-                    label="Key"
-                    source="key_id"
-                    reference="metadata/keys"
-                    fullWidth
-                    className="MuiBox"
-                  >
-                    <SelectInput
-                      optionText="key"
-                      fullWidth
-                      data-testid="metadata-key"
-                    />
-                  </ReferenceInput>
-
-                  <FormDataConsumer>
-                    {({ scopedFormData, getSource }) =>
-                      scopedFormData && scopedFormData.key_id ? (
-                        <MetadataValueInput
-                          source={getSource ? getSource("value_id") : ""}
-                          record={scopedFormData}
-                          label={"Value"}
-                          fullWidth
-                        />
-                      ) : null
-                    }
-                  </FormDataConsumer>
-                </SimpleFormIterator>
-              </ArrayInput>
-            </AccordionDetails>
-          </Accordion>
-        </Box>
-        <Box width="100%">
-          <Accordion>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h5">General</Typography>
-            </AccordionSummary>
-            <AccordionDetails style={{ flexDirection: "column" }}>
+                <Typography variant="body1" color="text.secondary">
+                  {ids ? "Editing " + ids.length + " documents" : null}
+                </Typography>
+                {data
+                  ? data.map((document) => <DocumentCard record={document} />)
+                  : null}
+              </Box>
+              <MetadataArrayInput
+                source={"add_metadata.metadata"}
+                label={"Add metadata"}
+              />
+              <MetadataArrayInput
+                source={"remove_metadata.metadata"}
+                label={"Remove metadata"}
+              />
               <LanguageSelectInput source={"lang"} label={"Language"} />
               <DateInput source="date" />
-            </AccordionDetails>
-          </Accordion>
-        </Box>
-      </SimpleForm>
+            </Box>
+          </SimpleForm>
+        </Paper>
+      </Container>
     </CreateBase>
   );
 };
@@ -227,9 +147,27 @@ const Toolbar = (props: any) => {
   const { cancel } = props;
 
   return (
-    <TopToolbar>
+    <TopToolbar
+      sx={{
+        display: "flex",
+        flexDirection: "row",
+        justifyItems: "space-between",
+        alignItems: "center",
+        ml: 1,
+        mr: 1,
+        gap: "10px",
+      }}
+    >
+      <SaveButton />
       <BulkEditHelp />
-      <Button label="Cancel" startIcon={<ClearIcon />} onClick={cancel} />
+      <Button
+        size={"medium"}
+        variant={"contained"}
+        label="Cancel"
+        startIcon={<ClearIcon />}
+        onClick={cancel}
+        sx={{ ml: "auto", mr: 0 }}
+      />
     </TopToolbar>
   );
 };

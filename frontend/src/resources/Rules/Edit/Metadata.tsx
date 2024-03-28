@@ -1,7 +1,8 @@
 import get from "lodash/get";
 import { AutocompleteInput, Loading, useGetManyReference } from "react-admin";
 import { Typography } from "@mui/material";
-import { MetadataValueInputProps } from "../../Documents/Edit";
+
+import { MetadataValueInputProps } from "@components/document/edit/MetadataInput.tsx";
 
 interface InputProps extends MetadataValueInputProps {
   keySource: string;
