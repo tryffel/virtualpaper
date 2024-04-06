@@ -99,12 +99,15 @@ const ListResults = ({
               <ChipField source="key" label={"Name"} />
               <TextField source="comment" label={"Description"} />
               {!isSmall ? (
-                <DateField source="created_at" label={"Created at"} />
+                <>
+                  <NumberField
+                    source="metadata_values_count"
+                    label={"Total keys"}
+                  />
+                  <DateField source="created_at" label={"Created at"} />
+                </>
               ) : null}
-              <NumberField
-                source="metadata_values_count"
-                label={"Total keys"}
-              />
+
               <NumberField source="documents_count" label={"Total documents"} />
             </Datagrid>
           </List>

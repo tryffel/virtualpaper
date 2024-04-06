@@ -42,7 +42,8 @@ import {
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { Link } from "react-router-dom";
-import { EscapeWhitespace } from "../../components/util";
+import { EscapeWhitespace } from "@components/util.ts";
+import FileOpenIcon from "@mui/icons-material/FileOpen";
 
 export interface MetadataValueUpdateDialogProps {
   showDialog: boolean;
@@ -130,7 +131,7 @@ const MetadataValueUpdateDialog = (props: MetadataValueUpdateDialogProps) => {
     notify(deleteError.message, "error");
   }
 
-  const linkDocsLabel = `Show documents (${
+  const linkDocsLabel = `Documents (${
     props.record ? props.record.documents_count : ""
   })`;
 
@@ -170,7 +171,6 @@ const MetadataValueUpdateDialog = (props: MetadataValueUpdateDialogProps) => {
         <Form onSubmit={handleSubmit} warnWhenUnsavedChanges={true} {...props}>
           <DialogContent>
             <TextInput source="value" validate={required()} fullWidth />
-            <TextInput label="description" source="comment" fullWidth />
             <BooleanInput label="Automatic matching" source="match_documents" />
             <RadioButtonGroupInput
               source="match_type"
@@ -190,6 +190,7 @@ const MetadataValueUpdateDialog = (props: MetadataValueUpdateDialogProps) => {
             />
           </DialogContent>
           <DialogActions>
+            <SaveButton sx={{ ml: 0, mr: "auto" }} />
             <Button
               label={linkDocsLabel}
               disabled={
@@ -197,22 +198,20 @@ const MetadataValueUpdateDialog = (props: MetadataValueUpdateDialogProps) => {
               }
               component={Link}
               to={to}
-            />
+            >
+              <FileOpenIcon />
+            </Button>
+            <Button label="Delete" color={"error"} onClick={handleDelete}>
+              <DeleteIcon />
+            </Button>
+
             <Button
               label="ra.action.cancel"
               onClick={handleCloseClick}
-              // @ts-ignore
+              color={"secondary"}
             >
               <CancelIcon />
             </Button>
-            <Button
-              label="Delete"
-              startIcon={<DeleteIcon />}
-              // @ts-ignore
-              sx={{ color: "secondary" }}
-              onClick={handleDelete}
-            />
-            <SaveButton />
           </DialogActions>
         </Form>
       </Dialog>

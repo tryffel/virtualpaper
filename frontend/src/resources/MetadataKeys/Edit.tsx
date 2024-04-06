@@ -30,10 +30,11 @@ import {
   useEditController,
   TextInput,
   useRecordContext,
+  Form,
 } from "react-admin";
 
 import { MarkdownInput } from "../../components/markdown";
-import { useMediaQuery } from "@mui/material";
+import { Grid, useMediaQuery } from "@mui/material";
 
 import MetadataValueCreateButton from "./ValueCreate";
 import MetadataValueUpdateDialog from "./ValueEditDialog";
@@ -41,6 +42,7 @@ import { useState } from "react";
 import get from "lodash/get";
 const IconSelect = React.lazy(() => import("./IconSelect"));
 import { IconColorSelect } from "./IconColorSelect.tsx";
+import { TimestampField } from "@components/primitives/TimestampField.tsx";
 
 export const MetadataKeyEdit = () => {
   const { record } = useEditController();
@@ -74,52 +76,73 @@ export const MetadataKeyEdit = () => {
         style: JSON.stringify(data.style),
       })}
     >
-      <SimpleForm>
-        <MetadataValueUpdateDialog
-          showDialog={showUpdateDialog}
-          setShowDialog={setShowUpdateDialog}
-          // @ts-ignore
-          basePath={valueToUpdate.basePath}
-          resource="metadata/values"
-          {...valueToUpdate}
-        />
-        <TextInput source="key" id="key-name" label="metadata key name" />
-        <Labeled label={"Description"}>
-          <MarkdownInput source="comment" />
-        </Labeled>
-        <IconSelect source={"icon"} displayIcon={true} />
-        <IconColorSelect />
+      <Form>
+        <Grid container sx={{ mt: 1, ml: 0, pr: 2 }} spacing={1}>
+          <Grid item>
+            <MetadataValueUpdateDialog
+              showDialog={showUpdateDialog}
+              setShowDialog={setShowUpdateDialog}
+              // @ts-ignore
+              basePath={valueToUpdate.basePath}
+              resource="metadata/values"
+              {...valueToUpdate}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextInput source="key" id="key-name" label="metadata key name" />
+          </Grid>
+          <Grid item xs={12}>
+            <Labeled label={"Description"}>
+              <MarkdownInput source="comment" />
+            </Labeled>
+          </Grid>
+          <Grid item xs={6}>
+            <IconSelect source={"icon"} displayIcon={true} />
+          </Grid>
+          <Grid item xs={6}>
+            <IconColorSelect />
+          </Grid>
+          <Grid item xs={12} sm={10}>
+            <ReferenceManyField
+              label="Values"
+              reference={"metadata/values"}
+              target={"key_id"}
+              perPage={500}
+              sortBy="Name"
+              sortByOrder="ASC"
+            >
+              <Datagrid
+                // @ts-ignore
+                rowClick={onClickValue}
+                bulkActionButtons={false}
+              >
+                <TextField source="value" />
+                <BooleanField
+                  label="Automatic matching"
+                  source="match_documents"
+                />
+                {!isSmall ? (
+                  <TextField label="Match by" source="match_type" />
+                ) : null}
+                {!isSmall ? (
+                  <TextField label="Filter" source="match_filter" />
+                ) : null}
+                <NumberField
+                  source="documents_count"
+                  label={"Total documents"}
+                />
+              </Datagrid>
+            </ReferenceManyField>
+          </Grid>
 
-        <ReferenceManyField
-          label="Values"
-          reference={"metadata/values"}
-          target={"key_id"}
-          perPage={500}
-          sortBy="Name"
-          sortByOrder="ASC"
-        >
-          <Datagrid
-            // @ts-ignore
-            rowClick={onClickValue}
-            bulkActionButtons={false}
-          >
-            <TextField source="value" />
-            <BooleanField label="Automatic matching" source="match_documents" />
-            {!isSmall ? (
-              <TextField label="Match by" source="match_type" />
-            ) : null}
-            {!isSmall ? (
-              <TextField label="Filter" source="match_filter" />
-            ) : null}
-            <NumberField source="documents_count" label={"Total documents"} />
-          </Datagrid>
-        </ReferenceManyField>
-
-        <MetadataValueCreateButton record={record} />
-        <Labeled label="Created at">
-          <DateField source="created_at" showTime={false} />
-        </Labeled>
-      </SimpleForm>
+          <Grid item xs={12} sx={{ mt: 1 }}>
+            <MetadataValueCreateButton record={record} />
+          </Grid>
+          <Grid item xs={12}>
+            <TimestampField />
+          </Grid>
+        </Grid>
+      </Form>
     </Edit>
   );
 };
