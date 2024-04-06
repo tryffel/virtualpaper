@@ -77,6 +77,7 @@ func (suite *SearchAutocompleteTestSuite) assertCommonAutocompleteSuggestions(re
 	assertAutocompleteInSuggestions(suite.T(), results, "description", "key", "")
 	assertAutocompleteInSuggestions(suite.T(), results, "content", "key", "")
 	assertAutocompleteInSuggestions(suite.T(), results, "date", "key", "")
+	assertAutocompleteInSuggestions(suite.T(), results, "favorite", "key", "")
 }
 
 func assertAutocompleteInSuggestions(t *testing.T, results *search.QuerySuggestions, suggestionName, suggestionType, suggestionHint string) {

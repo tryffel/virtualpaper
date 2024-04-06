@@ -152,3 +152,26 @@ func (suite *DocumentHistoryTestSuite) TestChangeMetadata() {
 	assert.Equal(suite.T(), (*history)[4].OldValue, "")
 	assert.Equal(suite.T(), (*history)[4].NewValue, fmt.Sprintf(`{"key_id":%d,"value_id":%d}`, key2.Id, value3.Id))
 }
+
+func (suite *DocumentHistoryTestSuite) TestFavorite() {
+	history := getDocumentHistory(suite.T(), suite.userHttp, testDocumentX86.Id, 200)
+	assert.Len(suite.T(), *history, 1)
+
+	doc := getDocument(suite.T(), suite.userHttp, testDocumentX86.Id, 200)
+	doc.Favorite = true
+	updateDocument(suite.T(), suite.userHttp, doc, 200)
+
+	doc.Favorite = false
+	updateDocument(suite.T(), suite.userHttp, doc, 200)
+
+	history = getDocumentHistory(suite.T(), suite.userHttp, testDocumentX86.Id, 200)
+	assert.Len(suite.T(), *history, 3)
+
+	assert.Equal(suite.T(), (*history)[1].Action, "favorite")
+	assert.Equal(suite.T(), (*history)[1].OldValue, "")
+	assert.Equal(suite.T(), (*history)[1].NewValue, "")
+
+	assert.Equal(suite.T(), (*history)[2].Action, "unfavorite")
+	assert.Equal(suite.T(), (*history)[2].OldValue, "")
+	assert.Equal(suite.T(), (*history)[2].NewValue, "")
+}

@@ -53,6 +53,7 @@ func (suite *DocumentSearchSuite) SetupSuite() {
 		},
 	)
 	text1.Date = time.Now().UnixMilli()
+	text1.Favorite = true
 
 	text2.Metadata = append(text2.Metadata, models.Metadata{
 		KeyId:   suite.keys["author"].Id,
@@ -220,6 +221,23 @@ func (suite *DocumentSearchSuite) TestSearchByMetadata() {
 	assertDocInDocs(suite.T(), suite.docs["text-1"].Id, &docs, "")
 }
 
+func (suite *DocumentSearchSuite) TestSearchFavorite() {
+	filter := map[string]string{
+		"q": "favorite:yes",
+	}
+
+	docs := searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
+	assert.Equal(suite.T(), 1, len(docs))
+	assertDocNotInDocs(suite.T(), suite.docs["text-2"].Id, &docs, "search by favorite")
+	assertDocInDocs(suite.T(), suite.docs["text-1"].Id, &docs, "search by favorite")
+
+	filter["q"] = "favorite:no"
+	docs = searchDocuments(suite.T(), suite.userHttp, filter, 1, 10, "name", "ASC", 200)
+	assert.Equal(suite.T(), 1, len(docs))
+	assertDocInDocs(suite.T(), suite.docs["text-2"].Id, &docs, "search by non favorite")
+	assertDocNotInDocs(suite.T(), suite.docs["text-1"].Id, &docs, "search by non favorite")
+}
+
 func (suite *DocumentSearchSuite) TestSearchCombined() {
 	filter := map[string]string{
 		"q": `author:darwin AND date:month`,
@@ -251,7 +269,10 @@ func waitIndexingReady(t *testing.T, client *httpClient, timeoutSec int) {
 		}
 
 		dto := &aggregates.UserDocumentStatistics{}
-		client.Get("/api/v1/documents/stats").Expect(t).Json(t, dto).e.Status(200).Done()
+		err := client.Get("/api/v1/documents/stats").Expect(t).Json(t, dto).e.Status(200).Done()
+		if err != nil {
+			t.Error("wait indexing", err)
+		}
 
 		if !dto.Indexing {
 			return
@@ -315,6 +336,16 @@ func assertDocInDocs(t *testing.T, docId string, docs *[]*aggregates.Document, m
 	}
 	assert.Errorf(t, errors.New("expected document to exist in collection"), msg, docId, &docs)
 	t.Fail()
+}
+
+func assertDocNotInDocs(t *testing.T, docId string, docs *[]*aggregates.Document, msg string) {
+	for _, v := range *docs {
+		if docId == v.Id {
+			assert.Errorf(t, errors.New("expected document not to exist in collection"), msg, docId, &docs)
+			t.Fail()
+			return
+		}
+	}
 }
 
 func searchDocumentsAndAssertResult(t *testing.T, client *httpClient, filter interface{}, expectDocs ...*models.Document) {
