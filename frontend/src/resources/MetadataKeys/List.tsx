@@ -23,6 +23,7 @@ import {
   TextField,
   DateField,
   NumberField,
+  CreateButton,
 } from "react-admin";
 
 import {
@@ -92,7 +93,7 @@ const ListResults = ({
             title="Metadata"
             sort={{ field: "key", order: "ASC" }}
             empty={<EmptyMetadataList />}
-            actions={false}
+            actions={<CreateButton />}
           >
             <Datagrid rowClick="edit" bulkActionButtons={false}>
               <ChipField source="key" label={"Name"} />
