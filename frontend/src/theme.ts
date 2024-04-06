@@ -140,6 +140,13 @@ export const darkTheme = {
     },
   },
   components: {
+    MuiToolBar: {
+      styleOverrides: {
+        root: {
+          border: "none",
+        },
+      },
+    },
     MuiPaper: {
       styleOverrides: {
         elevation1: shadow,
@@ -154,6 +161,7 @@ export const darkTheme = {
         elevation10: shadow,
         root: {
           backgroundClip: "padding-box",
+          border: "1px solid #363636FF",
         },
       },
     },

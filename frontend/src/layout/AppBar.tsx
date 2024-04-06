@@ -27,7 +27,12 @@ const MyAppBar = () => {
     theme.breakpoints.up("sm"),
   );
   return (
-    <AppBar color="primary" elevation={1} userMenu={<UserMenu />}>
+    <AppBar
+      color="primary"
+      elevation={1}
+      sx={{ border: "none" }}
+      userMenu={<UserMenu />}
+    >
       <Typography
         variant="h6"
         color="inherit"
