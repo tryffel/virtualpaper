@@ -19,11 +19,9 @@
 import React from "react";
 import {
   Datagrid,
-  DateField,
   TextField,
   ReferenceManyField,
   Labeled,
-  SimpleForm,
   Edit,
   BooleanField,
   NumberField,
