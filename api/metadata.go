@@ -120,7 +120,7 @@ func (a *Api) getMetadataKeys(c echo.Context) error {
 		sort.Key = "key"
 	}
 
-	filter, err := getMetadataFilter(c.Request())
+	filter, err := getMetadataIdFilter(c.Request())
 	if err != nil {
 		return err
 	}
@@ -445,4 +445,23 @@ func (a *Api) updateLinkedDocuments(c echo.Context) error {
 	opOk = true
 	data := map[string]string{"id": "1"}
 	return c.JSON(http.StatusOK, data)
+}
+
+func (a *Api) searchMetadata(c echo.Context) error {
+	// swagger:route GET /api/v1/metadata/search  Metadata SearchMetadataKeys
+	// Search metadata keys
+	// Responses:
+	//  200: MetadataSearchResponse
+	ctx := c.(UserContext)
+
+	query, err := getMetadataSearchFilter(c.Request())
+	if err != nil {
+		return err
+	}
+
+	keys, err := a.metadataService.SearchMetadata(getContext(ctx), ctx.UserId, query)
+	if err != nil {
+		return err
+	}
+	return resourceList(c, keys, len(keys.Keys)+len(keys.Values))
 }

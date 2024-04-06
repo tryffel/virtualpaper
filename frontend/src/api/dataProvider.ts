@@ -21,12 +21,14 @@ import { HttpError } from "react-admin";
 import { fetchUtils, DataProvider } from "ra-core";
 
 import { config } from ".././env";
-import { get } from "lodash";
+import get from "lodash/get";
 const apiUrl = config.url;
 
 const parseTotalCount = (headers: Headers): { total: number } => {
-  const total =
-      parseInt(headers?.get("content-range")?.split("/")?.pop() ?? "0", 10)
+  const total = parseInt(
+    headers?.get("content-range")?.split("/")?.pop() ?? "0",
+    10,
+  );
   return { total };
 };
 
@@ -178,6 +180,15 @@ export const dataProvider: DataProvider = {
             throw error;
           }
         });
+    } else if (resource === "metadata/search") {
+      const urlParams = new URLSearchParams();
+      const query = params.meta?.filter ?? {};
+      urlParams.append("filter", JSON.stringify(query));
+      return httpClient(`${apiUrl}/${resource}?${urlParams.toString()}`).then(
+        ({ json }) => ({
+          data: {...json, id: 'results'},
+        }),
+      );
     } else if (resource === "metadata/keys") {
       return httpClient(`${apiUrl}/${resource}/${params.id}`).then(
         ({ json }) => ({

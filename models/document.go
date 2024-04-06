@@ -242,7 +242,7 @@ type MetadataValue struct {
 	Id           int       `db:"id" json:"id"`
 	UserId       int       `db:"user_id" json:"-"`
 	Key          string    `db:"key" json:"key"`
-	KeyId        int       `db:"key_id" json:"-"`
+	KeyId        int       `db:"key_id" json:"key_id"`
 	Value        string    `db:"value" json:"value"`
 	CreatedAt    time.Time `db:"created_at" json:"created_at"`
 	Comment      string    `db:"comment" json:"comment"`
@@ -368,4 +368,9 @@ type LinkedDocument struct {
 	DocumentId   string    `json:"id"`
 	DocumentName string    `json:"name"`
 	CreatedAt    time.Time `json:"created_at"`
+}
+
+type MetadataSearchResult struct {
+	Keys   []MetadataKey   `json:"keys"`
+	Values []MetadataValue `json:"values"`
 }

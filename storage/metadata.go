@@ -966,3 +966,39 @@ func (s *MetadataStore) UpdateLinkedDocuments(userId int, docId string, docs []s
 	err = addDocumentHistoryAction(s.db, s.sq, []models.DocumentHistory{historyItem}, userId)
 	return tx.Commit()
 }
+
+func (s *MetadataStore) Search(tx *tx, userId int, query string) (*models.MetadataSearchResult, error) {
+	query = strings.ToLower(query)
+	query = "%" + query + "%"
+	result := &models.MetadataSearchResult{}
+	keys := &[]models.MetadataKey{}
+	sql := s.sq.Select("*").From("metadata_keys").Where("user_id = ? AND (LOWER(key) LIKE ? OR LOWER(comment) LIKE ?)", userId, query, query)
+	err := tx.SelectSq(keys, sql)
+	if err != nil {
+		return nil, s.parseError(err, "search metadata keys")
+	}
+	values := &[]models.MetadataValue{}
+	sql = s.sq.Select("mv.id as id",
+		"mv.value as value",
+		"mk.key as key",
+		"mk.id as key_id",
+		"mv.created_at as created_at",
+		"match_documents",
+		"match_type",
+		"match_filter",
+		"count(dm.document_id) as documents_count").
+		From("metadata_values mv").
+		LeftJoin("document_metadata dm on mv.id = dm.value_id").
+		LeftJoin("metadata_keys mk on mv.key_id = mk.id").
+		Where("mk.user_id = ? AND LOWER(value) LIKE ?", userId, query).
+		GroupBy("mv.id", "mk.key", "mk.id").
+		Limit(100)
+	err = tx.SelectSq(values, sql)
+	if err != nil {
+		return nil, s.parseError(err, "search metadata values")
+	}
+
+	result.Keys = *keys
+	result.Values = *values
+	return result, nil
+}

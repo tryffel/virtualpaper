@@ -359,7 +359,7 @@ func getDocumentFilter(req *http.Request) (*search.DocumentFilter, error) {
 	return filter, err
 }
 
-func getMetadataFilter(req *http.Request) ([]int, error) {
+func getMetadataIdFilter(req *http.Request) ([]int, error) {
 	type MetadataFilter struct {
 		Id []int
 	}
@@ -377,4 +377,24 @@ func getMetadataFilter(req *http.Request) ([]int, error) {
 	}
 
 	return body.Id, nil
+}
+
+func getMetadataSearchFilter(req *http.Request) (string, error) {
+	type Query struct {
+		Query string `json:"q"`
+	}
+
+	rawQuery := req.FormValue("filter")
+	if rawQuery == "" || rawQuery == "{}" {
+		return "", nil
+	}
+
+	query := Query{}
+	err := json.Unmarshal([]byte(rawQuery), &query)
+	if err != nil {
+		e := errors.ErrInvalid
+		e.ErrMsg = "invalid json in search params"
+		return "", e
+	}
+	return query.Query, nil
 }

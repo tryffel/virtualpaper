@@ -91,3 +91,12 @@ func (service *MetadataService) DeleteValue(ctx context.Context, userId, keyId, 
 	service.process.PullDocumentsToProcess()
 	return nil
 }
+
+func (service *MetadataService) SearchMetadata(ctx context.Context, userId int, query string) (*models.MetadataSearchResult, error) {
+	tx, err := storage.NewTx(service.db, ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Commit()
+	return service.db.MetadataStore.Search(tx, userId, query)
+}
