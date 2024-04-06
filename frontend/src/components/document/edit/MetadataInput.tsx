@@ -26,6 +26,7 @@ export const MetadataArrayInput = ({
           source="key_id"
           reference="metadata/keys"
           fullWidth
+          sort={{ field: "key", order: "ASC" }}
         >
           <SelectInput
             optionText="key"
