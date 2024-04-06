@@ -29,9 +29,11 @@ import {
   TextInput,
   useRecordContext,
   Form,
+  Toolbar,
+  SaveButton,
 } from "react-admin";
 
-import { MarkdownInput } from "../../components/markdown";
+import { MarkdownInput } from "@components/markdown";
 import { Grid, useMediaQuery } from "@mui/material";
 
 import MetadataValueCreateButton from "./ValueCreate";
@@ -138,6 +140,11 @@ export const MetadataKeyEdit = () => {
           </Grid>
           <Grid item xs={12}>
             <TimestampField />
+          </Grid>
+          <Grid item xs={12}>
+            <Toolbar>
+              <SaveButton />
+            </Toolbar>
           </Grid>
         </Grid>
       </Form>
