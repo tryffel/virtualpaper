@@ -216,6 +216,18 @@ export const RuleTitle = (props: object = {}) => {
 
   const enabled = get(record, "enabled");
   return (
-    <TextField sx={{ fontWeight: enabled ? "500" : "50" }} source="name" />
+    <TextField
+      fontWeight={500}
+      style={
+        enabled
+          ? {}
+          : {
+              textDecorationLine: "line-through",
+              textDecorationStyle: "solid",
+            }
+      }
+      color={enabled ? "text" : "text.secondary"}
+      source="name"
+    />
   );
 };

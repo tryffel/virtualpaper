@@ -26,6 +26,7 @@ export const ActionTypeInput = (props: any) => {
         { id: "date_set", name: "Set date" },
       ]}
       required
+      defaultValue={"name_append"}
     />
   );
 };
@@ -78,6 +79,7 @@ const ScopedActionEdit = (props: { scopedFormData: any; getSource: any }) => {
             source={getSource("enabled")}
             // @ts-ignore
             record={scopedFormData}
+            defaultValue={true}
           />
         </Grid>
         <Grid item>

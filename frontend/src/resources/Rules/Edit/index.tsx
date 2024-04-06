@@ -19,11 +19,12 @@
 import {
   ArrayInput,
   BooleanInput,
-  DateField,
   Edit,
+  Form,
   RadioButtonGroupInput,
-  SimpleForm,
+  SaveButton,
   TextInput,
+  Toolbar,
   useRecordContext,
 } from "react-admin";
 
@@ -33,6 +34,7 @@ import { RuleEditHelp } from "./Help";
 import { ConditionEdit } from "./Condition";
 import { ActionEdit } from "./Action";
 import { MarkdownInput } from "../../../components/markdown";
+import { TimestampField } from "@components/primitives/TimestampField.tsx";
 
 export const RuleEdit = () => {
   const theme = useTheme();
@@ -40,62 +42,74 @@ export const RuleEdit = () => {
 
   return (
     <Edit title={"Edit process rule"}>
-      <SimpleForm>
-        <Grid container spacing={2}>
+      <Form>
+        <Grid container spacing={2} mt={1} pl={1} pr={1}>
           <Grid item xs={12} sm={12} md={12} lg={10}>
-            <Box display={{ xs: "block", sm: "flex" }}>
-              <Typography variant="h5">Edit Processing Rule</Typography>
+            <Box sx={{ display: "flex", gap: "10px" }}>
+              <Typography variant="h5">Processing Rule</Typography>
               <RuleEditHelp />
               <TestButton record={record} />
             </Box>
-            <Box display={{ xs: "block", sm: "flex" }}>
-              <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
-                <TextInput source="name" />
-              </Box>
-              <Box flex={1} mr={{ xs: 0, sm: "0.5em" }}>
-                <BooleanInput label="Enabled" source="enabled" />
-              </Box>
-            </Box>
-            <Typography variant="body2">Created at</Typography>
-            <DateField source="created_at" />
-
-            <Box flex={1}>
-              <MarkdownInput source="description" />
-              <MatchTypeSelectInput source="mode" />
-              <Typography variant="h5">Rule Conditions</Typography>
-              <ArrayInput
-                source="conditions"
-                label=""
-                sx={{
-                  background: theme.palette.background.default,
-                  border: "1px",
-                  borderRadius: "5px",
-                  margin: "1em",
-                  padding: "1em",
-                  boxShadow: "1",
-                }}
-              >
-                <ConditionEdit />
-              </ArrayInput>
-              <Typography variant="h5">Rule Actions</Typography>
-              <ArrayInput
-                source="actions"
-                label=""
-                sx={{
-                  background: theme.palette.background.default,
-                  border: "1px",
-                  borderRadius: "5px",
-                  margin: "1em",
-                  padding: "1em",
-                  boxShadow: "1",
-                }}
-              >
-                <ActionEdit />
-              </ArrayInput>
+          </Grid>
+          <Grid item xs={12}>
+            <Box sx={{ display: "flex", gap: "20px" }}>
+              <TextInput source="name" />
+              <BooleanInput label="Enabled" source="enabled" />
             </Box>
           </Grid>
+          <Grid item xs={12}>
+            <MarkdownInput source="description" />
+          </Grid>
+          <Grid item xs={12}>
+            <MatchTypeSelectInput source="mode" />
+          </Grid>
+          <Grid item xs={12}>
+            <Typography variant="h5">Rule Conditions</Typography>
+          </Grid>
+          <Grid item xs={12}>
+            <ArrayInput
+              source="conditions"
+              label=""
+              sx={{
+                background: theme.palette.background.default,
+                border: "1px solid #363636FF",
+                borderRadius: "5px",
+                margin: "1em",
+                padding: "1em",
+                boxShadow: "1",
+              }}
+            >
+              <ConditionEdit />
+            </ArrayInput>
+          </Grid>
+          <Grid item xs={12}>
+            <Typography variant="h5">Rule Actions</Typography>
+            <ArrayInput
+              defaultValue={{ enabled: true, on_condition: true }}
+              source="actions"
+              label=""
+              sx={{
+                background: theme.palette.background.default,
+                border: "1px solid #363636FF",
+                borderRadius: "5px",
+                margin: "1em",
+                padding: "1em",
+                boxShadow: "1",
+              }}
+            >
+              <ActionEdit />
+            </ArrayInput>
+          </Grid>
+          <Grid item xs={12}>
+            <TimestampField />
+          </Grid>
+          <Grid item xs={12}>
+            <Toolbar>
+              <SaveButton />
+            </Toolbar>
+          </Grid>
         </Grid>
-      </SimpleForm>
+      </Form>
     </Edit>
   );
 };

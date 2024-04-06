@@ -39,6 +39,7 @@ export const ConditionTypeInput = (props: any) => {
         { id: "metadata_count_more_than", name: " Metadata count more than" },
       ]}
       required
+      defaultValue={"content_contains"}
     />
   );
 };
