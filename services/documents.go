@@ -447,7 +447,7 @@ func (service *DocumentService) UpdateDocument(ctx context.Context, userId int, 
 	if err != nil {
 		return nil, err
 	}
-	err = service.db.JobStore.ForceProcessingDocument(doc.Id, []models.ProcessStep{models.ProcessFts})
+	err = service.db.JobStore.ForceProcessingDocument(doc.Id, []models.ProcessStep{models.ProcessFts, models.ProcessRules})
 	if err != nil {
 		logger.Context(ctx).Warnf("error marking document for processing (doc %s): %v", doc.Id, err)
 	} else {
