@@ -227,7 +227,7 @@ func init() {
 	})
 
 	govalidator.CustomTypeTagMap.Set("rule_trigger_type", func(raw interface{}, o interface{}) bool {
-		isArray, ok := raw.([]string)
+		isArray, ok := raw.(models.RuleTriggerArray)
 		if !ok {
 			return false
 		}
