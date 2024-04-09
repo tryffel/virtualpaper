@@ -139,4 +139,5 @@ type ProcessItem struct {
 	Document   *Document
 	Action     ProcessStep `db:"action"`
 	CreatedAt  time.Time   `db:"created_at"`
+	Trigger    RuleTrigger `db:"trigger"`
 }
