@@ -28,14 +28,15 @@ import (
 )
 
 type Rule struct {
-	Id          int    `json:"id" valid:"-"`
-	Name        string `json:"name" valid:"-"`
-	Description string `json:"description" valid:"-"`
-	Enabled     bool   `json:"enabled" valid:"-"`
-	Order       int    `json:"order" valid:"-"`
-	Mode        string `json:"mode" valid:"-"`
-	CreatedAt   int64  `json:"created_at" valid:"-"`
-	UpdatedAt   int64  `json:"updated_at" valid:"-"`
+	Id          int                     `json:"id" valid:"-"`
+	Name        string                  `json:"name" valid:"-"`
+	Description string                  `json:"description" valid:"-"`
+	Enabled     bool                    `json:"enabled" valid:"-"`
+	Order       int                     `json:"order" valid:"-"`
+	Mode        string                  `json:"mode" valid:"-"`
+	CreatedAt   int64                   `json:"created_at" valid:"-"`
+	UpdatedAt   int64                   `json:"updated_at" valid:"-"`
+	Triggers    models.RuleTriggerArray `json:"triggers" valid:"rule_trigger_type"`
 
 	Conditions []RuleCondition `json:"conditions" valid:"-"`
 	Actions    []RuleAction    `json:"actions" valid:"-"`
@@ -139,6 +140,7 @@ func ruleToResp(rule *models.Rule) *Rule {
 		Enabled:     rule.Enabled,
 		Order:       rule.Order,
 		Mode:        rule.Mode.String(),
+		Triggers:    rule.Triggers,
 		CreatedAt:   rule.CreatedAt.Unix() * 1000,
 		UpdatedAt:   rule.UpdatedAt.Unix() * 1000,
 	}

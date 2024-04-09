@@ -173,7 +173,7 @@ func (fp *fileProcessor) processDocument() {
 				log.Errorf(ctx, "refresh document: %v", err)
 				return
 			}
-			err = fp.runRules(ctx)
+			err = fp.runRules(ctx, step.Trigger)
 			if err != nil {
 				log.Errorf(ctx, "run rules: %v", err)
 				return
@@ -195,12 +195,12 @@ func (fp *fileProcessor) processDocument() {
 	}
 }
 
-func (fp *fileProcessor) runRules(ctx context.Context) error {
+func (fp *fileProcessor) runRules(ctx context.Context, trigger models.RuleTrigger) error {
 	if fp.document == nil {
 		return errors.New("no document set")
 	}
 
-	rules, err := fp.db.RuleStore.GetActiveUserRules(fp.document.UserId)
+	rules, err := fp.db.RuleStore.GetActiveUserRules(fp.document.UserId, trigger)
 	if err != nil {
 		return fmt.Errorf("load rules: %v", err)
 	}

@@ -119,9 +119,10 @@ func (s *JobStore) GetPendingProcessing() (*[]models.ProcessItem, int, error) {
 select 
 	d.document_id as document_id, 
 	d.action as action,
-	min(d.created_at) as created_at
+	min(d.created_at) as created_at,
+	d.trigger as trigger
 from (
-	select document_id, action, created_at, action_order
+	select document_id, action, created_at, action_order, trigger
 	from process_queue
 	where running = false 
 	-- ignore document's that are being processed
@@ -132,7 +133,7 @@ from (
 			where running=true group by document_id
 		) order by created_at asc
      ) as d
-group by d.document_id, action, action_order
+group by d.document_id, action, action_order, d.trigger
 order by action_order, created_at
 limit 50;
 `
@@ -174,7 +175,7 @@ LIMIT 50`
 
 // GetNextStepForDocument returns next step that hasn't been started yet.
 func (s *JobStore) GetNextStepForDocument(documentId string) (*models.ProcessItem, error) {
-	sql := `SELECT document_id, action, created_at FROM process_queue
+	sql := `SELECT document_id, action, created_at, trigger FROM process_queue
 WHERE document_id = $1 AND running = FALSE
 ORDER BY action_order ASC
 LIMIT 1`
@@ -289,10 +290,10 @@ func (s *JobStore) MarkProcessingDone(item *models.ProcessItem, ok bool) error {
 }
 
 // ProcessDocumentAllSteps adds default processing steps for document. Document must be existing.
-func (s *JobStore) ProcessDocumentAllSteps(documentId string) error {
-	sq := s.sq.Insert("process_queue").Columns("document_id", "action", "action_order")
+func (s *JobStore) ProcessDocumentAllSteps(documentId string, trigger models.RuleTrigger) error {
+	sq := s.sq.Insert("process_queue").Columns("document_id", "action", "action_order", "trigger")
 	for _, v := range models.ProcessStepsAll {
-		sq = sq.Values(documentId, v, models.ProcessStepsOrder[v])
+		sq = sq.Values(documentId, v, models.ProcessStepsOrder[v], trigger)
 	}
 	sql, args, err := sq.ToSql()
 	if err != nil {
@@ -320,9 +321,9 @@ WHERE running=TRUE
 // userId != 0, mark all documents for user. Else mark all documents for re-processing. FromStep
 // is the first step and successive steps are expected to re-run as well.
 func (s *JobStore) ForceProcessingDocument(documentId string, steps []models.ProcessStep) error {
-	sq := s.sq.Insert("process_queue").Columns("document_id", "action", "action_order")
+	sq := s.sq.Insert("process_queue").Columns("document_id", "action", "action_order", "trigger")
 	for _, v := range steps {
-		sq = sq.Values(documentId, v, models.ProcessStepsOrder[v])
+		sq = sq.Values(documentId, v, models.ProcessStepsOrder[v], models.RuleTriggerUpdate)
 	}
 	sql, args, err := sq.ToSql()
 	if err != nil {
@@ -338,10 +339,10 @@ func (s *JobStore) ForceProcessingByUser(userId int, steps []models.ProcessStep)
 		if i > 0 {
 			stepsSql += ","
 		}
-		stepsSql += fmt.Sprintf("('%s', %d)", v, models.ProcessStepsOrder[v])
+		stepsSql += fmt.Sprintf("('%s', %d, '%s')", v, models.ProcessStepsOrder[v], models.RuleTriggerUpdate)
 	}
 
-	sql := `INSERT INTO process_queue (document_id, action, action_order)
+	sql := `INSERT INTO process_queue (document_id, action, action_order, trigger)
 	SELECT d.id as document_id, steps.action, steps.action_order
 	FROM documents d
 	JOIN (
@@ -381,7 +382,7 @@ func (s *JobStore) IndexDocumentsByMetadata(userId int, keyId int, valueId int) 
 	}
 
 	stepSql := fmt.Sprintf("('%s', %d)", models.ProcessFts, models.ProcessStepsOrder[models.ProcessFts])
-	selectQuery := s.sq.Select("documents.id as document_id, steps.action, steps.action_order").
+	selectQuery := s.sq.Select("documents.id as document_id, steps.action, steps.action_order", "'document-update'").
 		From("documents").
 		LeftJoin("document_metadata dm on documents.id = dm.document_id").
 		Join(fmt.Sprintf("(SELECT DISTINCT * FROM (VALUES %s) AS v) AS steps(action, action_order) ON TRUE", stepSql))
@@ -396,7 +397,7 @@ func (s *JobStore) IndexDocumentsByMetadata(userId int, keyId int, valueId int) 
 		selectQuery = selectQuery.Where("dm.value_id=?", valueId)
 	}
 	query := s.sq.Insert("process_queue").
-		Columns("document_id", "action", "action_order").
+		Columns("document_id", "action", "action_order", "trigger").
 		Select(selectQuery)
 
 	sql, args, err := query.ToSql()
@@ -410,7 +411,7 @@ func (s *JobStore) IndexDocumentsByMetadata(userId int, keyId int, valueId int) 
 	return getDatabaseError(err, s, "queue documents by metadata")
 }
 
-func (s *JobStore) AddDocuments(exec SqlExecer, userId int, documents []string, steps []models.ProcessStep) error {
+func (s *JobStore) AddDocuments(exec SqlExecer, userId int, documents []string, steps []models.ProcessStep, trigger models.RuleTrigger) error {
 
 	stepsSql := ""
 	for i, v := range steps {
@@ -421,7 +422,7 @@ func (s *JobStore) AddDocuments(exec SqlExecer, userId int, documents []string, 
 		stepsSql += fmt.Sprintf("('%s', %d)", val, models.ProcessStepsOrder[v])
 	}
 
-	selectQuery := s.sq.Select("documents.id as document_id, steps.action, steps.action_order").
+	selectQuery := s.sq.Select("documents.id as document_id, steps.action, steps.action_order", fmt.Sprintf("'%s'", trigger)).
 		From("documents").
 		Join(fmt.Sprintf("(SELECT DISTINCT * FROM (VALUES %s) AS v) AS steps(action, action_order) ON TRUE", stepsSql))
 

@@ -190,7 +190,7 @@ func (service *DocumentService) UploadFile(ctx context.Context, file *UploadedFi
 		return nil, fmt.Errorf("rename temp file by document id: %v", err)
 	}
 
-	err = service.db.JobStore.ProcessDocumentAllSteps(document.Id)
+	err = service.db.JobStore.ProcessDocumentAllSteps(document.Id, models.RuleTriggerCreate)
 	if err != nil {
 		return nil, fmt.Errorf("add process steps for new document: %v", err)
 	}
@@ -387,7 +387,7 @@ func (service *DocumentService) BulkEditDocuments(ctx context.Context, req *aggr
 	}
 
 	// need to reindex
-	err = service.db.JobStore.AddDocuments(tx, userId, req.Documents, []models.ProcessStep{models.ProcessFts})
+	err = service.db.JobStore.AddDocuments(tx, userId, req.Documents, []models.ProcessStep{models.ProcessFts}, models.RuleTriggerUpdate)
 	if err != nil {
 		if errors.Is(err, errors.ErrAlreadyExists) {
 			// already indexing, skip

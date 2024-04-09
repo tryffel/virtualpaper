@@ -225,6 +225,26 @@ func init() {
 	govalidator.TagMap["language"] = govalidator.Validator(func(str string) bool {
 		return process.SupportedLanguages[str] != ""
 	})
+
+	govalidator.CustomTypeTagMap.Set("rule_trigger_type", func(raw interface{}, o interface{}) bool {
+		isArray, ok := raw.([]string)
+		if !ok {
+			return false
+		}
+		for _, v := range isArray {
+			found := false
+			for _, a := range models.AllRuleTriggers {
+				if models.RuleTrigger(v) == a {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return false
+			}
+		}
+		return true
+	})
 }
 
 //go:embed swaggerdocs/swagger.json
