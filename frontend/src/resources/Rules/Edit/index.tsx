@@ -21,8 +21,10 @@ import {
   BooleanInput,
   Edit,
   Form,
+  Labeled,
   RadioButtonGroupInput,
   SaveButton,
+  SelectArrayInput,
   TextInput,
   Toolbar,
   useRecordContext,
@@ -59,6 +61,26 @@ export const RuleEdit = () => {
           </Grid>
           <Grid item xs={12}>
             <MarkdownInput source="description" />
+          </Grid>
+          <Grid item xs={12}>
+            <Labeled label={"Run rule after document has been:"}>
+              <SelectArrayInput
+                source={"trigger"}
+                label={"trigger type"}
+                defaultValue={"document-create"}
+                required
+                choices={[
+                  {
+                    id: "document-create",
+                    name: "Created",
+                  },
+                  {
+                    id: "document-update",
+                    name: "Updated",
+                  },
+                ]}
+              />
+            </Labeled>
           </Grid>
           <Grid item xs={12}>
             <MatchTypeSelectInput source="mode" />
