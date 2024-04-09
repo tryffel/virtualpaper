@@ -19,6 +19,8 @@
 package models
 
 import (
+	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -67,6 +69,24 @@ const (
 	RuleTriggerUpdate RuleTrigger = "document-update"
 )
 
+var AllRuleTriggers = RuleTriggerArray{RuleTriggerCreate, RuleTriggerUpdate}
+
+type RuleTriggerArray []RuleTrigger
+
+func (t RuleTriggerArray) Value() (driver.Value, error) {
+	//return string(*ps), nil
+	return json.Marshal(t)
+}
+
+func (t *RuleTriggerArray) Scan(src interface{}) error {
+	array, ok := src.([]byte)
+	if !ok {
+		return errors.New("invalid type, expected []byte")
+	}
+	err := json.Unmarshal(array, t)
+	return err
+}
+
 type Rule struct {
 	Id          int                    `db:"id"`
 	UserId      int                    `db:"user_id"`
@@ -76,7 +96,7 @@ type Rule struct {
 	Order       int                    `db:"rule_order"`
 	Mode        RuleConditionMatchType `db:"mode"`
 	Timestamp
-	Triggers []RuleTrigger `db:"triggers"`
+	Triggers RuleTriggerArray `db:"triggers"`
 
 	Conditions []*RuleCondition
 	Actions    []*RuleAction

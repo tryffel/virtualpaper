@@ -78,7 +78,7 @@ func (fp *fileProcessor) extractPdf(ctx context.Context, file *os.File) error {
 	}
 
 	if text == "" {
-		fp.Warn(" content seems to be empty")
+		fp.Warn("content seems to be empty")
 	}
 
 	text = strings.ToValidUTF8(text, "")

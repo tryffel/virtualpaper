@@ -166,18 +166,19 @@ func (s *RuleStore) AddRule(execer SqlExecer, userId int, rule *models.Rule) err
 }
 
 // GetActiveUresRules returns all enabled rules (with some limit) for given user.
-func (s *RuleStore) GetActiveUserRules(userId int) ([]*models.Rule, error) {
+func (s *RuleStore) GetActiveUserRules(userId int, trigger models.RuleTrigger) ([]*models.Rule, error) {
 
 	sql := `
 SELECT *
 FROM rules
 WHERE user_id = $1
 AND enabled=TRUE
+AND triggers::jsonb ? $2
 ORDER BY rule_order ASC
-limit $2;`
+limit $3;`
 
 	rules := &[]models.Rule{}
-	err := s.db.Select(rules, sql, userId, config.MaxRulesToProcess)
+	err := s.db.Select(rules, sql, userId, trigger, config.MaxRulesToProcess)
 	if err != nil {
 		return nil, s.parseError(err, "get active user rules")
 	}
