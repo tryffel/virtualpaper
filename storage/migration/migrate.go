@@ -128,6 +128,11 @@ var Migrations = []Migrator{
 		Level:  20,
 		Schema: schemaV20,
 	},
+	&Migration{
+		Name:   "add rule trigger column",
+		Level:  21,
+		Schema: schemaV21,
+	},
 }
 
 type Schema struct {

@@ -60,6 +60,13 @@ const (
 	RuleMatchAny RuleConditionMatchType = 2
 )
 
+type RuleTrigger string
+
+const (
+	RuleTriggerCreate RuleTrigger = "document-create"
+	RuleTriggerUpdate RuleTrigger = "document-update"
+)
+
 type Rule struct {
 	Id          int                    `db:"id"`
 	UserId      int                    `db:"user_id"`
@@ -69,6 +76,7 @@ type Rule struct {
 	Order       int                    `db:"rule_order"`
 	Mode        RuleConditionMatchType `db:"mode"`
 	Timestamp
+	Triggers []RuleTrigger `db:"triggers"`
 
 	Conditions []*RuleCondition
 	Actions    []*RuleAction

@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	SchemaVersion = 20
+	SchemaVersion = 21
 )
 
 const (
