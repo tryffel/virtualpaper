@@ -19,7 +19,6 @@
 import * as React from "react";
 
 import {
-  BooleanField,
   Button,
   CreateButton,
   Datagrid,
@@ -30,28 +29,74 @@ import {
 } from "react-admin";
 import ReorderIcon from "@mui/icons-material/Reorder";
 
-import { Box, Chip, Grid, Typography } from "@mui/material";
-import { MarkdownField } from "../../components/markdown";
+import { Box, Chip, Grid, Tooltip, Typography } from "@mui/material";
+import { MarkdownField } from "@components/markdown";
 import get from "lodash/get";
-import { EmptyResourcePage } from "../../components/primitives/EmptyPage";
+import { EmptyResourcePage } from "@components/primitives/EmptyPage.tsx";
 import { ReorderRulesDialog, RuleTitle } from "./Reorder";
+import ControlPointIcon from "@mui/icons-material/ControlPoint";
+import BorderColorIcon from "@mui/icons-material/BorderColor";
 
 export const RuleList = () => (
   <List empty={<EmptyRuleList />} actions={<RuleListActions />}>
     <Datagrid bulkActionButtons={false} expand={ExpandRule}>
-      <RuleTitle />
-      <BooleanField label="Enabled" source="enabled" />
+      <RuleTitle source={"Name"} />
+      <RuleTriggerField source={"triggers"} />
       <EditButton />
     </Datagrid>
   </List>
 );
 
-const RuleModeField = (props: any) => {
+const RuleModeField = (props: { source: string }) => {
   const { source } = props;
   const record = useRecordContext(props);
   const value = get(record, source);
 
   return <Chip label={value === "match_all" ? "Match all" : "Match any"} />;
+};
+
+const RuleTriggerField = (_: { source: string }) => {
+  const record = useRecordContext();
+
+  const hasCreate =
+    get(record, "triggers")?.filter(
+      (entry: string) => entry === "document-create",
+    ).length > 0;
+  const hasUpdate =
+    get(record, "triggers")?.filter(
+      (entry: string) => entry === "document-update",
+    ).length > 0;
+
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "row",
+        gap: "10px",
+      }}
+    >
+      {hasCreate ? (
+        <Tooltip title={"Run after new document has been created"}>
+          <ControlPointIcon
+            color={"secondary"}
+            sx={{ height: "20px", width: "20px" }}
+          />
+        </Tooltip>
+      ) : (
+        <div style={{ width: "20px" }}></div>
+      )}
+      {hasUpdate ? (
+        <Tooltip title={"Run after existing document has been updated"}>
+          <BorderColorIcon
+            color={"secondary"}
+            sx={{ height: "20px", width: "20px" }}
+          />
+        </Tooltip>
+      ) : (
+        <div style={{ width: "20px" }}></div>
+      )}
+    </Box>
+  );
 };
 
 const ChildCounterField = (props: any) => {

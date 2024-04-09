@@ -208,7 +208,7 @@ const RuleEntry = (props: { record: RaRecord }) => {
   );
 };
 
-export const RuleTitle = (props: object = {}) => {
+export const RuleTitle = (props: {source: string}) => {
   const record = useRecordContext(props);
   if (!record) {
     return null;
