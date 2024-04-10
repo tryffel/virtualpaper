@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"testing"
 	"tryffel.net/go/virtualpaper/api"
+	"tryffel.net/go/virtualpaper/models"
 	"tryffel.net/go/virtualpaper/services/process"
 )
 
@@ -35,6 +36,7 @@ func (suite *RuleApiTestSuite) TestCreateRule() {
 		Enabled:     false,
 		Order:       10,
 		Mode:        "match_any",
+		Triggers:    models.RuleTriggerArray{"document-create"},
 		Conditions: []api.RuleCondition{
 			{
 				ConditionType: "name_contains",
@@ -99,6 +101,21 @@ func (suite *RuleApiTestSuite) TestCreateRule() {
 	rule.Conditions[0].Value = "invalid regex (("
 	addRule(suite.T(), suite.userHttp, rule, 400, "invalid date_is, invalid regex")
 
+	rule.Name = "bad trigger"
+	rule.Triggers = models.RuleTriggerArray{"bad-value"}
+	rule.Conditions[0].ConditionType = string(models.RuleConditionContentContains)
+	rule.Conditions[0].IsRegex = false
+	rule.Conditions[0].Value = "text"
+	addRule(suite.T(), suite.userHttp, rule, 400, "invalid trigger")
+
+	rule.Name = "bad trigger"
+	rule.Triggers = models.RuleTriggerArray{}
+	addRule(suite.T(), suite.userHttp, rule, 400, "no trigger")
+
+	rule.Name = "ok"
+	rule.Triggers = models.RuleTriggerArray{"document-create", "document-update"}
+	addRule(suite.T(), suite.userHttp, rule, 200, "ok")
+
 	rule.Name = "valid action"
 	rule.Conditions[0].IsRegex = true
 	rule.Conditions[0].Value = "invalid regex"
@@ -133,6 +150,7 @@ func (suite *RuleApiTestSuite) TestUpdateRule() {
 		Enabled:     false,
 		Order:       10,
 		Mode:        "match_any",
+		Triggers:    models.RuleTriggerArray{"document-create"},
 		Conditions: []api.RuleCondition{
 			{
 				ConditionType: "name_contains",
@@ -183,6 +201,7 @@ func (suite *RuleApiTestSuite) TestDeleteRule() {
 		Enabled:     false,
 		Order:       10,
 		Mode:        "match_any",
+		Triggers:    models.RuleTriggerArray{"document-create"},
 		Conditions: []api.RuleCondition{
 			{
 				ConditionType: "name_contains",
@@ -221,6 +240,7 @@ func (suite *RuleApiTestSuite) TestGetRules() {
 		Enabled:     false,
 		Order:       10,
 		Mode:        "match_any",
+		Triggers:    models.RuleTriggerArray{"document-create"},
 		Conditions: []api.RuleCondition{
 			{
 				ConditionType: "name_contains",
@@ -270,6 +290,7 @@ func (suite *RuleApiTestSuite) GetRule() {
 		Enabled:     false,
 		Order:       10,
 		Mode:        "match_any",
+		Triggers:    models.RuleTriggerArray{"document-create"},
 		Conditions: []api.RuleCondition{
 			{
 				ConditionType: "name_contains",
@@ -326,6 +347,7 @@ func (suite *RuleApiTestSuite) TestRuleTestingMatch() {
 		Enabled:     true,
 		Order:       10,
 		Mode:        "match_any",
+		Triggers:    models.RuleTriggerArray{"document-create"},
 		Conditions: []api.RuleCondition{
 			{
 				ConditionType: "content_contains",
@@ -394,6 +416,7 @@ func (suite *RuleApiTestSuite) TestRuleTestingNoMatch() {
 		Enabled:     true,
 		Order:       10,
 		Mode:        "match_all",
+		Triggers:    models.RuleTriggerArray{"document-create"},
 		Conditions: []api.RuleCondition{
 			{
 				ConditionType: "content_contains",
@@ -454,6 +477,7 @@ func (suite *RuleApiTestSuite) TestReorderRules() {
 		Enabled:     false,
 		Order:       0,
 		Mode:        "match_any",
+		Triggers:    models.RuleTriggerArray{"document-create"},
 		Conditions: []api.RuleCondition{
 			{
 				ConditionType: "name_contains",
@@ -496,6 +520,7 @@ func (suite *RuleApiTestSuite) TestReorderRulesErrors() {
 		Enabled:     false,
 		Order:       0,
 		Mode:        "match_any",
+		Triggers:    models.RuleTriggerArray{"document-create"},
 		Conditions: []api.RuleCondition{
 			{
 				ConditionType: "name_contains",
