@@ -74,18 +74,25 @@ func (s *RuleStore) setRuleCached(rule *models.Rule) {
 	s.cache.Set(fmt.Sprintf("rule-%d", rule.Id), rule, cache.DefaultExpiration)
 }
 
-func (s *RuleStore) GetUserRules(userId int, paging Paging) ([]*models.Rule, int, error) {
-	sql := `
-SELECT *
-FROM rules
-WHERE user_id = $1
-ORDER BY rule_order ASC
-OFFSET $2
-LIMIT $3
-;`
+func (s *RuleStore) GetUserRules(exec SqlExecer, userId int, paging Paging, query, enabled string) ([]*models.Rule, int, error) {
+	sql := s.sq.Select("*").
+		From("rules").
+		Where("user_id = ?", userId)
 
+	if query != "" {
+		query = "%" + strings.ToLower(query) + "%"
+		sql = sql.Where("(LOWER(name) LIKE ? OR LOWER(description) LIKE ?)", query, query)
+	}
+	if enabled == "true" {
+		sql = sql.Where("enabled = true")
+	} else if enabled == "false" {
+		sql = sql.Where("enabled = false")
+	}
+
+	sql = sql.OrderBy("rule_order ASC").Offset(uint64(paging.Offset)).Limit(uint64(paging.Limit))
 	rules := &[]models.Rule{}
-	err := s.db.Select(rules, sql, userId, paging.Offset, paging.Limit)
+
+	err := exec.SelectSq(rules, sql)
 	if err != nil {
 		return nil, 0, s.parseError(err, "get user rules")
 	}

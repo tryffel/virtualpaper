@@ -398,3 +398,35 @@ func getMetadataSearchFilter(req *http.Request) (string, error) {
 	}
 	return query.Query, nil
 }
+
+func getRuleFilter(req *http.Request) (string, string, error) {
+	type Query struct {
+		Q       string `json:"q" valid:"-"`
+		Enabled string `json:"enabled" valid:"in(true|false),optional"`
+	}
+
+	body := &Query{}
+
+	query := req.FormValue("filter")
+	if query == "" || query == "{}" {
+		return "", "", nil
+	}
+	err := json.Unmarshal([]byte(query), body)
+	if err != nil {
+		e := errors.ErrInvalid
+		e.ErrMsg = "invalid json in search params"
+		return "", "", e
+	}
+
+	ok, err := govalidator.ValidateStruct(body)
+	if err != nil {
+		e := errors.ErrInvalid
+		e.ErrMsg = formatValidatorError(err)
+		return "", "", e
+	}
+	if !ok {
+		return "", "", errors.ErrInvalid
+	}
+
+	return body.Q, body.Enabled, nil
+}

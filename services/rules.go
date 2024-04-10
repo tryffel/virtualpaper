@@ -28,8 +28,13 @@ func (service *RuleService) UserOwnsRule(ctx context.Context, userId, ruleId int
 	return service.db.RuleStore.UserOwnsRule(userId, ruleId)
 }
 
-func (service *RuleService) GetRules(ctx context.Context, userId int, page storage.Paging) ([]*models.Rule, int, error) {
-	return service.db.RuleStore.GetUserRules(userId, page)
+func (service *RuleService) GetRules(ctx context.Context, userId int, page storage.Paging, query string, enabled string) ([]*models.Rule, int, error) {
+	tx, err := storage.NewTx(service.db, ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer tx.Close()
+	return service.db.RuleStore.GetUserRules(tx, userId, page, query, enabled)
 }
 
 func (service *RuleService) Get(ctx context.Context, userId int, id int) (*models.Rule, error) {

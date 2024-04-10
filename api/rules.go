@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"net/http"
+	"strings"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
 	"tryffel.net/go/virtualpaper/models"
@@ -234,7 +235,13 @@ func (a *Api) getUserRules(c echo.Context) error {
 	ctx := c.(UserContext)
 
 	paging := getPagination(c)
-	rules, total, err := a.ruleService.GetRules(getContext(c), ctx.UserId, paging.toPagination())
+
+	query, enabledStr, err := getRuleFilter(c.Request())
+	if err != nil {
+		return err
+	}
+
+	rules, total, err := a.ruleService.GetRules(getContext(c), ctx.UserId, paging.toPagination(), strings.ToLower(query), strings.ToLower(enabledStr))
 	if err != nil {
 		return err
 	}
