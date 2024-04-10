@@ -128,8 +128,6 @@ const TestDialog = (props: {
       },
     });
 
-  console.log("fetch error", isError, isLoadingError, failureCount);
-
   const onDocIdchanged = (e: any) => {
     const raw = e.target.value;
     const id = raw.trim();
@@ -152,8 +150,6 @@ const TestDialog = (props: {
         setResult(data.data);
       });
   };
-
-  console.log("data", data);
 
   return (
     <Dialog
