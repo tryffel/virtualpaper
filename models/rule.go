@@ -73,9 +73,16 @@ var AllRuleTriggers = RuleTriggerArray{RuleTriggerCreate, RuleTriggerUpdate}
 
 type RuleTriggerArray []RuleTrigger
 
-func (t RuleTriggerArray) Value() (driver.Value, error) {
-	//return string(*ps), nil
+func (t *RuleTriggerArray) Value() (driver.Value, error) {
 	return json.Marshal(t)
+}
+
+func (t *RuleTriggerArray) ToJsonString() string {
+	val, err := json.Marshal(t)
+	if err != nil {
+		return ""
+	}
+	return string(val)
 }
 
 func (t *RuleTriggerArray) Scan(src interface{}) error {
