@@ -120,13 +120,15 @@ const TestDialog = (props: {
   const [documentId, setDocumentId] = React.useState("");
   const [result, setResult] = React.useState<RuleTestResult | null>();
 
-  const { data, isSuccess, refetch, isError, isLoadingError, failureCount } =
-    useGetOne("documents", {
+  const { data, isSuccess, refetch, isError, failureCount } = useGetOne(
+    "documents",
+    {
       id: documentId,
       meta: {
         noVisit: true,
       },
-    });
+    },
+  );
 
   const onDocIdchanged = (e: any) => {
     const raw = e.target.value;

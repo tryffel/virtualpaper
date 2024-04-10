@@ -24,6 +24,8 @@ import {
   Datagrid,
   EditButton,
   List,
+  SearchInput,
+  SelectInput,
   TopToolbar,
   useRecordContext,
 } from "react-admin";
@@ -38,7 +40,25 @@ import ControlPointIcon from "@mui/icons-material/ControlPoint";
 import BorderColorIcon from "@mui/icons-material/BorderColor";
 
 export const RuleList = () => (
-  <List empty={<EmptyRuleList />} actions={<RuleListActions />}>
+  <List
+    empty={<EmptyRuleList />}
+    actions={<RuleListActions />}
+    filters={[
+      <SearchInput source={"q"} alwaysOn />,
+      <SelectInput
+        label={"Enabled"}
+        source={"enabled"}
+        alwaysOn
+        choices={[
+          { id: "true", name: "Enabled" },
+          {
+            id: "false",
+            name: "Disabled",
+          },
+        ]}
+      />,
+    ]}
+  >
     <Datagrid bulkActionButtons={false} expand={ExpandRule}>
       <RuleTitle source={"Name"} />
       <RuleTriggerField source={"triggers"} />
