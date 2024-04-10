@@ -43,6 +43,7 @@ func (suite *RuleProcessingTestSuite) TestMatchAny() {
 		Enabled:     true,
 		Order:       10,
 		Mode:        "match_any",
+		Triggers:    models.RuleTriggerArray{"document-create", "document-update"},
 		Conditions: []api.RuleCondition{
 			{
 				// should match
@@ -100,6 +101,7 @@ func (suite *RuleProcessingTestSuite) TestMatchAll() {
 		Enabled:     true,
 		Order:       10,
 		Mode:        "match_all",
+		Triggers:    models.RuleTriggerArray{"document-create", "document-update"},
 		Conditions: []api.RuleCondition{
 			{
 				// should match
@@ -157,6 +159,7 @@ func (suite *RuleProcessingTestSuite) TestExtractDate() {
 		Enabled:     true,
 		Order:       10,
 		Mode:        "match_any",
+		Triggers:    models.RuleTriggerArray{"document-create", "document-update"},
 		Conditions: []api.RuleCondition{
 			{
 				ConditionType: "date_is",
@@ -205,6 +208,7 @@ func (suite *RuleProcessingTestSuite) TestConditionName() {
 		Enabled:     true,
 		Order:       10,
 		Mode:        "match_all",
+		Triggers:    models.RuleTriggerArray{"document-create", "document-update"},
 		Conditions: []api.RuleCondition{
 			{
 				ConditionType: "name_is",
@@ -278,6 +282,7 @@ func (suite *RuleProcessingTestSuite) TestConditionDescription() {
 		Enabled:     true,
 		Order:       10,
 		Mode:        "match_all",
+		Triggers:    models.RuleTriggerArray{"document-create", "document-update"},
 		Conditions: []api.RuleCondition{
 			{
 				ConditionType: "description_is",
@@ -351,6 +356,7 @@ func (suite *RuleProcessingTestSuite) TestConditionTextContent() {
 		Enabled:     true,
 		Order:       10,
 		Mode:        "match_all",
+		Triggers:    models.RuleTriggerArray{"document-create", "document-update"},
 		Conditions: []api.RuleCondition{
 			{
 				ConditionType: "content_is",
@@ -431,6 +437,7 @@ func (suite *RuleProcessingTestSuite) TestConditionMetadata() {
 		Enabled:     true,
 		Order:       10,
 		Mode:        "match_all",
+		Triggers:    models.RuleTriggerArray{"document-create", "document-update"},
 		Conditions: []api.RuleCondition{
 			{
 				ConditionType: "metadata_has_key",
@@ -494,6 +501,80 @@ func (suite *RuleProcessingTestSuite) TestConditionMetadata() {
 			{KeyId: key1.Id, ValueId: value2.Id},
 		}
 	updateDocument(suite.T(), suite.userHttp, doc, 200)
+	gotRule := addRule(suite.T(), suite.userHttp, rule, 200, "add rule")
+	rule.Id = gotRule.Id
+
+	requestDocumentProcessing(suite.T(), suite.userHttp, testDocumentX86.Id, 200)
+	requestDocumentProcessing(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
+	time.Sleep(time.Second)
+	waitIndexingReady(suite.T(), suite.userHttp, 10)
+
+	docIntel := getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
+	docX86 := getDocument(suite.T(), suite.userHttp, testDocumentX86.Id, 200)
+
+	assert.Equal(suite.T(), "renamed", docIntel.Name)
+	assert.Equal(suite.T(), docX86.Name, testDocumentX86.Name)
+}
+
+func (suite *RuleProcessingTestSuite) TestDocumentCreate() {
+	rule := &api.Rule{
+		Name:        "test condition name",
+		Description: "",
+		Enabled:     true,
+		Order:       10,
+		Mode:        "match_all",
+		Triggers:    models.RuleTriggerArray{"document-create", "document-update"},
+		Conditions: []api.RuleCondition{
+			{
+				ConditionType: "name_is",
+				IsRegex:       false,
+				Value:         "x86 intel",
+				Enabled:       true,
+			},
+			{
+				ConditionType: "name_starts",
+				IsRegex:       false,
+				Value:         "x86 i",
+				Enabled:       true,
+			},
+			{
+				ConditionType: "name_contains",
+				IsRegex:       false,
+				Value:         "6 int",
+				Enabled:       true,
+			},
+			{
+				ConditionType:   "name_is",
+				IsRegex:         false,
+				Value:           "x86 INTEL",
+				Enabled:         true,
+				CaseInsensitive: true,
+			},
+			{
+				ConditionType:   "name_is",
+				IsRegex:         true,
+				Value:           `x\d{2} intel`,
+				Enabled:         true,
+				CaseInsensitive: true,
+			},
+			{
+				ConditionType:   "name_is",
+				IsRegex:         false,
+				Value:           `cannot match`,
+				Enabled:         false,
+				CaseInsensitive: true,
+			},
+		},
+		Actions: []api.RuleAction{
+			{
+				Action:      "name_set",
+				Value:       "renamed",
+				Enabled:     true,
+				OnCondition: true,
+			},
+		},
+	}
+
 	gotRule := addRule(suite.T(), suite.userHttp, rule, 200, "add rule")
 	rule.Id = gotRule.Id
 

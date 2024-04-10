@@ -2,7 +2,6 @@ package integrationtest
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -334,14 +333,14 @@ func assertDocInDocs(t *testing.T, docId string, docs *[]*aggregates.Document, m
 			return
 		}
 	}
-	assert.Errorf(t, errors.New("expected document to exist in collection"), msg, docId, &docs)
+	t.Error("expected document to exist in collection", msg, docId, &docs)
 	t.Fail()
 }
 
 func assertDocNotInDocs(t *testing.T, docId string, docs *[]*aggregates.Document, msg string) {
 	for _, v := range *docs {
 		if docId == v.Id {
-			assert.Errorf(t, errors.New("expected document not to exist in collection"), msg, docId, &docs)
+			t.Error("expected document to not exist in collection", msg, docId, &docs)
 			t.Fail()
 			return
 		}
