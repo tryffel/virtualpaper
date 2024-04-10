@@ -302,6 +302,7 @@ func (s *RuleStore) UpdateRule(exec ExecerSq, userId int, rule *models.Rule) err
 		"rule_order":  rule.Order,
 		"mode":        rule.Mode,
 		"updated_at":  rule.UpdatedAt,
+		"triggers":    rule.Triggers.ToJsonString(),
 	}).Where(squirrel.Eq{"user_id": userId, "id": rule.Id})
 
 	_, err = exec.ExecSq(query)

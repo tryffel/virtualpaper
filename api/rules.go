@@ -172,6 +172,7 @@ func (r *Rule) ToRule() (*models.Rule, error) {
 		Mode:        mode,
 		Conditions:  make([]*models.RuleCondition, len(r.Conditions)),
 		Actions:     make([]*models.RuleAction, len(r.Actions)),
+		Triggers:    r.Triggers,
 	}
 
 	for i, v := range r.Conditions {

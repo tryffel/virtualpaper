@@ -65,7 +65,7 @@ export const RuleEdit = () => {
           <Grid item xs={12}>
             <Labeled label={"Run rule after document has been:"}>
               <SelectArrayInput
-                source={"trigger"}
+                source={"triggers"}
                 label={"trigger type"}
                 defaultValue={"document-create"}
                 required
