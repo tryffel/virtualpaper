@@ -517,51 +517,22 @@ func (suite *RuleProcessingTestSuite) TestConditionMetadata() {
 }
 
 func (suite *RuleProcessingTestSuite) TestDocumentCreate() {
+	clearDbDocumentTables(suite.T(), suite.db)
+	clearDbProcessingRuleTables(suite.T(), suite.db)
+
 	rule := &api.Rule{
 		Name:        "test condition name",
 		Description: "",
 		Enabled:     true,
 		Order:       10,
 		Mode:        "match_all",
-		Triggers:    models.RuleTriggerArray{"document-create", "document-update"},
+		Triggers:    models.RuleTriggerArray{"document-create"},
 		Conditions: []api.RuleCondition{
 			{
-				ConditionType: "name_is",
-				IsRegex:       false,
-				Value:         "x86 intel",
-				Enabled:       true,
-			},
-			{
-				ConditionType: "name_starts",
-				IsRegex:       false,
-				Value:         "x86 i",
-				Enabled:       true,
-			},
-			{
-				ConditionType: "name_contains",
-				IsRegex:       false,
-				Value:         "6 int",
-				Enabled:       true,
-			},
-			{
-				ConditionType:   "name_is",
+				ConditionType:   "content_contains",
 				IsRegex:         false,
-				Value:           "x86 INTEL",
+				Value:           "lorem ipsum",
 				Enabled:         true,
-				CaseInsensitive: true,
-			},
-			{
-				ConditionType:   "name_is",
-				IsRegex:         true,
-				Value:           `x\d{2} intel`,
-				Enabled:         true,
-				CaseInsensitive: true,
-			},
-			{
-				ConditionType:   "name_is",
-				IsRegex:         false,
-				Value:           `cannot match`,
-				Enabled:         false,
 				CaseInsensitive: true,
 			},
 		},
@@ -578,16 +549,67 @@ func (suite *RuleProcessingTestSuite) TestDocumentCreate() {
 	gotRule := addRule(suite.T(), suite.userHttp, rule, 200, "add rule")
 	rule.Id = gotRule.Id
 
-	requestDocumentProcessing(suite.T(), suite.userHttp, testDocumentX86.Id, 200)
-	requestDocumentProcessing(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
+	docId := uploadDocument(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 60)
+
+	requestDocumentProcessing(suite.T(), suite.userHttp, docId, 200)
+	time.Sleep(time.Second)
+	waitIndexingReady(suite.T(), suite.userHttp, 10)
+	doc := getDocument(suite.T(), suite.userHttp, docId, 200)
+	assert.Equal(suite.T(), "renamed", doc.Name)
+	doc.Name = "original"
+
+	updateDocument(suite.T(), suite.userHttp, doc, 200)
 	time.Sleep(time.Second)
 	waitIndexingReady(suite.T(), suite.userHttp, 10)
 
-	docIntel := getDocument(suite.T(), suite.userHttp, testDocumentX86Intel.Id, 200)
-	docX86 := getDocument(suite.T(), suite.userHttp, testDocumentX86.Id, 200)
+	updatedDoc := getDocument(suite.T(), suite.userHttp, docId, 200)
+	assert.Equal(suite.T(), updatedDoc.Name, doc.Name, "name has not changed")
+}
 
-	assert.Equal(suite.T(), "renamed", docIntel.Name)
-	assert.Equal(suite.T(), docX86.Name, testDocumentX86.Name)
+func (suite *RuleProcessingTestSuite) TestDocumentUpdate() {
+	clearDbDocumentTables(suite.T(), suite.db)
+	clearDbProcessingRuleTables(suite.T(), suite.db)
+
+	rule := &api.Rule{
+		Name:        "test condition name",
+		Description: "",
+		Enabled:     true,
+		Order:       10,
+		Mode:        "match_all",
+		Triggers:    models.RuleTriggerArray{"document-update"},
+		Conditions: []api.RuleCondition{
+			{
+				ConditionType:   "content_contains",
+				IsRegex:         false,
+				Value:           "lorem ipsum",
+				Enabled:         true,
+				CaseInsensitive: true,
+			},
+		},
+		Actions: []api.RuleAction{
+			{
+				Action:      "name_set",
+				Value:       "renamed",
+				Enabled:     true,
+				OnCondition: true,
+			},
+		},
+	}
+
+	gotRule := addRule(suite.T(), suite.userHttp, rule, 200, "add rule")
+	rule.Id = gotRule.Id
+
+	docId := uploadDocument(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 60)
+	doc := getDocument(suite.T(), suite.userHttp, docId, 200)
+	assert.Equal(suite.T(), "text-1.txt", doc.Name)
+	doc.Name = "original"
+
+	updateDocument(suite.T(), suite.userHttp, doc, 200)
+	time.Sleep(time.Second)
+	waitIndexingReady(suite.T(), suite.userHttp, 10)
+
+	updatedDoc := getDocument(suite.T(), suite.userHttp, docId, 200)
+	assert.Equal(suite.T(), updatedDoc.Name, "renamed", "name has changed")
 }
 
 func requestDocumentProcessing(t *testing.T, client *httpClient, docId string, expectStatus int) {
