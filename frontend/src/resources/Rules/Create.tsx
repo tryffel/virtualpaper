@@ -23,13 +23,15 @@ import {
   BooleanInput,
 } from "react-admin";
 import { Typography } from "@mui/material";
-import { MarkdownInput } from "../../components/markdown";
+import { MarkdownInput } from "@components/markdown";
+import { RuleTriggerInput } from "@components/rules/inputs/Trigger.tsx";
 
 const defaultValue = {
   name: "",
   description: "",
   enabled: true,
   mode: "match_all",
+  triggers: ["document-create"],
   conditions: [
     {
       enabled: true,
@@ -62,6 +64,7 @@ export const RuleCreate = () => {
             { id: "match_any", name: "Match any" },
           ]}
         />
+        <RuleTriggerInput />
       </SimpleForm>
     </Create>
   );
