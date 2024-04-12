@@ -21,10 +21,8 @@ import {
   BooleanInput,
   Edit,
   Form,
-  Labeled,
   RadioButtonGroupInput,
   SaveButton,
-  SelectArrayInput,
   TextInput,
   Toolbar,
   useRecordContext,
@@ -35,8 +33,9 @@ import TestButton from "../Test";
 import { RuleEditHelp } from "./Help";
 import { ConditionEdit } from "./Condition";
 import { ActionEdit } from "./Action";
-import { MarkdownInput } from "../../../components/markdown";
+import { MarkdownInput } from "@components/markdown";
 import { TimestampField } from "@components/primitives/TimestampField.tsx";
+import { RuleTriggerInput } from "@components/rules/inputs/Trigger.tsx";
 
 export const RuleEdit = () => {
   const theme = useTheme();
@@ -63,24 +62,7 @@ export const RuleEdit = () => {
             <MarkdownInput source="description" />
           </Grid>
           <Grid item xs={12}>
-            <Labeled label={"Run rule after document has been:"}>
-              <SelectArrayInput
-                source={"triggers"}
-                label={"trigger type"}
-                defaultValue={"document-create"}
-                required
-                choices={[
-                  {
-                    id: "document-create",
-                    name: "Created",
-                  },
-                  {
-                    id: "document-update",
-                    name: "Updated",
-                  },
-                ]}
-              />
-            </Labeled>
+            <RuleTriggerInput />
           </Grid>
           <Grid item xs={12}>
             <MatchTypeSelectInput source="mode" />
