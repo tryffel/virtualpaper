@@ -432,7 +432,7 @@ func (s *JobStore) AddDocuments(exec SqlExecer, userId int, documents []string, 
 
 	selectQuery = selectQuery.Where(squirrel.Eq{"documents.id": documents})
 	query := s.sq.Insert("process_queue").
-		Columns("document_id", "action", "action_order").
+		Columns("document_id", "action", "action_order", "trigger").
 		Select(selectQuery)
 
 	_, err := exec.ExecSq(query)

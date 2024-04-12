@@ -150,9 +150,9 @@ func (s *RuleStore) AddRule(execer SqlExecer, userId int, rule *models.Rule) err
 
 	// insert rule
 	query := s.sq.Insert("rules").
-		Columns("user_id", "name", "description", "enabled", "rule_order", "mode").
+		Columns("user_id", "name", "description", "enabled", "rule_order", "mode", "triggers").
 		Values(userId, rule.Name, rule.Description, rule.Enabled,
-			squirrel.Expr("(SELECT COALESCE(MAX(rule_order)+1, 1) FROM rules WHERE user_id=?)", userId), rule.Mode).
+			squirrel.Expr("(SELECT COALESCE(MAX(rule_order)+1, 1) FROM rules WHERE user_id=?)", userId), rule.Mode, rule.Triggers.ToJsonString()).
 		Suffix("RETURNING \"id\"")
 	var id int
 	err = execer.GetSq(&id, query)

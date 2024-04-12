@@ -21,6 +21,7 @@ func (suite *DocumentHistoryTestSuite) SetupTest() {
 	suite.Init()
 	clearDbDocumentTables(suite.T(), suite.db)
 	_ = insertTestDocuments(suite.T(), suite.db)
+	clearDbProcessingRuleTables(suite.T(), suite.db)
 }
 
 func (suite *DocumentHistoryTestSuite) TestInitialHistory() {

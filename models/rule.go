@@ -249,10 +249,13 @@ func (r *RuleCondition) Validate() error {
 			err.ErrMsg = "must have metadata key defined"
 			return err
 		}
-	}
-	if r.ConditionType == RuleConditionMetadataHasKeyValue {
-		if r.MetadataKey == 0 || r.MetadataValue == 0 {
-			err.ErrMsg = "must have metadata key and value defined"
+	} else if r.ConditionType == RuleConditionMetadataHasKeyValue {
+		if r.MetadataKey == 0 {
+			err.ErrMsg = "must have metadata key defined"
+			return err
+		}
+		if r.MetadataValue == 0 {
+			err.ErrMsg = "must have metadata value defined"
 			return err
 		}
 	}

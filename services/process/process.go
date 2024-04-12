@@ -227,8 +227,12 @@ func (fp *fileProcessor) runRules(ctx context.Context, trigger models.RuleTrigge
 		err = matchMetadata(fp.document, metadataValues)
 	}
 
-	log.Context(ctx).WithField("user", fp.document.UserId).WithField("documentId", fp.document.Id).
-		WithField("total-rules", len(rules)).Infof("Run user rules for document")
+	log.Context(ctx).
+		WithField("user", fp.document.UserId).
+		WithField("documentId", fp.document.Id).
+		WithField("total-rules", len(rules)).
+		WithField("trigger", trigger).
+		Infof("Run user rules for document")
 
 	for i, rule := range rules {
 		logrus.Debugf("(%d.) run user rule %d", i, rule.Id)
