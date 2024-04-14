@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## Release 0.6 - 2024-04-14
 
 ### Added
 - Initial support for sharing documents between users. User can now share read/write access to other users.

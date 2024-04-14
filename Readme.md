@@ -53,12 +53,14 @@ This project is in **beta phase** and help with testing and general feedback is 
     * User configurable rules for modifying the data
 * REST api (swagger documentation is located at api/swaggerdocs/swagger.json) or at <virtualpaper-instance>/api/v1/swagger.json
 * Full-text-search
-* User-configurable rule engine for classifying documents and assigning metadata automatically
+* User-configurable rule engine for classifying documents and assigning metadata automatically either after creating or updating documents
 * Responsive layout with dark theme
 * **Total number of users is limited to 200.** This is because Meilisearch has a limit of 200 indices, and each user
 uses one index. The benefit for own index is that each user can now configure their personal settings: 
   synonyms, stop words and results ranking, thus users have more powerful search capability over their files.
   Maybe one day it is possible to have more users, though.
+* Option to add documents to favorites
+* Share documents with individual users (read/write access)
 
 
 ## Requirements
@@ -93,14 +95,14 @@ Frontend is built with React and great React-Admin framework.
 Make sure nodejs, npm and yarn are installed and then:
 
 Initial configuration:
-```cd frontend; yarn install```
+```cd frontend; npm install```
 
 Build frontend with:
 ```make build-frontend```
 
 
 # Configuration
-Copy config.sample.toml to config.toml and place it to ~/.virutalpaper.toml.
+Copy config.sample.toml to config.toml and place it to ~/.virtualpaper.toml.
 
 Fill database and meilisearch configuration and you're good to go, at least for testing purposes.
 All content is stored in filesystem, which is defined in config-file: Processing.data_dir.
