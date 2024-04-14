@@ -121,10 +121,10 @@ func TestDocument_Metadata_Diff(t *testing.T) {
 	docId := "1234"
 	userId := 10
 	type fields struct {
-		Metadata []Metadata
+		Metadata MetadataArray
 	}
 	type args struct {
-		metadata []Metadata
+		metadata MetadataArray
 		userId   int
 	}
 	tests := []struct {
