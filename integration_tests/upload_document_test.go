@@ -148,7 +148,7 @@ func (suite *UploadDocumentSuite) TestEditSchedulesProcessing() {
 
 	logs = getDocumentProcessingSteps(suite.T(), suite.userHttp, docId, 200)
 
-	assert.Equal(suite.T(), 8, len(*logs))
+	assert.Equal(suite.T(), 10, len(*logs))
 	assert.Equal(suite.T(), (*logs)[5].Status, models.JobFinished)
 }
 
