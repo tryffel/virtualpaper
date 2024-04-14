@@ -2,7 +2,7 @@
 
 .DEFAULT_GOAL := all
 
-VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2> /dev/null || \
+VERSION ?= $(shell git describe --tags --always --match="v*" 2> /dev/null || \
             echo v0)
 COMMIT ?= $(shell git describe --always --dirty 2> /dev/null || \
             echo v0)
