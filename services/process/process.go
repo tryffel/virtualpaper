@@ -220,6 +220,10 @@ func (fp *fileProcessor) runRules(ctx context.Context, trigger models.RuleTrigge
 		defer fp.completeProcessingStep(process, job)
 	}
 
+	if len(rules) == 0 {
+		return nil
+	}
+
 	metadataValues, err := fp.db.MetadataStore.GetUserValuesWithMatching(fp.document.UserId)
 	if err != nil {
 		logrus.Errorf("get metadata values with matching for user %d: %v", fp.document.UserId, err)
