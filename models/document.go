@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -149,6 +150,10 @@ type Metadata struct {
 	Value   string `db:"value" json:"value"`
 }
 
+func (m Metadata) sortValue() int {
+	return m.ValueId
+}
+
 type MetadataKey struct {
 	Id        int       `db:"id" json:"id"`
 	UserId    int       `db:"user_id" json:"-"`
@@ -159,7 +164,29 @@ type MetadataKey struct {
 	Style     string    `db:"style" json:"style"`
 }
 
-func MetadataDiff(id string, userId int, original, updated *[]Metadata) []DocumentHistory {
+type MetadataArray []Metadata
+
+func (m *MetadataArray) Len() int {
+	return len(*m)
+}
+
+func (m *MetadataArray) Less(i, j int) bool {
+	return (*m)[i].sortValue() < (*m)[j].sortValue()
+}
+
+func (m *MetadataArray) Swap(i, j int) {
+	tmp := (*m)[i]
+	(*m)[i] = (*m)[j]
+	(*m)[j] = tmp
+}
+
+func MetadataDiff(id string, userId int, original, updated *MetadataArray) []DocumentHistory {
+	sort.Sort(original)
+	sort.Sort(updated)
+
+	keyId := func(m Metadata) string {
+		return fmt.Sprintf("%d-%d", m.KeyId, m.ValueId)
+	}
 	history := make([]DocumentHistory, 0)
 
 	addHistoryItem := func(action, oldValue, newValue string) {
@@ -180,11 +207,11 @@ func MetadataDiff(id string, userId int, original, updated *[]Metadata) []Docume
 	newMetadata := map[string]Metadata{}
 
 	for _, v := range *original {
-		oldMetadata[fmt.Sprintf("%d-%d", v.KeyId, v.ValueId)] = v
+		oldMetadata[keyId(v)] = v
 	}
 
 	for _, v := range *updated {
-		newMetadata[fmt.Sprintf("%d-%d", v.KeyId, v.ValueId)] = v
+		newMetadata[keyId(v)] = v
 	}
 
 	formatMetadata := func(m Metadata) string {

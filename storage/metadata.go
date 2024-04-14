@@ -420,8 +420,15 @@ END;
 	if err != nil {
 		return s.parseError(err, "get updated document metadata")
 	}
-
-	diff := models.MetadataDiff(documentId, userId, originalMetadata, updatedMetadata)
+	original := make(models.MetadataArray, len(*originalMetadata))
+	for i, v := range *originalMetadata {
+		original[i] = v
+	}
+	updated := make(models.MetadataArray, len(*updatedMetadata))
+	for i, v := range *updatedMetadata {
+		updated[i] = v
+	}
+	diff := models.MetadataDiff(documentId, userId, &original, &updated)
 	err = addDocumentHistoryAction(exec, s.sq, diff, userId)
 	logrus.Infof("User %d edited document %s with %d actions", userId, documentId, len(diff))
 	return err
