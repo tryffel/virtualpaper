@@ -320,30 +320,6 @@ WHERE id=$1
 	return &content, s.parseError(err, "get content")
 }
 
-// GetNeedsIndexing returns documents that need indexing ( awaits_indexing=true). If userId != 0, return
-// only documents for that user, else return any documents.
-func (s *DocumentStore) GetNeedsIndexing(userId int, paging Paging) (*[]models.Document, error) {
-
-	sql := `
-SELECT * 
-FROM documents
-WHERE awaits_indexing=True
-`
-
-	args := []interface{}{paging.Offset, paging.Limit}
-	if userId != 0 {
-		sql += " AND user_id = $3 "
-		args = append(args, userId)
-	}
-
-	sql += "OFFSET $1 LIMIT $2;"
-
-	docs := &[]models.Document{}
-
-	err := s.db.Select(docs, sql, args...)
-	return docs, s.parseError(err, "get needs indexing")
-}
-
 // Update sets complete document record, not just changed attributes. Thus document must be read before updating.
 // Metadata history is not saved.
 func (s *DocumentStore) Update(exec SqlExecer, userId int, doc *models.Document) error {

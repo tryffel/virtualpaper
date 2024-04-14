@@ -21,14 +21,23 @@ package cmd
 import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"os"
 	"tryffel.net/go/virtualpaper/config"
-	"tryffel.net/go/virtualpaper/services/search"
+	"tryffel.net/go/virtualpaper/models"
+	"tryffel.net/go/virtualpaper/services"
 	"tryffel.net/go/virtualpaper/storage"
 )
 
 var indexCmd = &cobra.Command{
 	Use:   "index",
-	Short: "Index documents to meilisearch for full-text-search",
+	Short: "Schedule indexing documents to search engine",
+	Long: `Schedules indexing for all documents in the system. 
+
+The server needs to run to do index the documents.
+This command will only mark the documents for scheduling. 
+If server is currently running in the background, it should start processing the request shortly.
+Otherwise server can be started after calling this command.
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		initConfig()
 		db, err := storage.NewDatabase(config.C.Database)
@@ -37,34 +46,32 @@ var indexCmd = &cobra.Command{
 		}
 		defer db.Close()
 
-		engine, err := search.NewEngine(db, &config.C.Meilisearch)
-		if err != nil {
-			logrus.Fatalf("Init search engine: %v", err)
-		}
-
 		users, err := db.UserStore.GetUsers()
 		if err != nil {
 			logrus.Errorf("get users: %v", err)
 			return
 		}
 
-		paging := storage.Paging{
-			Offset: 0,
-			Limit:  200,
+		failed := 0
+		success := 0
+
+		service := services.NewAdminService(db, nil, nil)
+		for _, v := range *users {
+			logrus.Infof("index documents for user %s", v.Name)
+			err = service.ForceProcessingByUser(cmd.Context(), v.Id, []models.ProcessStep{models.ProcessFts})
+			if err != nil {
+				logrus.Errorf("schedule indexing for user: (id: %d - %s): %v", v.Id, v.Name, err)
+				failed += 1
+			} else {
+				success += 1
+			}
 		}
 
-		for _, v := range *users {
-			docs, err := db.DocumentStore.GetNeedsIndexing(v.Id, paging)
-			if err != nil {
-				logrus.Warningf("get indexing documents got user: %v", err)
-				continue
-			}
-
-			logrus.Infof("index %d documents for useer %s", len(*docs), v.Name)
-			err = engine.IndexDocuments(docs, v.Id)
-			if err != nil {
-				logrus.Warningf("index documents: %v", err)
-			}
+		if failed == 0 {
+			logrus.Infof("Successfully scheduled indexing for %d users", success)
+		} else {
+			logrus.Errorf("Scheduling indexing failed for %d users, see above for errors", failed)
+			os.Exit(1)
 		}
 	},
 }

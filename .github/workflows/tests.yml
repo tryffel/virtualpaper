@@ -40,7 +40,7 @@ jobs:
           --health-retries 5
 
       meilisearch:
-        image: getmeili/meilisearch:v1.5.0
+        image: getmeili/meilisearch:v1.7.6
 
     steps:
       - name: Check out repository code
@@ -58,14 +58,16 @@ jobs:
              go run . manage --config config.sample.toml add-user -U user -P superstronguser -a false
              go run . manage --config config.sample.toml add-user -U admin -P superstrongadmin -a true
              go run . manage --config config.sample.toml add-user -U tester -P superstrongtester -a false
+             go run . index --config config.sample.toml
 
       - name: Run tests
         run: |
             go run . serve --config config.sample.toml &
             make ci-test-api
 
-          #- name: Run tests
-          #run: make ci-test-api
-
+      - name: Test CLI
+        run: |
+             go run . migrate --config config.sample.toml
+             go run . index --config config.sample.toml
 
 
