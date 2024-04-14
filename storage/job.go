@@ -339,10 +339,10 @@ func (s *JobStore) ForceProcessingByUser(userId int, steps []models.ProcessStep)
 	}
 
 	sql := `INSERT INTO process_queue (document_id, action, action_order, trigger)
-	SELECT d.id as document_id, steps.action, steps.action_order
+	SELECT d.id as document_id, steps.action, steps.action_order, steps.trigger
 	FROM documents d
 	JOIN (
-		SELECT * FROM (VALUES %s) AS v (action, action_order)
+		SELECT * FROM (VALUES %s) AS v (action, action_order, trigger)
 	) steps ON TRUE`
 
 	var err error
