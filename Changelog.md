@@ -21,6 +21,30 @@
 - fixed broken CLI command `index`
 
 
+## Release 0.5 - 2023-11-29
+
+### Features
+- Add support for detecting document languages. This is run automatically when uploading new documents.
+- Added dark theme
+- Added icon and option for setting color to metadata keys
+
+### Improvements
+- Added tooltip to show documents when hovering over metadata keys in document page
+- Improved the UI layouts for several pages: document show, user preferences, admin page
+- Improvements to background processing schema
+- Improved logging: added correlation ids (requestId, taskId)
+- Removed deprecated Inotify-based file watch
+
+
+**Full Changelog**: https://github.com/tryffel/virtualpaper/compare/v0.4.0...v0.5.0
+
+
+### Docker image:
+
+- `tryffel/virtualpaper:0.5`
+- `tryffel/virtualpaper:0.5-arm64`
+
+
 ## Release 0.4 - 2023-05-14
 ---
 
@@ -28,10 +52,10 @@ Docker image:
 - `tryffel/virtualpaper:0.4`
 - `tryffel/virtualpaper:0.4-arm64`.
 
-#### Features
+### Features
 - Add modal for reordering processing rules
 
-#### Improvements
+### Improvements
 - Documents are unique but scoped to each user, allowing different users to still upload same document
 - Added link 'forgot password' on login page
 - Added 'upload documents' button to dashboard page
@@ -45,14 +69,14 @@ Docker image:
 ---
 
 
-#### Features
+### Features
 - auth tokens are persisted and can be revoked
 - administrator can create new users
 - administrator can edit existing users
 - added download-button to download the original document
 - added document trash bin: deleting documents now result in documents going to separate trash bin, where user can restore them. Document will be automatically deleted from the system after certain time (default: 14 days)
 
-#### Improvements
+### Improvements
 - only active users can login
 - login is case-insensitive
 - Hide most actions behind menu when viewing document
@@ -60,7 +84,7 @@ Docker image:
 - Improve document view layout especially with small displays
 
 
-#### Other
+### Other
 - enforce usernames: must be alphanumeric, whitespaces are allowed
 - enforce emails: must be unique
 
@@ -86,24 +110,20 @@ If there are only a few users, it's okay to check the values from the admin UI, 
 will give exact results.
 
 
-
-
-
 ## Release 0.2 - 2023-03-22
 ---
-
 
 Use docker image `tryffel/virtualpaper:v0.2` or `tryffel/virtualpaper:v0.2-arm64`.
 
 
-#### Features
+### Features
 - New search bar with suggestions
 - Allow user to reset their password with email link
 - Link documents
 - Dashboard now shows last viewed documents in addition to last created and last updated documents
 - Document history, which saves edits for documents and their metadata
 
-#### Improvements
+### Improvements
 - Improve search bar, parse utf8 characters correctly
 - Handle whitespaces in metadata keys and values
 - Tesseract and Imagemagick are now called with `exec` instead of statically linking them. This makes a lot easier to deploy and to develop Virtualpaper.
@@ -115,7 +135,7 @@ Use docker image `tryffel/virtualpaper:v0.2` or `tryffel/virtualpaper:v0.2-arm64
 - Improved 'schedule document' feature both for admins and for users
 - Added rate limit to all authentication endpoints
 
-#### Other
+### Other
 - New api test suite
 - Basic CI pipeline completed for running tests
 - Rewrote the API layer with Echo router
@@ -125,7 +145,6 @@ Use docker image `tryffel/virtualpaper:v0.2` or `tryffel/virtualpaper:v0.2-arm64
 ## Release 0.1 - 2022-07-19
 ---
 
-
-
 Initial release.
+
 Use docker image `tryffel/virtualpaper:v0.1`.
