@@ -85,7 +85,7 @@ func (service *RuleService) TestRule(ctx context.Context, userId int, ruleId int
 		return nil, err
 	}
 
-	doc, err := service.db.DocumentStore.GetDocument(docId)
+	doc, err := service.db.DocumentStore.GetDocument(service.db, docId)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (service *RuleService) TestRule(ctx context.Context, userId int, ruleId int
 		return nil, errors.ErrRecordNotFound
 	}
 
-	metadata, err := service.db.MetadataStore.GetDocumentMetadata(userId, docId)
+	metadata, err := service.db.MetadataStore.GetDocumentMetadata(service.db, userId, docId)
 	if err != nil {
 		return nil, err
 	}

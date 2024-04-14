@@ -26,7 +26,7 @@ type Database struct {
 }
 
 func (d *Database) Exec(query string, args ...interface{}) (sql.Result, error) {
-	return d.conn.Exec(query, args)
+	return d.conn.Exec(query, args...)
 }
 
 func (d *Database) ExecSq(sql squirrel.Sqlizer) (sql.Result, error) {
@@ -91,6 +91,10 @@ func (d *Database) SelectContextSq(ctx context.Context, destination interface{},
 		return fmt.Errorf("sql: %v", err)
 	}
 	return d.conn.SelectContext(ctx, destination, query, args...)
+}
+
+func (d *Database) Select(destination interface{}, sql string, args ...interface{}) error {
+	return d.conn.Select(destination, sql, args...)
 }
 
 func (d *Database) GetContextSq(ctx context.Context, destination interface{}, sql squirrel.Sqlizer) error {

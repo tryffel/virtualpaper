@@ -97,6 +97,7 @@ type ExecerSq interface {
 type QuerierSq interface {
 	QueryContextSq(ctx context.Context, sql squirrel.Sqlizer) (*sqlx.Rows, error)
 	QuerySq(sql squirrel.Sqlizer) (*sqlx.Rows, error)
+	Select(destination interface{}, sql string, args ...interface{}) error
 	SelectContextSq(ctx context.Context, destination interface{}, sql squirrel.Sqlizer) error
 	SelectSq(destination interface{}, sql squirrel.Sqlizer) error
 	GetContextSq(ctx context.Context, destination interface{}, sql squirrel.Sqlizer) error
@@ -200,6 +201,10 @@ func (tx *tx) SelectSq(destination interface{}, sql squirrel.Sqlizer) error {
 		return fmt.Errorf("sql: %v", err)
 	}
 	return tx.tx.SelectContext(tx.context, destination, query, args...)
+}
+
+func (tx *tx) Select(destination interface{}, sql string, args ...interface{}) error {
+	return tx.tx.Select(destination, sql, args...)
 }
 
 func (tx *tx) GetContextSq(ctx context.Context, destination interface{}, sql squirrel.Sqlizer) error {

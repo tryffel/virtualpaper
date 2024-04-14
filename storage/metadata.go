@@ -121,7 +121,7 @@ func (s MetadataStore) parseError(err error, action string) error {
 }
 
 // GetDocumentMetadata returns key-value metadata for given document. If userId != 0, user must own document.
-func (s *MetadataStore) GetDocumentMetadata(userId int, documentId string) (*[]models.Metadata, error) {
+func (s *MetadataStore) GetDocumentMetadata(exec SqlExecer, userId int, documentId string) (*[]models.Metadata, error) {
 	var sql string
 	var args []interface{}
 
@@ -141,7 +141,7 @@ LEFT JOIN metadata_keys mk ON dm.key_id = mk.id
 LEFT JOIN metadata_values mv ON dm.value_id = mv.id
 WHERE d.id = $1
 AND d.user_id = $2
-ORDER BY key ASC;
+ORDER BY key, value ASC;
 `
 		args = []interface{}{documentId, userId}
 
@@ -165,7 +165,7 @@ ORDER BY key ASC;
 	}
 
 	object := &[]models.Metadata{}
-	err := s.db.Select(object, sql, args...)
+	err := exec.Select(object, sql, args...)
 	if err != nil {
 		if strings.Contains(err.Error(), "converting NULL to int") {
 			return object, nil
@@ -343,7 +343,7 @@ func (s *MetadataStore) GetValues(keyId int, sort SortKey, paging Paging) (*[]mo
 }
 
 // UpdateDocumentKeyValues updates key-values for document.
-func (s *MetadataStore) UpdateDocumentKeyValues(userId int, documentId string, metadata []models.Metadata) error {
+func (s *MetadataStore) UpdateDocumentKeyValues(exec SqlExecer, userId int, documentId string, metadata []models.Metadata) error {
 	logrus.Debugf("update document %s metadata, key-values: %d", documentId, len(metadata))
 
 	var sql string
@@ -366,7 +366,7 @@ END;
 `
 
 			var ownership bool
-			err = s.db.Get(&ownership, sql, documentId, userId)
+			err = exec.Get(&ownership, sql, documentId, userId)
 			if err != nil {
 				return s.parseError(err, "update key-values, check ownership")
 			}
@@ -376,14 +376,9 @@ END;
 		}
 	}
 
-	originalMetadata, err := s.GetDocumentMetadata(userId, documentId)
+	originalMetadata, err := s.GetDocumentMetadata(exec, userId, documentId)
 	if err != nil {
 		return s.parseError(err, "get document")
-	}
-
-	tx, err := s.db.Beginx()
-	if err != nil {
-		return s.parseError(err, "update document, start tx")
 	}
 
 	sql = `
@@ -392,10 +387,9 @@ END;
 	WHERE m.document_id = $1;
 	`
 
-	_, err = tx.Exec(sql, documentId)
+	_, err = exec.Exec(sql, documentId)
 	if err != nil {
-		logrus.Warningf("error deleting old metadata: %v", err)
-		return s.parseError(tx.Rollback(), "rollback tx")
+		return fmt.Errorf("delete old metadata: %v", err)
 	}
 
 	if len(metadata) > 0 {
@@ -415,26 +409,20 @@ END;
 			args = append(args, v.KeyId, v.ValueId)
 		}
 
-		_, err = tx.Exec(sql, args...)
+		_, err = exec.Exec(sql, args...)
 
 	}
-	if err != nil {
-		err = tx.Rollback()
-	} else {
-		err = tx.Commit()
-	}
-
 	if err != nil {
 		return s.parseError(err, "update document key-values")
 	}
 
-	updatedMetadata, err := s.GetDocumentMetadata(userId, documentId)
+	updatedMetadata, err := s.GetDocumentMetadata(exec, userId, documentId)
 	if err != nil {
 		return s.parseError(err, "get updated document metadata")
 	}
 
 	diff := models.MetadataDiff(documentId, userId, originalMetadata, updatedMetadata)
-	err = addDocumentHistoryAction(s.db, s.sq, diff, userId)
+	err = addDocumentHistoryAction(exec, s.sq, diff, userId)
 	logrus.Infof("User %d edited document %s with %d actions", userId, documentId, len(diff))
 	return err
 }
@@ -826,17 +814,9 @@ WHERE
 // DeleteKey deletes metadata key.
 // If userId != 0, user has to own the key.
 // This will cascade the deletion to any table that uses metadata keys too: document_metadata, rules.
-func (s *MetadataStore) DeleteKey(userId int, keyId int) error {
+func (s *MetadataStore) DeleteKey(exec SqlExecer, userId int, keyId int) error {
 	query := s.sq.Delete("metadata_keys").Where("id=?", keyId)
-	sql, args, err := query.ToSql()
-	if err != nil {
-		e := errors.ErrInternalError
-		e.ErrMsg = "bad sql"
-		e.Err = err
-		return e
-	}
-
-	_, err = s.db.Exec(sql, args...)
+	_, err := exec.ExecSq(query)
 	if err != nil {
 		return s.parseError(err, "delete key")
 	}
@@ -920,7 +900,7 @@ func (s *MetadataStore) GetLinkedDocuments(userId int, docId string) ([]*models.
 }
 
 // UpdateLinkedDocuments updates document. This does not validate ownership of the documents.
-func (s *MetadataStore) UpdateLinkedDocuments(userId int, docId string, docs []string) error {
+func (s *MetadataStore) UpdateLinkedDocuments(exec SqlExecer, userId int, docId string, docs []string) error {
 	tx, err := s.beginTx()
 	if err != nil {
 		return fmt.Errorf("begin transaction: %v", err)
@@ -963,17 +943,17 @@ func (s *MetadataStore) UpdateLinkedDocuments(userId int, docId string, docs []s
 		UserId:     userId,
 		User:       "",
 	}
-	err = addDocumentHistoryAction(s.db, s.sq, []models.DocumentHistory{historyItem}, userId)
+	err = addDocumentHistoryAction(exec, s.sq, []models.DocumentHistory{historyItem}, userId)
 	return tx.Commit()
 }
 
-func (s *MetadataStore) Search(tx *tx, userId int, query string) (*models.MetadataSearchResult, error) {
+func (s *MetadataStore) Search(exec SqlExecer, userId int, query string) (*models.MetadataSearchResult, error) {
 	query = strings.ToLower(query)
 	query = "%" + query + "%"
 	result := &models.MetadataSearchResult{}
 	keys := &[]models.MetadataKey{}
 	sql := s.sq.Select("*").From("metadata_keys").Where("user_id = ? AND (LOWER(key) LIKE ? OR LOWER(comment) LIKE ?)", userId, query, query)
-	err := tx.SelectSq(keys, sql)
+	err := exec.SelectSq(keys, sql)
 	if err != nil {
 		return nil, s.parseError(err, "search metadata keys")
 	}
@@ -993,7 +973,7 @@ func (s *MetadataStore) Search(tx *tx, userId int, query string) (*models.Metada
 		Where("mk.user_id = ? AND LOWER(value) LIKE ?", userId, query).
 		GroupBy("mv.id", "mk.key", "mk.id").
 		Limit(100)
-	err = tx.SelectSq(values, sql)
+	err = exec.SelectSq(values, sql)
 	if err != nil {
 		return nil, s.parseError(err, "search metadata values")
 	}

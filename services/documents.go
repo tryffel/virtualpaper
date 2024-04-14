@@ -48,7 +48,7 @@ func (service *DocumentService) GetDocuments(userId int, paging storage.Paging, 
 }
 
 func (service *DocumentService) GetDocument(ctx context.Context, userId int, id string, addVisit bool) (*aggregates.Document, error) {
-	doc, err := service.db.DocumentStore.GetDocument(id)
+	doc, err := service.db.DocumentStore.GetDocument(service.db, id)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (service *DocumentService) GetDocument(ctx context.Context, userId int, id 
 	var sharedUsers *[]models.DocumentSharePermission
 
 	if userId == doc.UserId {
-		metadata, err := service.db.MetadataStore.GetDocumentMetadata(userId, id)
+		metadata, err := service.db.MetadataStore.GetDocumentMetadata(service.db, userId, id)
 		if err != nil {
 			return nil, err
 		}
@@ -174,7 +174,7 @@ func (service *DocumentService) UploadFile(ctx context.Context, file *UploadedFi
 	}
 
 	document.Hash = hash
-	err = service.db.DocumentStore.Create(document)
+	err = service.db.DocumentStore.Create(service.db, document)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +205,7 @@ type DocumentFile struct {
 }
 
 func (service *DocumentService) DocumentFile(docId string) (*DocumentFile, error) {
-	doc, err := service.db.DocumentStore.GetDocument(docId)
+	doc, err := service.db.DocumentStore.GetDocument(service.db, docId)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +227,7 @@ func (service *DocumentService) DocumentFile(docId string) (*DocumentFile, error
 }
 
 func (service *DocumentService) GetPreview(ctx context.Context, docId string) (io.ReadCloser, int, error) {
-	doc, err := service.db.DocumentStore.GetDocument(docId)
+	doc, err := service.db.DocumentStore.GetDocument(service.db, docId)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -248,7 +248,7 @@ func (service *DocumentService) GetPreview(ctx context.Context, docId string) (i
 }
 
 func (service *DocumentService) FlushDeletedDocument(ctx context.Context, docId string) error {
-	document, err := service.db.DocumentStore.GetDocument(docId)
+	document, err := service.db.DocumentStore.GetDocument(service.db, docId)
 	if err != nil {
 		return err
 	}
@@ -275,7 +275,7 @@ func (service *DocumentService) FlushDeletedDocument(ctx context.Context, docId 
 }
 
 func (service *DocumentService) DeleteDocument(ctx context.Context, docId string, userId int) error {
-	doc, err := service.db.DocumentStore.GetDocument(docId)
+	doc, err := service.db.DocumentStore.GetDocument(service.db, docId)
 	if err != nil {
 		return err
 	}
@@ -285,7 +285,7 @@ func (service *DocumentService) DeleteDocument(ctx context.Context, docId string
 
 	logger.Context(ctx).WithField("documentId", docId).Infof("Request deleting document")
 
-	err = service.db.DocumentStore.MarkDocumentDeleted(userId, docId)
+	err = service.db.DocumentStore.MarkDocumentDeleted(service.db, userId, docId)
 	if err != nil {
 		return err
 	}
@@ -298,7 +298,7 @@ func (service *DocumentService) DeleteDocument(ctx context.Context, docId string
 }
 
 func (service *DocumentService) RestoreDeletedDocument(ctx context.Context, docId string, userId int) (*models.Document, error) {
-	document, err := service.db.DocumentStore.GetDocument(docId)
+	document, err := service.db.DocumentStore.GetDocument(service.db, docId)
 	if err != nil {
 		return nil, err
 	}
@@ -307,12 +307,12 @@ func (service *DocumentService) RestoreDeletedDocument(ctx context.Context, docI
 	}
 	document.Update()
 
-	err = service.db.DocumentStore.MarkDocumentNonDeleted(userId, docId)
+	err = service.db.DocumentStore.MarkDocumentNonDeleted(service.db, userId, docId)
 	if err != nil {
 		return nil, err
 	}
 
-	doc, err := service.db.DocumentStore.GetDocument(docId)
+	doc, err := service.db.DocumentStore.GetDocument(service.db, docId)
 	err = service.search.IndexDocuments(&[]models.Document{*doc}, doc.UserId)
 	if err != nil {
 		return nil, fmt.Errorf("delete document from search index: %v", err)
@@ -400,14 +400,20 @@ func (service *DocumentService) BulkEditDocuments(ctx context.Context, req *aggr
 }
 
 func (service *DocumentService) UpdateDocument(ctx context.Context, userId int, docId string, updated *aggregates.DocumentUpdate) (*models.Document, error) {
-	doc, err := service.db.DocumentStore.GetDocument(docId)
+	tx, err := storage.NewTx(service.db, ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	doc, err := service.db.DocumentStore.GetDocument(tx, docId)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(updated.Metadata) > 0 {
 		uniqueKeys := updated.Metadata.UniqueKeys()
-		owns, err := service.db.MetadataStore.UserHasKeys(service.db, userId, uniqueKeys)
+		owns, err := service.db.MetadataStore.UserHasKeys(tx, userId, uniqueKeys)
 		if err != nil {
 			return nil, err
 		}
@@ -438,25 +444,24 @@ func (service *DocumentService) UpdateDocument(ctx context.Context, userId int, 
 	doc.Update()
 	doc.Metadata = metadata
 
-	err = service.db.DocumentStore.Update(userId, doc)
+	err = service.db.DocumentStore.Update(tx, userId, doc)
 	if err != nil {
 		return nil, err
 	}
 
-	err = service.db.MetadataStore.UpdateDocumentKeyValues(userId, doc.Id, metadata)
+	err = service.db.MetadataStore.UpdateDocumentKeyValues(tx, userId, doc.Id, metadata)
 	if err != nil {
 		return nil, err
 	}
-	err = service.db.JobStore.ForceProcessingDocument(doc.Id, []models.ProcessStep{models.ProcessFts, models.ProcessRules})
+	err = service.db.JobStore.ForceProcessingDocument(tx, doc.Id, []models.ProcessStep{models.ProcessFts, models.ProcessRules})
 	if err != nil {
-		logger.Context(ctx).Warnf("error marking document for processing (doc %s): %v", doc.Id, err)
-	} else {
-		err = service.process.AddDocumentForProcessing(doc.Id)
-		if err != nil {
-			logger.Context(ctx).Warnf("error adding updated document for processing (doc: %s): %v", doc.Id, err)
-		}
+		return doc, fmt.Errorf("mark document for processing: %v", err)
 	}
-	return doc, nil
+	err = service.process.AddDocumentForProcessing(doc.Id)
+	if err != nil {
+		return doc, fmt.Errorf("flush document processing: %v", err)
+	}
+	return doc, tx.Commit()
 }
 
 func (service *DocumentService) UpdateSharing(ctx context.Context, docId string, sharing *aggregates.DocumentUpdateSharingRequest) error {
@@ -478,31 +483,30 @@ func (service *DocumentService) UpdateSharing(ctx context.Context, docId string,
 		return err
 	}
 
+	err = service.db.JobStore.ForceProcessingDocument(tx, docId, []models.ProcessStep{models.ProcessFts})
+	if err != nil {
+		return fmt.Errorf("mark document for processing: %v", err)
+	}
 	err = tx.Commit()
 	if err != nil {
 		return err
 	}
 
-	err = service.db.JobStore.ForceProcessingDocument(docId, []models.ProcessStep{models.ProcessFts})
+	err = service.process.AddDocumentForProcessing(docId)
 	if err != nil {
-		logger.Context(ctx).Warnf("error marking document for processing (doc %s): %v", docId, err)
-	} else {
-		err = service.process.AddDocumentForProcessing(docId)
-		if err != nil {
-			logger.Context(ctx).Warnf("error adding updated document for processing (doc: %s): %v", docId, err)
-		}
+		return fmt.Errorf("add document processing: %v", err)
 	}
 	return nil
 }
 
 func (service *DocumentService) RequestProcessing(ctx context.Context, userId int, docId string) error {
 	steps := append(process.RequiredProcessingSteps(models.ProcessRules), models.ProcessRules)
-	err := service.db.JobStore.ForceProcessingDocument(docId, steps)
+	err := service.db.JobStore.ForceProcessingDocument(service.db, docId, steps)
 	if err != nil {
 		return err
 	}
 
-	doc, err := service.db.DocumentStore.GetDocument(docId)
+	doc, err := service.db.DocumentStore.GetDocument(service.db, docId)
 	if err != nil {
 		return fmt.Errorf("get document: %v", err)
 	} else {
@@ -523,13 +527,18 @@ func (service *DocumentService) GetLinkedDocuments(ctx context.Context, userId i
 }
 
 func (service *DocumentService) UpdateLinkedDocuments(ctx context.Context, userId int, targetDoc string, linkedDocs []string) error {
+	tx, err := storage.NewTx(service.db, ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Close()
 	if len(targetDoc) > 100 {
 		e := errors.ErrInvalid
 		e.ErrMsg = "Maximum number of linked documents is 100"
 		return e
 	}
 
-	ownership, err := service.db.DocumentStore.UserOwnsDocuments(service.db, userId, append(linkedDocs, targetDoc))
+	ownership, err := service.db.DocumentStore.UserOwnsDocuments(tx, userId, append(linkedDocs, targetDoc))
 	if err != nil {
 		return err
 	}
@@ -537,7 +546,7 @@ func (service *DocumentService) UpdateLinkedDocuments(ctx context.Context, userI
 		return errors.ErrRecordNotFound
 	}
 
-	err = service.db.MetadataStore.UpdateLinkedDocuments(userId, targetDoc, linkedDocs)
+	err = service.db.MetadataStore.UpdateLinkedDocuments(tx, userId, targetDoc, linkedDocs)
 	if err != nil {
 		return err
 	}
@@ -548,12 +557,12 @@ func (service *DocumentService) UpdateLinkedDocuments(ctx context.Context, userI
 		docIds[i+1] = linkedDocs[i]
 	}
 
-	err = service.db.DocumentStore.SetModifiedAt(docIds, time.Now())
+	err = service.db.DocumentStore.SetModifiedAt(tx, docIds, time.Now())
 	if err != nil {
 		logger.Context(ctx).Errorf("update document updated_at when linking documents, docId: %s: %v", targetDoc, err)
 		return err
 	}
-	return nil
+	return tx.Commit()
 }
 
 func (service *DocumentService) GetContent(ctx context.Context, docId string) (*string, error) {

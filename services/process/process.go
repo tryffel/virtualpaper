@@ -84,11 +84,11 @@ func (fp *fileProcessor) processDocument() {
 	fp.Info("Start processing file")
 
 	refreshDocument := func() error {
-		doc, err := fp.db.DocumentStore.GetDocument(fp.document.Id)
+		doc, err := fp.db.DocumentStore.GetDocument(fp.db, fp.document.Id)
 		if err != nil {
 			return fmt.Errorf("get document: %v", err)
 		}
-		metadata, err := fp.db.MetadataStore.GetDocumentMetadata(0, fp.document.Id)
+		metadata, err := fp.db.MetadataStore.GetDocumentMetadata(fp.db, 0, fp.document.Id)
 		if err != nil {
 			return fmt.Errorf("get metadata: %v", err)
 		}
@@ -271,7 +271,13 @@ func (fp *fileProcessor) runRules(ctx context.Context, trigger models.RuleTrigge
 		job.Status = models.JobFinished
 	}
 
-	err = fp.db.DocumentStore.Update(storage.UserIdInternal, fp.document)
+	tx, err := storage.NewTx(fp.db, ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Close()
+
+	err = fp.db.DocumentStore.Update(tx, storage.UserIdInternal, fp.document)
 	if err != nil {
 		logrus.Errorf("update document (%s) after rules: %v", fp.document.Id, err)
 	}
@@ -280,12 +286,12 @@ func (fp *fileProcessor) runRules(ctx context.Context, trigger models.RuleTrigge
 	for i, _ := range fp.document.Metadata {
 		metadata[i] = fp.document.Metadata[i]
 	}
-	err = fp.db.MetadataStore.UpdateDocumentKeyValues(fp.document.UserId, fp.document.Id, metadata)
+	err = fp.db.MetadataStore.UpdateDocumentKeyValues(tx, fp.document.UserId, fp.document.Id, metadata)
 	if err != nil {
 		logrus.Errorf("update document metadata after processing rules")
 	} else {
 		// metadata added by rule does not contain all fields, only key/value ids. Load other values as well.
-		newMetadata, err := fp.db.MetadataStore.GetDocumentMetadata(fp.document.UserId, fp.document.Id)
+		newMetadata, err := fp.db.MetadataStore.GetDocumentMetadata(fp.db, fp.document.UserId, fp.document.Id)
 		if err != nil {
 			logrus.Errorf("reload full metadata records for document "+
 				"after (doc %s) rules: %v", fp.document.Id, err)
@@ -293,5 +299,5 @@ func (fp *fileProcessor) runRules(ctx context.Context, trigger models.RuleTrigge
 			fp.document.Metadata = *newMetadata
 		}
 	}
-	return nil
+	return tx.Commit()
 }

@@ -44,32 +44,55 @@ func (service *MetadataService) CreateValue(ctx context.Context, value *models.M
 }
 
 func (service *MetadataService) UpdateValue(ctx context.Context, value *models.MetadataValue) error {
-	// TODO: wrap in transaction
-	err := service.db.MetadataStore.UpdateValue(value)
+	tx, err := storage.NewTx(service.db, ctx)
 	if err != nil {
 		return err
 	}
-	return service.db.JobStore.IndexDocumentsByMetadata(value.UserId, value.KeyId, value.Id)
+	defer tx.Close()
+	err = service.db.MetadataStore.UpdateValue(value)
+	if err != nil {
+		return err
+	}
+	err = service.db.JobStore.IndexDocumentsByMetadata(tx, value.UserId, value.KeyId, value.Id)
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (service *MetadataService) UpdateKey(ctx context.Context, key *models.MetadataKey) error {
-	// TODO: wrap in transaction
-	err := service.db.MetadataStore.UpdateKey(key)
+	tx, err := storage.NewTx(service.db, ctx)
 	if err != nil {
 		return err
 	}
-	return service.db.JobStore.IndexDocumentsByMetadata(key.UserId, key.Id, 0)
+	defer tx.Close()
+	err = service.db.MetadataStore.UpdateKey(key)
+	if err != nil {
+		return err
+	}
+	err = service.db.JobStore.IndexDocumentsByMetadata(tx, key.UserId, key.Id, 0)
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (service *MetadataService) DeleteKey(ctx context.Context, userId int, keyId int) error {
-	// need to add processing when the metadata still exists
-	// TODO: wrap in transaction
-	err := service.db.JobStore.IndexDocumentsByMetadata(userId, keyId, 0)
+	tx, err := storage.NewTx(service.db, ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Close()
+	err = service.db.JobStore.IndexDocumentsByMetadata(tx, userId, keyId, 0)
 	if err != nil {
 		return err
 	}
 
-	err = service.db.MetadataStore.DeleteKey(userId, keyId)
+	err = service.db.MetadataStore.DeleteKey(tx, userId, keyId)
+	if err != nil {
+		return err
+	}
+	err = tx.Commit()
 	if err != nil {
 		return err
 	}
@@ -78,8 +101,13 @@ func (service *MetadataService) DeleteKey(ctx context.Context, userId int, keyId
 }
 
 func (service *MetadataService) DeleteValue(ctx context.Context, userId, keyId, valueId int) error {
+	tx, err := storage.NewTx(service.db, ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Close()
 	// need to add processing when the metadata still exists
-	err := service.db.JobStore.IndexDocumentsByMetadata(userId, keyId, valueId)
+	err = service.db.JobStore.IndexDocumentsByMetadata(tx, userId, keyId, valueId)
 	if err != nil {
 		return err
 	}
@@ -88,15 +116,14 @@ func (service *MetadataService) DeleteValue(ctx context.Context, userId, keyId, 
 	if err != nil {
 		return err
 	}
+	err = tx.Commit()
+	if err != nil {
+		return nil
+	}
 	service.process.PullDocumentsToProcess()
 	return nil
 }
 
 func (service *MetadataService) SearchMetadata(ctx context.Context, userId int, query string) (*models.MetadataSearchResult, error) {
-	tx, err := storage.NewTx(service.db, ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Commit()
-	return service.db.MetadataStore.Search(tx, userId, query)
+	return service.db.MetadataStore.Search(service.db, userId, query)
 }
