@@ -76,6 +76,8 @@ func (suite *DocumentStatisticsSuite) TestUpdateDocument() {
 	assert.Equal(suite.T(), data.LastDocumentsUpdated, testDocumentIdsUser)
 	assert.Len(suite.T(), data.LastDocumentsViewed, 0)
 
+	time.Sleep(time.Millisecond * 500)
+
 	jupiter := getDocument(suite.T(), suite.userHttp, testDocumentJupiterMoons.Id, 200)
 	jupiter.Description = "changed"
 	updateDocument(suite.T(), suite.userHttp, jupiter, 200)
