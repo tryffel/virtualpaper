@@ -124,7 +124,7 @@ func (suite *UploadDocumentSuite) TestEditSchedulesProcessing() {
 	editedDoc := updateDocument(suite.T(), suite.userHttp, doc, 200)
 	time.Sleep(time.Millisecond * 500)
 	logs = getDocumentProcessingSteps(suite.T(), suite.userHttp, docId, 200)
-	assert.Equal(suite.T(), 7, len(*logs))
+	assert.Equal(suite.T(), 8, len(*logs))
 
 	assert.Equal(suite.T(), doc.Id, editedDoc.Id, "id matches")
 	assert.NotEqual(suite.T(), doc.CreatedAt, editedDoc.UpdatedAt, "updated_at is updated")

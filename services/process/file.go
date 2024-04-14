@@ -196,7 +196,7 @@ func (fp *fileProcessor) cancelDocumentProcessing(ctx context.Context, reason st
 			}
 		}
 
-		err = fp.db.DocumentStore.Update(storage.UserIdInternal, fp.document)
+		err = fp.db.DocumentStore.Update(fp.db, storage.UserIdInternal, fp.document)
 		if err != nil {
 			return fmt.Errorf("update document: %v", err)
 		}
@@ -206,7 +206,7 @@ func (fp *fileProcessor) cancelDocumentProcessing(ctx context.Context, reason st
 }
 
 func (fp *fileProcessor) process(op fileOp) {
-	doc, err := fp.db.DocumentStore.GetDocument(op.docId)
+	doc, err := fp.db.DocumentStore.GetDocument(fp.db, op.docId)
 	if err != nil {
 		logrus.Errorf("process document %s: get document: %v", op.docId, err)
 		return
@@ -262,7 +262,7 @@ func (fp *fileProcessor) updateHash(ctx context.Context, doc *models.Document) e
 	}
 
 	fp.document.Hash = hash
-	err = fp.db.DocumentStore.Update(storage.UserIdInternal, fp.document)
+	err = fp.db.DocumentStore.Update(fp.db, storage.UserIdInternal, fp.document)
 	if err != nil {
 		job.Status = models.JobFailure
 		return fmt.Errorf("save updated document: %v", err)
@@ -323,7 +323,7 @@ func (fp *fileProcessor) indexSearchContent(ctx context.Context) error {
 		}
 	}
 	if len(fp.document.Metadata) == 0 {
-		metadata, err := fp.db.MetadataStore.GetDocumentMetadata(fp.document.UserId, fp.document.Id)
+		metadata, err := fp.db.MetadataStore.GetDocumentMetadata(fp.db, fp.document.UserId, fp.document.Id)
 		if err != nil {
 			if errors.Is(err, errors.ErrRecordNotFound) {
 			} else {

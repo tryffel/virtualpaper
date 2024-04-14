@@ -320,16 +320,12 @@ WHERE running=TRUE
 // ForceProcessingDocument adds documents to process queue. If documentID != 0, mark only given document. If
 // userId != 0, mark all documents for user. Else mark all documents for re-processing. FromStep
 // is the first step and successive steps are expected to re-run as well.
-func (s *JobStore) ForceProcessingDocument(documentId string, steps []models.ProcessStep) error {
+func (s *JobStore) ForceProcessingDocument(exec SqlExecer, documentId string, steps []models.ProcessStep) error {
 	sq := s.sq.Insert("process_queue").Columns("document_id", "action", "action_order", "trigger")
 	for _, v := range steps {
 		sq = sq.Values(documentId, v, models.ProcessStepsOrder[v], models.RuleTriggerUpdate)
 	}
-	sql, args, err := sq.ToSql()
-	if err != nil {
-		return fmt.Errorf("sql: %v", err)
-	}
-	_, err = s.db.Exec(sql, args...)
+	_, err := exec.ExecSq(sq)
 	return s.parseError(err, "force processing ProcessSteps")
 }
 
@@ -375,7 +371,7 @@ func (s *JobStore) CancelDocumentProcessing(documentId string) error {
 // if keyId != 0, document has to have key,
 // if valueId != 0, document has to have the value.
 // Either key or value must be supplied.
-func (s *JobStore) IndexDocumentsByMetadata(userId int, keyId int, valueId int) error {
+func (s *JobStore) IndexDocumentsByMetadata(exec SqlExecer, userId int, keyId int, valueId int) error {
 	if valueId == 0 && keyId == 0 {
 		e := errors.ErrInvalid
 		e.ErrMsg = "no key nor value supplied"
@@ -400,14 +396,7 @@ func (s *JobStore) IndexDocumentsByMetadata(userId int, keyId int, valueId int) 
 		Columns("document_id", "action", "action_order", "trigger").
 		Select(selectQuery)
 
-	sql, args, err := query.ToSql()
-	if err != nil {
-		e := errors.ErrInternalError
-		e.Err = err
-		return e
-	}
-
-	_, err = s.db.Exec(sql, args...)
+	_, err := exec.ExecSq(query)
 	return getDatabaseError(err, s, "queue documents by metadata")
 }
 

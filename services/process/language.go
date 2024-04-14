@@ -42,7 +42,7 @@ func (fp *fileProcessor) detectLanguage(ctx context.Context) error {
 	job.Status = models.JobFinished
 	logrus.Debugf("Detected language: %s", lang)
 
-	err = fp.db.DocumentStore.Update(storage.UserIdInternal, fp.document)
+	err = fp.db.DocumentStore.Update(fp.db, storage.UserIdInternal, fp.document)
 	if err != nil {
 		logrus.Errorf("update document (%s) after rules: %v", fp.document.Id, err)
 	}

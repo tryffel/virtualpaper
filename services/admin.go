@@ -273,7 +273,7 @@ func (service *AdminService) CreateUser(ctx context.Context, adminUser int, newU
 }
 
 func (service *AdminService) RestoreDeletedDocument(ctx context.Context, adminUserId int, id string) error {
-	document, err := service.db.DocumentStore.GetDocument(id)
+	document, err := service.db.DocumentStore.GetDocument(service.db, id)
 	if err != nil {
 		return err
 	}
@@ -281,12 +281,12 @@ func (service *AdminService) RestoreDeletedDocument(ctx context.Context, adminUs
 		return errors.ErrRecordNotFound
 	}
 
-	err = service.db.DocumentStore.MarkDocumentNonDeleted(adminUserId, id)
+	err = service.db.DocumentStore.MarkDocumentNonDeleted(service.db, adminUserId, id)
 	if err != nil {
 		return err
 	}
 
-	doc, err := service.db.DocumentStore.GetDocument(id)
+	doc, err := service.db.DocumentStore.GetDocument(service.db, id)
 	err = service.search.IndexDocuments(&[]models.Document{*doc}, doc.UserId)
 	if err != nil {
 		logrus.Errorf("delete document from search index: %v", err)
@@ -299,11 +299,11 @@ func (service *AdminService) ForceProcessingByUser(ctx context.Context, userId i
 }
 
 func (service *AdminService) ForceProcessingByDocumentId(ctx context.Context, docId string, steps []models.ProcessStep) error {
-	doc, err := service.db.DocumentStore.GetDocument(docId)
+	doc, err := service.db.DocumentStore.GetDocument(service.db, docId)
 	if err != nil {
 		return err
 	}
-	err = service.db.JobStore.ForceProcessingDocument(doc.Id, steps)
+	err = service.db.JobStore.ForceProcessingDocument(service.db, doc.Id, steps)
 	if err != nil {
 		return err
 	}

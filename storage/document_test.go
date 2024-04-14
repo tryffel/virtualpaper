@@ -59,7 +59,7 @@ func TestDocumentStore_GetDocument(t *testing.T) {
 			AddRow(doc.Id, doc.UserId, doc.Name, doc.Description, doc.Content, doc.Filename, doc.Hash, doc.Mimetype,
 				doc.Size, doc.Date, doc.CreatedAt, doc.UpdatedAt))
 
-	gotDoc, err := db.DocumentStore.GetDocument(doc.Id)
+	gotDoc, err := db.DocumentStore.GetDocument(db, doc.Id)
 
 	if err != nil {
 		t.Error(err)

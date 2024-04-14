@@ -121,14 +121,14 @@ WHERE share.user_id = ? AND (share.permission -> 'read')::boolean = true)`, user
 }
 
 // GetDocument returns document by its id.
-func (s *DocumentStore) GetDocument(id string) (*models.Document, error) {
+func (s *DocumentStore) GetDocument(execer SqlExecer, id string) (*models.Document, error) {
 	sql := `
 SELECT *
 FROM documents
 WHERE id = $1
 `
 	dest := &models.Document{}
-	err := s.db.Get(dest, sql, id)
+	err := execer.Get(dest, sql, id)
 	return dest, s.parseError(err, "get document")
 }
 
@@ -247,7 +247,7 @@ func (s *DocumentStore) GetByHash(userId int, hash string) (*models.Document, er
 	return object, nil
 }
 
-func (s *DocumentStore) Create(doc *models.Document) error {
+func (s *DocumentStore) Create(exec SqlExecer, doc *models.Document) error {
 	sql := `
 INSERT INTO documents (id, user_id, name, content, filename, hash, mimetype, size, description, date, lang, favorite)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id;`
@@ -267,12 +267,11 @@ INSERT INTO documents (id, user_id, name, content, filename, hash, mimetype, siz
 		}
 		rows.Close()
 	}
-	err = addDocumentHistoryAction(s.db, s.sq, []models.DocumentHistory{{DocumentId: doc.Id, Action: models.DocumentHistoryActionCreate, OldValue: "", NewValue: doc.Name}}, doc.UserId)
-	s.sq.Select()
+	err = addDocumentHistoryAction(exec, s.sq, []models.DocumentHistory{{DocumentId: doc.Id, Action: models.DocumentHistoryActionCreate, OldValue: "", NewValue: doc.Name}}, doc.UserId)
 	return err
 }
 
-func addDocumentHistoryAction(db *sqlx.DB, queryBuilder squirrel.StatementBuilderType, items []models.DocumentHistory, userId int) error {
+func addDocumentHistoryAction(exec SqlExecer, queryBuilder squirrel.StatementBuilderType, items []models.DocumentHistory, userId int) error {
 	if len(items) == 0 {
 		return nil
 	}
@@ -292,11 +291,7 @@ func addDocumentHistoryAction(db *sqlx.DB, queryBuilder squirrel.StatementBuilde
 		}
 	}
 
-	sql, args, err := query.ToSql()
-	if err != nil {
-		return fmt.Errorf("create sql: %v", err)
-	}
-	_, err = db.Exec(sql, args...)
+	_, err := exec.ExecSq(query)
 	return getDatabaseError(err, &DocumentStore{}, "add document_history actions")
 }
 
@@ -350,10 +345,9 @@ WHERE awaits_indexing=True
 }
 
 // Update sets complete document record, not just changed attributes. Thus document must be read before updating.
-func (s *DocumentStore) Update(userId int, doc *models.Document) error {
-
-	// TODO: metadata diff is not saved, bc the document metadata is saved separately
-	oldDoc, err := s.GetDocument(doc.Id)
+// Metadata history is not saved.
+func (s *DocumentStore) Update(exec SqlExecer, userId int, doc *models.Document) error {
+	oldDoc, err := s.GetDocument(exec, doc.Id)
 	if err != nil {
 		return s.parseError(err, "get document by id")
 	}
@@ -365,7 +359,7 @@ updated_at=$9, description=$10, lang=$11, favorite=$12
 WHERE id=$1
 `
 
-	_, err = s.db.Exec(sql, doc.Id, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
+	_, err = exec.Exec(sql, doc.Id, doc.Name, doc.Content, doc.Filename, doc.Hash, doc.Mimetype, doc.Size,
 		doc.Date, doc.UpdatedAt, doc.Description, doc.Lang, doc.Favorite)
 	if err != nil {
 		return s.parseError(err, "update")
@@ -376,36 +370,33 @@ WHERE id=$1
 		return fmt.Errorf("get diff for document: %v", err)
 	}
 
-	err = addDocumentHistoryAction(s.db, s.sq, diff, userId)
+	err = addDocumentHistoryAction(exec, s.sq, diff, userId)
 	logrus.Infof("User %d edited document %s with %d actions", userId, doc.Id, len(diff))
 	return err
 }
 
-func (s *DocumentStore) SetModifiedAt(docIds []string, modifiedAt time.Time) error {
+func (s *DocumentStore) SetModifiedAt(exec SqlExecer, docIds []string, modifiedAt time.Time) error {
 	query := s.sq.Update("documents").Set("updated_at", modifiedAt).Where(squirrel.Eq{"id": docIds})
 	sql, args, err := query.ToSql()
 	if err != nil {
 		return fmt.Errorf("sql: %v", err)
 	}
-	_, err = s.db.Exec(sql, args...)
+	_, err = exec.Exec(sql, args...)
 	return s.parseError(err, "update modified_at")
 }
 
-func (s *DocumentStore) MarkDocumentDeleted(userId int, docId string) error {
+func (s *DocumentStore) MarkDocumentDeleted(exec SqlExecer, userId int, docId string) error {
 	query := s.sq.Update("documents").Set("deleted_at", time.Now()).Where("id=?", docId)
 	if userId != 0 {
 		query = query.Where("user_id = ?", userId)
 	}
-	sql, args, err := query.ToSql()
-	if err != nil {
-		return fmt.Errorf("sql: %v", err)
-	}
-	_, err = s.db.Exec(sql, args...)
+
+	_, err := exec.ExecSq(query)
 	if err != nil {
 		return s.parseError(err, "mark document deleted")
 	}
 
-	err = addDocumentHistoryAction(s.db, s.sq, []models.DocumentHistory{{
+	err = addDocumentHistoryAction(exec, s.sq, []models.DocumentHistory{{
 		DocumentId: docId,
 		Action:     models.DocumentHistoryActionDelete,
 		OldValue:   "",
@@ -419,17 +410,18 @@ func (s *DocumentStore) MarkDocumentDeleted(userId int, docId string) error {
 	return nil
 }
 
-func (s *DocumentStore) MarkDocumentNonDeleted(userId int, docId string) error {
+func (s *DocumentStore) MarkDocumentNonDeleted(exec SqlExecer, userId int, docId string) error {
 	query := s.sq.Update("documents").Set("deleted_at", nil).Where("id=?", docId)
 	sql, args, err := query.ToSql()
 	if err != nil {
 		return fmt.Errorf("sql: %v", err)
 	}
 	_, err = s.db.Exec(sql, args...)
+
 	if err != nil {
 		return s.parseError(err, "mark document deleted")
 	}
-	err = addDocumentHistoryAction(s.db, s.sq, []models.DocumentHistory{{
+	err = addDocumentHistoryAction(exec, s.sq, []models.DocumentHistory{{
 		DocumentId: docId,
 		Action:     models.DocumentHistoryActionRestore,
 		OldValue:   "",
@@ -548,7 +540,7 @@ func (s *DocumentStore) BulkUpdateDocuments(exec SqlExecer, userId int, docs []s
 			diffs = append(diffs, diff...)
 		}
 	}
-	err = addDocumentHistoryAction(s.db, s.sq, diffs, userId)
+	err = addDocumentHistoryAction(exec, s.sq, diffs, userId)
 	if err != nil {
 		return getDatabaseError(err, s, "insert document history")
 	}
@@ -571,7 +563,7 @@ func (s *DocumentStore) setUpdatedAt(userId int, docs []string, updatedAt time.T
 }
 
 func (s *DocumentStore) UpdateSharing(exec SqlExecer, docId string, sharing *[]models.UpdateUserSharing) error {
-	doc, err := s.GetDocument(docId)
+	doc, err := s.GetDocument(exec, docId)
 	if err != nil {
 		return err
 	}

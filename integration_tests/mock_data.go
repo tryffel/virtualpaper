@@ -112,7 +112,7 @@ var testDocumentIdsAdmin = []string{
 func insertTestDocuments(t *testing.T, db *storage.Database) error {
 	for _, v := range testDocuments {
 		time.Sleep(time.Millisecond)
-		err := db.DocumentStore.Create(v)
+		err := db.DocumentStore.Create(db, v)
 		if err != nil {
 			t.Errorf("insert test document %s: %v", v.Id, err)
 			t.Fail()
