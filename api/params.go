@@ -286,6 +286,30 @@ func mRuleOwner(service *services.RuleService) func(idKey string) echo.Middlewar
 	}
 }
 
+func mPropertyOwner(service *services.PropertyService) func(idKey string) echo.MiddlewareFunc {
+	return func(idKey string) echo.MiddlewareFunc {
+		return func(next echo.HandlerFunc) echo.HandlerFunc {
+			return func(c echo.Context) error {
+				ctx := c.(UserContext)
+				id, err := bindPathInt(c, idKey)
+				if err != nil {
+					userErr := errors.ErrInvalid
+					userErr.ErrMsg = "id must be integer"
+					return userErr
+				}
+				owns, err := service.UserOwnsProperty(getContext(ctx), ctx.UserId, id)
+				if err != nil {
+					return err
+				}
+				if !owns {
+					return echo.NewHTTPError(http.StatusNotFound, "not found")
+				}
+				return next(c)
+			}
+		}
+	}
+}
+
 func bindPathId(c echo.Context) string {
 	return c.Param("id")
 }

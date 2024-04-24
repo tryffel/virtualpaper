@@ -4,6 +4,7 @@ import TagIcon from "@mui/icons-material/Tag";
 import ConstructionIcon from "@mui/icons-material/Construction";
 import ArticleIcon from "@mui/icons-material/Article";
 import DeleteIcon from "@mui/icons-material/Delete";
+import ExtensionIcon from "@mui/icons-material/Extension";
 
 import { Route } from "react-router-dom";
 
@@ -28,6 +29,9 @@ import { AdminCreateUser } from "./resources/Admin/UserCreate";
 import { ConfirmAuthentication } from "./resources/Authentication/AuthConfirmationDialog";
 import { DeletedDocumentList } from "./resources/Documents/Trashbin";
 import { LoginPage } from "./resources/Public/Login";
+import { PropertyList } from "@resources/Properties/List.tsx";
+import { PropertyCreate } from "@resources/Properties/Create.tsx";
+import { PropertyEdit } from "@resources/Properties/Edit.tsx";
 
 const App = () => (
   <Admin
@@ -54,6 +58,14 @@ const App = () => (
       icon={TagIcon}
     />
     <Resource name="metadata/values" options={{ label: "metadata values" }} />
+    <Resource
+      name="properties"
+      options={{ label: "Properties" }}
+      icon={ExtensionIcon}
+      list={<PropertyList />}
+      create={<PropertyCreate />}
+      edit={<PropertyEdit />}
+    />
     <Resource
       name="processing/rules"
       options={{ label: "Processing rules" }}

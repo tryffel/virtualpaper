@@ -23,6 +23,7 @@ type Database struct {
 	StatsStore    *StatsStore
 	RuleStore     *RuleStore
 	AuthStore     *AuthStore
+	PropertyStore *PropertyStore
 }
 
 func (d *Database) Exec(query string, args ...interface{}) (sql.Result, error) {
@@ -129,6 +130,7 @@ func NewDatabase(conf config.Database) (*Database, error) {
 	db.StatsStore = NewStatsStore(db.conn)
 	db.RuleStore = newRuleStore(db.conn, db.MetadataStore)
 	db.AuthStore = newAuthStore(db.conn)
+	db.PropertyStore = NewPropertyStore(db.conn)
 	return db, nil
 }
 
@@ -151,7 +153,7 @@ func NewMockDatabase(matcher sqlmock.QueryMatcher) (*Database, sqlmock.Sqlmock, 
 	db.JobStore = newJobStore(db.conn)
 	db.StatsStore = &StatsStore{db: db.conn}
 	db.AuthStore = newAuthStore(db.conn)
-
+	db.PropertyStore = NewPropertyStore(db.conn)
 	return db, mock, nil
 }
 

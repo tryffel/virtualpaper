@@ -39,6 +39,8 @@ var dbMetadataTables = []string{
 	"metadata_values",
 	"metadata_keys",
 	"process_queue",
+	"document_properties",
+	"properties",
 }
 
 var dbProcessingRuleTables = []string{

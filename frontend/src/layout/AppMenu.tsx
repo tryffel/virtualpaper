@@ -36,6 +36,7 @@ export const AppMenu = () => {
                   <ListItemText>Metadata</ListItemText>
                 </ListItem>
                 <Menu.ResourceItem name={"metadata/keys"} />
+                <Menu.ResourceItem name={"properties"} />
               </List>
             </ListItem>
             <ListItem sx={listItemStyle}>

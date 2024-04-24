@@ -37,6 +37,10 @@ func logCrudOp(resource string, action string, userId int, success *bool) *logru
 	})
 }
 
+func logCrudProperty(userId int, action string, success *bool, fmt string, args ...interface{}) {
+	logCrudOp("property", action, userId, success).Infof(fmt, args...)
+}
+
 func logCrudMetadata(userId int, action string, success *bool, fmt string, args ...interface{}) {
 	logCrudOp("metadata", action, userId, success).Infof(fmt, args...)
 }

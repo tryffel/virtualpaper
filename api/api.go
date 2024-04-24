@@ -58,6 +58,7 @@ type Api struct {
 	metadataService *services.MetadataService
 	ruleService     *services.RuleService
 	userService     *services.UserService
+	propertyService *services.PropertyService
 }
 
 // NewApi initializes new api instance. It connects to database and opens http port.
@@ -98,6 +99,7 @@ func NewApi(database *storage.Database) (*Api, error) {
 	api.ruleService = services.NewRuleService(database, search, api.process)
 	api.userService = services.NewUserServices(database, search)
 	api.adminService = services.NewAdminService(database, api.process, search)
+	api.propertyService = services.NewPropertyService(database, api.process)
 	api.addRoutesV2()
 	return api, err
 }
@@ -217,6 +219,14 @@ func init() {
 	govalidator.TagMap["process_step"] = govalidator.Validator(func(str string) bool {
 		for _, v := range models.ProcessStepsKeys {
 			if str == v {
+				return true
+			}
+		}
+		return false
+	})
+	govalidator.TagMap["property_type"] = govalidator.Validator(func(str string) bool {
+		for _, v := range models.AllPropertyTypes {
+			if str == string(v) {
 				return true
 			}
 		}

@@ -58,6 +58,12 @@ func (service *DocumentService) GetDocument(ctx context.Context, userId int, id 
 		return nil, err
 	}
 
+	properties, err := service.db.PropertyStore.GetDocumentProperties(service.db, id)
+	if err != nil {
+		return nil, err
+	}
+	doc.Properties = *properties
+
 	var sharedUsers *[]models.DocumentSharePermission
 
 	if userId == doc.UserId {

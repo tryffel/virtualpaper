@@ -27,6 +27,7 @@ type Document struct {
 	Status      string                 `json:"status"`
 	Metadata    []models.Metadata      `json:"metadata"`
 	SharedUsers []UserSharePermissions `json:"shared_users"`
+	Properties  []DocumentProperty     `json:"properties"`
 	Tags        []models.Tag           `json:"tags"`
 	Lang        string                 `json:"lang"`
 	Shares      int                    `json:"shares"`
@@ -50,6 +51,7 @@ func DocumentToAggregate(doc *models.Document, shares *[]models.DocumentSharePer
 		Size:        doc.Size,
 		PrettySize:  doc.GetSize(),
 		Metadata:    doc.Metadata,
+		Properties:  *mapDocumentPropertyArray(&doc.Properties),
 		Tags:        doc.Tags,
 		Lang:        doc.Lang.String(),
 		Shares:      doc.Shares,

@@ -48,6 +48,7 @@ func (api *Api) addRoutesV2() {
 	mDocCanWrite := mDocumentWriteAccess(api.documentService)
 	mMetadataOwner := mMetadataKeyOwner(api.metadataService)
 	mRule := mRuleOwner(api.ruleService)
+	mPropertyOwner := mPropertyOwner(api.propertyService)
 
 	authGroup.POST("/login", api.LoginV2)
 	api.privateRouter.POST("/auth/logout", api.Logout)
@@ -92,6 +93,11 @@ func (api *Api) addRoutesV2() {
 	api.privateRouter.DELETE("/metadata/keys/:id", api.deleteMetadataKey, mMetadataOwner("id"))
 	api.privateRouter.PUT("/metadata/keys/:keyId/values/:valueId", api.updateMetadataValue, mMetadataOwner("keyId"))
 	api.privateRouter.DELETE("/metadata/keys/:keyId/values/:valueId", api.deleteMetadataValue, mMetadataOwner("keyId"))
+
+	api.privateRouter.GET("/properties", api.GetProperties, mPagination(), mSort(&models.Property{}))
+	api.privateRouter.POST("/properties", api.AddProperty)
+	api.privateRouter.GET("/properties/:id", api.GetProperty, mPropertyOwner("id"), mPagination(), mSort(&models.MetadataKeyAnnotated{}))
+	api.privateRouter.PUT("/properties/:id", api.UpdateProperty, mPropertyOwner("id"))
 
 	api.privateRouter.GET("/processing/rules", api.getUserRules, mPagination(), mSort(&models.Rule{}))
 	api.privateRouter.PUT("/processing/rules/reorder", api.reorderRules)
