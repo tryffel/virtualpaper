@@ -47,6 +47,7 @@ type Document struct {
 	Size        int64     `db:"size"`
 	Date        time.Time `db:"date"`
 	Metadata    []Metadata
+	Properties  []DocumentProperty
 	Tags        []Tag
 	Lang        Lang `db:"lang"`
 	Shares      int  `db:"shares"`

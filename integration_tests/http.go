@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"gopkg.in/h2non/baloo.v3"
 	"io"
 	"net/http"
@@ -75,6 +76,30 @@ func (h *httpRequest) SetQueryParam(key, value string) *httpRequest {
 
 func (h *httpResponse) Json(t *testing.T, data interface{}) *httpResponse {
 	return &httpResponse{h.e.AssertFunc(readBodyFunc(t, data))}
+}
+
+func (h *httpResponse) AssertError(t *testing.T, message string) *httpResponse {
+	return &httpResponse{h.e.AssertFunc(readError(t, message))}
+}
+
+func readError(t *testing.T, message string) func(r *http.Response, w *http.Request) error {
+	return func(r *http.Response, w *http.Request) error {
+		if r.StatusCode == 304 {
+			return nil
+		}
+
+		type Error struct {
+			Error string `json:"Error"`
+		}
+		data := &Error{}
+		b, err := io.ReadAll(r.Body)
+		err = json.Unmarshal(b, &data)
+		if err != nil {
+			t.Errorf("parse response json: %v", err)
+		}
+		assert.Equal(t, data.Error, message)
+		return nil
+	}
 }
 
 func readBodyFunc(t *testing.T, dto interface{}) func(r *http.Response, w *http.Request) error {

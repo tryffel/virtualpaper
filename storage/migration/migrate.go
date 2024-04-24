@@ -132,6 +132,11 @@ var Migrations = []Migrator{
 		Level:  21,
 		Schema: schemaV21,
 	},
+	&Migration{
+		Name:   "add document property tables",
+		Level:  22,
+		Schema: schemaV22,
+	},
 }
 
 type Schema struct {
