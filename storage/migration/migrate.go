@@ -20,11 +20,10 @@ package migration
 
 import (
 	"fmt"
-	"strings"
-	"time"
-
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
+	"strings"
+	"time"
 )
 
 var Migrations = []Migrator{
@@ -225,7 +224,17 @@ CREATE TABLE "schemas" (
 // Run single migration
 func migrateSingle(db *sqlx.DB, migration Migrator) error {
 	start := time.Now()
-	_, merr := db.Exec(migration.MSchema())
+
+	tx, err := db.Beginx()
+	if err != nil {
+		return fmt.Errorf("begin transaction: %v", err)
+	}
+	defer tx.Rollback()
+
+	_, merr := tx.Exec(migration.MSchema())
+	if merr != nil {
+		return fmt.Errorf("migration failed: insert schema: %v", merr)
+	}
 
 	s := &Schema{
 		Level:     migration.MLevel(),
@@ -239,13 +248,13 @@ func migrateSingle(db *sqlx.DB, migration Migrator) error {
 		s.Success = 0
 	}
 
-	_, err := db.Exec("INSERT INTO schemas (level, success, timestamp, took_ms) "+
+	_, err = tx.Exec("INSERT INTO schemas (level, success, timestamp, took_ms) "+
 		"VALUES ($1, $2, $3, $4)", s.Level, s.Success, s.Timestamp, s.TookMs)
 
-	if merr != nil {
-		return fmt.Errorf("migration failed: insert schema: %v", merr)
+	if err != nil {
+		return fmt.Errorf("insert to 'schemas': %v", err)
 	}
-	return err
+	return tx.Commit()
 }
 
 // CurrentVersion returns current version
