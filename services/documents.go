@@ -6,6 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"io"
 	"os"
+	"strconv"
 	"time"
 	"tryffel.net/go/virtualpaper/config"
 	"tryffel.net/go/virtualpaper/errors"
@@ -428,6 +429,11 @@ func (service *DocumentService) UpdateDocument(ctx context.Context, userId int, 
 		}
 	}
 
+	err = service.updateDocumentProperties(tx, userId, docId, &updated.Properties)
+	if err != nil {
+		return nil, err
+	}
+
 	if !updated.Date.IsZero() {
 		doc.Date = updated.Date
 	}
@@ -597,6 +603,175 @@ func (service *DocumentService) GetStatistics(ctx context.Context, userId int) (
 
 func (service *DocumentService) GetDocumentLogs(ctx context.Context, docId string) (*[]models.Job, error) {
 	return service.db.JobStore.GetJobsByDocumentId(docId)
+}
+
+func (service *DocumentService) updateDocumentProperties(tx storage.SqlExecer, userId int, docId string, properties *[]aggregates.DocumentProperty) error {
+	currentProperties, err := service.db.PropertyStore.GetDocumentProperties(tx, docId)
+	if err != nil {
+		return fmt.Errorf("get existing properties: %v", err)
+	}
+
+	getOldProp := func(id int) *models.DocumentProperty {
+		for _, v := range *currentProperties {
+			if v.Id == id {
+				return &v
+			}
+		}
+		return nil
+	}
+	getNewProp := func(id int) *aggregates.DocumentProperty {
+		for _, v := range *properties {
+			if v.Id == id {
+				return &v
+			}
+		}
+		return nil
+	}
+
+	mapPropTyProperty := func(prop aggregates.DocumentProperty) models.DocumentProperty {
+		return models.DocumentProperty{
+			Id:           prop.Id,
+			Document:     docId,
+			Property:     prop.Property,
+			PropertyName: "",
+			Value:        prop.Value,
+			Description:  prop.Description,
+			Timestamp:    models.Timestamp{},
+		}
+	}
+
+	deletedIds := make([]int, 0)
+	deletedProps := make([]models.DocumentProperty, 0)
+	updatedProps := make([]models.DocumentProperty, 0)
+	addedProps := make([]models.DocumentProperty, 0)
+
+	documentDiff := make([]models.DocumentHistory, 0)
+
+	addDocumentDiff := func(action string, oldVal string, newVal string) {
+		diff := models.DocumentHistory{
+			Id:         0,
+			DocumentId: docId,
+			Action:     action,
+			OldValue:   oldVal,
+			NewValue:   newVal,
+			UserId:     userId,
+			User:       "",
+			CreatedAt:  time.Time{},
+		}
+		documentDiff = append(documentDiff, diff)
+	}
+
+	for _, v := range *properties {
+		existing := getOldProp(v.Id)
+		prop := mapPropTyProperty(v)
+		if existing == nil {
+			addedProps = append(addedProps, mapPropTyProperty(v))
+			addDocumentDiff(models.DocumentHistoryActionPropertyAdd, "", strconv.Itoa(v.Property))
+		} else {
+			if !existing.Equals(&prop) {
+				updatedProps = append(updatedProps, prop)
+				addDocumentDiff(models.DocumentHistoryActionPropertyUpdate,
+					fmt.Sprintf("%s:%s", existing.PropertyName, existing.Value),
+					fmt.Sprintf("%s:%s", existing.PropertyName, prop.Value))
+			}
+		}
+	}
+
+	for _, v := range *currentProperties {
+		existing := getNewProp(v.Id)
+		if existing == nil {
+			deletedProps = append(deletedProps, v)
+			deletedIds = append(deletedIds, v.Id)
+			addDocumentDiff(models.DocumentHistoryActionPropertyRemove, strconv.Itoa(v.Id), "")
+		}
+	}
+
+	if len(updatedProps) > 0 {
+		for i, v := range updatedProps {
+			err = service.validateProperty(tx, userId, docId, &v)
+			if err != nil {
+				return fmt.Errorf("validate property: %v", err)
+			}
+
+			prop, err := service.db.PropertyStore.GetProperty(tx, v.Property)
+			counterVal := prop.Counter
+			if err != nil {
+				return fmt.Errorf("get property: %v", err)
+			}
+			if prop.IsGenerated() {
+				propCandidate, err := prop.Generate()
+				if err != nil {
+					return fmt.Errorf("generate property candidate for %d: %v", prop.Id, err)
+				}
+
+				updatedProps[i].Value = propCandidate.Value
+				updatedProps[i].Description = propCandidate.Description
+
+				if prop.Counter != counterVal {
+					err = service.db.PropertyStore.UpdatePropertyCounter(tx, prop)
+					if err != nil {
+						return fmt.Errorf("update property after counter increase: %v", err)
+					}
+				}
+			}
+		}
+
+		for _, v := range updatedProps {
+			err = service.db.PropertyStore.UpdateDocumentProperty(tx, &v)
+			if err != nil {
+				return fmt.Errorf("save updated properties: %v", err)
+			}
+		}
+
+	}
+	if len(deletedProps) > 0 {
+		for _, v := range updatedProps {
+			err = service.validateProperty(tx, userId, docId, &v)
+			if err != nil {
+				return fmt.Errorf("validate property: %v", err)
+			}
+		}
+		err = service.db.PropertyStore.DeleteDocumentProperties(tx, userId, docId, deletedIds)
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(addedProps) > 0 {
+		for _, v := range addedProps {
+			prop, err := service.db.PropertyStore.GetProperty(tx, v.Property)
+			if err != nil {
+				return fmt.Errorf("find property %d: %v", v.Property, err)
+			}
+			if prop.IsGenerated() {
+				propCandidate, err := prop.Generate()
+				if err != nil {
+					return fmt.Errorf("generate property candidate for %d: %v", prop.Id, err)
+				}
+				v.Value = propCandidate.Value
+				v.Description = propCandidate.Description
+			}
+			err = service.db.PropertyStore.AddDocumentProperty(tx, prop, docId, v.Value, v.Description, true)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	if len(documentDiff) > 0 {
+		err = storage.AddDocumentHistoryAction(tx, service.db.PropertyStore.GetSq(), documentDiff, userId)
+		if err != nil {
+			return fmt.Errorf("save document history: %v", err)
+		}
+	}
+	return nil
+}
+
+func (service *DocumentService) validateProperty(tx storage.SqlExecer, userId int, docId string, documentProperty *models.DocumentProperty) error {
+	property, err := service.db.PropertyStore.GetProperty(tx, documentProperty.Property)
+	if err != nil {
+		return fmt.Errorf("get property: %v", err)
+	}
+	return property.ValidateValue(documentProperty.Value)
 }
 
 func docStatsToUserStats(stats *models.UserDocumentStatistics) *aggregates.UserDocumentStatistics {

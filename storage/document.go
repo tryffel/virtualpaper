@@ -267,11 +267,11 @@ INSERT INTO documents (id, user_id, name, content, filename, hash, mimetype, siz
 		}
 		rows.Close()
 	}
-	err = addDocumentHistoryAction(exec, s.sq, []models.DocumentHistory{{DocumentId: doc.Id, Action: models.DocumentHistoryActionCreate, OldValue: "", NewValue: doc.Name}}, doc.UserId)
+	err = AddDocumentHistoryAction(exec, s.sq, []models.DocumentHistory{{DocumentId: doc.Id, Action: models.DocumentHistoryActionCreate, OldValue: "", NewValue: doc.Name}}, doc.UserId)
 	return err
 }
 
-func addDocumentHistoryAction(exec SqlExecer, queryBuilder squirrel.StatementBuilderType, items []models.DocumentHistory, userId int) error {
+func AddDocumentHistoryAction(exec SqlExecer, queryBuilder squirrel.StatementBuilderType, items []models.DocumentHistory, userId int) error {
 	if len(items) == 0 {
 		return nil
 	}
@@ -346,7 +346,7 @@ WHERE id=$1
 		return fmt.Errorf("get diff for document: %v", err)
 	}
 
-	err = addDocumentHistoryAction(exec, s.sq, diff, userId)
+	err = AddDocumentHistoryAction(exec, s.sq, diff, userId)
 	logrus.Infof("User %d edited document %s with %d actions", userId, doc.Id, len(diff))
 	return err
 }
@@ -372,7 +372,7 @@ func (s *DocumentStore) MarkDocumentDeleted(exec SqlExecer, userId int, docId st
 		return s.parseError(err, "mark document deleted")
 	}
 
-	err = addDocumentHistoryAction(exec, s.sq, []models.DocumentHistory{{
+	err = AddDocumentHistoryAction(exec, s.sq, []models.DocumentHistory{{
 		DocumentId: docId,
 		Action:     models.DocumentHistoryActionDelete,
 		OldValue:   "",
@@ -397,7 +397,7 @@ func (s *DocumentStore) MarkDocumentNonDeleted(exec SqlExecer, userId int, docId
 	if err != nil {
 		return s.parseError(err, "mark document deleted")
 	}
-	err = addDocumentHistoryAction(exec, s.sq, []models.DocumentHistory{{
+	err = AddDocumentHistoryAction(exec, s.sq, []models.DocumentHistory{{
 		DocumentId: docId,
 		Action:     models.DocumentHistoryActionRestore,
 		OldValue:   "",
@@ -516,7 +516,7 @@ func (s *DocumentStore) BulkUpdateDocuments(exec SqlExecer, userId int, docs []s
 			diffs = append(diffs, diff...)
 		}
 	}
-	err = addDocumentHistoryAction(exec, s.sq, diffs, userId)
+	err = AddDocumentHistoryAction(exec, s.sq, diffs, userId)
 	if err != nil {
 		return getDatabaseError(err, s, "insert document history")
 	}

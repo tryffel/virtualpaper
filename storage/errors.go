@@ -22,7 +22,13 @@ func getPostgresError(err error, resource Resource, action string) (bool, error)
 	// Unique violation
 	if pError.Code == "23505" {
 		e := errors.ErrAlreadyExists
-		e.ErrMsg = resource.Name() + " already exists"
+		templateMsg := uniqueConstraintErrorMessages[pError.Constraint]
+		if templateMsg != "" {
+			e = errors.ErrInvalid
+			e.ErrMsg = templateMsg
+		} else {
+			e.ErrMsg = resource.Name() + " already exists"
+		}
 		return true, e
 	}
 
@@ -36,6 +42,11 @@ func getPostgresError(err error, resource Resource, action string) (bool, error)
 	e.ErrMsg = pError.Message
 	e.Err = err
 	return true, e
+}
+
+var uniqueConstraintErrorMessages = map[string]string{
+	"document_properties_c_exclusive": "Property already has value assigned",
+	"document_properties_c_unique":    "Property must be unique",
 }
 
 // Catch SQL error, always resulting in internal error

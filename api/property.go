@@ -13,7 +13,6 @@ type PropertyRequest struct {
 	Unique    bool                `json:"unique" valid:"-"`
 	Exclusive bool                `json:"exclusive" valid:"-"`
 	Counter   int                 `json:"counter" valid:"-"`
-	Offset    int                 `json:"offset" valid:"-"`
 	Prefix    string              `json:"prefix" valid:"maxstringlength(200),optional"`
 	Mode      string              `json:"mode" valid:"-"`
 	Readonly  bool                `json:"read_only" valid:"-"`
@@ -30,7 +29,6 @@ func (p *PropertyRequest) ToProperty() *models.Property {
 		Unique:    p.Unique,
 		Exclusive: p.Exclusive,
 		Counter:   p.Counter,
-		Offset:    p.Offset,
 		Prefix:    p.Prefix,
 		Mode:      p.Mode,
 		Readonly:  p.Readonly,
@@ -44,6 +42,11 @@ type DocumentPropertyRequest struct {
 	//DocumentId  string `json:"documentId" valid:"uuid"`
 	Value       string `json:"value" valid:"-"`
 	Description string `json:"description" valid:"-"`
+}
+
+type DocumentPropertyUpdateRequest struct {
+	DocumentPropertyRequest
+	Id int `json:"id" valid:"min(1)"`
 }
 
 func (a *Api) GetProperties(c echo.Context) error {

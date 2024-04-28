@@ -25,6 +25,10 @@ func NewPropertyStore(db *sqlx.DB) *PropertyStore {
 	}
 }
 
+func (store *PropertyStore) GetSq() squirrel.StatementBuilderType {
+	return store.sq
+}
+
 func (store *PropertyStore) UserOwnsProperty(execer SqlExecer, userId int, propertyId int) (bool, error) {
 	property, err := store.GetProperty(execer, propertyId)
 	if err != nil {
@@ -65,10 +69,10 @@ func (store *PropertyStore) AddProperty(execer SqlExecer, property *models.Prope
 	property.CreatedAt = time.Now()
 	property.Update()
 	query := store.sq.Insert("properties").
-		Columns("user_id", "name", "type", "global", "is_unique", "is_exclusive", "counter_offset",
+		Columns("user_id", "name", "type", "global", "is_unique", "is_exclusive",
 			"counter", "prefix", "mode", "read_only", "date_fmt").
 		Values(property.User, property.Name, property.Type, property.Global, property.Unique, property.Exclusive,
-			property.Offset, property.Counter, property.Prefix, property.Mode, property.Readonly, property.DateFmt).
+			property.Counter, property.Prefix, property.Mode, property.Readonly, property.DateFmt).
 		Suffix("RETURNING id")
 
 	var id int
@@ -91,19 +95,18 @@ func (store *PropertyStore) AddProperty(execer SqlExecer, property *models.Prope
 func (store *PropertyStore) UpdatePropertyCounter(execer SqlExecer, property *models.Property) error {
 	property.Update()
 	query := store.sq.Update("properties").SetMap(map[string]interface{}{
-		"user_id":        property.User,
-		"name":           property.Name,
-		"type":           property.Type,
-		"global":         property.Global,
-		"is_unique":      property.Unique,
-		"is_exclusive":   property.Exclusive,
-		"counter":        property.Counter,
-		"counter_offset": property.Offset,
-		"prefix":         property.Prefix,
-		"mode":           property.Mode,
-		"read_only":      property.Readonly,
-		"date_fmt":       property.DateFmt,
-		"updated_at":     property.UpdatedAt,
+		"user_id":      property.User,
+		"name":         property.Name,
+		"type":         property.Type,
+		"global":       property.Global,
+		"is_unique":    property.Unique,
+		"is_exclusive": property.Exclusive,
+		"counter":      property.Counter,
+		"prefix":       property.Prefix,
+		"mode":         property.Mode,
+		"read_only":    property.Readonly,
+		"date_fmt":     property.DateFmt,
+		"updated_at":   property.UpdatedAt,
 	}).Where("id=?", property.Id)
 
 	_, err := execer.ExecSq(query)
@@ -133,8 +136,8 @@ func (store *PropertyStore) UpdateProperty(execer SqlExecer, property *models.Pr
 
 func (store *PropertyStore) AddDocumentProperty(execer SqlExecer, property *models.Property, documentId, value, description string, updateProperty bool) error {
 	query := store.sq.Insert("document_properties").
-		Columns("document_id", "property_id", "value", "description", "is_unique", "is_exclusive", "global").
-		Values(documentId, property.Id, value, description, property.Unique, property.Exclusive, property.Global)
+		Columns("document_id", "property_id", "user_id", "value", "description", "is_unique", "is_exclusive", "global").
+		Values(documentId, property.Id, property.User, value, description, property.Unique, property.Exclusive, property.Global)
 
 	_, err := execer.ExecSq(query)
 	if err != nil {
@@ -162,4 +165,62 @@ func (store *PropertyStore) GetDocumentProperties(execer SqlExecer, documentId s
 		return nil, store.parseError(err, "get document properties")
 	}
 	return data, err
+}
+
+func (store *PropertyStore) DeleteProperty(execer SqlExecer, userId int, properties []int) error {
+	query := store.sq.Delete("properties").Where("id IN ?", properties)
+	_, err := execer.ExecSq(query)
+	if err != nil {
+		return store.parseError(err, "delete")
+	}
+	return nil
+}
+
+func (store *PropertyStore) UpdateDocumentProperties(execer SqlExecer, properties *[]models.DocumentProperty) error {
+	query := store.sq.Update("document_properties as dp").From("(values ").SetMap(map[string]interface{}{
+		"document_id": "news_vals.document_id",
+		"property_id": "new_vals.property_id",
+		"value":       "new_vals.value",
+		"description": "new_vals.description",
+		"updated_at":  "new_vals.updated_at",
+	})
+
+	for _, v := range *properties {
+		v.Update()
+		query = query.Suffix("(?, ?, ?, ?, ?, ?)", v.Id, v.Document, v.Property, v.Value, v.Description, v.UpdatedAt)
+	}
+	query = query.Suffix(") as new_vals(id, document_id, property_id, value, description, updated_at) WHERE new_vals.id = dp.id")
+
+	_, err := execer.ExecSq(query)
+	if err != nil {
+		return store.parseError(err, "update")
+	}
+	return nil
+}
+
+func (store *PropertyStore) UpdateDocumentProperty(execer SqlExecer, property *models.DocumentProperty) error {
+	property.Update()
+	query := store.sq.Update("document_properties").SetMap(map[string]interface{}{
+		"document_id": property.Document,
+		"property_id": property.Property,
+		"value":       property.Value,
+		"description": property.Description,
+		"updated_at":  property.UpdatedAt,
+	}).Where("id = ?", property.Id)
+	_, err := execer.ExecSq(query)
+	if err != nil {
+		return store.parseError(err, "update")
+	}
+	return nil
+}
+
+func (store *PropertyStore) DeleteDocumentProperties(execer SqlExecer, userId int, docId string, properties []int) error {
+	query := store.sq.Delete("document_properties").
+		Where(squirrel.Eq{"document_id": docId}).
+		Where("document_id = ?", docId)
+	_, err := execer.ExecSq(query)
+	if err != nil {
+		return store.parseError(err, "delete")
+	}
+	return nil
 }
