@@ -60,13 +60,14 @@ type DocumentExistsResponse struct {
 // DocumentUpdateRequest
 // swagger:model DocumentUpdateRequestBody
 type DocumentUpdateRequest struct {
-	Name        string            `json:"name" valid:"required,stringlength(1|200)"`
-	Description string            `json:"description" valid:"maxstringlength(1000),optional"`
-	Filename    string            `json:"filename" valid:"optional"`
-	Date        int64             `json:"date" valid:"optional,range(0|4106139691000)"` // year 2200 in ms
-	Metadata    []MetadataRequest `json:"metadata" valid:"-"`
-	Lang        string            `json:"lang" valid:"language, optional"`
-	Favorite    bool              `json:"favorite" valid:"-"`
+	Name        string                          `json:"name" valid:"required,stringlength(1|200)"`
+	Description string                          `json:"description" valid:"maxstringlength(1000),optional"`
+	Filename    string                          `json:"filename" valid:"optional"`
+	Date        int64                           `json:"date" valid:"optional,range(0|4106139691000)"` // year 2200 in ms
+	Metadata    []MetadataRequest               `json:"metadata" valid:"-"`
+	Properties  []DocumentPropertyUpdateRequest `json:"properties" valid:"-"`
+	Lang        string                          `json:"lang" valid:"language, optional"`
+	Favorite    bool                            `json:"favorite" valid:"-"`
 }
 
 func (a *Api) getDocuments(c echo.Context) error {
@@ -350,6 +351,17 @@ func (a *Api) updateDocument(c echo.Context) error {
 			ValueId: v.ValueId,
 		}
 	}
+	properties := make([]aggregates.DocumentProperty, len(dto.Properties))
+	for i, v := range dto.Properties {
+		properties[i] = aggregates.DocumentProperty{
+			Id:           v.Id,
+			Property:     v.PropertyId,
+			PropertyName: "",
+			Value:        v.Value,
+			Description:  v.Description,
+			Timestamp:    models.Timestamp{},
+		}
+	}
 
 	doc := &aggregates.DocumentUpdate{
 		Name:        dto.Name,
@@ -357,6 +369,7 @@ func (a *Api) updateDocument(c echo.Context) error {
 		Filename:    dto.Filename,
 		Date:        time.Time{},
 		Metadata:    metadata,
+		Properties:  properties,
 		Lang:        dto.Lang,
 		Favorite:    dto.Favorite,
 	}

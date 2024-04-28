@@ -5,17 +5,15 @@ import "tryffel.net/go/virtualpaper/models"
 type Property struct {
 	Id        int                 `json:"id"`
 	Name      string              `json:"name"`
-	Type      models.PropertyType `json:"type"`
+	Type      models.PropertyType `json:"property_type"`
 	Global    bool                `json:"global"`
 	Unique    bool                `json:"unique"`
 	Exclusive bool                `json:"exclusive"`
 	Counter   int                 `json:"counter"`
-	// probably won't be needed
-	Offset   int    `json:"offset" db:"counter_offset"`
-	Prefix   string `json:"prefix" db:"prefix"`
-	Mode     string `json:"mode" db:"mode"`
-	Readonly bool   `json:"read_only" db:"read_only"`
-	DateFmt  string `json:"date_fmt" db:"date_fmt"`
+	Prefix    string              `json:"prefix" db:"prefix"`
+	Mode      string              `json:"mode" db:"mode"`
+	Readonly  bool                `json:"read_only" db:"read_only"`
+	DateFmt   string              `json:"date_fmt" db:"date_fmt"`
 	models.Timestamp
 }
 
@@ -28,7 +26,6 @@ func MapProperty(p *models.Property) *Property {
 		Unique:    p.Unique,
 		Exclusive: p.Exclusive,
 		Counter:   p.Counter,
-		Offset:    p.Offset,
 		Prefix:    p.Prefix,
 		Mode:      p.Mode,
 		Readonly:  p.Readonly,

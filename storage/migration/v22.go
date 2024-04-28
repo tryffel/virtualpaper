@@ -27,7 +27,6 @@ CREATE TABLE properties (
     is_unique BOOL NOT NULL DEFAULT FALSE,
     is_exclusive BOOL NOT NULL DEFAULT FALSE,
     counter INT NOT NULL DEFAULT 0,
-    counter_offset INT NOT NULL DEFAULT 0,
     prefix TEXT NOT NULL DEFAULT '',
     mode TEXT NOT NULL DEFAULT '',
     read_only bool NOT NULL DEFAULT FALSE,

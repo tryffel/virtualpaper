@@ -140,6 +140,7 @@ type DocumentUpdate struct {
 	Filename    string
 	Date        time.Time
 	Metadata    MetadataArray
+	Properties  []DocumentProperty
 	Lang        string
 	Favorite    bool
 }

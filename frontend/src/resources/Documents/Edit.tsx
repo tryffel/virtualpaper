@@ -45,6 +45,7 @@ import { DocumentIdField } from "@components/document/fields/DocumentId.tsx";
 import { TimestampField } from "@components/primitives/TimestampField.tsx";
 import { FavoriteDocumentInput } from "@components/document/edit/Favorite.tsx";
 import { MetadataArrayInput } from "@components/document/edit/MetadataInput.tsx";
+import { PropertyArrayInput } from "@components/document/edit/PropertyInput.tsx";
 
 const EditToolBar = () => {
   return (
@@ -125,6 +126,9 @@ export const DocumentEdit = () => {
           </Grid>
           <Grid item xs={12}>
             <MetadataArrayInput source={"metadata"} />
+          </Grid>
+          <Grid item xs={12}>
+            <PropertyArrayInput source={"properties"} />
           </Grid>
           <Grid item xs={12}>
             <TimestampField />

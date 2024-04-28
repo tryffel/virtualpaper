@@ -3,11 +3,9 @@ package integrationtest
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"strconv"
 	"testing"
 	"tryffel.net/go/virtualpaper/api"
 	"tryffel.net/go/virtualpaper/models"
-	"tryffel.net/go/virtualpaper/models/aggregates"
 )
 
 type PropertySuite struct {
@@ -34,7 +32,6 @@ func (suite *PropertySuite) TestGet() {
 		Unique:    true,
 		Exclusive: true,
 		Counter:   0,
-		Offset:    0,
 		Prefix:    "",
 		Mode:      "",
 		Readonly:  true,
@@ -57,7 +54,6 @@ func (suite *PropertySuite) TestGet() {
 	assert.Equal(suite.T(), property.Unique, final.Unique)
 	assert.Equal(suite.T(), property.Exclusive, final.Exclusive)
 	assert.Equal(suite.T(), property.Counter, final.Counter)
-	assert.Equal(suite.T(), property.Offset, final.Offset)
 	assert.Equal(suite.T(), property.Prefix, final.Prefix)
 	assert.Equal(suite.T(), property.Mode, final.Mode)
 	assert.Equal(suite.T(), property.Readonly, final.Readonly)
@@ -72,7 +68,6 @@ func (suite *PropertySuite) TestUpdate() {
 		Unique:    true,
 		Exclusive: true,
 		Counter:   0,
-		Offset:    0,
 		Prefix:    "",
 		Mode:      "",
 		Readonly:  true,
@@ -87,7 +82,6 @@ func (suite *PropertySuite) TestUpdate() {
 	property.Readonly = false
 	property.Unique = false
 	property.Counter = 1
-	property.Offset = 2
 	property.Prefix = "prefix-"
 	property.Mode = "uuid"
 	property.DateFmt = "2006.01.02"
@@ -101,7 +95,6 @@ func (suite *PropertySuite) TestUpdate() {
 	assert.Equal(suite.T(), property.Unique, final.Unique)
 	assert.Equal(suite.T(), property.Exclusive, final.Exclusive)
 	assert.Equal(suite.T(), property.Counter, final.Counter)
-	assert.Equal(suite.T(), property.Offset, final.Offset)
 	assert.Equal(suite.T(), property.Prefix, final.Prefix)
 	assert.Equal(suite.T(), property.Mode, final.Mode)
 	assert.Equal(suite.T(), property.Readonly, final.Readonly)
@@ -116,7 +109,6 @@ func (suite *PropertySuite) TestList() {
 		Unique:    true,
 		Exclusive: true,
 		Counter:   0,
-		Offset:    0,
 		Prefix:    "",
 		Mode:      "",
 		Readonly:  true,
@@ -158,7 +150,6 @@ func (suite *PropertySuite) TestAccess() {
 		Unique:    true,
 		Exclusive: true,
 		Counter:   0,
-		Offset:    0,
 		Prefix:    "",
 		Mode:      "",
 		Readonly:  true,
@@ -189,7 +180,6 @@ func (suite *PropertySuite) TestGlobalRequiresAdmin() {
 		Unique:    true,
 		Exclusive: true,
 		Counter:   0,
-		Offset:    0,
 		Prefix:    "",
 		Mode:      "",
 		Readonly:  true,
@@ -207,7 +197,6 @@ func (suite *PropertySuite) TestGlobalDeniesDuplicate() {
 		Unique:    true,
 		Exclusive: true,
 		Counter:   0,
-		Offset:    0,
 		Prefix:    "",
 		Mode:      "",
 		Readonly:  true,
@@ -232,7 +221,6 @@ func (suite *PropertySuite) TestGenerated() {
 		Unique:    true,
 		Exclusive: true,
 		Counter:   0,
-		Offset:    0,
 		Prefix:    "",
 		Mode:      "",
 		Readonly:  true,
@@ -247,73 +235,4 @@ func (suite *PropertySuite) TestGenerated() {
 	property.Name = "changed"
 	AddProperty(suite.T(), suite.userHttp, property, 200, "")
 	AddProperty(suite.T(), suite.adminHttp, property, 200, "")
-}
-
-func AddProperty(t *testing.T, client *httpClient, property api.PropertyRequest, wantHttpStatus int, errorMessage string) *aggregates.Property {
-	req := client.Post("/api/v1/properties").Json(t, property)
-	body := &aggregates.Property{}
-	if wantHttpStatus == 200 {
-		req.Expect(t).Json(t, body).e.Status(200).Done()
-		assert.Greaterf(t, body.Id, 0, "id > 0")
-		assert.Equal(t, body.Type, property.Type, "type matches")
-		assert.Equal(t, body.Name, property.Name, "name matches")
-		assert.Equal(t, body.Exclusive, property.Exclusive, "exclusive matches")
-		assert.Equal(t, body.Unique, property.Unique, "unique matches")
-		assert.Equal(t, body.Readonly, property.Readonly, "readonly matches")
-		assert.Equal(t, body.Global, property.Global, "readonly matches")
-		assert.True(t, isToday(body.CreatedAt), "timestamp today")
-		assert.True(t, isToday(body.UpdatedAt), "timestamp today")
-	} else {
-		req.Expect(t).AssertError(t, errorMessage).e.Status(wantHttpStatus).Done()
-	}
-	return body
-}
-
-func UpdateProperty(t *testing.T, client *httpClient, id int, property api.PropertyRequest, wantHttpStatus int) *aggregates.Property {
-	req := client.Put("/api/v1/properties/"+strconv.Itoa(id)).Json(t, property)
-	body := &aggregates.Property{}
-	if wantHttpStatus == 200 {
-		req.Expect(t).Json(t, body).e.Status(200).Done()
-		assert.Greaterf(t, body.Id, 0, "id > 0")
-		assert.Equal(t, body.Type, property.Type, "type matches")
-		assert.Equal(t, body.Name, property.Name, "name matches")
-		assert.Equal(t, body.Exclusive, property.Exclusive, "exclusive matches")
-		assert.Equal(t, body.Unique, property.Unique, "unique matches")
-		assert.Equal(t, body.Readonly, property.Readonly, "readonly matches")
-		assert.Equal(t, body.Global, property.Global, "readonly matches")
-	} else {
-		req.req.Expect(t).Status(wantHttpStatus).Done()
-	}
-	return body
-}
-
-func GetProperty(t *testing.T, client *httpClient, id int, wantHttpStatus int) *aggregates.Property {
-	req := client.Get("/api/v1/properties/" + strconv.Itoa(id))
-	dto := &aggregates.Property{}
-	if wantHttpStatus == 200 {
-		req.Expect(t).Json(t, dto).e.Status(200).Done()
-	} else {
-		req.req.Expect(t).Status(wantHttpStatus).Done()
-	}
-	return dto
-}
-
-func GetProperties(t *testing.T, client *httpClient, wantHttpStatus int, editFunc func(request *httpRequest) *httpRequest) *[]aggregates.Property {
-	//req := client.Get("/api/v1/properties?page=1&page_size=100&sort=name&sort_order=ASC")
-	req := client.Get("/api/v1/properties")
-	if editFunc != nil {
-		req = editFunc(req)
-	}
-	dto := &[]aggregates.Property{}
-	if wantHttpStatus == 200 {
-		req.Expect(t).Json(t, dto).e.Status(200).Done()
-	} else {
-		req.req.Expect(t).Status(wantHttpStatus).Done()
-	}
-	return dto
-}
-
-func DeleteProperty(t *testing.T, client *httpClient, id int, wantHttpStatus int) {
-	req := client.Delete("/api/v1/properties/" + strconv.Itoa(id))
-	req.req.Expect(t).Status(wantHttpStatus).Done()
 }

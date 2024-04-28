@@ -342,6 +342,9 @@ const (
 	DocumentHistoryActionRestore        = "restore"
 	DocumentHistoryActionFavorite       = "favorite"
 	DocumentHistoryActionUnFavorite     = "unfavorite"
+	DocumentHistoryActionPropertyAdd    = "add property"
+	DocumentHistoryActionPropertyUpdate = "update property"
+	DocumentHistoryActionPropertyRemove = "remove property"
 )
 
 // Diffs returns a list of DocumentHistory items from d -> newDocument.

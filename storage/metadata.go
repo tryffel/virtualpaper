@@ -429,7 +429,7 @@ END;
 		updated[i] = v
 	}
 	diff := models.MetadataDiff(documentId, userId, &original, &updated)
-	err = addDocumentHistoryAction(exec, s.sq, diff, userId)
+	err = AddDocumentHistoryAction(exec, s.sq, diff, userId)
 	logrus.Infof("User %d edited document %s with %d actions", userId, documentId, len(diff))
 	return err
 }
@@ -950,7 +950,7 @@ func (s *MetadataStore) UpdateLinkedDocuments(exec SqlExecer, userId int, docId 
 		UserId:     userId,
 		User:       "",
 	}
-	err = addDocumentHistoryAction(exec, s.sq, []models.DocumentHistory{historyItem}, userId)
+	err = AddDocumentHistoryAction(exec, s.sq, []models.DocumentHistory{historyItem}, userId)
 	return tx.Commit()
 }
 

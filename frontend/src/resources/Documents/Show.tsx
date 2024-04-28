@@ -74,7 +74,7 @@ import {
   DocumentTitle,
   DocumentTopRow,
 } from "@components/document/fields/BasicInfo.tsx";
-import {DocumentPropertyList} from "@components/properties/DocumentPropertyList.tsx";
+import { DocumentPropertyList } from "@components/properties/DocumentPropertyList.tsx";
 
 export const DocumentShow = () => {
   const [asideMode, setAsideMode] = React.useState<AsideMode>("closed");
@@ -268,7 +268,7 @@ const DocumentGeneralTabLarge = () => {
             <MetadataList />
           </Grid>
           <Grid item xs={12} sm={8}>
-            <DocumentPropertyList/>
+            <DocumentPropertyList />
           </Grid>
           <Grid item xs={12} sm={12}>
             <LinkedDocumentList />
@@ -308,7 +308,7 @@ const DocumentGeneralTablSmall = () => {
         <MetadataList />
       </Grid>
       <Grid item xs={12}>
-        <DocumentPropertyList/>
+        <DocumentPropertyList />
       </Grid>
       <Grid item xs={12}>
         <LinkedDocumentList />

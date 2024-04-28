@@ -48,7 +48,7 @@ func (s *PropertyService) AddDocumentProperty(ctx context.Context, document stri
 
 	generated := property.IsGenerated()
 	if generated {
-		value, err = property.Generate()
+		value, err = property.Generate__Deprecated()
 		if err != nil {
 			return fmt.Errorf("generate value: %v", err)
 		}
