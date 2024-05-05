@@ -64,7 +64,7 @@ func (a *Api) GetProperties(c echo.Context) error {
 	opOk := false
 	defer logCrudProperty(ctx.UserId, "get list", &opOk, "")
 
-	properties, err := a.propertyService.GetProperties(c.Request().Context(), ctx.UserId, paging.toPagination(), sort.ToKey())
+	properties, total, err := a.propertyService.GetProperties(c.Request().Context(), ctx.UserId, paging.toPagination(), sort.ToKey())
 	if err != nil {
 		return err
 	}
@@ -74,8 +74,7 @@ func (a *Api) GetProperties(c echo.Context) error {
 		props[i] = *aggregates.MapProperty(&v)
 
 	}
-	// TODO: need to get correct number of properties
-	respResourceList(c.Response(), properties, len(*properties))
+	respResourceList(c.Response(), props, total)
 	opOk = true
 	return nil
 }

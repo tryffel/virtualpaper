@@ -65,6 +65,26 @@ func (store *PropertyStore) GetProperties(execer SqlExecer, userId int, paging P
 	return data, nil
 }
 
+func (store *PropertyStore) GetTotalProperties(execer SqlExecer, userId int) (int, error) {
+	query := store.sq.Select("count(id) as total").
+		From("properties").
+		Where("user_id = ?", userId)
+
+	rows, err := execer.QuerySq(query)
+	if err != nil {
+		return 0, store.parseError(err, "get total")
+	}
+
+	total := 0
+	for rows.Next() {
+		err = rows.Scan(&total)
+		if err != nil {
+			return 0, store.parseError(err, "scan total")
+		}
+	}
+	return total, nil
+}
+
 func (store *PropertyStore) AddProperty(execer SqlExecer, property *models.Property) error {
 	property.CreatedAt = time.Now()
 	property.Update()

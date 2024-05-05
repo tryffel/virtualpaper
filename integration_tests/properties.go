@@ -58,7 +58,6 @@ func GetProperty(t *testing.T, client *httpClient, id int, wantHttpStatus int) *
 }
 
 func GetProperties(t *testing.T, client *httpClient, wantHttpStatus int, editFunc func(request *httpRequest) *httpRequest) *[]aggregates.Property {
-	//req := client.Get("/api/v1/properties?page=1&page_size=100&sort=name&sort_order=ASC")
 	req := client.Get("/api/v1/properties")
 	if editFunc != nil {
 		req = editFunc(req)
