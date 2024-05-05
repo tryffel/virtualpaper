@@ -25,13 +25,12 @@ export const PropertyArrayInput = ({
         >
           <SelectInput
             optionText="name"
-            data-testid="metadata-key"
             variant={"standard"}
             sx={{ mt: "3px" }}
           />
         </ReferenceInput>
-        <TextInput source={"value"} />
-        <TextInput source={"description"} />
+        <TextInput source={"value"} variant={"standard"} />
+        <TextInput source={"description"} variant={"standard"} />
       </SimpleFormIterator>
     </ArrayInput>
   );

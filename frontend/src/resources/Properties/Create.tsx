@@ -3,7 +3,7 @@ import { PropertyForm } from "@resources/Properties/Form.tsx";
 
 export const PropertyCreate = () => {
   return (
-    <Create>
+    <Create record={{ property_type: "text" }}>
       <PropertyForm />
     </Create>
   );
