@@ -20,8 +20,13 @@ func NewPropertyService(db *storage.Database, manager *process.Manager) *Propert
 	}
 }
 
-func (s *PropertyService) GetProperties(ctx context.Context, userId int, page storage.Paging, sort storage.SortKey) (*[]models.Property, error) {
-	return s.db.PropertyStore.GetProperties(s.db, userId, page, sort)
+func (s *PropertyService) GetProperties(ctx context.Context, userId int, page storage.Paging, sort storage.SortKey) (*[]models.Property, int, error) {
+	props, err := s.db.PropertyStore.GetProperties(s.db, userId, page, sort)
+	if err != nil {
+		return props, 0, err
+	}
+	total, err := s.db.PropertyStore.GetTotalProperties(s.db, userId)
+	return props, total, err
 }
 
 func (s *PropertyService) GetProperty(ctx context.Context, id int) (*models.Property, error) {

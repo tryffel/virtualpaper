@@ -7,7 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/h2non/baloo.v3"
 	"io"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"testing"
 	"tryffel.net/go/virtualpaper/errors"
@@ -82,6 +84,36 @@ func (h *httpResponse) AssertError(t *testing.T, message string) *httpResponse {
 	return &httpResponse{h.e.AssertFunc(readError(t, message))}
 }
 
+func (h *httpResponse) AssertStatus(t *testing.T, wantHttpStatus int) *httpResponse {
+	return &httpResponse{h.e.AssertFunc(assertStatusFunc(t, wantHttpStatus))}
+}
+
+func (h *httpResponse) Done(t *testing.T) {
+	err := h.e.Done()
+	if err != nil {
+		t.Errorf("http: %v", err)
+	}
+}
+
+func assertStatusFunc(t *testing.T, wantHttpStatus int) func(r *http.Response, w *http.Request) error {
+	return func(r *http.Response, w *http.Request) error {
+		assert.Equal(t, wantHttpStatus, r.StatusCode, "http status code")
+		if r.StatusCode == wantHttpStatus {
+			return nil
+		}
+
+		b, err := readBody(r)
+		if err != nil {
+			t.Errorf("read body: %v", err)
+		} else if len(b) > 0 {
+			var out bytes.Buffer
+			err = json.Indent(&out, b, "", "\t")
+			out.WriteTo(os.Stdout)
+		}
+		return fmt.Errorf("http status want %d, got %d", wantHttpStatus, r.StatusCode)
+	}
+}
+
 func readError(t *testing.T, message string) func(r *http.Response, w *http.Request) error {
 	return func(r *http.Response, w *http.Request) error {
 		if r.StatusCode == 304 {
@@ -92,7 +124,7 @@ func readError(t *testing.T, message string) func(r *http.Response, w *http.Requ
 			Error string `json:"Error"`
 		}
 		data := &Error{}
-		b, err := io.ReadAll(r.Body)
+		b, err := readBody(r)
 		err = json.Unmarshal(b, &data)
 		if err != nil {
 			t.Errorf("parse response json: %v", err)
@@ -104,7 +136,7 @@ func readError(t *testing.T, message string) func(r *http.Response, w *http.Requ
 
 func readBodyFunc(t *testing.T, dto interface{}) func(r *http.Response, w *http.Request) error {
 	return func(r *http.Response, w *http.Request) error {
-		data, err := io.ReadAll(r.Body)
+		data, err := readBody(r)
 		err = json.Unmarshal(data, &dto)
 		if err != nil {
 			t.Errorf("parse response json: %v", err)
@@ -116,13 +148,17 @@ func readBodyFunc(t *testing.T, dto interface{}) func(r *http.Response, w *http.
 
 func logRequestFunc(t *testing.T, name string, logResp bool) func(r *http.Response, w *http.Request) error {
 	return func(r *http.Response, w *http.Request) error {
+		// replace reader with re-readable one
+		_, _ = initBody(r)
+
 		var suffix = ""
 		if name != "" {
 			suffix = " " + name
 		}
 		if logResp {
-			data, _ := io.ReadAll(r.Body)
-			t.Logf("%s %s %d%s\ndata: %s", w.Method, w.URL.String(), r.StatusCode, suffix, string(data))
+			//data, _ := io.ReadAll(r.Body)
+			data, _ := readBody(r)
+			t.Logf("%s %s %d%s data: %s", w.Method, w.URL.String(), r.StatusCode, suffix, string(data))
 		} else {
 			t.Logf("%s %s %d%s\n", w.Method, w.URL.String(), r.StatusCode, suffix)
 		}
@@ -142,6 +178,7 @@ func queryParams(req *baloo.Request, filter string, page int, pageSize int, sort
 
 func assertHttpCode(t *testing.T, wantCode int, logInvalid, fail bool) func(r *http.Response, w *http.Request) error {
 	return func(r *http.Response, w *http.Request) error {
+		assert.Equal(t, wantCode, r.StatusCode, "http status code")
 		if r.StatusCode != wantCode {
 			msg := fmt.Sprintf("invalid status code: want %d, got %d", wantCode, r.StatusCode)
 			if logInvalid {
@@ -160,4 +197,47 @@ func assertHttpCode(t *testing.T, wantCode int, logInvalid, fail bool) func(r *h
 		}
 		return nil
 	}
+}
+
+type R struct {
+	b      []byte
+	reader *bytes.Reader
+}
+
+func (r *R) Read(p []byte) (n int, err error) {
+	/*
+		_, err = r.reader.Seek(0, io.SeekStart)
+		if err != nil {
+			log.Println(err)
+		}
+
+	*/
+	return r.reader.Read(p)
+}
+
+func (r *R) Close() error {
+	r.reader = bytes.NewReader(r.b)
+	return nil
+}
+
+func readBody(resp *http.Response) ([]byte, error) {
+	data, err := io.ReadAll(resp.Body)
+	return data, err
+}
+
+func initBody(resp *http.Response) ([]byte, error) {
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return data, err
+	}
+	err = resp.Body.Close()
+	if err != nil {
+		log.Println(err)
+
+	}
+
+	reader := bytes.NewReader(data)
+	r := R{data, reader}
+	resp.Body = &r
+	return data, nil
 }

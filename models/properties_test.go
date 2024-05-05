@@ -107,7 +107,6 @@ func TestProperty_ValidateValue(t *testing.T) {
 				Unique:    tt.fields.Unique,
 				Exclusive: tt.fields.Exclusive,
 				Counter:   tt.fields.Counter,
-				Offset:    tt.fields.Offset,
 				Prefix:    tt.fields.Prefix,
 				Mode:      tt.fields.Mode,
 				Readonly:  tt.fields.Readonly,
