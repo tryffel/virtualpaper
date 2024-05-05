@@ -216,7 +216,7 @@ func (store *PropertyStore) UpdateDocumentProperty(execer SqlExecer, property *m
 
 func (store *PropertyStore) DeleteDocumentProperties(execer SqlExecer, userId int, docId string, properties []int) error {
 	query := store.sq.Delete("document_properties").
-		Where(squirrel.Eq{"document_id": docId}).
+		Where(squirrel.Eq{"id": properties}).
 		Where("document_id = ?", docId)
 	_, err := execer.ExecSq(query)
 	if err != nil {

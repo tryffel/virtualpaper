@@ -88,27 +88,7 @@ func (p *Property) ValidateValue(val string) error {
 	return nil
 }
 
-func (p *Property) Generate__Deprecated() (string, error) {
-
-	switch p.Type {
-	case IdProperty:
-		return p.generateId()
-	case TextProperty:
-		return p.Prefix, nil
-	case CounterProperty:
-		p.Counter += 1
-		return p.Prefix + strconv.Itoa(p.Counter), nil
-	case DateProperty:
-		now := time.Now()
-		return now.Format(p.DateFmt), nil
-	}
-	err := errors.ErrInternalError
-	err.ErrMsg = fmt.Sprintf("unknown proprerty type '%s'", p.Type)
-	return "", err
-}
-
 func (p *Property) Generate() (DocumentProperty, error) {
-
 	property := DocumentProperty{
 		Id:           0,
 		Document:     "",

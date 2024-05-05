@@ -690,7 +690,7 @@ func (service *DocumentService) updateDocumentProperties(tx storage.SqlExecer, u
 		for i, v := range updatedProps {
 			err = service.validateProperty(tx, userId, docId, &v)
 			if err != nil {
-				return fmt.Errorf("validate property: %v", err)
+				return err
 			}
 
 			prop, err := service.db.PropertyStore.GetProperty(tx, v.Property)
@@ -725,12 +725,6 @@ func (service *DocumentService) updateDocumentProperties(tx storage.SqlExecer, u
 
 	}
 	if len(deletedProps) > 0 {
-		for _, v := range updatedProps {
-			err = service.validateProperty(tx, userId, docId, &v)
-			if err != nil {
-				return fmt.Errorf("validate property: %v", err)
-			}
-		}
 		err = service.db.PropertyStore.DeleteDocumentProperties(tx, userId, docId, deletedIds)
 		if err != nil {
 			return err
@@ -770,6 +764,11 @@ func (service *DocumentService) validateProperty(tx storage.SqlExecer, userId in
 	property, err := service.db.PropertyStore.GetProperty(tx, documentProperty.Property)
 	if err != nil {
 		return fmt.Errorf("get property: %v", err)
+	}
+	if property.Readonly {
+		e := errors.ErrInvalid
+		e.ErrMsg = "property is read-only"
+		return e
 	}
 	return property.ValidateValue(documentProperty.Value)
 }
