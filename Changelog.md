@@ -1,5 +1,12 @@
 # Changelog
 
+
+## Unreleased
+
+- Implement user-customizable properties
+- Run each migration in a databasatabase transaction
+
+
 ## Release 0.6 - 2024-04-14
 
 ### Added
