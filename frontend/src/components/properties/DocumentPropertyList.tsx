@@ -16,12 +16,17 @@ export const DocumentPropertyList = () => {
     <Labeled label={"Properties"}>
       <List>
         {properties.map((property: object) => (
-          <ListItem key={get(property, "id")}>
-            <ListItemText>
-              <Typography variant={"body2"}>
-                {get(property, "property_name")}: {get(property, "value")}
-              </Typography>
-            </ListItemText>
+          <ListItem
+            key={get(property, "id")}
+            sx={{ paddingLeft: 1, paddingTop: 0.25, paddingBottom: 0.25 }}
+          >
+            <ListItemText
+              primary={
+                <Typography variant={"body2"}>
+                  {get(property, "property_name")}: {get(property, "value")}
+                </Typography>
+              }
+            ></ListItemText>
           </ListItem>
         ))}
       </List>
