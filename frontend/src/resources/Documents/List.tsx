@@ -36,7 +36,7 @@ import {
 } from "@mui/material";
 
 import { HelpButton } from "@components/Help.tsx";
-import { DocumentSearchFilter, FullTextSeachFilter } from "./SearchFilter";
+import { DocumentSearchFilter, FullTextSearchFilter } from "./SearchFilter";
 import ClearIcon from "@mui/icons-material/Clear";
 import EditIcon from "@mui/icons-material/Edit";
 import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
@@ -135,7 +135,7 @@ const DocumentGrid = () => {
           clear={clearSelected}
           edit={bulkEdit}
         />
-        <FullTextSeachFilter />
+        <FullTextSearchFilter />
         {data.map((record) => (
           <DocumentCard
             record={record}

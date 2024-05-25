@@ -333,6 +333,17 @@ func (fp *fileProcessor) indexSearchContent(ctx context.Context) error {
 			fp.document.Metadata = *metadata
 		}
 	}
+	if len(fp.document.Properties) == 0 {
+		properties, err := fp.db.PropertyStore.GetDocumentProperties(fp.db, fp.document.Id)
+		if err != nil {
+			if errors.Is(err, errors.ErrRecordNotFound) {
+			} else {
+				logrus.Errorf("get document metadata: %v", err)
+			}
+		} else {
+			fp.document.Properties = *properties
+		}
+	}
 
 	if fp.search == nil {
 		return errors.New("no search engine available")

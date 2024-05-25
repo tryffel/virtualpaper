@@ -115,6 +115,34 @@ func (m *metadataSuggest) queryLangs(key string) []string {
 	return values
 }
 
+func (m *metadataSuggest) queryPropertyKeys(key string, prefix string, suffix string) []string {
+	keys, err := m.db.PropertyStore.GetProperties(m.db, m.userId, storage.Paging{
+		Offset: 0,
+		Limit:  MaxSuggestMetadata,
+	}, storage.SortKey{
+		Key:             "name",
+		Order:           false,
+		CaseInsensitive: false,
+	})
+	if err != nil {
+		logrus.Error(err)
+		return []string{}
+	}
+
+	lowerKey := strings.ToLower(key)
+	values := make([]string, 0, MaxSuggestMetadata)
+	for _, v := range *keys {
+		lower := strings.ToLower(v.Name)
+		if strings.Contains(lower, lowerKey) {
+			values = append(values, lower)
+		}
+	}
+	if len(values) > MaxSuggestMetadata {
+		values = (values)[:MaxSuggestMetadata]
+	}
+	return values
+}
+
 type searchQuery struct {
 	RawQuery       string
 	Query          string
@@ -269,6 +297,7 @@ func (s *searchQuery) prepareMeiliQuery(userId int, sort storage.SortKey, paging
 }
 
 const (
+	SuggestionTypeProperty = "property"
 	SuggestionTypeMetadata = "metadata"
 	SuggestionTypeOperand  = "operand"
 	SuggestionTypeKey      = "key"
@@ -501,16 +530,18 @@ func suggest(query string, metadata metadataQuerier) *QuerySuggestions {
 func suggestEmpty(metadata metadataQuerier) []Suggestion {
 
 	keys := []string{"name", "description", "content", "date", "lang", "owner", "shared", "favorite"}
-	results := metadata.queryKeys("", "", ":")
+	metadataKeys := metadata.queryKeys("", "", ":")
+	properties := metadata.queryPropertyKeys("", "", "")
 
-	suggestions := make([]Suggestion, 0, len(keys)+len(results))
-	//values := make([]string, 0, len(keys)+len(results))
-
+	suggestions := make([]Suggestion, 0, len(keys)+len(metadataKeys)+len(properties))
 	for _, v := range keys {
 		suggestions = append(suggestions, Suggestion{v, SuggestionTypeKey, ""})
 	}
-	for _, v := range results {
+	for _, v := range metadataKeys {
 		suggestions = append(suggestions, Suggestion{v, SuggestionTypeMetadata, ""})
+	}
+	for _, v := range properties {
+		suggestions = append(suggestions, Suggestion{v, SuggestionTypeProperty, ""})
 	}
 
 	return suggestions
@@ -714,4 +745,5 @@ type metadataQuerier interface {
 	queryKeys(key string, prefis string, suffix string) []string
 	queryValues(key, value string) []string
 	queryLangs(key string) []string
+	queryPropertyKeys(key string, prefix string, suffix string) []string
 }

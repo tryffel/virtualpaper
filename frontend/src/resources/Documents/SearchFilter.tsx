@@ -192,7 +192,7 @@ interface Suggestion {
   prefixed: string;
 }
 
-export const FullTextSeachFilter = () => {
+export const FullTextSearchFilter = () => {
   const { filterValues, setFilters } = useListContext();
   const addFilter = (q: string) => {
     setFilters({ ...filterValues, q: q }, false);
@@ -298,6 +298,7 @@ export const FullTextSeachFilter = () => {
   const colors = {
     key: "",
     metadata: "primary",
+    property: "secondary",
     operand: "",
   };
 

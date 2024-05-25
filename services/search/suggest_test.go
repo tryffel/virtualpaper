@@ -78,14 +78,16 @@ func Test_matchDate(t *testing.T) {
 }
 
 type metadata struct {
-	keys     []string
-	metadata map[string][]models.Metadata
+	keys       []string
+	metadata   map[string][]models.Metadata
+	properties map[string]models.Property
 }
 
 func newMetadata() *metadata {
 	m := &metadata{
-		keys:     []string{},
-		metadata: make(map[string][]models.Metadata),
+		keys:       []string{},
+		metadata:   make(map[string][]models.Metadata),
+		properties: map[string]models.Property{},
 	}
 	m.addKey("class")
 	m.addKey("author")
@@ -110,6 +112,13 @@ func newMetadata() *metadata {
 	m.addValue("topic", "technology")
 	m.addValue("topic", "logic")
 	m.addValue("topic", "arts")
+
+	m.properties["archive-id"] = models.Property{
+		Name: "archive-id",
+	}
+	m.properties["external-id"] = models.Property{
+		Name: "external-id",
+	}
 	return m
 }
 
@@ -158,6 +167,19 @@ func (m *metadata) queryLangs(key string) []string {
 	return []string{"fi", "en"}
 }
 
+func (m *metadata) queryPropertyKeys(key string, prefix string, suffix string) []string {
+	results := []string{}
+
+	for _, v := range m.properties {
+		if key == "" {
+			results = append(results, v.Name)
+		} else if strings.Contains(v.Name, key) {
+			results = append(results, v.Name)
+		}
+	}
+	return results
+}
+
 func Test_suggest(t *testing.T) {
 	metadata := newMetadata()
 
@@ -187,6 +209,8 @@ func Test_suggest(t *testing.T) {
 				{Value: "topic", Type: "metadata", Hint: ""},
 				{Value: "datasource", Type: "metadata", Hint: ""},
 				{Value: "whitespace key", Type: "metadata", Hint: ""},
+				{Value: "archive-id", Type: "property", Hint: ""},
+				{Value: "external-id", Type: "property", Hint: ""},
 			}, Prefix: "", ValidQuery: false},
 		},
 		{
@@ -194,7 +218,6 @@ func Test_suggest(t *testing.T) {
 			args: args{"one day"},
 			want: &QuerySuggestions{Suggestions: []Suggestion{}, Prefix: "one day", ValidQuery: false},
 		},
-
 		{
 			name: "fts, suggest date and metadata key",
 			args: args{"one da"},

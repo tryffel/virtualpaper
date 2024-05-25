@@ -102,6 +102,12 @@ func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 			value := normalizeMetadataValue(v.Value)
 			metadata[metadataI] = key + ":" + value
 		}
+		properties := make([]string, len(v.Properties))
+		for propertyI, v := range v.Properties {
+			key := normalizeMetadataKey(v.PropertyName)
+			value := normalizeMetadataValue(v.Value)
+			properties[propertyI] = key + ":" + value
+		}
 
 		data[i] = map[string]interface{}{
 			"document_id": v.Id,
@@ -114,6 +120,7 @@ func (e *Engine) IndexDocuments(docs *[]models.Document, userId int) error {
 			"updated_at":  v.UpdatedAt.Unix(),
 			"tags":        tags,
 			"metadata":    metadata,
+			"properties":  properties,
 			"date":        v.Date.Unix(),
 			"description": v.Description,
 			"mimetype":    v.Mimetype,
@@ -280,6 +287,7 @@ func (e *Engine) AddIndex() error {
 			"updated_at",
 			"tags",
 			"metadata",
+			"properties",
 			"date",
 			"description",
 			"tags",
