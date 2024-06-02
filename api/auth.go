@@ -80,7 +80,7 @@ func (a *Api) authorizeUserV2() echo.MiddlewareFunc {
 				return fmt.Errorf("get token from database: %v", err)
 			}
 			ctx := UserContext{
-				Context: Context{Context: c, pagination: pageParams{
+				Context: Context{Context: c, pagination: PageParams{
 					Page:     1,
 					PageSize: 20,
 				},

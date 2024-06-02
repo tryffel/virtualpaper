@@ -1,6 +1,7 @@
 package integrationtest
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
@@ -46,6 +47,30 @@ func GetMetadataKeys(t *testing.T, client *httpClient, wantHttpStatus int, editF
 func GetMetadataKey(t *testing.T, client *httpClient, keyId int, wantHttpStatus int) *models.MetadataKey {
 	req := client.Get("/api/v1/metadata/keys/" + strconv.Itoa(keyId))
 	dto := &models.MetadataKey{}
+	e := req.Expect(t)
+	if wantHttpStatus == 200 {
+		e.Json(t, dto).e.Status(200).Done()
+	} else {
+		e.e.Status(wantHttpStatus).Done()
+	}
+	return dto
+}
+
+func GetMetadataKeyValues(t *testing.T, client *httpClient, keyId int, sort *api.SortKey, wantHttpStatus int) *[]models.MetadataValue {
+	url := fmt.Sprintf("/api/v1/metadata/keys/%d/values", keyId)
+
+	req := client.Get(url)
+	if sort != nil {
+		order := ""
+		if sort.Order {
+			order = "ASC"
+		} else {
+			order = "DESC"
+		}
+		req = req.Sort(sort.Key, order)
+	}
+
+	dto := &[]models.MetadataValue{}
 	e := req.Expect(t)
 	if wantHttpStatus == 200 {
 		e.Json(t, dto).e.Status(200).Done()

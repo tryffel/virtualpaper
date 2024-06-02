@@ -60,7 +60,7 @@ func parseSortParamArray(s string) (string, string) {
 
 type Context struct {
 	echo.Context
-	pagination pageParams
+	pagination PageParams
 	sort       SortKey
 }
 

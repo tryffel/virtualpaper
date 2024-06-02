@@ -4,6 +4,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"testing"
+	"tryffel.net/go/virtualpaper/api"
 	"tryffel.net/go/virtualpaper/models"
 )
 
@@ -93,6 +94,28 @@ func (suite *MetadataValueSuite) TestUnauthorized() {
 		MatchType:      "",
 		MatchFilter:    "",
 	}, 404)
+}
+
+func (suite *MetadataValueSuite) TestSort() {
+	id := suite.keys["author"].Id
+
+	GetMetadataKeyValues(suite.T(), suite.userHttp, id, nil, 200)
+
+	values := GetMetadataKeyValues(suite.T(), suite.userHttp, id, &api.SortKey{
+		Key:   "value",
+		Order: true,
+	}, 200)
+	assert.Len(suite.T(), *values, 2)
+	assert.Equal(suite.T(), (*values)[0].Value, "darwin")
+	assert.Equal(suite.T(), (*values)[1].Value, "doyle")
+
+	values = GetMetadataKeyValues(suite.T(), suite.userHttp, id, &api.SortKey{
+		Key:   "value",
+		Order: false,
+	}, 200)
+	assert.Len(suite.T(), *values, 2)
+	assert.Equal(suite.T(), (*values)[0].Value, "doyle")
+	assert.Equal(suite.T(), (*values)[1].Value, "darwin")
 }
 
 func initMetadataKeyValues(t *testing.T, client *httpClient) (map[string]*models.MetadataKey, map[string]map[string]*models.MetadataValue) {

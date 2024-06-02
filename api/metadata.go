@@ -162,6 +162,11 @@ func (a *Api) getMetadataKeyValues(c echo.Context) error {
 
 	paging := getPagination(c)
 	sort := getSort(c)
+	if sort.Key == "" {
+		sort.Key = "value"
+		sort.Order = false
+	}
+
 	keys, err := a.metadataService.GetKeyValues(getContext(c), key, sort.ToKey(), paging.toPagination())
 	if err != nil {
 		return err

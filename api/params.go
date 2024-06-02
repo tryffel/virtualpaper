@@ -34,12 +34,12 @@ import (
 	"tryffel.net/go/virtualpaper/storage"
 )
 
-type pageParams struct {
+type PageParams struct {
 	Page     int `query:"page"`
 	PageSize int `query:"page_size"`
 }
 
-func (p pageParams) toPagination() storage.Paging {
+func (p PageParams) toPagination() storage.Paging {
 	return storage.Paging{
 		Offset: (p.Page - 1) * p.PageSize,
 		Limit:  p.PageSize,
@@ -49,7 +49,7 @@ func (p pageParams) toPagination() storage.Paging {
 func mPagination() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			params := &pageParams{
+			params := &PageParams{
 				Page:     1,
 				PageSize: 50,
 			}
@@ -87,10 +87,10 @@ func (s SortKey) ToKey() storage.SortKey {
 
 type SortKeys []SortKey
 
-func getPagination(c echo.Context) pageParams {
+func getPagination(c echo.Context) PageParams {
 	ctx, ok := c.(Context)
 	if ok {
-		return pageParams{
+		return PageParams{
 			Page:     1,
 			PageSize: 20,
 		}
@@ -99,7 +99,7 @@ func getPagination(c echo.Context) pageParams {
 	if ok {
 		return userCtx.pagination
 	}
-	return pageParams{
+	return PageParams{
 		Page:     ctx.pagination.Page,
 		PageSize: ctx.pagination.PageSize,
 	}
