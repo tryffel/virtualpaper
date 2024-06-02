@@ -80,14 +80,14 @@ func Test_matchDate(t *testing.T) {
 type metadata struct {
 	keys       []string
 	metadata   map[string][]models.Metadata
-	properties map[string]models.Property
+	properties []models.Property
 }
 
 func newMetadata() *metadata {
 	m := &metadata{
 		keys:       []string{},
 		metadata:   make(map[string][]models.Metadata),
-		properties: map[string]models.Property{},
+		properties: []models.Property{},
 	}
 	m.addKey("class")
 	m.addKey("author")
@@ -113,12 +113,12 @@ func newMetadata() *metadata {
 	m.addValue("topic", "logic")
 	m.addValue("topic", "arts")
 
-	m.properties["archive-id"] = models.Property{
+	m.properties = append(m.properties, models.Property{
 		Name: "archive-id",
-	}
-	m.properties["external-id"] = models.Property{
+	})
+	m.properties = append(m.properties, models.Property{
 		Name: "external-id",
-	}
+	})
 	return m
 }
 
