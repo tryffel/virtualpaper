@@ -19,11 +19,11 @@
 package search
 
 import (
+	"github.com/google/go-cmp/cmp"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
-
 	"tryffel.net/go/virtualpaper/models"
 )
 
@@ -413,8 +413,9 @@ func Test_suggest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := suggest(tt.args.query, metadata)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("suggest() = %v, want %v", got, tt.want)
+			if !cmp.Equal(got, tt.want) {
+				diff := cmp.Diff(tt.want, got)
+				t.Errorf("%s: %s", "suggest()", diff)
 			}
 		})
 	}
