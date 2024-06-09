@@ -51,6 +51,9 @@ export const EditLinkedDocuments = (props: EditLinkedDocumentsProps) => {
         setDocuments(data.data as LinkedDocument[]);
         setOriginalDocuments(data.data as LinkedDocument[]);
       },
+      onError: (error: Error) => {
+        notify(`Error: ${error.message}`, {type: 'error'})
+      }
     },
   );
 
