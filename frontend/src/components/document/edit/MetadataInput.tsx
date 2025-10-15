@@ -22,6 +22,7 @@ export const MetadataArrayInput = ({
     <ArrayInput source={source} label={label ?? "Metadata"}>
       <SimpleFormIterator inline disableReordering fullWidth>
         <ReferenceInput
+          perPage={500}
           label="Key"
           source="key_id"
           reference="metadata/keys"
